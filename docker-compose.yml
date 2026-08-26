@@ -1,0 +1,18 @@
+version: '3.9'
+
+services:
+  postgres_db:
+    image: postgres:16-alpine
+    container_name: ainote_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ainote_dev_user
+      POSTGRES_PASSWORD: ainote_dev_password_2026
+      POSTGRES_DB: ainote_dev_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
