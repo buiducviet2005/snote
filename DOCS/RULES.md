@@ -34,8 +34,7 @@ Dự án AI Note được triển khai nghiêm ngặt theo **Lộ trình 6 bư�
 
 1. **Tự động Tích hợp, Tách & Đánh số thứ tự:** Mỗi khi người dùng cung cấp dữ liệu mới (ví dụ: các bước chi tiết thực thi, tài liệu mô tả, kỹ thuật phát sinh), AI Agent **phải tự động phân loại, tích hợp vào tài liệu chung hoặc tách thành các file chuyên sâu riêng biệt** và đánh số thứ tự khoa học (ví dụ: `step_X.Y_...`) để dễ truy xuất.
 2. **Quyền Tạo Mới không cần hỏi:** AI Agent **CÓ TOÀN QUYỀN TỰ ĐỘNG TẠO MỚI** tài liệu khi thấy cần thiết để mở rộng, module hóa hoặc làm chi tiết các bước mà **không cần hỏi lại người dùng**.
-3. **Quyền Xóa & Dọn dẹp Rác không cần hỏi:** AI Agent **CÓ TOÀN QUYỀN TỰ ĐỘNG XÓA** các tài liệu trùng lặp, tài liệu tạm thời, rác hội thoại hoặc các file phân mảnh đã được hợp nhất mà **không cần hỏi lại người dùng**.
-4. **Chuẩn mực Chất lượng Tài liệu:** Mọi tài liệu kỹ thuật tạo ra trong thư mục `DOCS/` tuyệt đối không chứa rác hội thoại, prompt phụ, link trích dẫn chatbot lộn xộn (`[^1_1]`) hay code trùng lặp.
+3. **Chuẩn mực Chất lượng Tài liệu:** Mọi tài liệu kỹ thuật tạo ra trong thư mục `DOCS/` tuyệt đối không chứa rác hội thoại, prompt phụ, link trích dẫn chatbot lộn xộn (`[^1_1]`) hay code trùng lặp.
 
 ---
 
@@ -55,7 +54,16 @@ Mỗi khi thực thi bất kỳ nhiệm vụ nào gồm nhiều bước (Multi-s
 
 ---
 
-## ⚙️ ĐIỀU 5: QUY CHUẨN KỸ THUẬT & RÀNG BUỘC CỐT LÕI
+## ⚡ ĐIỀU 5: THỰC THI LỆNH & GIỚI HẠN THAO TÁC NGUY HIỂM (EXECUTION PROTOCOL)
+
+1. **Tự động thực thi:** Chấp nhận tự động chạy mọi câu lệnh tạo file, sửa code, cài đặt thư viện (`npm install`), chạy build, test, khởi chạy server và thực thi các bước trong nhiệm vụ mà **không cần hỏi lại người dùng**.
+2. **Chỉ hỏi khi thao tác nguy hiểm:** AI Agent **BẮT BUỘC PHẢI HỎI Ý KIẾN NGƯỜI DÙNG TRƯỚC KHI:**
+   - Xóa file hoặc xóa thư mục trong dự án.
+   - Chạy các lệnh có ảnh hưởng cực kỳ lớn hoặc không thể khôi phục (như drop database, xóa dữ liệu quan trọng, reset hard git làm mất commit...).
+
+---
+
+## ⚙️ ĐIỀU 6: QUY CHUẨN KỸ THUẬT & RÀNG BUỘC CỐT LÕI
 
 1. **Kiến trúc Hệ thống:**
    - Sử dụng mô hình **Modular Monolith**: 1 Backend process duy nhất, 1 Database PostgreSQL duy nhất để giữ trọn vẹn ranh giới Transaction ACID.
@@ -77,7 +85,7 @@ Mỗi khi thực thi bất kỳ nhiệm vụ nào gồm nhiều bước (Multi-s
 
 ---
 
-## 🔒 ĐIỀU 6: QUẢN LÝ GIT & AN TOÀN MÃ NGUỒN
+## 🔒 ĐIỀU 7: QUẢN LÝ GIT & AN TOÀN MÃ NGUỒN
 
 1. **Bảo mật thông tin:** Tuyệt đối không commit file `.env`, thư mục `node_modules/`, `dist/`, logs hay dữ liệu database cục bộ vào Git.
 2. **Commit chuẩn mực:** Đặt commit message có cấu trúc rõ ràng theo chuẩn Conventional Commits (ví dụ: `feat: ...`, `docs: ...`, `fix: ...`, `refactor: ...`).
