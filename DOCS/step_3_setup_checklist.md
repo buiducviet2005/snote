@@ -15,8 +15,9 @@ Tài liệu này dùng để theo dõi, quản lý tiến độ và đánh dấu
 | **Giai đoạn 5** | Khởi tạo Prisma ORM & Connection Client | 3 | ✅ 3 / 3 Hoàn thành |
 | **Giai đoạn 6** | Thiết lập Logging, Error Handling & Middlewares | 3 | ✅ 3 / 3 Hoàn thành |
 | **Giai đoạn 7** | Xây dựng Skeleton Module & Server Entry Point | 3 | ✅ 3 / 3 Hoàn thành |
-| **Giai đoạn 8** | Kiểm thử Khởi động & Nghiệm thu Cuối (Verification) | 2 | ✅ 2 / 2 Hoàn thành |
-| **TỔNG CỘNG** | **Toàn bộ quy trình thiết lập nền tảng** | **23** | **🎉 20 / 23 Hoàn thành** |
+| **Giai đoạn 8** | Kiểm thử Khởi động Backend (Verification) | 2 | ✅ 2 / 2 Hoàn thành |
+| **Giai đoạn 9** | **Thiết lập Frontend SPA & Feature-based Architecture (Bước 3.4)** | 5 | ✅ 5 / 5 Hoàn thành |
+| **TỔNG CỘNG** | **Toàn bộ quy trình thiết lập nền tảng** | **28** | **🎉 25 / 28 Hoàn thành** |
 
 ---
 
@@ -90,7 +91,7 @@ Tài liệu này dùng để theo dõi, quản lý tiến độ và đánh dấu
 
 ---
 
-## 8. Giai đoạn 8: Kiểm thử Xác nhận Khởi động (Verification)
+## 8. Giai đoạn 8: Kiểm thử Khởi động Backend (Verification)
 
 | Trạng thái | ID | Hạng mục kiểm tra | File / Lệnh liên quan | Tiêu chí đạt |
 | :---: | :---: | :--- | :--- | :--- |
@@ -99,16 +100,29 @@ Tài liệu này dùng để theo dõi, quản lý tiến độ và đánh dấu
 
 ---
 
+## 9. Giai đoạn 9: Thiết lập Frontend SPA & Feature-based Architecture (Bước 3.4)
+
+| Trạng thái | ID | Hạng mục kiểm tra | File / Lệnh liên quan | Tiêu chí đạt |
+| :---: | :---: | :--- | :--- | :--- |
+| [x] | `FE-01` | Khởi tạo Project Vite + React 19 + TypeScript | `frontend/package.json`<br>`frontend/vite.config.ts`<br>`frontend/tsconfig.json` | Cấu hình Vite SPA, React 19, TypeScript Strict Mode *(Đã hoàn thiện)* |
+| [x] | `FE-02` | Cài đặt & Cấu hình React Router DOM | `frontend/src/router/index.tsx` | Định tuyến 3 màn hình chính (`/notes`, `/tasks`, `/schedule`, `/semesters`) *(Đã hoàn thiện)* |
+| [x] | `FE-03` | Xây dựng Cấu trúc Thư mục Feature-based | `frontend/src/features/` (notes, tasks, schedule, semesters)<br>`frontend/src/components/layout/` | Chia tách rõ ràng pages, components, hooks theo domain *(Đã hoàn thiện)* |
+| [x] | `FE-04` | Xây dựng HTTP Client & Cấu hình `.env` | `frontend/src/services/api.ts`<br>`frontend/.env` | Gọi API với Base URL `http://localhost:4000/api`, custom typed request *(Đã hoàn thiện)* |
+| [x] | `FE-05` | Kiểm thử Build & Type-check Frontend | `npm run build` (trong `frontend/`) | Build production thành công 55 modules, 0 lỗi TypeScript *(Đã kiểm thử)* |
+
+---
+
 ## 📝 HƯỚNG DẪN THỰC THI NHANH (QUICK ACTIONS)
 
-### 1. Khởi chạy Server phát triển:
+### 1. Khởi chạy Backend Server:
 ```bash
 cd backend
 npm run dev
 ```
 
-### 2. Kiểm tra API nhanh qua cURL / PowerShell:
-```powershell
-Invoke-RestMethod -Uri "http://localhost:4000/health" -Method Get
-Invoke-RestMethod -Uri "http://localhost:4000/api/notes" -Method Get
+### 2. Khởi chạy Frontend Dev Server:
+```bash
+cd frontend
+npm run dev
 ```
+*(Frontend chạy tại `http://localhost:5173`, kết nối API Backend tại `http://localhost:4000/api`)*
