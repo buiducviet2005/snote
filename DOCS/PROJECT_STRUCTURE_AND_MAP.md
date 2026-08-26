@@ -46,7 +46,8 @@ SNOTE/
 │   ├── step_3.md                         # Bước 3: Thiết kế kiến trúc hệ thống (Modular Monolith)
 │   ├── step_3_setup.md                   # Bước 3.3: Hướng dẫn thiết lập Backend Skeleton từ số 0
 │   ├── step_3_frontend.md                # Bước 3.4: Hướng dẫn thiết lập Frontend SPA Feature-based
-│   └── step_3_setup_checklist.md         # Bảng checklist theo dõi tiến độ thiết lập Bước 3
+│   ├── step_3_setup_checklist.md         # Bảng checklist theo dõi tiến độ thiết lập Bước 3
+│   └── step_3_integration_checklist.md   # Bảng checklist kiểm tra kết nối Frontend & Backend
 ├── backend/                              # Mã nguồn Backend API (Node.js + Express + Prisma)
 │   ├── .env                              # Biến môi trường local (Không commit vào Git)
 │   ├── .env.example                      # File mẫu biến môi trường
@@ -151,6 +152,7 @@ SNOTE/
 | [DOCS/step_3_setup.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/step_3_setup.md) | Tài liệu kỹ thuật chi tiết của Bước nhỏ 3.3 (Setup backend skeleton từ số 0). |
 | [DOCS/step_3_frontend.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/step_3_frontend.md) | Tài liệu kỹ thuật chi tiết của Bước nhỏ 3.4 (Setup Frontend SPA Vite + React + React Router). |
 | [DOCS/step_3_setup_checklist.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/step_3_setup_checklist.md) | Bảng theo dõi tiến độ nghiệm thu kỹ thuật từng tác vụ của Bước 3 (`25 / 28` tác vụ hoàn thành). |
+| [DOCS/step_3_integration_checklist.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/step_3_integration_checklist.md) | Bảng theo dõi và nhật ký kiểm thử kết nối mạng, CORS và data flow giữa Frontend SPA và Backend API (`7 / 7` đạt). |
 | [DOCS/PROJECT_STRUCTURE_AND_MAP.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/PROJECT_STRUCTURE_AND_MAP.md) | Tài liệu tra cứu cấu trúc dự án, từ điển tệp tin và công nghệ sử dụng (File này). |
 
 ---
