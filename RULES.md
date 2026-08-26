@@ -1,9 +1,9 @@
 # QUY TẮC & LUẬT PHÁT TRIỂN DỰ ÁN AI NOTE (PROJECT RULES)
 
-Tài liệu này định nghĩa **toàn bộ các quy tắc, chuẩn mực và yêu cầu bắt buộc** của người dùng đối với dự án **AI Note (SNOTE)**. 
+Tài liệu này định nghĩa **toàn bộ các quy tắc, chuẩn mực, quyền tự chủ và quy trình bắt buộc** của người dùng đối với dự án **AI Note (SNOTE)**.
 
-> 📌 **CHỈ THỊ DÀNH CHO AI AGENT (SYSTEM DIRECTIVE):**  
-> Khi bắt đầu bất kỳ phiên làm việc mới (New Session / New Chat), AI Agent **bắt buộc phải đọc và tuân thủ 100% các quy tắc trong tài liệu này** trước khi thực hiện bất kỳ thao tác nào, đảm bảo tính liên tục, nhất quán và không làm sai lệch định hướng phát triển của người dùng.
+> 🔴 **ĐIỀU KIỆN TIÊN QUYẾT BẮT BUỘC (PREREQUISITE MANDATE):**  
+> Trước khi thực thi **BẤT KỲ LỆNH, MÃ NGUỒN HOẶC HÀNH ĐỘNG NÀO** trong bất kỳ phiên làm việc nào, AI Agent **BẮT BUỘC PHẢI ĐỌC LẠI FILE `RULES.md`** để đảm bảo nắm vững toàn bộ quy tắc dự án và tuân thủ 100% không sai lệch.
 
 ---
 
@@ -30,12 +30,12 @@ Dự án AI Note được triển khai nghiêm ngặt theo **Lộ trình 6 bư�
 
 ---
 
-## 📚 ĐIỀU 2: NGUYÊN TẮC LƯU TRỮ & CẬP NHẬT TÀI LIỆU (DOCUMENTATION INTEGRITY)
+## 📑 ĐIỀU 2: QUYỀN TỰ CHỦ QUẢN LÝ, TÍCH HỢP & TÁCH TÀI LIỆU (DOCUMENT AUTONOMY)
 
-1. **Mọi chi tiết đều phải thành văn bản:** Nội dung chi tiết của tất cả các bước nhỏ trong các bước lớn **đều phải được viết, lưu trữ và cập nhật vào thư mục `DOCS/`**, đảm bảo việc truy xuất và kiểm tra dữ liệu về sau không bị thất thoát.
-2. **Không để rác và nội dung phân mảnh:** Mọi tài liệu kỹ thuật phải được sàng lọc kỹ:
-   - Xóa bỏ 100% rác hội thoại, prompt phụ, link trích dẫn chatbot lộn xộn (`[^1_1]`) và hình ảnh logo thừa.
-   - Hợp nhất các đoạn code starter và lý thuyết bị phân mảnh thành cấu trúc chuẩn mực, có thứ tự rõ ràng.
+1. **Tự động Tích hợp, Tách & Đánh số thứ tự:** Mỗi khi người dùng cung cấp dữ liệu mới (ví dụ: các bước chi tiết thực thi, tài liệu mô tả, kỹ thuật phát sinh), AI Agent **phải tự động phân loại, tích hợp vào tài liệu chung hoặc tách thành các file chuyên sâu riêng biệt** và đánh số thứ tự khoa học (ví dụ: `step_X.Y_...`) để dễ truy xuất.
+2. **Quyền Tạo Mới không cần hỏi:** AI Agent **CÓ TOÀN QUYỀN TỰ ĐỘNG TẠO MỚI** tài liệu khi thấy cần thiết để mở rộng, module hóa hoặc làm chi tiết các bước mà **không cần hỏi lại người dùng**.
+3. **Quyền Xóa & Dọn dẹp Rác không cần hỏi:** AI Agent **CÓ TOÀN QUYỀN TỰ ĐỘNG XÓA** các tài liệu trùng lặp, tài liệu tạm thời, rác hội thoại hoặc các file phân mảnh đã được hợp nhất mà **không cần hỏi lại người dùng**.
+4. **Chuẩn mực Chất lượng Tài liệu:** Mọi tài liệu kỹ thuật tạo ra trong thư mục `DOCS/` tuyệt đối không chứa rác hội thoại, prompt phụ, link trích dẫn chatbot lộn xộn (`[^1_1]`) hay code trùng lặp.
 
 ---
 
@@ -46,10 +46,12 @@ Dự án AI Note được triển khai nghiêm ngặt theo **Lộ trình 6 bư�
 
 ---
 
-## ✅ ĐIỀU 4: QUẢN LÝ TIẾN ĐỘ QUA CHECKLIST
+## ✅ ĐIỀU 4: QUY TRÌNH THỰC THI QUA CHECKLIST (CHECKLIST-FIRST WORKFLOW)
 
-- Duy trì file **`DOCS/step_3_setup_checklist.md`** (và các bảng checklist tương ứng của các bước tiếp theo).
-- Mỗi khi hoàn thành một tác vụ thực tế (code, config, test), phải cập nhật trạng thái từ `[ ]` thành `[x]` để theo dõi tiến độ chính xác.
+Mỗi khi thực thi bất kỳ nhiệm vụ nào gồm nhiều bước (Multi-step Task):
+1. **Bước 1 (Checklist First):** **BẮT BUỘC PHẢI TẠO FILE CHECKLIST TRƯỚC** (dạng bảng Markdown có các ô `[ ]`, ID, mô tả công việc, file liên quan và tiêu chí đạt).
+2. **Bước 2 (Execute):** Sau khi đã có file checklist, mới tiến hành thực thi tuần tự từng bước nhỏ.
+3. **Bước 3 (Track Status):** Ngay sau khi hoàn thành mỗi bước nhỏ, **phải cập nhật ngay trạng thái từ `[ ]` thành `[x]`** trong file checklist để lưu vết tiến độ chính xác.
 
 ---
 
