@@ -6,16 +6,340 @@ datasource db {
   provider = "postgresql"
 }
 
+// ----------------------------------------------------
+// ENUMS
+// ----------------------------------------------------
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  DELETED
+
+  @@map("user_status")
+}
+
+enum SemesterStatus {
+  PLANNED
+  ACTIVE
+  COMPLETED
+  ARCHIVED
+
+  @@map("semester_status")
+}
+
+enum SubjectStatus {
+  ACTIVE
+  COMPLETED
+  ARCHIVED
+
+  @@map("subject_status")
+}
+
+enum ProjectStatus {
+  PLANNED
+  ACTIVE
+  ON_HOLD
+  COMPLETED
+  ARCHIVED
+
+  @@map("project_status")
+}
+
+enum NoteType {
+  LECTURE
+  LAB_REPORT
+  EXAM_PREP
+  PROJECT_LOG
+  MEETING_MINUTES
+  GENERAL
+
+  @@map("note_type")
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+  CANCELLED
+
+  @@map("task_status")
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+
+  @@map("task_priority")
+}
+
+enum ScheduleEventType {
+  CLASS
+  EXAM
+  DEADLINE
+  GROUP_MEETING
+  PERSONAL
+
+  @@map("schedule_event_type")
+}
+
+// ----------------------------------------------------
+// MODELS
+// ----------------------------------------------------
+
 model User {
-  id           String    @id @default(uuid())
-  email        String    @unique
-  passwordHash String    @map("password_hash")
-  displayName  String    @map("display_name")
-  avatarUrl    String?   @map("avatar_url")
-  timezone     String    @default("Asia/Ho_Chi_Minh")
-  createdAt    DateTime  @default(now()) @map("created_at")
-  updatedAt    DateTime  @updatedAt @map("updated_at")
-  deletedAt    DateTime? @map("deleted_at")
+  id           String     @id @default(uuid()) @db.Uuid
+  email        String     @unique @db.VarChar(255)
+  passwordHash String     @map("password_hash") @db.VarChar(255)
+  fullName     String     @map("full_name") @db.VarChar(100)
+  avatarUrl    String?    @map("avatar_url")
+  timezone     String     @default("Asia/Ho_Chi_Minh") @db.VarChar(50)
+  status       UserStatus @default(ACTIVE)
+  createdAt    DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime   @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt    DateTime?  @map("deleted_at") @db.Timestamptz(6)
+
+  // Relations
+  refreshTokens  RefreshToken[]
+  semesters      Semester[]
+  subjects       Subject[]
+  projects       Project[]
+  notes          Note[]
+  tasks          Task[]
+  tags           Tag[]
+  scheduleEvents ScheduleEvent[]
+  backups        BackupRecord[]
 
   @@map("users")
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  tokenHash String    @map("token_hash") @db.VarChar(255)
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz(6)
+  revokedAt DateTime? @map("revoked_at") @db.Timestamptz(6)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+model Semester {
+  id           String         @id @default(uuid()) @db.Uuid
+  userId       String         @map("user_id") @db.Uuid
+  name         String         @db.VarChar(100)
+  academicYear String         @map("academic_year") @db.VarChar(50)
+  startDate    DateTime?      @map("start_date") @db.Date
+  endDate      DateTime?      @map("end_date") @db.Date
+  status       SemesterStatus @default(ACTIVE)
+  isCurrent    Boolean        @default(false) @map("is_current")
+  createdAt    DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt    DateTime?      @map("deleted_at") @db.Timestamptz(6)
+
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subjects       Subject[]
+  projects       Project[]
+  scheduleEvents ScheduleEvent[]
+
+  @@index([userId])
+  @@map("semesters")
+}
+
+model Subject {
+  id         String        @id @default(uuid()) @db.Uuid
+  userId     String        @map("user_id") @db.Uuid
+  semesterId String        @map("semester_id") @db.Uuid
+  name       String        @db.VarChar(150)
+  code       String?       @db.VarChar(50)
+  credits    Int           @default(3)
+  lecturer   String?       @db.VarChar(100)
+  color      String?       @default("#3b82f6") @db.VarChar(20)
+  status     SubjectStatus @default(ACTIVE)
+  createdAt  DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt  DateTime?     @map("deleted_at") @db.Timestamptz(6)
+
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  semester       Semester        @relation(fields: [semesterId], references: [id], onDelete: Cascade)
+  projects       Project[]
+  notes          Note[]
+  tasks          Task[]
+  scheduleEvents ScheduleEvent[]
+
+  @@index([userId])
+  @@index([semesterId])
+  @@map("subjects")
+}
+
+model Project {
+  id          String        @id @default(uuid()) @db.Uuid
+  userId      String        @map("user_id") @db.Uuid
+  semesterId  String?       @map("semester_id") @db.Uuid
+  subjectId   String?       @map("subject_id") @db.Uuid
+  name        String        @db.VarChar(150)
+  description String?       @db.Text
+  status      ProjectStatus @default(ACTIVE)
+  startDate   DateTime?     @map("start_date") @db.Date
+  dueDate     DateTime?     @map("due_date") @db.Date
+  createdAt   DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt   DateTime?     @map("deleted_at") @db.Timestamptz(6)
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  semester Semester? @relation(fields: [semesterId], references: [id], onDelete: SetNull)
+  subject  Subject?  @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+  notes    Note[]
+  tasks    Task[]
+
+  @@index([userId])
+  @@index([subjectId])
+  @@map("projects")
+}
+
+model Note {
+  id         String    @id @default(uuid()) @db.Uuid
+  userId     String    @map("user_id") @db.Uuid
+  subjectId  String?   @map("subject_id") @db.Uuid
+  projectId  String?   @map("project_id") @db.Uuid
+  title      String    @db.VarChar(255)
+  content    String    @db.Text
+  noteType   NoteType  @default(LECTURE) @map("note_type")
+  isPinned   Boolean   @default(false) @map("is_pinned")
+  isArchived Boolean   @default(false) @map("is_archived")
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt  DateTime? @map("deleted_at") @db.Timestamptz(6)
+
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subject   Subject?       @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  project   Project?       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  noteTags  NoteTag[]
+  taskLinks TaskNoteLink[]
+
+  @@index([userId])
+  @@index([subjectId])
+  @@index([projectId])
+  @@map("notes")
+}
+
+model Tag {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  name      String   @db.VarChar(50)
+  color     String?  @default("#64748b") @db.VarChar(20)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user     User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  noteTags NoteTag[]
+  taskTags TaskTag[]
+
+  @@unique([userId, name])
+  @@index([userId])
+  @@map("tags")
+}
+
+model NoteTag {
+  noteId String @map("note_id") @db.Uuid
+  tagId  String @map("tag_id") @db.Uuid
+
+  note Note @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  tag  Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([noteId, tagId])
+  @@map("note_tags")
+}
+
+model Task {
+  id          String       @id @default(uuid()) @db.Uuid
+  userId      String       @map("user_id") @db.Uuid
+  subjectId   String?      @map("subject_id") @db.Uuid
+  projectId   String?      @map("project_id") @db.Uuid
+  title       String       @db.VarChar(255)
+  description String?      @db.Text
+  status      TaskStatus   @default(TODO)
+  priority    TaskPriority @default(MEDIUM)
+  dueDate     DateTime?    @map("due_date") @db.Timestamptz(6)
+  completedAt DateTime?    @map("completed_at") @db.Timestamptz(6)
+  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt   DateTime?    @map("deleted_at") @db.Timestamptz(6)
+
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subject   Subject?       @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  project   Project?       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  taskTags  TaskTag[]
+  noteLinks TaskNoteLink[]
+
+  @@index([userId])
+  @@index([subjectId])
+  @@index([projectId])
+  @@index([status])
+  @@map("tasks")
+}
+
+model TaskTag {
+  taskId String @map("task_id") @db.Uuid
+  tagId  String @map("tag_id") @db.Uuid
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  tag  Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([taskId, tagId])
+  @@map("task_tags")
+}
+
+model TaskNoteLink {
+  taskId String @map("task_id") @db.Uuid
+  noteId String @map("note_id") @db.Uuid
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  note Note @relation(fields: [noteId], references: [id], onDelete: Cascade)
+
+  @@id([taskId, noteId])
+  @@map("task_note_links")
+}
+
+model ScheduleEvent {
+  id             String            @id @default(uuid()) @db.Uuid
+  userId         String            @map("user_id") @db.Uuid
+  semesterId     String?           @map("semester_id") @db.Uuid
+  subjectId      String?           @map("subject_id") @db.Uuid
+  title          String            @db.VarChar(150)
+  location       String?           @db.VarChar(150)
+  eventType      ScheduleEventType @default(CLASS) @map("event_type")
+  startTime      DateTime          @map("start_time") @db.Timestamptz(6)
+  endTime        DateTime          @map("end_time") @db.Timestamptz(6)
+  isRecurring    Boolean           @default(false) @map("is_recurring")
+  recurrenceRule String?           @map("recurrence_rule") @db.VarChar(100)
+  createdAt      DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt      DateTime?         @map("deleted_at") @db.Timestamptz(6)
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  semester Semester? @relation(fields: [semesterId], references: [id], onDelete: SetNull)
+  subject  Subject?  @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([semesterId])
+  @@index([startTime, endTime])
+  @@map("schedule_events")
+}
+
+model BackupRecord {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  fileName  String   @map("file_name") @db.VarChar(255)
+  fileSize  Int      @map("file_size")
+  checksum  String   @db.VarChar(64)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("backup_records")
 }

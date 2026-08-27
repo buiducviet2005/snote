@@ -1,86 +1,105 @@
 import { Request, Response } from 'express';
 import { NotesService } from './notes.service';
 import { createNoteSchema, updateNoteSchema } from './notes.schemas';
-import { ValidationError } from '../../shared/errors/appErrors';
 
 export class NotesController {
-  private notesService: NotesService;
+  constructor(private readonly notesService: NotesService = new NotesService()) {}
 
-  constructor() {
-    this.notesService = new NotesService();
-  }
+  getNotes = async (req: Request, res: Response): Promise<void> => {
+    const userId = req.user!.id;
+    const { subjectId, projectId, noteType, isPinned, isArchived, search, page, limit } = req.query;
 
-  listNotes = async (req: Request, res: Response): Promise<void> => {
-    // Chống IDOR: Lấy userId từ JWT req.user đã xác thực
-    const userId = req.user?.id || 'demo-user-uuid';
     const filter = {
-      subjectId: req.query.subjectId as string | undefined,
-      projectId: req.query.projectId as string | undefined
+      subjectId: subjectId as string,
+      projectId: projectId as string,
+      noteType: noteType as any,
+      isPinned: isPinned !== undefined ? isPinned === 'true' : undefined,
+      isArchived: isArchived !== undefined ? isArchived === 'true' : undefined,
+      search: search as string,
+      page: page ? parseInt(page as string, 10) : 1,
+      limit: limit ? parseInt(limit as string, 10) : 20
     };
 
-    const notes = await this.notesService.listNotes(userId, filter);
+    const { notes, total } = await this.notesService.getNotes(userId, filter);
 
     res.status(200).json({
       success: true,
       message: 'Lấy danh sách ghi chú thành công',
       data: notes,
       meta: {
-        total: notes.length,
-        page: 1,
-        limit: 20
+        total,
+        page: filter.page,
+        limit: filter.limit
       }
     });
   };
 
-  createNote = async (req: Request, res: Response): Promise<void> => {
-    const userId = req.user?.id || 'demo-user-uuid';
-    const parseResult = createNoteSchema.safeParse(req.body);
-
-    if (!parseResult.success) {
-      throw new ValidationError(
-        'Dữ liệu tạo ghi chú không hợp lệ: ' + parseResult.error.errors.map(e => e.message).join('; '),
-        { zodErrors: parseResult.error.format() }
-      );
-    }
-
-    const note = await this.notesService.createNote(userId, parseResult.data);
-
-    res.status(201).json({
+  getNoteById = async (req: Request, res: Response): Promise<void> => {
+    const userId = req.user!.id;
+    const id = req.params.id as string;
+    const note = await this.notesService.getNoteById(id, userId);
+    res.status(200).json({
       success: true,
-      message: 'Tạo ghi chú thành công',
       data: note
     });
   };
 
-  getNoteById = async (req: Request, res: Response): Promise<void> => {
-    const userId = req.user?.id || 'demo-user-uuid';
-    const noteId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+  createNote = async (req: Request, res: Response): Promise<void> => {
+    const userId = req.user!.id;
+    const validatedData = createNoteSchema.parse(req.body);
+    const newNote = await this.notesService.createNote(userId, validatedData);
 
-    const note = await this.notesService.getNoteById(userId, noteId);
-
-    res.status(200).json({
+    res.status(201).json({
       success: true,
-      data: note
+      message: 'Tạo ghi chú mới thành công',
+      data: newNote
     });
   };
 
   updateNote = async (req: Request, res: Response): Promise<void> => {
-    const userId = req.user?.id || 'demo-user-uuid';
-    const noteId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
-    const parseResult = updateNoteSchema.safeParse(req.body);
-
-    if (!parseResult.success) {
-      throw new ValidationError(
-        'Dữ liệu cập nhật ghi chú không hợp lệ',
-        { zodErrors: parseResult.error.format() }
-      );
-    }
-
-    const note = await this.notesService.updateNote(userId, noteId, parseResult.data);
+    const userId = req.user!.id;
+    const id = req.params.id as string;
+    const validatedData = updateNoteSchema.parse(req.body);
+    const updated = await this.notesService.updateNote(id, userId, validatedData);
 
     res.status(200).json({
       success: true,
       message: 'Cập nhật ghi chú thành công',
+      data: updated
+    });
+  };
+
+  deleteNote = async (req: Request, res: Response): Promise<void> => {
+    const userId = req.user!.id;
+    const id = req.params.id as string;
+    await this.notesService.deleteNote(id, userId);
+
+    res.status(200).json({
+      success: true,
+      message: 'Xóa ghi chú thành công'
+    });
+  };
+
+  togglePin = async (req: Request, res: Response): Promise<void> => {
+    const userId = req.user!.id;
+    const id = req.params.id as string;
+    const note = await this.notesService.togglePin(id, userId);
+
+    res.status(200).json({
+      success: true,
+      message: note.isPinned ? 'Đã ghim ghi chú' : 'Đã bỏ ghim ghi chú',
+      data: note
+    });
+  };
+
+  toggleArchive = async (req: Request, res: Response): Promise<void> => {
+    const userId = req.user!.id;
+    const id = req.params.id as string;
+    const note = await this.notesService.toggleArchive(id, userId);
+
+    res.status(200).json({
+      success: true,
+      message: note.isArchived ? 'Đã lưu trữ ghi chú' : 'Đã khôi phục ghi chú',
       data: note
     });
   };

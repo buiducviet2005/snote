@@ -1,13 +1,23 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
 import pinoHttp from 'pino-http';
 import { env } from './config/env';
 import { logger } from './shared/utils/logger';
 import { errorHandler } from './shared/middleware/errorHandler';
 import { apiRateLimiter } from './shared/middleware/rateLimit';
-import { notesRouter } from './modules/notes';
+
+// Import Domain Modules
 import { healthRouter } from './modules/health';
+import { authRouter } from './modules/auth';
+import { semestersRouter } from './modules/semesters';
+import { subjectsRouter } from './modules/subjects';
+import { projectsRouter } from './modules/projects';
+import { notesRouter } from './modules/notes';
+import { tasksRouter } from './modules/tasks';
+import { scheduleRouter } from './modules/schedule';
+import { backupRouter } from './modules/backup';
 
 // 1. Khởi tạo Express Application
 const app = express();
@@ -16,7 +26,7 @@ const app = express();
 app.disable('x-powered-by');
 app.use(helmet());
 
-// 3. Xử lý CORS & Preflight
+// 3. Xử lý CORS & Cookie credentials
 app.use(
   cors({
     origin: env.CORS_ORIGIN,
@@ -26,9 +36,10 @@ app.use(
   })
 );
 
-// 4. Body Parsers với Payload Size Limit (Chống DoS)
+// 4. Body Parsers & Cookie Parser
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
+app.use(cookieParser());
 
 // 5. Structured Request Logging (Pino HTTP)
 app.use(
@@ -49,8 +60,15 @@ app.use('/api/', apiRateLimiter);
 // 7. Health Check Probes (/health, /health/live, /health/ready)
 app.use('/health', healthRouter);
 
-// 8. Đăng ký Domain Routes
+// 8. Đăng ký Domain Routes (Modular Monolith)
+app.use('/api/auth', authRouter);
+app.use('/api/semesters', semestersRouter);
+app.use('/api/subjects', subjectsRouter);
+app.use('/api/projects', projectsRouter);
 app.use('/api/notes', notesRouter);
+app.use('/api/tasks', tasksRouter);
+app.use('/api/schedule', scheduleRouter);
+app.use('/api/backup', backupRouter);
 
 // 9. Centralized Error Handling Middleware (Bắt buộc đặt cuối cùng)
 app.use(errorHandler);

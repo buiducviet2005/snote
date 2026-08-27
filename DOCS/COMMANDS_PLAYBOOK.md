@@ -79,40 +79,68 @@ Thực thi tại **thư mục gốc `SNOTE/`**:
 
 ### 5.1. Kiểm tra qua PowerShell (Windows):
 ```powershell
-# 1. Kiểm tra Health Check Backend (Root, Liveness, Readiness)
-Invoke-RestMethod -Uri "http://localhost:4000/health" -Method Get | ConvertTo-Json
+# 1. Health Checks
 Invoke-RestMethod -Uri "http://localhost:4000/health/live" -Method Get | ConvertTo-Json
-Invoke-RestMethod -Uri "http://localhost:4000/health/ready" -Method Get | ConvertTo-Json
 
-# 2. Lấy danh sách ghi chú (GET /api/notes)
-Invoke-RestMethod -Uri "http://localhost:4000/api/notes" -Method Get | ConvertTo-Json
-
-# 3. Tạo ghi chú mới (POST /api/notes)
-$body = @{
-  title = "Bài giảng Kiến trúc Hệ thống"
-  content = "Modular Monolith trên PostgreSQL"
-  subjectId = "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11"
-  noteType = "LECTURE"
-  tagNames = @("Architecture", "PostgreSQL")
+# 2. Đăng ký tài khoản mới (POST /api/auth/register)
+$regBody = @{
+  email = "sinhvien2026@snote.edu.vn"
+  password = "Password@2026"
+  fullName = "Nguyễn Văn Sinh Viên"
 } | ConvertTo-Json
+$auth = Invoke-RestMethod -Uri "http://localhost:4000/api/auth/register" -Method Post -Body $regBody -ContentType "application/json"
+$token = $auth.data.accessToken
+$headers = @{ "Authorization" = "Bearer $token" }
 
-Invoke-RestMethod -Uri "http://localhost:4000/api/notes" -Method Post -Body $body -ContentType "application/json" | ConvertTo-Json
+# 3. Lấy thông tin tài khoản (GET /api/auth/me)
+Invoke-RestMethod -Uri "http://localhost:4000/api/auth/me" -Method Get -Headers $headers | ConvertTo-Json
+
+# 4. Tạo Học kỳ mới (POST /api/semesters)
+$semBody = @{
+  name = "Học kỳ 1 (2025 - 2026)"
+  academicYear = "2025-2026"
+  isCurrent = $true
+} | ConvertTo-Json
+$sem = Invoke-RestMethod -Uri "http://localhost:4000/api/semesters" -Method Post -Body $semBody -Headers $headers -ContentType "application/json"
+$semesterId = $sem.data.id
+
+# 5. Tạo Môn học mới (POST /api/subjects)
+$subBody = @{
+  semesterId = $semesterId
+  name = "Cơ sở dữ liệu nâng cao"
+  code = "IT4020"
+  credits = 3
+} | ConvertTo-Json
+$sub = Invoke-RestMethod -Uri "http://localhost:4000/api/subjects" -Method Post -Body $subBody -Headers $headers -ContentType "application/json"
+$subjectId = $sub.data.id
+
+# 6. Tạo Ghi chú (POST /api/notes)
+$noteBody = @{
+  title = "Bài giảng Transaction Isolation"
+  content = "Read Committed, Repeatable Read, Serializable"
+  subjectId = $subjectId
+  noteType = "LECTURE"
+  tagNames = @("Database", "Transaction")
+} | ConvertTo-Json
+Invoke-RestMethod -Uri "http://localhost:4000/api/notes" -Method Post -Body $noteBody -Headers $headers -ContentType "application/json" | ConvertTo-Json
+
+# 7. Xuất dữ liệu sao lưu tài khoản (GET /api/backup/export)
+Invoke-RestMethod -Uri "http://localhost:4000/api/backup/export" -Method Get -Headers $headers | ConvertTo-Json
 ```
 
 ### 5.2. Kiểm tra qua cURL / Linux / macOS:
 ```bash
 # 1. Health Checks
-curl -X GET http://localhost:4000/health
 curl -X GET http://localhost:4000/health/live
-curl -X GET http://localhost:4000/health/ready
 
-# 2. GET Notes
-curl -X GET http://localhost:4000/api/notes
-
-# 3. POST Note
-curl -X POST http://localhost:4000/api/notes \
+# 2. Đăng ký & Lấy Token
+curl -X POST http://localhost:4000/api/auth/register \
   -H "Content-Type: application/json" \
-  -d '{"title":"Ghi chú mẫu","content":"Nội dung","subjectId":"a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11","noteType":"LECTURE"}'
+  -d '{"email":"test@snote.edu.vn","password":"Password@123","fullName":"Test User"}'
+
+# 3. Xuất sao lưu dữ liệu
+curl -X GET http://localhost:4000/api/backup/export \
+  -H "Authorization: Bearer <ACCESS_TOKEN>"
 ```
 
 ---

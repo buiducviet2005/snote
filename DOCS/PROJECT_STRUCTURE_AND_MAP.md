@@ -56,6 +56,8 @@ SNOTE/
 │   ├── step_3.5_checklist.md             # Bảng checklist thực thi Bước 3.5
 │   ├── step_3.6_checklist.md             # Bảng checklist thực thi Bước 3.6
 │   ├── step_3.7_checklist.md             # Bảng checklist thực thi Bước 3.7
+│   ├── step_4_plan.md                    # Bước 4: Kế hoạch kỹ thuật & thực thi Backend Core & Migrations
+│   ├── step_4_checklist.md               # Bảng checklist thực thi Bước 4 (10/10 Hoàn thành)
 │   ├── COMMANDS_PLAYBOOK.md              # Sổ tay toàn bộ câu lệnh điều khiển & vận hành dự án
 │   └── ai_chat_docs/                     # Trung tâm tri thức & tài liệu dành riêng cho Chat AI
 │       ├── README.md                     # Bản đồ tri thức & nguyên tắc làm việc với AI Docs
@@ -64,17 +66,24 @@ SNOTE/
 │       ├── 03_DEVELOPMENT_WORKFLOW_AND_PROCESS.md # Quy trình phát triển & chuẩn mực kỹ thuật
 │       ├── 04_RESEARCH_GUARDRAILS_AND_LAWS.md # Ranh giới nghiên cứu & các luật bất biến
 │       ├── 05_AI_ROADMAP_AND_FUTURE_STRATEGY.md # Lộ trình AI & chiến lược tương lai 4 giai đoạn
-│       └── 06_STEP_3_HANDOVER_AND_COMPLETION.md # Biên bản nghiệm thu Bước 3 & bàn giao Bước 4
+│       ├── 06_STEP_3_HANDOVER_AND_COMPLETION.md # Biên bản nghiệm thu Bước 3 & bàn giao Bước 4
+│       └── 07_STEP_4_EXECUTION_PLAN.md   # Kế hoạch chi tiết & chiến lược kỹ thuật Bước 4
 ├── packages/                             # Các thư viện dùng chung (Shared Packages)
 │   └── shared/                           # Types, Enums & DTOs dùng chung toàn dự án
 │       ├── package.json                  # Khai báo package @snote/shared
 │       ├── tsconfig.json                 # Cấu hình TypeScript cho shared library
 │       └── src/
-│           ├── enums.ts                  # Enums chuẩn (NoteType, TaskStatus, TaskPriority...)
+│           ├── enums.ts                  # Enums chuẩn (UserStatus, NoteType, TaskStatus, Priority...)
 │           ├── contracts/
-│           │   ├── notes.contract.ts     # DTO Note Request & Response interfaces
-│           │   ├── tasks.contract.ts     # DTO Task Request & Response interfaces
-│           │   └── api.contract.ts       # ApiResponse wrapper & pagination
+│           │   ├── api.contract.ts       # ApiResponse wrapper & pagination
+│           │   ├── auth.contract.ts      # DTOs Đăng ký, Đăng nhập, User profile
+│           │   ├── semesters.contract.ts # DTOs Học kỳ
+│           │   ├── subjects.contract.ts  # DTOs Môn học
+│           │   ├── projects.contract.ts  # DTOs Đồ án
+│           │   ├── notes.contract.ts     # DTOs Ghi chú
+│           │   ├── tasks.contract.ts     # DTOs Công việc
+│           │   ├── schedule.contract.ts  # DTOs Lịch trình
+│           │   └── backup.contract.ts    # DTOs Sao lưu dữ liệu
 │           └── index.ts                  # Public API của shared package
 ├── backend/                              # Mã nguồn Backend API (Node.js + Express + Prisma)
 │   ├── .env                              # Biến môi trường local (Không commit vào Git)
@@ -84,7 +93,8 @@ SNOTE/
 │   ├── tsconfig.json                     # Cấu hình TypeScript Strict Mode cho backend
 │   ├── prisma.config.ts                  # Cấu hình kết nối datasource cho Prisma 7
 │   ├── prisma/
-│   │   └── schema.prisma                 # Định nghĩa mô hình dữ liệu Prisma ORM
+│   │   ├── schema.prisma                 # Định nghĩa 10+ models và 8 enums Prisma ORM
+│   │   └── seed.ts                       # Script khởi tạo dữ liệu sinh viên mẫu
 │   └── src/
 │       ├── server.ts                     # Entry point khởi chạy HTTP Server và wire-up middlewares
 │       ├── types/                        # Khai báo kiểu dữ liệu mở rộng
@@ -94,28 +104,26 @@ SNOTE/
 │       │   └── env.ts                    # Module parse & validate biến môi trường (Fail-Fast)
 │       ├── shared/                       # Thành phần dùng chung toàn backend
 │       │   ├── db/
-│       │   │   └── prismaClient.ts       # Singleton instance của PrismaClient
+│       │   │   └── prismaClient.ts       # Singleton instance PrismaClient với PrismaPg adapter
 │       │   ├── errors/
 │       │   │   └── appErrors.ts          # Cây phân cấp Custom Error classes (AppError, ValidationError...)
 │       │   ├── middleware/
 │       │   │   ├── asyncBoundary.ts      # Async Handler wrapper bắt Promise rejection
 │       │   │   ├── authGuard.ts          # Middleware xác thực JWT token (Anti-IDOR)
-│       │   │   ├── errorHandler.ts       # Centralized Error Handling Middleware
+│       │   │   ├── errorHandler.ts       # Centralized Error Handling Middleware (ZodError + AppError)
 │       │   │   └── rateLimit.ts          # Rate limiters cho login và API
 │       │   └── utils/
 │       │       └── logger.ts             # Cấu hình Pino Structured Logger kèm Redaction
 │       └── modules/                      # Các Bounded Contexts theo Domain-Driven Design
-│           ├── health/                   # Phân hệ Giám sát Sức khỏe Hệ thống (Probes)
-│           │   ├── health.routes.ts      # Endpoints /health, /health/live, /health/ready
-│           │   └── index.ts              # Public API của module health
-│           └── notes/                    # Phân hệ Quản lý Ghi chú (Module mẫu)
-│               ├── notes.types.ts        # TypeScript interfaces cho DTOs, Filters, Entity
-│               ├── notes.schemas.ts      # Zod validation schema (Ràng buộc ngữ cảnh học tập)
-│               ├── notes.repository.ts   # Tầng truy vấn cơ sở dữ liệu qua Prisma
-│               ├── notes.service.ts      # Tầng xử lý 100% logic nghiệp vụ
-│               ├── notes.controller.ts   # Tầng tiếp nhận HTTP Request & trả Response
-│               ├── notes.routes.ts       # Định nghĩa endpoints HTTP cho module notes
-│               └── index.ts              # Public API duy nhất của module notes
+│           ├── health/                   # Phân hệ Giám sát Sức khỏe (/health, /live, /ready)
+│           ├── auth/                     # Phân hệ Xác thực (Register, Login, Refresh, Logout, Me)
+│           ├── semesters/                # Phân hệ Quản lý Học kỳ
+│           ├── subjects/                 # Phân hệ Quản lý Môn học
+│           ├── projects/                 # Phân hệ Quản lý Đồ án môn học
+│           ├── notes/                    # Phân hệ Quản lý Ghi chú bài giảng
+│           ├── tasks/                    # Phân hệ Quản lý Công việc sinh viên
+│           ├── schedule/                 # Phân hệ Quản lý Lịch trình & Lịch thi
+│           └── backup/                   # Phân hệ Xuất/Nhập dữ liệu sao lưu JSON
 └── frontend/                             # Mã nguồn Frontend SPA (React 19 + TypeScript + Vite)
     ├── .env                              # Biến môi trường local frontend (VITE_API_BASE_URL)
     ├── .env.example                      # File mẫu biến môi trường frontend
@@ -199,8 +207,9 @@ SNOTE/
 | [DOCS/step_3_setup_checklist.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/step_3_setup_checklist.md) | Bảng theo dõi tiến độ nghiệm thu kỹ thuật từng tác vụ của Bước 3 (`28 / 28` tác vụ hoàn thành - 100%). |
 | [DOCS/step_3_integration_checklist.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/step_3_integration_checklist.md) | Bảng theo dõi và nhật ký kiểm thử kết nối mạng, CORS và data flow giữa Frontend SPA và Backend API (`7 / 7` đạt). |
 | [DOCS/step_3.5_checklist.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/step_3.5_checklist.md) | Bảng theo dõi tiến độ thực thi cấu trúc repo và thư viện dùng chung Bước 3.5 (`6 / 6` hoàn thành). |
-| [DOCS/step_3.6_checklist.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/step_3.6_checklist.md) | Bảng theo dõi tiến độ thực thi quan sát hệ thống & cứng hóa bảo mật Bước 3.6 (`10 / 10` hoàn thành). |
 | [DOCS/step_3.7_checklist.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/step_3.7_checklist.md) | Bảng theo dõi tiến độ đóng gói & chuẩn hóa toàn bộ Bước 3 (`8 / 8` hoàn thành). |
+| [DOCS/step_4_plan.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/step_4_plan.md) | Kế hoạch kỹ thuật chi tiết của Bước 4 (Triển khai Backend Core & Database Migrations). |
+| [DOCS/step_4_checklist.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/step_4_checklist.md) | Bảng theo dõi tiến độ thực thi Bước 4 (`10 / 10` hoàn thành - 100%). |
 | [DOCS/COMMANDS_PLAYBOOK.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/COMMANDS_PLAYBOOK.md) | Sổ tay tập trung toàn bộ câu lệnh CLI: Khởi chạy, Docker, Prisma, Build, Test, Git và Clean dự án. |
 | [DOCS/PROJECT_STRUCTURE_AND_MAP.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/PROJECT_STRUCTURE_AND_MAP.md) | Tài liệu tra cứu cấu trúc dự án, từ điển tệp tin và công nghệ sử dụng (File này). |
 
@@ -217,6 +226,7 @@ SNOTE/
 | [DOCS/ai_chat_docs/04_RESEARCH_GUARDRAILS_AND_LAWS.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/ai_chat_docs/04_RESEARCH_GUARDRAILS_AND_LAWS.md) | Ranh giới kỹ thuật bất biến (Anti-Junk notes, Single ACID DB, Anti-IDOR, Modular Monolith). |
 | [DOCS/ai_chat_docs/05_AI_ROADMAP_AND_FUTURE_STRATEGY.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/ai_chat_docs/05_AI_ROADMAP_AND_FUTURE_STRATEGY.md) | Lộ trình và chiến lược AI 4 giai đoạn (Smart Extraction $\rightarrow$ Exam Predictor $\rightarrow$ Multi-modal $\rightarrow$ Autonomous). |
 | [DOCS/ai_chat_docs/06_STEP_3_HANDOVER_AND_COMPLETION.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/ai_chat_docs/06_STEP_3_HANDOVER_AND_COMPLETION.md) | Biên bản nghiệm thu toàn diện Bước 3 và danh mục hành động sẵn sàng bước sang Bước 4. |
+| [DOCS/ai_chat_docs/07_STEP_4_EXECUTION_PLAN.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/ai_chat_docs/07_STEP_4_EXECUTION_PLAN.md) | Kế hoạch chi tiết và chiến lược kỹ thuật triển khai Bước 4 Backend Core & Database. |
 
 ---
 
@@ -226,10 +236,16 @@ SNOTE/
 | :--- | :--- |
 | [packages/shared/package.json](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/packages/shared/package.json) | Khai báo package `@snote/shared` xuất bản các kiểu dữ liệu và contracts dùng chung. |
 | [packages/shared/tsconfig.json](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/packages/shared/tsconfig.json) | Cấu hình TypeScript xuất file định nghĩa `.d.ts` vào thư mục `dist/`. |
-| [packages/shared/src/enums.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/packages/shared/src/enums.ts) | Định nghĩa các Enums chuẩn: `NoteType`, `TaskStatus`, `TaskPriority`, `SemesterStatus`, `ScheduleEventType`. |
-| [packages/shared/src/contracts/notes.contract.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/packages/shared/src/contracts/notes.contract.ts) | Định nghĩa interfaces `CreateNoteDto`, `UpdateNoteDto`, `NoteResponseDto`. |
-| [packages/shared/src/contracts/tasks.contract.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/packages/shared/src/contracts/tasks.contract.ts) | Định nghĩa interfaces `CreateTaskDto`, `UpdateTaskDto`, `TaskResponseDto`. |
+| [packages/shared/src/enums.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/packages/shared/src/enums.ts) | Định nghĩa các Enums chuẩn: `UserStatus`, `SemesterStatus`, `SubjectStatus`, `ProjectStatus`, `NoteType`, `TaskStatus`, `TaskPriority`, `ScheduleEventType`. |
 | [packages/shared/src/contracts/api.contract.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/packages/shared/src/contracts/api.contract.ts) | Định nghĩa wrapper `ApiResponse<T>` và `PaginationQuery`. |
+| [packages/shared/src/contracts/auth.contract.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/packages/shared/src/contracts/auth.contract.ts) | Định nghĩa DTOs `RegisterDto`, `LoginDto`, `UserResponseDto`, `AuthResponseDto`. |
+| [packages/shared/src/contracts/semesters.contract.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/packages/shared/src/contracts/semesters.contract.ts) | Định nghĩa DTOs `CreateSemesterDto`, `UpdateSemesterDto`, `SemesterResponseDto`. |
+| [packages/shared/src/contracts/subjects.contract.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/packages/shared/src/contracts/subjects.contract.ts) | Định nghĩa DTOs `CreateSubjectDto`, `UpdateSubjectDto`, `SubjectResponseDto`. |
+| [packages/shared/src/contracts/projects.contract.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/packages/shared/src/contracts/projects.contract.ts) | Định nghĩa DTOs `CreateProjectDto`, `UpdateProjectDto`, `ProjectResponseDto`. |
+| [packages/shared/src/contracts/notes.contract.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/packages/shared/src/contracts/notes.contract.ts) | Định nghĩa interfaces `CreateNoteDto`, `UpdateNoteDto`, `NoteResponseDto`, `TagDto`. |
+| [packages/shared/src/contracts/tasks.contract.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/packages/shared/src/contracts/tasks.contract.ts) | Định nghĩa interfaces `CreateTaskDto`, `UpdateTaskDto`, `TaskResponseDto`, `TaskFilter`. |
+| [packages/shared/src/contracts/schedule.contract.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/packages/shared/src/contracts/schedule.contract.ts) | Định nghĩa DTOs `CreateScheduleEventDto`, `UpdateScheduleEventDto`, `ScheduleEventResponseDto`. |
+| [packages/shared/src/contracts/backup.contract.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/packages/shared/src/contracts/backup.contract.ts) | Định nghĩa interface `UserBackupPayload`. |
 | [packages/shared/src/index.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/packages/shared/src/index.ts) | Export Public API duy nhất cho `@snote/shared`. |
 
 ---
@@ -241,27 +257,30 @@ SNOTE/
 | [backend/package.json](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/package.json) | Khai báo dependencies (Express, Prisma, Zod, Pino, Helmet, jsonwebtoken...) và scripts thực thi. |
 | [backend/tsconfig.json](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/tsconfig.json) | Thiết lập TypeScript Strict Mode, target `ES2022`, module `CommonJS`, rootDir `./src`, outDir `./dist`. |
 | [backend/prisma.config.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/prisma.config.ts) | Cấu hình datasource URL từ biến môi trường cho Prisma CLI v7. |
-| [backend/prisma/schema.prisma](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/prisma/schema.prisma) | Schema Prisma định nghĩa generator client và các models (User model skeleton). |
+| [backend/prisma/schema.prisma](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/prisma/schema.prisma) | Schema Prisma định nghĩa 10+ models và 8 enums PostgreSQL. |
+| [backend/prisma/seed.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/prisma/seed.ts) | Script khởi tạo dữ liệu mẫu sinh viên (User, Semesters, Subjects, Projects, Notes, Tasks, Schedule). |
 | [backend/.env.example](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/.env.example) | Mẫu biến môi trường bắt buộc: `PORT`, `NODE_ENV`, `DATABASE_URL`, `JWT_SECRET`, `CORS_ORIGIN`. |
 | [backend/.env](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/.env) | Cấu hình môi trường thực tế đang chạy trên máy dev (Chỉ lưu local). |
-| [backend/src/server.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/src/server.ts) | Entry point chính của backend: Cấu hình Express, Helmet, CORS, Correlation Request ID, router `/api/notes`, `errorHandler`. |
+| [backend/src/server.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/src/server.ts) | Entry point chính của backend: Wire-up 8 domain routers, Helmet, CORS, CookieParser, RateLimit, ErrorHandler. |
 | [backend/src/types/express.d.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/src/types/express.d.ts) | Định nghĩa TypeScript declaration mở rộng `Express.Request` chứa thông tin `req.user` và `req.id`. |
 | [backend/src/config/env-schema.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/src/config/env-schema.ts) | Định nghĩa schema Zod để kiểm tra chặt chẽ kiểu dữ liệu của biến môi trường. |
 | [backend/src/config/env.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/src/config/env.ts) | Thực thi parse `process.env`. Nếu thiếu hoặc sai cấu hình, dừng server ngay lập tức (**Fail-Fast**). |
-| [backend/src/shared/db/prismaClient.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/src/shared/db/prismaClient.ts) | Khởi tạo Singleton instance `prisma` dùng chung trong toàn bộ hệ thống. |
+| [backend/src/shared/db/prismaClient.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/src/shared/db/prismaClient.ts) | Khởi tạo Singleton instance `prisma` kết nối qua `PrismaPg` adapter. |
 | [backend/src/shared/utils/logger.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/src/shared/utils/logger.ts) | Cấu hình Pino Structured Logger kèm tính năng `redact` che giấu tokens và passwords. |
 | [backend/src/shared/errors/appErrors.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/src/shared/errors/appErrors.ts) | Cây phân cấp Custom Errors (`AppError`, `ValidationError`, `AuthError`, `ForbiddenError`, `NotFoundError`, `ConflictError`). |
 | [backend/src/shared/middleware/asyncBoundary.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/src/shared/middleware/asyncBoundary.ts) | Middleware wrapper bọc các route handler bất đồng bộ, tự động chuyển lỗi qua `next(err)`. |
 | [backend/src/shared/middleware/authGuard.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/src/shared/middleware/authGuard.ts) | Middleware xác thực JWT token và gán `req.user` bảo vệ chống tấn công IDOR. |
 | [backend/src/shared/middleware/rateLimit.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/src/shared/middleware/rateLimit.ts) | Cấu hình Rate Limiters (`loginRateLimiter` 10 req/15m, `apiRateLimiter` 100 req/1m). |
-| [backend/src/shared/middleware/errorHandler.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/src/shared/middleware/errorHandler.ts) | Middleware bắt lỗi tập trung: Map lỗi sang mã HTTP chuẩn, log requestId nội bộ, không leak stack trace ra ngoài. |
-| [backend/src/modules/notes/notes.types.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/src/modules/notes/notes.types.ts) | Định nghĩa TypeScript interfaces: `CreateNoteDto`, `UpdateNoteDto`, `NoteFilter`, `INotesService`. |
-| [backend/src/modules/notes/notes.schemas.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/src/modules/notes/notes.schemas.ts) | Schema Zod validate dữ liệu tạo note (Enforce ràng buộc `subjectId || projectId`). |
-| [backend/src/modules/notes/notes.repository.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/src/modules/notes/notes.repository.ts) | Layer tương tác trực tiếp với cơ sở dữ liệu qua Prisma Client. |
-| [backend/src/modules/notes/notes.service.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/src/modules/notes/notes.service.ts) | Layer xử lý logic nghiệp vụ ghi chú, phân quyền sở hữu theo `userId`. |
-| [backend/src/modules/notes/notes.controller.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/src/modules/notes/notes.controller.ts) | Controller bóc tách params/body, gọi `NotesService` và trả JSON response chuẩn. |
-| [backend/src/modules/notes/notes.routes.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/src/modules/notes/notes.routes.ts) | Định nghĩa các endpoints: `GET /` (list) và `POST /` (create). |
-| [backend/src/modules/notes/index.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/src/modules/notes/index.ts) | Export Public API duy nhất của module notes để các module khác giao tiếp. |
+| [backend/src/shared/middleware/errorHandler.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/src/shared/middleware/errorHandler.ts) | Middleware bắt lỗi tập trung: Tự động map `ZodError` và `AppError` sang HTTP response chuẩn. |
+| [backend/src/modules/health/health.routes.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/src/modules/health/health.routes.ts) | Endpoints kiểm tra sức khỏe hệ thống: `/health`, `/health/live`, `/health/ready`. |
+| [backend/src/modules/auth/](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/src/modules/auth) | Phân hệ Xác thực: Đăng ký, Đăng nhập, Token Rotation, Cookie httpOnly, Bcrypt cost 12. |
+| [backend/src/modules/semesters/](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/src/modules/semesters) | Phân hệ Học kỳ: CRUD học kỳ, đánh dấu học kỳ hiện tại (`isCurrent`). |
+| [backend/src/modules/subjects/](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/src/modules/subjects) | Phân hệ Môn học: CRUD môn học, số tín chỉ, giảng viên, mã màu. |
+| [backend/src/modules/projects/](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/src/modules/projects) | Phân hệ Đồ án môn học: CRUD đồ án, deadline, liên kết môn học. |
+| [backend/src/modules/notes/](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/src/modules/notes) | Phân hệ Ghi chú bài giảng: CRUD, ghim, lưu trữ, tags, chống note rác. |
+| [backend/src/modules/tasks/](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/src/modules/tasks) | Phân hệ Công việc sinh viên: CRUD, trạng thái Kanban, độ ưu tiên, deadline. |
+| [backend/src/modules/schedule/](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/src/modules/schedule) | Phân hệ Lịch trình & Lịch thi: Quản lý sự kiện lịch theo tuần/tháng. |
+| [backend/src/modules/backup/](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/src/modules/backup) | Phân hệ Sao lưu dữ liệu: Export toàn bộ dữ liệu tài khoản ra JSON kèm SHA-256 checksum. |
 
 ---
 

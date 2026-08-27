@@ -1,43 +1,76 @@
-import { INotesService, CreateNoteDto, UpdateNoteDto, NoteFilter } from './notes.types';
 import { NotesRepository } from './notes.repository';
-import { NotFoundError } from '../../shared/errors/appErrors';
+import { CreateNoteDto, UpdateNoteDto, NoteFilter, NoteResponseDto } from './notes.types';
+import { NotFoundError, ValidationError } from '../../shared/errors/appErrors';
 
-export class NotesService implements INotesService {
-  private repository: NotesRepository;
+export class NotesService {
+  constructor(private readonly repository: NotesRepository = new NotesRepository()) {}
 
-  constructor() {
-    this.repository = new NotesRepository();
+  private mapDto(note: any): NoteResponseDto {
+    return {
+      id: note.id,
+      userId: note.userId,
+      subjectId: note.subjectId,
+      projectId: note.projectId,
+      title: note.title,
+      content: note.content,
+      noteType: note.noteType,
+      isPinned: note.isPinned,
+      isArchived: note.isArchived,
+      tags: (note.noteTags || []).map((nt: any) => ({
+        id: nt.tag.id,
+        name: nt.tag.name,
+        color: nt.tag.color
+      })),
+      createdAt: note.createdAt,
+      updatedAt: note.updatedAt
+    };
   }
 
-  async listNotes(userId: string, filter?: NoteFilter): Promise<any[]> {
-    return this.repository.findMany(userId, filter);
+  async getNotes(userId: string, filter?: NoteFilter): Promise<{ notes: NoteResponseDto[]; total: number }> {
+    const { notes, total } = await this.repository.findMany(userId, filter);
+    return {
+      notes: notes.map((n) => this.mapDto(n)),
+      total
+    };
   }
 
-  async getNoteById(userId: string, id: string): Promise<any> {
-    const note = await this.repository.findById(userId, id);
+  async getNoteById(id: string, userId: string): Promise<NoteResponseDto> {
+    const note = await this.repository.findById(id, userId);
     if (!note) {
-      throw new NotFoundError(`Không tìm thấy ghi chú với ID: ${id}`, { id, userId });
+      throw new NotFoundError('Không tìm thấy ghi chú yêu cầu');
     }
-    return note;
+    return this.mapDto(note);
   }
 
-  async createNote(userId: string, dto: CreateNoteDto): Promise<any> {
-    return this.repository.create(userId, dto);
+  async createNote(userId: string, dto: CreateNoteDto): Promise<NoteResponseDto> {
+    if (!dto.subjectId && !dto.projectId) {
+      throw new ValidationError('Ghi chú bắt buộc phải gắn với ít nhất một Môn học hoặc Đồ án');
+    }
+
+    const note = await this.repository.create(userId, dto);
+    return this.mapDto(note);
   }
 
-  async updateNote(userId: string, id: string, dto: UpdateNoteDto): Promise<any> {
-    const existing = await this.repository.findById(userId, id);
-    if (!existing) {
-      throw new NotFoundError(`Không tìm thấy ghi chú để cập nhật: ${id}`, { id, userId });
-    }
-    return this.repository.update(userId, id, dto);
+  async updateNote(id: string, userId: string, dto: UpdateNoteDto): Promise<NoteResponseDto> {
+    await this.getNoteById(id, userId);
+    const updated = await this.repository.update(id, userId, dto);
+    return this.mapDto(updated);
   }
 
-  async deleteNote(userId: string, id: string): Promise<void> {
-    const existing = await this.repository.findById(userId, id);
-    if (!existing) {
-      throw new NotFoundError(`Không tìm thấy ghi chú để xóa: ${id}`, { id, userId });
-    }
-    return this.repository.softDelete(userId, id);
+  async deleteNote(id: string, userId: string): Promise<void> {
+    await this.getNoteById(id, userId);
+    await this.repository.softDelete(id, userId);
+  }
+
+  async togglePin(id: string, userId: string): Promise<NoteResponseDto> {
+    const note = await this.getNoteById(id, userId);
+    const updated = await this.repository.update(id, userId, { isPinned: !note.isPinned });
+    return this.mapDto(updated);
+  }
+
+  async toggleArchive(id: string, userId: string): Promise<NoteResponseDto> {
+    const note = await this.getNoteById(id, userId);
+    const updated = await this.repository.update(id, userId, { isArchived: !note.isArchived });
+    return this.mapDto(updated);
   }
 }
