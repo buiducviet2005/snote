@@ -1,5 +1,6 @@
 import React from 'react';
 import { NoteType } from '@snote/shared';
+import { MarkdownViewer } from '../../../components/common/MarkdownViewer';
 import {
   Pin,
   Archive,
@@ -70,7 +71,7 @@ export const NoteCard: React.FC<NoteCardProps> = ({
         background: 'var(--bg-secondary)',
         borderRadius: 'var(--radius-lg)',
         padding: '20px',
-        minHeight: '220px'
+        minHeight: '230px'
       }}
     >
       {/* Card Header */}
@@ -142,24 +143,43 @@ export const NoteCard: React.FC<NoteCardProps> = ({
           {note.title}
         </h3>
 
-        {/* Content Snippet */}
-        <p
+        {/* Always Render Formatted Markdown Preview directly on Card */}
+        <div
           onClick={() => onView(note)}
           style={{
             margin: '0 0 14px 0',
-            fontSize: '13px',
-            color: 'var(--text-secondary)',
-            lineHeight: 1.6,
-            display: '-webkit-box',
-            WebkitLineClamp: 3,
-            WebkitBoxOrient: 'vertical',
+            maxHeight: '130px',
             overflow: 'hidden',
-            cursor: 'pointer'
+            cursor: 'pointer',
+            position: 'relative',
+            backgroundColor: 'var(--bg-primary)',
+            padding: '10px 12px',
+            borderRadius: 'var(--radius-md)',
+            border: '1px solid var(--border-color)'
           }}
-          title="Nhấp để xem nội dung"
+          title="Nhấp để mở xem chi tiết (Preview Mode)"
         >
-          {note.content || <i style={{ color: 'var(--text-muted)' }}>Chưa có nội dung ghi chép.</i>}
-        </p>
+          {note.content ? (
+            <MarkdownViewer content={note.content} className="markdown-preview-compact" />
+          ) : (
+            <span style={{ color: 'var(--text-muted)', fontSize: '12.5px', fontStyle: 'italic' }}>
+              Chưa có nội dung ghi chép.
+            </span>
+          )}
+
+          {/* Fade-out gradient at bottom for elegant clipping */}
+          <div
+            style={{
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              height: '32px',
+              background: 'linear-gradient(to bottom, transparent, var(--bg-primary))',
+              pointerEvents: 'none'
+            }}
+          />
+        </div>
 
         {/* Tags */}
         {note.tags && note.tags.length > 0 && (
