@@ -1,50 +1,56 @@
 import { Request, Response, NextFunction } from 'express';
 import { AppError } from '../errors/appErrors';
 import { logger } from '../utils/logger';
-import { env } from '../../config/env';
 
 export function errorHandler(
-  err: any,
+  err: Error | AppError,
   req: Request,
   res: Response,
-  next: NextFunction
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _next: NextFunction
 ): void {
-  // Ghi log lỗi nội bộ
-  logger.error({
-    err,
-    requestId: req.headers['x-request-id'],
-    method: req.method,
-    url: req.originalUrl
-  });
+  const requestId = (req as any).id || req.headers['x-request-id'] || 'no-request-id';
 
-  // Nếu là Custom AppError
-  if (err instanceof AppError) {
+  // 1. Lỗi nghiệp vụ dự kiến (Operational Errors)
+  if (err instanceof AppError && err.isOperational) {
+    logger.warn(
+      {
+        err,
+        path: req.path,
+        method: req.method,
+        requestId,
+        context: err.context
+      },
+      `Operational Error: [${err.code}] ${err.message}`
+    );
+
     res.status(err.statusCode).json({
+      success: false,
       error: {
+        code: err.code,
         message: err.message,
-        details: err.details
+        details: Object.keys(err.context).length > 0 ? err.context : undefined
       }
     });
     return;
   }
 
-  // Nếu là lỗi vi phạm Constraint của Prisma / Postgres
-  if (err.code === 'P2002') {
-    res.status(409).json({
-      error: {
-        message: 'Dữ liệu đã tồn tại (Unique Constraint Violation)',
-        target: err.meta?.target
-      }
-    });
-    return;
-  }
+  // 2. Lỗi lập trình hoặc lỗi hệ thống bất ngờ (Programmer / System Errors)
+  logger.error(
+    {
+      err,
+      path: req.path,
+      method: req.method,
+      requestId
+    },
+    'Unhandled Unexpected Error in Express Pipeline'
+  );
 
-  // Lỗi không xác định (Internal Server Error)
-  const isDev = env.NODE_ENV === 'development';
   res.status(500).json({
+    success: false,
     error: {
-      message: 'Internal Server Error',
-      ...(isDev && { stack: err.stack, raw: err.message })
+      code: 'INTERNAL_ERROR',
+      message: 'Internal server error'
     }
   });
 }

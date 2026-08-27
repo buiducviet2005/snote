@@ -5,7 +5,7 @@ export const createNoteSchema = z.object({
   content: z.string().min(1, 'Nội dung ghi chú không được để trống'),
   subjectId: z.string().uuid('ID môn học không hợp lệ').optional(),
   projectId: z.string().uuid('ID đồ án không hợp lệ').optional(),
-  noteType: z.enum(['LECTURE', 'ASSIGNMENT', 'EXAM_REVIEW', 'RESOURCE', 'IDEA'], {
+  noteType: z.enum(['LECTURE', 'LAB_REPORT', 'EXAM_PREP', 'PROJECT_LOG', 'MEETING_MINUTES', 'GENERAL'], {
     errorMap: () => ({ message: 'Loại ghi chú không hợp lệ' })
   }),
   tagNames: z.array(z.string().trim().min(1)).optional()
@@ -16,3 +16,12 @@ export const createNoteSchema = z.object({
     path: ['subjectId']
   }
 );
+
+export const updateNoteSchema = z.object({
+  title: z.string().trim().min(1).max(255).optional(),
+  content: z.string().min(1).optional(),
+  subjectId: z.string().uuid('ID môn học không hợp lệ').optional(),
+  projectId: z.string().uuid('ID đồ án không hợp lệ').optional(),
+  noteType: z.enum(['LECTURE', 'LAB_REPORT', 'EXAM_PREP', 'PROJECT_LOG', 'MEETING_MINUTES', 'GENERAL']).optional(),
+  tagNames: z.array(z.string().trim().min(1)).optional()
+});

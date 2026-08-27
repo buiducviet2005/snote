@@ -49,9 +49,11 @@ SNOTE/
 │   ├── step_3_setup.md                   # Bước 3.3: Hướng dẫn thiết lập Backend Skeleton từ số 0
 │   ├── step_3_frontend.md                # Bước 3.4: Hướng dẫn thiết lập Frontend SPA Feature-based
 │   ├── step_3_repo_structure.md          # Bước 3.5: Cấu trúc repo & tổ chức mã nguồn
+│   ├── step_3_observability_security.md  # Bước 3.6: Quan sát hệ thống & Cứng hóa bảo mật Backend
 │   ├── step_3_setup_checklist.md         # Bảng checklist theo dõi tiến độ thiết lập Bước 3
 │   ├── step_3_integration_checklist.md   # Bảng checklist kiểm tra kết nối Frontend & Backend
 │   ├── step_3.5_checklist.md             # Bảng checklist thực thi Bước 3.5
+│   ├── step_3.6_checklist.md             # Bảng checklist thực thi Bước 3.6
 │   └── COMMANDS_PLAYBOOK.md              # Sổ tay toàn bộ câu lệnh điều khiển & vận hành dự án
 ├── packages/                             # Các thư viện dùng chung (Shared Packages)
 │   └── shared/                           # Types, Enums & DTOs dùng chung toàn dự án
@@ -75,6 +77,8 @@ SNOTE/
 │   │   └── schema.prisma                 # Định nghĩa mô hình dữ liệu Prisma ORM
 │   └── src/
 │       ├── server.ts                     # Entry point khởi chạy HTTP Server và wire-up middlewares
+│       ├── types/                        # Khai báo kiểu dữ liệu mở rộng
+│       │   └── express.d.ts              # Mở rộng Express.Request chứa req.user và req.id
 │       ├── config/                       # Quản lý cấu hình môi trường
 │       │   ├── env-schema.ts             # Zod schema định nghĩa kiểu biến môi trường
 │       │   └── env.ts                    # Module parse & validate biến môi trường (Fail-Fast)
@@ -82,11 +86,14 @@ SNOTE/
 │       │   ├── db/
 │       │   │   └── prismaClient.ts       # Singleton instance của PrismaClient
 │       │   ├── errors/
-│       │   │   └── appErrors.ts          # Cây phân cấp Custom Error classes (ValidationError, ...)
+│       │   │   └── appErrors.ts          # Cây phân cấp Custom Error classes (AppError, ValidationError...)
 │       │   ├── middleware/
-│       │   │   └── errorHandler.ts       # Centralized Error Handling Middleware
+│       │   │   ├── asyncBoundary.ts      # Async Handler wrapper bắt Promise rejection
+│       │   │   ├── authGuard.ts          # Middleware xác thực JWT token (Anti-IDOR)
+│       │   │   ├── errorHandler.ts       # Centralized Error Handling Middleware
+│       │   │   └── rateLimit.ts          # Rate limiters cho login và API
 │       │   └── utils/
-│       │       └── logger.ts             # Cấu hình Pino Structured Logger
+│       │       └── logger.ts             # Cấu hình Pino Structured Logger kèm Redaction
 │       └── modules/                      # Các Bounded Contexts theo Domain-Driven Design
 │           └── notes/                    # Phân hệ Quản lý Ghi chú (Module mẫu)
 │               ├── notes.types.ts        # TypeScript interfaces cho DTOs, Filters, Entity
@@ -170,9 +177,11 @@ SNOTE/
 | [DOCS/step_3_setup.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/step_3_setup.md) | Tài liệu kỹ thuật chi tiết của Bước nhỏ 3.3 (Setup backend skeleton từ số 0). |
 | [DOCS/step_3_frontend.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/step_3_frontend.md) | Tài liệu kỹ thuật chi tiết của Bước nhỏ 3.4 (Setup Frontend SPA Vite + React + React Router). |
 | [DOCS/step_3_repo_structure.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/step_3_repo_structure.md) | Tài liệu kỹ thuật chi tiết của Bước nhỏ 3.5 (Cấu trúc Repo & Tổ chức mã nguồn toàn project). |
+| [DOCS/step_3_observability_security.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/step_3_observability_security.md) | Tài liệu kỹ thuật chi tiết của Bước nhỏ 3.6 (Observability, AppError hierarchy, asyncBoundary, Pino redaction, security pipeline). |
 | [DOCS/step_3_setup_checklist.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/step_3_setup_checklist.md) | Bảng theo dõi tiến độ nghiệm thu kỹ thuật từng tác vụ của Bước 3 (`25 / 28` tác vụ hoàn thành). |
 | [DOCS/step_3_integration_checklist.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/step_3_integration_checklist.md) | Bảng theo dõi và nhật ký kiểm thử kết nối mạng, CORS và data flow giữa Frontend SPA và Backend API (`7 / 7` đạt). |
 | [DOCS/step_3.5_checklist.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/step_3.5_checklist.md) | Bảng theo dõi tiến độ thực thi cấu trúc repo và thư viện dùng chung Bước 3.5 (`6 / 6` hoàn thành). |
+| [DOCS/step_3.6_checklist.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/step_3.6_checklist.md) | Bảng theo dõi tiến độ thực thi quan sát hệ thống & cứng hóa bảo mật Bước 3.6 (`10 / 10` hoàn thành). |
 | [DOCS/COMMANDS_PLAYBOOK.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/COMMANDS_PLAYBOOK.md) | Sổ tay tập trung toàn bộ câu lệnh CLI: Khởi chạy, Docker, Prisma, Build, Test, Git và Clean dự án. |
 | [DOCS/PROJECT_STRUCTURE_AND_MAP.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/PROJECT_STRUCTURE_AND_MAP.md) | Tài liệu tra cứu cấu trúc dự án, từ điển tệp tin và công nghệ sử dụng (File này). |
 
@@ -196,18 +205,22 @@ SNOTE/
 
 | Đường dẫn tệp | Chức năng chi tiết |
 | :--- | :--- |
-| [backend/package.json](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/package.json) | Khai báo 16 dependencies (Express, Prisma, Zod, Pino, Helmet...) và scripts thực thi (`dev`, `build`, `prisma`). |
+| [backend/package.json](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/package.json) | Khai báo dependencies (Express, Prisma, Zod, Pino, Helmet, jsonwebtoken...) và scripts thực thi. |
 | [backend/tsconfig.json](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/tsconfig.json) | Thiết lập TypeScript Strict Mode, target `ES2022`, module `CommonJS`, rootDir `./src`, outDir `./dist`. |
 | [backend/prisma.config.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/prisma.config.ts) | Cấu hình datasource URL từ biến môi trường cho Prisma CLI v7. |
 | [backend/prisma/schema.prisma](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/prisma/schema.prisma) | Schema Prisma định nghĩa generator client và các models (User model skeleton). |
 | [backend/.env.example](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/.env.example) | Mẫu biến môi trường bắt buộc: `PORT`, `NODE_ENV`, `DATABASE_URL`, `JWT_SECRET`, `CORS_ORIGIN`. |
 | [backend/.env](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/.env) | Cấu hình môi trường thực tế đang chạy trên máy dev (Chỉ lưu local). |
 | [backend/src/server.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/src/server.ts) | Entry point chính của backend: Cấu hình Express, Helmet, CORS, Correlation Request ID, router `/api/notes`, `errorHandler`. |
+| [backend/src/types/express.d.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/src/types/express.d.ts) | Định nghĩa TypeScript declaration mở rộng `Express.Request` chứa thông tin `req.user` và `req.id`. |
 | [backend/src/config/env-schema.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/src/config/env-schema.ts) | Định nghĩa schema Zod để kiểm tra chặt chẽ kiểu dữ liệu của biến môi trường. |
 | [backend/src/config/env.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/src/config/env.ts) | Thực thi parse `process.env`. Nếu thiếu hoặc sai cấu hình, dừng server ngay lập tức (**Fail-Fast**). |
 | [backend/src/shared/db/prismaClient.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/src/shared/db/prismaClient.ts) | Khởi tạo Singleton instance `prisma` dùng chung trong toàn bộ hệ thống. |
-| [backend/src/shared/utils/logger.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/src/shared/utils/logger.ts) | Cấu hình thư viện Pino structured logging (in JSON trên production, pretty-print trên development). |
-| [backend/src/shared/errors/appErrors.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/src/shared/errors/appErrors.ts) | Định nghĩa các custom error classes: `AppError`, `ValidationError`, `UnauthorizedError`, `NotFoundError`... |
+| [backend/src/shared/utils/logger.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/src/shared/utils/logger.ts) | Cấu hình Pino Structured Logger kèm tính năng `redact` che giấu tokens và passwords. |
+| [backend/src/shared/errors/appErrors.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/src/shared/errors/appErrors.ts) | Cây phân cấp Custom Errors (`AppError`, `ValidationError`, `AuthError`, `ForbiddenError`, `NotFoundError`, `ConflictError`). |
+| [backend/src/shared/middleware/asyncBoundary.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/src/shared/middleware/asyncBoundary.ts) | Middleware wrapper bọc các route handler bất đồng bộ, tự động chuyển lỗi qua `next(err)`. |
+| [backend/src/shared/middleware/authGuard.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/src/shared/middleware/authGuard.ts) | Middleware xác thực JWT token và gán `req.user` bảo vệ chống tấn công IDOR. |
+| [backend/src/shared/middleware/rateLimit.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/src/shared/middleware/rateLimit.ts) | Cấu hình Rate Limiters (`loginRateLimiter` 10 req/15m, `apiRateLimiter` 100 req/1m). |
 | [backend/src/shared/middleware/errorHandler.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/src/shared/middleware/errorHandler.ts) | Middleware bắt lỗi tập trung: Map lỗi sang mã HTTP chuẩn, log requestId nội bộ, không leak stack trace ra ngoài. |
 | [backend/src/modules/notes/notes.types.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/src/modules/notes/notes.types.ts) | Định nghĩa TypeScript interfaces: `CreateNoteDto`, `UpdateNoteDto`, `NoteFilter`, `INotesService`. |
 | [backend/src/modules/notes/notes.schemas.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/src/modules/notes/notes.schemas.ts) | Schema Zod validate dữ liệu tạo note (Enforce ràng buộc `subjectId || projectId`). |

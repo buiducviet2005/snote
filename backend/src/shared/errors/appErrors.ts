@@ -1,40 +1,59 @@
 export class AppError extends Error {
+  public readonly isOperational: boolean;
+  public readonly statusCode: number;
+  public readonly code: string;
+  public readonly context: Record<string, unknown>;
+
   constructor(
-    public statusCode: number,
-    public message: string,
-    public details?: any
+    message: string,
+    statusCode = 500,
+    code = 'INTERNAL_ERROR',
+    context: Record<string, unknown> = {},
+    isOperational = true
   ) {
     super(message);
+    this.statusCode = statusCode;
+    this.code = code;
+    this.context = context;
+    this.isOperational = isOperational;
+
     Object.setPrototypeOf(this, new.target.prototype);
+    Error.captureStackTrace(this, this.constructor);
   }
 }
 
 export class ValidationError extends AppError {
-  constructor(message = 'Dữ liệu đầu vào không hợp lệ', details?: any) {
-    super(400, message, details);
+  constructor(message: string, context: Record<string, unknown> = {}) {
+    super(message, 400, 'VALIDATION_ERROR', context, true);
   }
 }
 
-export class UnauthorizedError extends AppError {
-  constructor(message = 'Yêu cầu xác thực tài khoản') {
-    super(401, message);
+export class AuthError extends AppError {
+  constructor(message = 'Unauthorized: Truy cập yêu cầu xác thực', context: Record<string, unknown> = {}) {
+    super(message, 401, 'UNAUTHORIZED', context, true);
+  }
+}
+
+export class UnauthorizedError extends AuthError {
+  constructor(message = 'Unauthorized: Truy cập yêu cầu xác thực', context: Record<string, unknown> = {}) {
+    super(message, context);
   }
 }
 
 export class ForbiddenError extends AppError {
-  constructor(message = 'Bạn không có quyền thực hiện hành động này') {
-    super(403, message);
+  constructor(message = 'Forbidden: Bạn không có quyền truy cập tài nguyên này', context: Record<string, unknown> = {}) {
+    super(message, 403, 'FORBIDDEN', context, true);
   }
 }
 
 export class NotFoundError extends AppError {
-  constructor(message = 'Không tìm thấy tài nguyên yêu cầu') {
-    super(404, message);
+  constructor(message = 'Not Found: Không tìm thấy tài nguyên yêu cầu', context: Record<string, unknown> = {}) {
+    super(message, 404, 'NOT_FOUND', context, true);
   }
 }
 
 export class ConflictError extends AppError {
-  constructor(message = 'Dữ liệu xung đột hoặc đã tồn tại') {
-    super(409, message);
+  constructor(message = 'Conflict: Dữ liệu đã tồn tại hoặc bị xung đột', context: Record<string, unknown> = {}) {
+    super(message, 409, 'CONFLICT', context, true);
   }
 }
