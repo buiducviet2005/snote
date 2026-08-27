@@ -1,1 +1,1 @@
-export * from './pages/StatusPage';
+export { StatusPage as SystemStatusPage, StatusPage } from './pages/StatusPage';

@@ -278,39 +278,72 @@ SNOTE/
         │   └── styles/
         │       └── global.css                # CSS Design Tokens, biến màu sắc, reset style & layout
         ├── components/                       # CÁC REUSABLE UI COMPONENTS DÙNG CHUNG
+        │   ├── common/
+        │   │   └── Modal.tsx                 # Reusable Modal Dialog
         │   └── layout/
-        │       ├── Sidebar.tsx               # Thanh điều hướng trái chứa Logo & NavLinks
-        │       ├── Topbar.tsx                # Thanh header trên hiển thị học kỳ & thông tin sinh viên
-        │       └── AppLayout.tsx             # Master Layout lồng Sidebar, Topbar và React Router Outlet
+        │       ├── Sidebar.tsx               # Thanh điều hướng trái chứa 8 menu chính & Profile
+        │       ├── Topbar.tsx                # Thanh header trên hiển thị bộ chọn học kỳ & môn học toàn cục
+        │       ├── AppLayout.tsx             # Master Layout lồng Sidebar, Topbar và React Router Outlet
+        │       └── ProtectedRoute.tsx        # Guard bảo vệ các trang học tập yêu cầu đăng nhập
+        ├── contexts/                         # STATE MANAGEMENT QUA REACT CONTEXT
+        │   ├── AuthContext.tsx               # Quản lý phiên đăng nhập JWT, user profile, login, register, logout
+        │   ├── AppFilterContext.tsx          # Quản lý bộ lọc ngữ cảnh học tập toàn cục (học kỳ, môn học active)
+        │   └── ToastContext.tsx              # Quản lý thông báo nổi (Toast notifications)
         ├── services/                         # TẦNG GIAO TIẾP MẠNG & HTTP CLIENT
-        │   └── api.ts                        # Wrapper Fetch API Client có type-safety và xử lý lỗi chuẩn
+        │   └── api.ts                        # Wrapper Fetch API Client hỗ trợ Bearer Token, Cookie và Blob download
         ├── router/                           # ĐIỀU HƯỚNG ROUTING CLIENT-SIDE
-        │   └── index.tsx                     # Khai báo toàn bộ Client routes bên trong AppLayout
+        │   └── index.tsx                     # Khai báo toàn bộ Client routes (Public + Protected)
         └── features/                         # CÁC TÍNH NĂNG THEO MÔ HÌNH FEATURE-BASED
+            ├── auth/                         # Feature Xác thực & Tài khoản
+            │   ├── pages/
+            │   │   ├── LoginPage.tsx         # Trang đăng nhập tài khoản sinh viên
+            │   │   └── RegisterPage.tsx      # Trang đăng ký tài khoản sinh viên mới
+            │   └── index.ts                  # Public API của feature auth
             ├── status/                       # Feature Giám sát Trạng thái Hệ thống
             │   ├── pages/
-            │   │   └── SystemStatusPage.tsx  # Trang kiểm tra kết nối Backend API & Database Readiness
+            │   │   └── StatusPage.tsx        # Trang kiểm tra kết nối Backend API & Database Readiness
             │   └── index.ts                  # Public API của feature status
             ├── notes/                        # Feature Quản lý Ghi chú bài giảng
-            │   ├── hooks/
-            │   │   └── useNotes.ts           # Custom Hook quản lý state ghi chú và gọi API
             │   ├── components/
-            │   │   └── NoteItem.tsx          # Component thẻ ghi chú hiển thị tóm tắt, tag badges
+            │   │   ├── NoteCard.tsx          # Card hiển thị ghi chú, badge loại bài, pin, archive
+            │   │   └── NoteModal.tsx         # Modal tạo/sửa note có preview markdown
             │   ├── pages/
-            │   │   └── NotesListPage.tsx     # Trang danh sách ghi chú bài giảng
+            │   │   └── NotesListPage.tsx     # Trang danh sách ghi chú bài giảng (tìm kiếm & lọc)
             │   └── index.ts                  # Public API của feature notes
-            ├── tasks/                        # Feature Quản lý Công việc & Hạn nộp
+            ├── tasks/                        # Feature Quản lý Công việc & Bài tập
+            │   ├── components/
+            │   │   ├── TaskCard.tsx          # Card công việc, checkbox đổi status, priority badge
+            │   │   └── TaskModal.tsx         # Modal tạo/sửa công việc học tập & deadline
             │   ├── pages/
-            │   │   └── TasksListPage.tsx     # Trang quản lý danh sách công việc học tập
+            │   │   └── TasksListPage.tsx     # Bảng Kanban 3 cột (TODO, IN_PROGRESS, DONE)
             │   └── index.ts                  # Public API của feature tasks
             ├── schedule/                     # Feature Quản lý Thời khóa biểu & Lịch thi
+            │   ├── components/
+            │   │   └── EventModal.tsx        # Modal thêm sự kiện lịch học / thi / deadline
             │   ├── pages/
-            │   │   └── ScheduleWeekPage.tsx  # Trang hiển thị thời khóa biểu tuần & deadline
+            │   │   └── ScheduleWeekPage.tsx  # Thời khóa biểu tuần 7 ngày & chuyển tuần
             │   └── index.ts                  # Public API của feature schedule
-            └── semesters/                    # Feature Quản lý Học kỳ & Môn học
+            ├── semesters/                    # Feature Quản lý Học kỳ & Môn học
+            │   ├── components/
+            │   │   ├── SemesterModal.tsx     # Modal tạo học kỳ mới (isCurrent)
+            │   │   └── SubjectModal.tsx      # Modal tạo môn học (tín chỉ, giảng viên, màu)
+            │   ├── pages/
+            │   │   └── SemesterOverviewPage.tsx # Trang tổng quan học kỳ & danh sách môn học
+            │   └── index.ts                  # Public API của feature semesters
+            ├── projects/                     # Feature Quản lý Đồ án Môn học
+            │   ├── components/
+            │   │   └── ProjectModal.tsx      # Modal tạo/sửa đồ án môn học
+            │   ├── pages/
+            │   │   └── ProjectsListPage.tsx  # Trang danh sách đồ án môn học & tiến độ
+            │   └── index.ts                  # Public API của feature projects
+            ├── progress/                     # Feature Tổng quan Tiến độ Học tập
+            │   ├── pages/
+            │   │   └── ProgressDashboardPage.tsx # Dashboard thống kê số note, % tasks, tín chỉ
+            │   └── index.ts                  # Public API của feature progress
+            └── settings/                     # Feature Cài đặt & Sao lưu Dữ liệu
                 ├── pages/
-                │   └── SemesterOverviewPage.tsx # Trang tổng quan học kỳ & danh sách môn học
-                └── index.ts                  # Public API của feature semesters
+                │   └── SettingsPage.tsx      # Hồ sơ sinh viên & 1-click Download JSON Backup
+                └── index.ts                  # Public API của feature settings
 ```
 
 ---
@@ -350,6 +383,8 @@ SNOTE/
 | [DOCS/step_3.7_checklist.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/step_3.7_checklist.md) | Bảng theo dõi tiến độ đóng gói & chuẩn hóa toàn bộ Bước 3 (`8 / 8` hoàn thành). | Bước 3.7 Checklist |
 | [DOCS/step_4_plan.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/step_4_plan.md) | Kế hoạch kỹ thuật chi tiết của Bước 4 (Triển khai Backend Core, Prisma schema, Auth, Semesters, Subjects, Projects, Notes, Tasks, Schedule, Backup). | Bước 4 Plan |
 | [DOCS/step_4_checklist.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/step_4_checklist.md) | Bảng theo dõi tiến độ thực thi Bước 4 (`10 / 10` hoàn thành - 100%). | Bước 4 Checklist |
+| [DOCS/step_5_plan.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/step_5_plan.md) | Kế hoạch kỹ thuật chi tiết của Bước 5 (Triển khai Frontend V1 & UX hoàn chỉnh cho sinh viên). | Bước 5 Plan |
+| [DOCS/step_5_checklist.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/step_5_checklist.md) | Bảng theo dõi tiến độ thực thi Bước 5 (`11 / 11` hoàn thành - 100%). | Bước 5 Checklist |
 | [DOCS/COMMANDS_PLAYBOOK.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/COMMANDS_PLAYBOOK.md) | Sổ tay tập trung toàn bộ câu lệnh CLI: Khởi chạy, Docker, Prisma, Build, Test PowerShell/cURL, Git và Clean dự án. | Sổ tay Vận hành |
 | [DOCS/PROJECT_STRUCTURE_AND_MAP.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/PROJECT_STRUCTURE_AND_MAP.md) | Tài liệu tra cứu cấu trúc dự án, ma trận công nghệ, từ điển tệp tin và vị trí áp dụng (File này). | Bản đồ Dự án |
 
@@ -367,6 +402,8 @@ SNOTE/
 | [DOCS/ai_chat_docs/05_AI_ROADMAP_AND_FUTURE_STRATEGY.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/ai_chat_docs/05_AI_ROADMAP_AND_FUTURE_STRATEGY.md) | Lộ trình và chiến lược AI 4 giai đoạn (Smart Extraction $\rightarrow$ Exam Predictor $\rightarrow$ Multi-modal $\rightarrow$ Autonomous). | Bất biến (Append-Only) |
 | [DOCS/ai_chat_docs/06_STEP_3_HANDOVER_AND_COMPLETION.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/ai_chat_docs/06_STEP_3_HANDOVER_AND_COMPLETION.md) | Biên bản nghiệm thu toàn diện Bước 3 và danh mục hành động bàn giao sang Bước 4. | Bất biến (Append-Only) |
 | [DOCS/ai_chat_docs/07_STEP_4_EXECUTION_PLAN.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/ai_chat_docs/07_STEP_4_EXECUTION_PLAN.md) | Kế hoạch chi tiết và chiến lược kỹ thuật triển khai Bước 4 Backend Core & Database. | Bất biến (Append-Only) |
+| [DOCS/ai_chat_docs/08_STEP_5_EXECUTION_PLAN.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/ai_chat_docs/08_STEP_5_EXECUTION_PLAN.md) | Kế hoạch chi tiết và chiến lược kỹ thuật triển khai Bước 5 Frontend V1 & UX. | Bất biến (Append-Only) |
+| [DOCS/ai_chat_docs/09_STEP_5_COMPLETION.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/ai_chat_docs/09_STEP_5_COMPLETION.md) | Biên bản tổng kết và nghiệm thu 100% Bước 5 Frontend V1 & UX hoàn chỉnh cho sinh viên. | Bất biến (Append-Only) |
 
 ---
 
@@ -427,24 +464,31 @@ SNOTE/
 
 | Đường dẫn tệp | Vai trò & Chức năng chi tiết | Công nghệ sử dụng |
 | :--- | :--- | :--- |
-| [frontend/package.json](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/frontend/package.json) | Khai báo dependencies frontend (React 19, React Router DOM, Vite, TypeScript) và build scripts. | `npm package` |
-| [frontend/tsconfig.json](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/frontend/tsconfig.json) | Cấu hình TypeScript compiler cho ứng dụng React Client. | `TypeScript` |
-| [frontend/vite.config.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/frontend/vite.config.ts) | Cấu hình plugin React cho Vite, thiết lập dev server chạy cổng `5173`. | `Vite`, `@vitejs/plugin-react` |
+| [frontend/package.json](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/frontend/package.json) | Khai báo dependencies frontend (React 19, React Router DOM v7, Vite, TypeScript) và build scripts. | `npm package` |
+| [frontend/tsconfig.json](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/frontend/tsconfig.json) | Cấu hình TypeScript compiler cho React Client kèm alias `@snote/shared`. | `TypeScript` |
+| [frontend/vite.config.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/frontend/vite.config.ts) | Cấu hình plugin React cho Vite, resolve alias `@snote/shared` và dev server cổng `5173`. | `Vite`, `@vitejs/plugin-react` |
 | [frontend/index.html](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/frontend/index.html) | File HTML gốc chứa thẻ `<div id="root">` và nhúng `/src/main.tsx`. | `HTML5` |
-| [frontend/src/assets/styles/global.css](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/frontend/src/assets/styles/global.css) | Toàn bộ CSS toàn cục: CSS variables màu sắc, reset style, typography, sidebar, topbar, cards, buttons. | `CSS3 Custom Properties` |
-| [frontend/src/services/api.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/frontend/src/services/api.ts) | Wrapper HTTP API Client đóng gói fetch, tự động ghép Base URL và xử lý lỗi phản hồi `ApiResponse<T>`. | `Fetch API`, `TypeScript` |
-| [frontend/src/components/layout/Sidebar.tsx](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/frontend/src/components/layout/Sidebar.tsx) | Thanh điều hướng trái chứa Logo SNOTE và các NavLinks (`/notes`, `/tasks`, `/schedule`, `/semesters`, `/status`). | `React 19`, `react-router-dom` |
-| [frontend/src/components/layout/Topbar.tsx](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/frontend/src/components/layout/Topbar.tsx) | Thanh header phía trên hiển thị học kỳ đang chọn và thông tin sinh viên. | `React 19` |
+| [frontend/src/assets/styles/global.css](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/frontend/src/assets/styles/global.css) | Toàn bộ CSS toàn cục: CSS variables màu sắc, dark theme, reset style, typography, scrollbars, spin animation. | `CSS3 Custom Properties` |
+| [frontend/src/services/api.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/frontend/src/services/api.ts) | Wrapper HTTP API Client đóng gói fetch, tự động chèn `Authorization: Bearer <token>`, gửi credentials và hỗ trợ tải blob. | `Fetch API`, `TypeScript` |
+| [frontend/src/contexts/AuthContext.tsx](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/frontend/src/contexts/AuthContext.tsx) | React Context quản lý phiên đăng nhập JWT, user profile, đăng ký, đăng xuất, tự phục hồi session. | `React Context` |
+| [frontend/src/contexts/AppFilterContext.tsx](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/frontend/src/contexts/AppFilterContext.tsx) | React Context quản lý bộ lọc ngữ cảnh toàn cục (Học kỳ active, Môn học active). | `React Context` |
+| [frontend/src/contexts/ToastContext.tsx](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/frontend/src/contexts/ToastContext.tsx) | React Context hiển thị các thông báo phản hồi thao tác nổi (Success / Error / Info). | `React Context` |
+| [frontend/src/components/common/Modal.tsx](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/frontend/src/components/common/Modal.tsx) | Modal Dialog tái sử dụng cho các form tạo/sửa dữ liệu. | `React 19` |
+| [frontend/src/components/layout/Sidebar.tsx](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/frontend/src/components/layout/Sidebar.tsx) | Thanh điều hướng trái chứa Logo SNOTE, 8 menu tính năng chính và thông tin sinh viên kèm nút đăng xuất. | `React 19`, `react-router-dom` |
+| [frontend/src/components/layout/Topbar.tsx](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/frontend/src/components/layout/Topbar.tsx) | Header chứa bộ chọn học kỳ & môn học toàn cục (Context Selector). | `React 19` |
 | [frontend/src/components/layout/AppLayout.tsx](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/frontend/src/components/layout/AppLayout.tsx) | Khung bố cục chính (Master Layout) lồng Sidebar, Topbar và React Router `<Outlet />`. | `React 19`, `react-router-dom` |
-| [frontend/src/features/status/pages/SystemStatusPage.tsx](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/frontend/src/features/status/pages/SystemStatusPage.tsx) | Trang kiểm tra kết nối Backend API & Database Readiness theo thời gian thực. | `React 19`, `Fetch API` |
-| [frontend/src/features/notes/hooks/useNotes.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/frontend/src/features/notes/hooks/useNotes.ts) | Custom Hook quản lý state `notes`, `loading`, `error` và gọi API `GET /api/notes`. | `React Custom Hook` |
-| [frontend/src/features/notes/components/NoteItem.tsx](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/frontend/src/features/notes/components/NoteItem.tsx) | Component hiển thị thẻ ghi chú tóm tắt (Tiêu đề, loại note, tóm tắt nội dung, tag badges). | `React 19` |
-| [frontend/src/features/notes/pages/NotesListPage.tsx](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/frontend/src/features/notes/pages/NotesListPage.tsx) | Trang danh sách ghi chú bài giảng, trạng thái trống (Empty State) và nút thêm mới. | `React 19` |
-| [frontend/src/features/tasks/pages/TasksListPage.tsx](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/frontend/src/features/tasks/pages/TasksListPage.tsx) | Trang quản lý danh sách công việc học tập và hạn nộp bài tập. | `React 19` |
-| [frontend/src/features/schedule/pages/ScheduleWeekPage.tsx](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/frontend/src/features/schedule/pages/ScheduleWeekPage.tsx) | Trang hiển thị thời khóa biểu tuần, lịch thi và các mốc deadline. | `React 19` |
-| [frontend/src/features/semesters/pages/SemesterOverviewPage.tsx](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/frontend/src/features/semesters/pages/SemesterOverviewPage.tsx) | Trang tổng quan quản lý học kỳ và danh sách môn học (trục dữ liệu chính). | `React 19` |
-| [frontend/src/router/index.tsx](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/frontend/src/router/index.tsx) | Cấu hình React Router DOM điều hướng các trang bên trong `AppLayout`. | `react-router-dom` |
-| [frontend/src/App.tsx](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/frontend/src/App.tsx) | Component App chính trả về `AppRouter`. | `React 19` |
+| [frontend/src/components/layout/ProtectedRoute.tsx](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/frontend/src/components/layout/ProtectedRoute.tsx) | Guard kiểm tra xác thực, tự động chuyển hướng về `/login` nếu chưa đăng nhập. | `React 19`, `react-router-dom` |
+| [frontend/src/features/auth/](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/frontend/src/features/auth) | Phân hệ Xác thực: `LoginPage.tsx` (đăng nhập), `RegisterPage.tsx` (đăng ký). | `React 19` |
+| [frontend/src/features/notes/](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/frontend/src/features/notes) | Phân hệ Ghi chú: `NotesListPage.tsx`, `NoteCard.tsx`, `NoteModal.tsx` (hỗ trợ preview markdown). | `React 19` |
+| [frontend/src/features/tasks/](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/frontend/src/features/tasks) | Phân hệ Công việc: `TasksListPage.tsx` (Kanban 3 cột), `TaskCard.tsx`, `TaskModal.tsx`. | `React 19` |
+| [frontend/src/features/schedule/](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/frontend/src/features/schedule) | Phân hệ Thời khóa biểu: `ScheduleWeekPage.tsx` (lịch tuần 7 ngày), `EventModal.tsx`. | `React 19` |
+| [frontend/src/features/semesters/](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/frontend/src/features/semesters) | Phân hệ Học kỳ & Môn học: `SemesterOverviewPage.tsx`, `SemesterModal.tsx`, `SubjectModal.tsx`. | `React 19` |
+| [frontend/src/features/projects/](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/frontend/src/features/projects) | Phân hệ Đồ án môn học: `ProjectsListPage.tsx`, `ProjectModal.tsx`. | `React 19` |
+| [frontend/src/features/progress/](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/frontend/src/features/progress) | Phân hệ Tiến độ học tập: `ProgressDashboardPage.tsx` (thống kê ghi chú, % bài tập, tín chỉ). | `React 19` |
+| [frontend/src/features/settings/](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/frontend/src/features/settings) | Phân hệ Cài đặt & Sao lưu: `SettingsPage.tsx` (hồ sơ, 1-click Download JSON Backup). | `React 19` |
+| [frontend/src/features/status/](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/frontend/src/features/status) | Phân hệ Giám sát sức khỏe: `StatusPage.tsx` (kiểm tra `/health/live` và `/health/ready`). | `React 19` |
+| [frontend/src/router/index.tsx](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/frontend/src/router/index.tsx) | Cấu hình React Router DOM điều hướng toàn bộ 8 phân hệ học tập lồng trong `ProtectedRoute` & `AppLayout`. | `react-router-dom` |
+| [frontend/src/App.tsx](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/frontend/src/App.tsx) | Root Component bọc `AuthProvider`, `ToastProvider` và `AppFilterProvider`. | `React 19` |
 | [frontend/src/main.tsx](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/frontend/src/main.tsx) | Điểm khởi đầu của ứng dụng React, gắn vào thẻ `#root` trong DOM. | `React DOM 19` |
 
 ---

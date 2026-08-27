@@ -1,27 +1,41 @@
 import React from 'react';
-import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { AppLayout } from '../components/layout/AppLayout';
+import { ProtectedRoute } from '../components/layout/ProtectedRoute';
+import { LoginPage, RegisterPage } from '../features/auth';
 import { NotesListPage } from '../features/notes';
 import { TasksListPage } from '../features/tasks';
 import { ScheduleWeekPage } from '../features/schedule';
 import { SemesterOverviewPage } from '../features/semesters';
-import { StatusPage } from '../features/status';
-
-const router = createBrowserRouter([
-  {
-    path: '/',
-    element: <AppLayout />,
-    children: [
-      { index: true, element: <Navigate to="/notes" replace /> },
-      { path: 'notes', element: <NotesListPage /> },
-      { path: 'tasks', element: <TasksListPage /> },
-      { path: 'schedule', element: <ScheduleWeekPage /> },
-      { path: 'semesters', element: <SemesterOverviewPage /> },
-      { path: 'status', element: <StatusPage /> }
-    ]
-  }
-]);
+import { ProjectsListPage } from '../features/projects';
+import { ProgressDashboardPage } from '../features/progress';
+import { SettingsPage } from '../features/settings';
+import { SystemStatusPage } from '../features/status';
 
 export const AppRouter: React.FC = () => {
-  return <RouterProvider router={router} />;
+  return (
+    <Routes>
+      {/* Public Routes */}
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
+
+      {/* Protected Student Routes */}
+      <Route element={<ProtectedRoute />}>
+        <Route element={<AppLayout />}>
+          <Route path="/" element={<Navigate to="/notes" replace />} />
+          <Route path="/notes" element={<NotesListPage />} />
+          <Route path="/tasks" element={<TasksListPage />} />
+          <Route path="/schedule" element={<ScheduleWeekPage />} />
+          <Route path="/semesters" element={<SemesterOverviewPage />} />
+          <Route path="/projects" element={<ProjectsListPage />} />
+          <Route path="/progress" element={<ProgressDashboardPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/status" element={<SystemStatusPage />} />
+        </Route>
+      </Route>
+
+      {/* Fallback */}
+      <Route path="*" element={<Navigate to="/notes" replace />} />
+    </Routes>
+  );
 };
