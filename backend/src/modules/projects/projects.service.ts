@@ -69,14 +69,13 @@ export class ProjectsService {
   async addMember(projectId: string, currentUserId: string, dto: AddProjectMemberDto): Promise<ProjectResponseDto> {
     const project = await this.getProjectById(projectId, currentUserId);
 
-    // Tìm target user theo email hoặc userId
-    const input = dto.emailOrUserId.trim().toLowerCase();
+    // Tìm target user theo email hoặc userId an toàn tránh lỗi cú pháp UUID
+    const input = dto.emailOrUserId.trim();
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(input);
+
     const targetUser = await prisma.user.findFirst({
       where: {
-        OR: [
-          { email: input },
-          { id: input }
-        ],
+        ...(isUuid ? { OR: [{ id: input }, { email: input.toLowerCase() }] } : { email: input.toLowerCase() }),
         deletedAt: null
       }
     });
