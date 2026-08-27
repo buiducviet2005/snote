@@ -1,5 +1,5 @@
 {
-  "name": "ai-note-backend",
+  "name": "snote-backend",
   "version": "1.0.0",
   "description": "AI Note Modular Monolith Backend API",
   "main": "dist/server.js",

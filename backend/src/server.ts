@@ -22,10 +22,10 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 });
 
 // Health Check Endpoint
-app.get('/health', (req: Request, res: Response) => {
-  res.status(200).json({
+app.get('/health', (_req, res) => {
+  res.json({
     status: 'ok',
-    service: 'ai-note-backend',
+    service: 'snote-backend',
     environment: env.NODE_ENV,
     timestamp: new Date().toISOString()
   });

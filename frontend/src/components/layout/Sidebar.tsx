@@ -5,7 +5,7 @@ export const Sidebar: React.FC = () => {
   return (
     <aside className="sidebar">
       <div className="sidebar-header">
-        <span>🧠</span> AI Note
+        <span>🧠</span> SNOTE
       </div>
       <nav className="sidebar-nav">
         <NavLink to="/notes" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>

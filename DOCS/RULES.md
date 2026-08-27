@@ -1,15 +1,22 @@
-# QUY TẮC & LUẬT PHÁT TRIỂN DỰ ÁN AI NOTE (PROJECT RULES)
+# QUY TẮC & LUẬT PHÁT TRIỂN DỰ ÁN SNOTE (PROJECT RULES)
 
-Tài liệu này định nghĩa **toàn bộ các quy tắc, chuẩn mực, quyền tự chủ và quy trình bắt buộc** của người dùng đối với dự án **AI Note (SNOTE)**.
+Tài liệu này định nghĩa **toàn bộ các quy tắc, chuẩn mực, quyền tự chủ, định danh và quy trình bắt buộc** của người dùng đối với dự án **SNOTE**.
 
 > 🔴 **ĐIỀU KIỆN TIÊN QUYẾT BẮT BUỘC (PREREQUISITE MANDATE):**  
 > Trước khi thực thi **BẤT KỲ LỆNH, MÃ NGUỒN HOẶC HÀNH ĐỘNG NÀO** trong bất kỳ phiên làm việc nào, AI Agent **BẮT BUỘC PHẢI ĐỌC LẠI FILE `RULES.md`** để đảm bảo nắm vững toàn bộ quy tắc dự án và tuân thủ 100% không sai lệch.
 
 ---
 
-## 🏛️ ĐIỀU 1: CẤU TRÚC TIẾN TRÌNH DỰ ÁN (PROJECT ROADMAP)
+## 🏷️ ĐIỀU 1: QUY ƯỚC TÊN DỰ ÁN & PHẦN MỀM (PROJECT NAMING RULE)
 
-Dự án AI Note được triển khai nghiêm ngặt theo **Lộ trình 6 bước lớn tổng quát**:
+1. **Tên chính thức duy nhất:** Tên chính thức của phần mềm và toàn bộ dự án là **SNOTE**.
+2. **Quy tắc chuyển đổi tự động:** Mọi từ ngữ, thuật ngữ, tên hiển thị, package name hoặc tài liệu nhắc đến tên sản phẩm/dự án (như *AI Note, AI_NOTE, ainote, ai-note*...) **đều tự động được chuẩn hóa và đổi thành SNOTE** trong toàn bộ mã nguồn, tài liệu và giao diện.
+
+---
+
+## 🏛️ ĐIỀU 2: CẤU TRÚC TIẾN TRÌNH DỰ ÁN (PROJECT ROADMAP)
+
+Dự án SNOTE được triển khai nghiêm ngặt theo **Lộ trình 6 bước lớn tổng quát**:
 1. **Bước 1:** Định nghĩa sản phẩm & phạm vi (`DOCS/step_1.md`).
 2. **Bước 2:** Thiết kế mô hình dữ liệu & schema PostgreSQL (`DOCS/step_2.md`).
 3. **Bước 3:** Thiết kế kiến trúc hệ thống & nền tảng (`DOCS/step_3.md`).
@@ -30,7 +37,7 @@ Dự án AI Note được triển khai nghiêm ngặt theo **Lộ trình 6 bư�
 
 ---
 
-## 📑 ĐIỀU 2: QUYỀN TỰ CHỦ QUẢN LÝ, TÍCH HỢP & TÁCH TÀI LIỆU (DOCUMENT AUTONOMY)
+## 📑 ĐIỀU 3: QUYỀN TỰ CHỦ QUẢN LÝ, TÍCH HỢP & TÁCH TÀI LIỆU (DOCUMENT AUTONOMY)
 
 1. **Tự động Tích hợp, Tách & Đánh số thứ tự:** Mỗi khi người dùng cung cấp dữ liệu mới (ví dụ: các bước chi tiết thực thi, tài liệu mô tả, kỹ thuật phát sinh), AI Agent **phải tự động phân loại, tích hợp vào tài liệu chung hoặc tách thành các file chuyên sâu riêng biệt** và đánh số thứ tự khoa học (ví dụ: `step_X.Y_...`) để dễ truy xuất.
 2. **Quyền Tạo Mới không cần hỏi:** AI Agent **CÓ TOÀN QUYỀN TỰ ĐỘNG TẠO MỚI** tài liệu khi thấy cần thiết để mở rộng, module hóa hoặc làm chi tiết các bước mà **không cần hỏi lại người dùng**.
@@ -38,14 +45,14 @@ Dự án AI Note được triển khai nghiêm ngặt theo **Lộ trình 6 bư�
 
 ---
 
-## 🗺️ ĐIỀU 3: DUY TRÌ TỪ ĐIỂN VÀ BẢN ĐỒ MÃ NGUỒN (PROJECT MAP RULE)
+## 🗺️ ĐIỀU 4: DUY TRÌ TỪ ĐIỂN VÀ BẢN ĐỒ MÃ NGUỒN (PROJECT MAP RULE)
 
 - Duy trì file **`DOCS/PROJECT_STRUCTURE_AND_MAP.md`** làm từ điển cấu trúc và bản đồ mã nguồn duy nhất.
 - **Yêu cầu bắt buộc:** Mỗi khi thêm mới, sửa đổi hoặc xóa bất kỳ file, folder, thư viện công nghệ hay chức năng nào trong dự án, **phải cập nhật ngay lập tức** vào file `DOCS/PROJECT_STRUCTURE_AND_MAP.md`.
 
 ---
 
-## ✅ ĐIỀU 4: QUY TRÌNH THỰC THI QUA CHECKLIST (CHECKLIST-FIRST WORKFLOW)
+## ✅ ĐIỀU 5: QUY TRÌNH THỰC THI QUA CHECKLIST (CHECKLIST-FIRST WORKFLOW)
 
 Mỗi khi thực thi bất kỳ nhiệm vụ nào gồm nhiều bước (Multi-step Task):
 1. **Bước 1 (Checklist First):** **BẮT BUỘC PHẢI TẠO FILE CHECKLIST TRƯỚC** (dạng bảng Markdown có các ô `[ ]`, ID, mô tả công việc, file liên quan và tiêu chí đạt).
@@ -54,7 +61,7 @@ Mỗi khi thực thi bất kỳ nhiệm vụ nào gồm nhiều bước (Multi-s
 
 ---
 
-## ⚡ ĐIỀU 5: THỰC THI LỆNH & GIỚI HẠN THAO TÁC NGUY HIỂM (EXECUTION PROTOCOL)
+## ⚡ ĐIỀU 6: THỰC THI LỆNH & GIỚI HẠN THAO TÁC NGUY HIỂM (EXECUTION PROTOCOL)
 
 1. **Tự động thực thi:** Chấp nhận tự động chạy mọi câu lệnh tạo file, sửa code, cài đặt thư viện (`npm install`), chạy build, test, khởi chạy server và thực thi các bước trong nhiệm vụ mà **không cần hỏi lại người dùng**.
 2. **Chỉ hỏi khi thao tác nguy hiểm:** AI Agent **BẮT BUỘC PHẢI HỎI Ý KIẾN NGƯỜI DÙNG TRƯỚC KHI:**
@@ -63,7 +70,7 @@ Mỗi khi thực thi bất kỳ nhiệm vụ nào gồm nhiều bước (Multi-s
 
 ---
 
-## ⚙️ ĐIỀU 6: QUY CHUẨN KỸ THUẬT & RÀNG BUỘC CỐT LÕI
+## ⚙️ ĐIỀU 7: QUY CHUẨN KỸ THUẬT & RÀNG BUỘC CỐT LÕI
 
 1. **Kiến trúc Hệ thống:**
    - Sử dụng mô hình **Modular Monolith**: 1 Backend process duy nhất, 1 Database PostgreSQL duy nhất để giữ trọn vẹn ranh giới Transaction ACID.
@@ -85,7 +92,7 @@ Mỗi khi thực thi bất kỳ nhiệm vụ nào gồm nhiều bước (Multi-s
 
 ---
 
-## 🔒 ĐIỀU 7: QUẢN LÝ GIT & AN TOÀN MÃ NGUỒN
+## 🔒 ĐIỀU 8: QUẢN LÝ GIT & AN TOÀN MÃ NGUỒN
 
 1. **Bảo mật thông tin:** Tuyệt đối không commit file `.env`, thư mục `node_modules/`, `dist/`, logs hay dữ liệu database cục bộ vào Git.
 2. **Commit chuẩn mực:** Đặt commit message có cấu trúc rõ ràng theo chuẩn Conventional Commits (ví dụ: `feat: ...`, `docs: ...`, `fix: ...`, `refactor: ...`).
