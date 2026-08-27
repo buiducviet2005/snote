@@ -59,4 +59,26 @@ export class ProjectsController {
       message: 'Xóa đồ án thành công'
     });
   };
+
+  addMember = async (req: Request, res: Response): Promise<void> => {
+    const userId = req.user!.id;
+    const id = req.params.id as string;
+    const data = await this.service.addMember(id, userId, req.body);
+    res.status(200).json({
+      success: true,
+      message: 'Thêm thành viên vào đồ án thành công',
+      data
+    });
+  };
+
+  removeMember = async (req: Request, res: Response): Promise<void> => {
+    const userId = req.user!.id;
+    const id = req.params.id as string;
+    const targetUserId = req.params.memberUserId as string;
+    await this.service.removeMember(id, userId, targetUserId);
+    res.status(200).json({
+      success: true,
+      message: 'Xóa thành viên khỏi đồ án thành công'
+    });
+  };
 }

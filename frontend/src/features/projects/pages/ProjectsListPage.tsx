@@ -3,6 +3,7 @@ import { api, ApiResponse } from '../../../services/api';
 import { useAppFilter } from '../../../contexts/AppFilterContext';
 import { useToast } from '../../../contexts/ToastContext';
 import { ProjectModal } from '../components/ProjectModal';
+import { TeamMembersModal } from '../components/TeamMembersModal';
 import { ProjectStatus } from '@snote/shared';
 import {
   FolderKanban,
@@ -15,7 +16,9 @@ import {
   FileText,
   CheckSquare,
   Zap,
-  CheckCircle2
+  CheckCircle2,
+  Users,
+  UserPlus
 } from 'lucide-react';
 
 export const ProjectsListPage: React.FC = () => {
@@ -24,6 +27,7 @@ export const ProjectsListPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [projectToEdit, setProjectToEdit] = useState<any | null>(null);
+  const [memberProject, setMemberProject] = useState<any | null>(null);
   const { showToast } = useToast();
 
   const fetchProjects = useCallback(async () => {
@@ -83,7 +87,7 @@ export const ProjectsListPage: React.FC = () => {
             <span className="badge badge-purple">{projects.length} đồ án</span>
           </div>
           <p style={{ margin: '4px 0 0 0', fontSize: '13.5px', color: 'var(--text-secondary)' }}>
-            Theo dõi các đề tài nghiên cứu, bài tập lớn và đồ án tốt nghiệp
+            Theo dõi đề tài nghiên cứu, bài tập lớn và quản lý phân công thành viên nhóm
           </p>
         </div>
 
@@ -138,7 +142,7 @@ export const ProjectsListPage: React.FC = () => {
             Chưa có đồ án hoặc dự án nào
           </h3>
           <p style={{ margin: '0 0 20px 0', fontSize: '13.5px', color: 'var(--text-secondary)', maxWidth: '420px', marginLeft: 'auto', marginRight: 'auto' }}>
-            Tạo đồ án môn học để theo dõi nhật ký phát triển, tài liệu kỹ thuật và phân chia công việc.
+            Tạo đồ án môn học để theo dõi nhật ký phát triển, tài liệu kỹ thuật và mời bạn học cùng làm nhóm.
           </p>
           <button
             onClick={() => {
@@ -153,10 +157,11 @@ export const ProjectsListPage: React.FC = () => {
           </button>
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '20px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '20px' }}>
           {projects.map((proj) => {
             const statusConfig = getStatusBadge(proj.status);
             const StatusIcon = statusConfig.icon;
+            const memberCount = proj.membersCount || (proj.members?.length || 1);
 
             return (
               <div
@@ -170,7 +175,7 @@ export const ProjectsListPage: React.FC = () => {
                   display: 'flex',
                   flexDirection: 'column',
                   justifyContent: 'space-between',
-                  minHeight: '220px'
+                  minHeight: '230px'
                 }}
               >
                 <div>
@@ -180,12 +185,24 @@ export const ProjectsListPage: React.FC = () => {
                       <span>{statusConfig.label}</span>
                     </span>
 
-                    {proj.dueDate && (
-                      <span className="badge badge-neutral" style={{ fontSize: '11px' }}>
-                        <Calendar size={11} />
-                        <span>Hạn: {new Date(proj.dueDate).toLocaleDateString('vi-VN')}</span>
-                      </span>
-                    )}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <button
+                        onClick={() => setMemberProject(proj)}
+                        className="badge badge-purple"
+                        style={{ cursor: 'pointer', border: '1px solid var(--color-purple)' }}
+                        title="Quản lý thành viên nhóm"
+                      >
+                        <Users size={11} />
+                        <span>{memberCount} Thành viên</span>
+                      </button>
+
+                      {proj.dueDate && (
+                        <span className="badge badge-neutral" style={{ fontSize: '11px' }}>
+                          <Calendar size={11} />
+                          <span>Hạn: {new Date(proj.dueDate).toLocaleDateString('vi-VN')}</span>
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   <h3
@@ -248,6 +265,15 @@ export const ProjectsListPage: React.FC = () => {
 
                   <div style={{ display: 'flex', gap: '4px' }}>
                     <button
+                      onClick={() => setMemberProject(proj)}
+                      className="btn btn-ghost btn-sm"
+                      style={{ color: 'var(--color-purple)', padding: '4px 8px', fontSize: '12px' }}
+                      title="Mời bạn học vào nhóm"
+                    >
+                      <UserPlus size={13} />
+                      <span>Nhóm</span>
+                    </button>
+                    <button
                       onClick={() => {
                         setProjectToEdit(proj);
                         setIsModalOpen(true);
@@ -274,13 +300,26 @@ export const ProjectsListPage: React.FC = () => {
         </div>
       )}
 
-      {/* Modal */}
+      {/* Project Edit/Create Modal */}
       <ProjectModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSuccess={fetchProjects}
         projectToEdit={projectToEdit}
       />
+
+      {/* Team Members Collaboration Modal */}
+      {memberProject && (
+        <TeamMembersModal
+          isOpen={Boolean(memberProject)}
+          onClose={() => setMemberProject(null)}
+          project={memberProject}
+          onSuccess={() => {
+            fetchProjects();
+            setMemberProject(null);
+          }}
+        />
+      )}
     </div>
   );
 };

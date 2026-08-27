@@ -8,3 +8,4 @@ export * from './contracts/notes.contract';
 export * from './contracts/tasks.contract';
 export * from './contracts/schedule.contract';
 export * from './contracts/backup.contract';
+export * from './contracts/ai.contract';

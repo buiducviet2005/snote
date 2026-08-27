@@ -10,6 +10,13 @@ datasource db {
 // ENUMS
 // ----------------------------------------------------
 
+enum UserRole {
+  STUDENT
+  ADMIN
+
+  @@map("user_role")
+}
+
 enum UserStatus {
   ACTIVE
   SUSPENDED
@@ -43,6 +50,14 @@ enum ProjectStatus {
   ARCHIVED
 
   @@map("project_status")
+}
+
+enum ProjectMemberRole {
+  OWNER
+  MEMBER
+  VIEWER
+
+  @@map("project_member_role")
 }
 
 enum NoteType {
@@ -95,21 +110,23 @@ model User {
   fullName     String     @map("full_name") @db.VarChar(100)
   avatarUrl    String?    @map("avatar_url")
   timezone     String     @default("Asia/Ho_Chi_Minh") @db.VarChar(50)
+  role         UserRole   @default(STUDENT)
   status       UserStatus @default(ACTIVE)
   createdAt    DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt    DateTime   @updatedAt @map("updated_at") @db.Timestamptz(6)
   deletedAt    DateTime?  @map("deleted_at") @db.Timestamptz(6)
 
   // Relations
-  refreshTokens  RefreshToken[]
-  semesters      Semester[]
-  subjects       Subject[]
-  projects       Project[]
-  notes          Note[]
-  tasks          Task[]
-  tags           Tag[]
-  scheduleEvents ScheduleEvent[]
-  backups        BackupRecord[]
+  refreshTokens      RefreshToken[]
+  semesters          Semester[]
+  subjects           Subject[]
+  projects           Project[]
+  projectMemberships ProjectMember[]
+  notes              Note[]
+  tasks              Task[]
+  tags               Tag[]
+  scheduleEvents     ScheduleEvent[]
+  backups            BackupRecord[]
 
   @@map("users")
 }
@@ -190,15 +207,32 @@ model Project {
   updatedAt   DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
   deletedAt   DateTime?     @map("deleted_at") @db.Timestamptz(6)
 
-  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  semester Semester? @relation(fields: [semesterId], references: [id], onDelete: SetNull)
-  subject  Subject?  @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+  user     User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  semester Semester?       @relation(fields: [semesterId], references: [id], onDelete: SetNull)
+  subject  Subject?        @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+  members  ProjectMember[]
   notes    Note[]
   tasks    Task[]
 
   @@index([userId])
   @@index([subjectId])
   @@map("projects")
+}
+
+model ProjectMember {
+  id        String            @id @default(uuid()) @db.Uuid
+  projectId String            @map("project_id") @db.Uuid
+  userId    String            @map("user_id") @db.Uuid
+  role      ProjectMemberRole @default(MEMBER)
+  joinedAt  DateTime          @default(now()) @map("joined_at") @db.Timestamptz(6)
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, userId])
+  @@index([userId])
+  @@index([projectId])
+  @@map("project_members")
 }
 
 model Note {

@@ -1,4 +1,4 @@
-import { ProjectStatus } from '../enums';
+import { ProjectStatus, ProjectMemberRole } from '../enums';
 
 export interface CreateProjectDto {
   name: string;
@@ -20,6 +20,25 @@ export interface UpdateProjectDto {
   status?: ProjectStatus;
 }
 
+export interface ProjectMemberDto {
+  id: string;
+  projectId: string;
+  userId: string;
+  role: ProjectMemberRole;
+  joinedAt: Date | string;
+  user?: {
+    id: string;
+    email: string;
+    fullName: string;
+    avatarUrl?: string | null;
+  };
+}
+
+export interface AddProjectMemberDto {
+  emailOrUserId: string;
+  role?: ProjectMemberRole;
+}
+
 export interface ProjectResponseDto {
   id: string;
   name: string;
@@ -31,6 +50,8 @@ export interface ProjectResponseDto {
   dueDate: Date | string | null;
   notesCount?: number;
   tasksCount?: number;
+  membersCount?: number;
+  members?: ProjectMemberDto[];
   createdAt: Date | string;
   updatedAt: Date | string;
 }

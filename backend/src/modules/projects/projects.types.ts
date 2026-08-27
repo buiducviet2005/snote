@@ -1,4 +1,4 @@
-import { ProjectStatus } from '@prisma/client';
+import { ProjectStatus, ProjectMemberRole } from '@prisma/client';
 
 export interface CreateProjectDto {
   name: string;
@@ -20,6 +20,25 @@ export interface UpdateProjectDto {
   status?: ProjectStatus;
 }
 
+export interface ProjectMemberDto {
+  id: string;
+  projectId: string;
+  userId: string;
+  role: ProjectMemberRole;
+  joinedAt: Date;
+  user?: {
+    id: string;
+    email: string;
+    fullName: string;
+    avatarUrl?: string | null;
+  };
+}
+
+export interface AddProjectMemberDto {
+  emailOrUserId: string;
+  role?: ProjectMemberRole;
+}
+
 export interface ProjectResponseDto {
   id: string;
   name: string;
@@ -31,6 +50,8 @@ export interface ProjectResponseDto {
   dueDate: Date | null;
   notesCount?: number;
   tasksCount?: number;
+  membersCount?: number;
+  members?: ProjectMemberDto[];
   createdAt: Date;
   updatedAt: Date;
 }

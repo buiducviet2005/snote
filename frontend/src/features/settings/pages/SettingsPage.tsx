@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useTheme } from '../../../contexts/ThemeContext';
 import { useToast } from '../../../contexts/ToastContext';
@@ -17,15 +17,93 @@ import {
   GraduationCap,
   Clock,
   Mail,
-  Fingerprint
+  Fingerprint,
+  Lock,
+  Save,
+  KeyRound,
+  ShieldAlert
 } from 'lucide-react';
 
 export const SettingsPage: React.FC = () => {
-  const { user } = useAuth();
-  const { theme, toggleTheme, setTheme } = useTheme();
+  const { user, updateProfile, changePassword, isAdmin } = useAuth();
+  const { theme, setTheme } = useTheme();
   const { showToast } = useToast();
+
+  // Profile Form State
+  const [fullName, setFullName] = useState(user?.fullName || '');
+  const [timezone, setTimezone] = useState(user?.timezone || 'Asia/Ho_Chi_Minh');
+  const [savingProfile, setSavingProfile] = useState(false);
+
+  // Password Form State
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [savingPassword, setSavingPassword] = useState(false);
+
   const [downloading, setDownloading] = useState(false);
   const [copiedId, setCopiedId] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      setFullName(user.fullName || '');
+      setTimezone(user.timezone || 'Asia/Ho_Chi_Minh');
+    }
+  }, [user]);
+
+  const handleUpdateProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!fullName.trim()) {
+      showToast('Họ và tên không được để trống', 'error');
+      return;
+    }
+
+    setSavingProfile(true);
+    try {
+      await updateProfile({
+        fullName: fullName.trim(),
+        timezone: timezone.trim()
+      });
+      showToast('Cập nhật thông tin cá nhân thành công!', 'success');
+    } catch (err: any) {
+      showToast(err.message || 'Lỗi khi cập nhật thông tin', 'error');
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentPassword || !newPassword) {
+      showToast('Vui lòng điền đầy đủ mật khẩu cũ và mới', 'error');
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      showToast('Mật khẩu mới phải có tối thiểu 6 ký tự', 'error');
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      showToast('Mật khẩu mới và xác nhận mật khẩu không khớp nhau', 'error');
+      return;
+    }
+
+    setSavingPassword(true);
+    try {
+      await changePassword({
+        currentPassword,
+        newPassword
+      });
+      showToast('Đổi mật khẩu bảo vệ tài khoản thành công!', 'success');
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (err: any) {
+      showToast(err.message || 'Lỗi khi đổi mật khẩu', 'error');
+    } finally {
+      setSavingPassword(false);
+    }
+  };
 
   const handleExportBackup = async () => {
     setDownloading(true);
@@ -54,16 +132,18 @@ export const SettingsPage: React.FC = () => {
       <div style={{ marginBottom: '28px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <h1 style={{ fontSize: '24px', fontWeight: 800, margin: 0, letterSpacing: '-0.02em' }}>
-            Cài Đặt & Quản Lý Dữ Liệu
+            Cài Đặt Tài Khoản & Quản Lý Dữ Liệu
           </h1>
-          <span className="badge badge-blue">SNOTE V1.0</span>
+          <span className={`badge ${isAdmin ? 'badge-rose' : 'badge-blue'}`}>
+            {isAdmin ? '🛡️ QUẢN TRỊ VIÊN (ADMIN)' : '🎓 SINH VIÊN (STUDENT)'}
+          </span>
         </div>
         <p style={{ margin: '4px 0 0 0', fontSize: '13.5px', color: 'var(--text-secondary)' }}>
-          Quản lý thông tin tài khoản sinh viên, giao diện hiển thị và sao lưu toàn vẹn dữ liệu
+          Quản lý thông tin tài khoản, đổi mật khẩu bảo mật và sao lưu toàn vẹn dữ liệu
         </p>
       </div>
 
-      {/* Profile Section */}
+      {/* Profile Edit Section */}
       <div
         className="snote-card animate-fade-in"
         style={{
@@ -72,68 +152,178 @@ export const SettingsPage: React.FC = () => {
           marginBottom: '24px'
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
-          <User size={20} style={{ color: 'var(--accent-primary)' }} />
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <User size={20} style={{ color: 'var(--accent-primary)' }} />
+            <h2 style={{ fontSize: '17px', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
+              Thông Tin Hồ Sơ Cá Nhân
+            </h2>
+          </div>
+          <span className="badge badge-neutral">
+            ID: {user?.id ? `${user.id.slice(0, 8)}...` : 'N/A'}
+          </span>
+        </div>
+
+        <form onSubmit={handleUpdateProfile} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '18px' }}>
+            {/* Full Name */}
+            <div>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
+                Họ và tên sinh viên *
+              </label>
+              <input
+                type="text"
+                required
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                className="snote-input"
+                style={{ fontWeight: 600 }}
+              />
+            </div>
+
+            {/* Email (Readonly) */}
+            <div>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
+                Email tài khoản (Không thể thay đổi)
+              </label>
+              <input
+                type="email"
+                disabled
+                value={user?.email || ''}
+                className="snote-input"
+                style={{ opacity: 0.7, cursor: 'not-allowed', backgroundColor: 'var(--bg-primary)' }}
+              />
+            </div>
+
+            {/* Timezone */}
+            <div>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
+                Múi giờ hoạt động
+              </label>
+              <select
+                value={timezone}
+                onChange={(e) => setTimezone(e.target.value)}
+                className="snote-select"
+              >
+                <option value="Asia/Ho_Chi_Minh">Giờ Việt Nam (Asia/Ho_Chi_Minh - GMT+7)</option>
+                <option value="Asia/Bangkok">Bangkok (Asia/Bangkok - GMT+7)</option>
+                <option value="Asia/Tokyo">Tokyo / Seoul (GMT+9)</option>
+                <option value="UTC">Giờ Quốc Tế (UTC)</option>
+              </select>
+            </div>
+
+            {/* User ID copy */}
+            <div>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
+                Mã tài khoản (User ID)
+              </label>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <input
+                  type="text"
+                  disabled
+                  value={user?.id || ''}
+                  className="snote-input"
+                  style={{ opacity: 0.7, fontSize: '11.5px', fontFamily: 'monospace' }}
+                />
+                <button
+                  type="button"
+                  onClick={handleCopyId}
+                  className="btn btn-secondary btn-icon"
+                  title="Sao chép User ID"
+                >
+                  {copiedId ? <Check size={14} style={{ color: 'var(--color-success)' }} /> : <Copy size={14} />}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '6px' }}>
+            <button
+              type="submit"
+              disabled={savingProfile}
+              className="btn btn-primary"
+              style={{ fontWeight: 600 }}
+            >
+              <Save size={15} />
+              <span>{savingProfile ? 'Đang lưu...' : 'Lưu Thay Đổi Hồ Sơ'}</span>
+            </button>
+          </div>
+        </form>
+      </div>
+
+      {/* Change Password Section */}
+      <div
+        className="snote-card animate-fade-in"
+        style={{
+          borderRadius: 'var(--radius-xl)',
+          padding: '24px',
+          marginBottom: '24px'
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+          <KeyRound size={20} style={{ color: 'var(--color-warning)' }} />
           <h2 style={{ fontSize: '17px', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
-            Hồ Sơ Sinh Viên
+            Đổi Mật Khẩu Bảo Vệ Tài Khoản
           </h2>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px' }}>
-          {/* Full name */}
-          <div className="snote-card" style={{ padding: '16px', background: 'var(--bg-primary)' }}>
-            <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
-              <User size={13} />
-              Họ và tên
-            </span>
-            <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)' }}>
-              {user?.fullName || 'Chưa cập nhật'}
+        <form onSubmit={handleChangePassword} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
+            <div>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
+                Mật khẩu hiện tại *
+              </label>
+              <input
+                type="password"
+                required
+                placeholder="••••••••"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                className="snote-input"
+              />
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
+                Mật khẩu mới * (Tối thiểu 6 ký tự)
+              </label>
+              <input
+                type="password"
+                required
+                placeholder="••••••••"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                className="snote-input"
+              />
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
+                Xác nhận mật khẩu mới *
+              </label>
+              <input
+                type="password"
+                required
+                placeholder="••••••••"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="snote-input"
+              />
             </div>
           </div>
 
-          {/* Email */}
-          <div className="snote-card" style={{ padding: '16px', background: 'var(--bg-primary)' }}>
-            <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
-              <Mail size={13} />
-              Email sinh viên
-            </span>
-            <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)' }}>
-              {user?.email || 'Chưa cập nhật'}
-            </div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '6px' }}>
+            <button
+              type="submit"
+              disabled={savingPassword}
+              className="btn btn-secondary"
+              style={{ fontWeight: 600 }}
+            >
+              <Lock size={15} />
+              <span>{savingPassword ? 'Đang cập nhật...' : 'Cập Nhật Mật Khẩu'}</span>
+            </button>
           </div>
-
-          {/* Timezone */}
-          <div className="snote-card" style={{ padding: '16px', background: 'var(--bg-primary)' }}>
-            <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
-              <Clock size={13} />
-              Múi giờ hoạt động
-            </span>
-            <div style={{ fontSize: '14.5px', fontWeight: 600, color: 'var(--text-primary)' }}>
-              {user?.timezone || 'Asia/Ho_Chi_Minh'}
-            </div>
-          </div>
-
-          {/* User ID with Copy button */}
-          <div className="snote-card" style={{ padding: '16px', background: 'var(--bg-primary)' }}>
-            <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
-              <Fingerprint size={13} />
-              Mã định danh (User ID)
-            </span>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-              <code style={{ fontSize: '11.5px', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {user?.id ? `${user.id.slice(0, 16)}...` : 'N/A'}
-              </code>
-              <button
-                onClick={handleCopyId}
-                className="btn btn-ghost btn-icon btn-sm"
-                title="Sao chép User ID"
-                style={{ padding: '4px' }}
-              >
-                {copiedId ? <Check size={14} style={{ color: 'var(--color-success)' }} /> : <Copy size={14} />}
-              </button>
-            </div>
-          </div>
-        </div>
+        </form>
       </div>
 
       {/* Appearance & Theme Section */}
@@ -235,7 +425,7 @@ export const SettingsPage: React.FC = () => {
           <span>SNOTE Academic Flow</span>
         </div>
         <p style={{ margin: 0 }}>
-          Kiến trúc Modular Monolith • Ràng buộc chống dữ liệu rác • Bảo mật Anti-IDOR
+          Kiến trúc Modular Monolith • Ràng buộc chống dữ liệu rác • Bảo mật Anti-IDOR & RBAC
         </p>
       </div>
     </div>

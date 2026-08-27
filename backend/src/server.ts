@@ -19,6 +19,7 @@ import { notesRouter } from './modules/notes';
 import { tasksRouter } from './modules/tasks';
 import { scheduleRouter } from './modules/schedule';
 import { backupRouter } from './modules/backup';
+import { aiRouter } from './modules/ai';
 
 // 1. Khởi tạo Express Application
 const app = express();
@@ -70,6 +71,7 @@ app.use('/api/notes', notesRouter);
 app.use('/api/tasks', tasksRouter);
 app.use('/api/schedule', scheduleRouter);
 app.use('/api/backup', backupRouter);
+app.use('/api/ai', aiRouter);
 
 // 9. Centralized Error Handling Middleware (Bắt buộc đặt cuối cùng)
 app.use(errorHandler);

@@ -15,5 +15,7 @@ router.post('/logout', asyncBoundary(controller.logout));
 
 // Protected routes (Anti-IDOR with authGuard)
 router.get('/me', authGuard, asyncBoundary(controller.me));
+router.put('/profile', authGuard, asyncBoundary(controller.updateProfile));
+router.put('/change-password', authGuard, asyncBoundary(controller.changePassword));
 
 export const authRouter = router;

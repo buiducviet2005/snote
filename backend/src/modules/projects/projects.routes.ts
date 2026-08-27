@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { ProjectsController } from './projects.controller';
-import { asyncBoundary } from '../../shared/middleware/asyncBoundary';
 import { authGuard } from '../../shared/middleware/authGuard';
+import { asyncBoundary } from '../../shared/middleware/asyncBoundary';
 
 const router = Router();
 const controller = new ProjectsController();
@@ -13,5 +13,9 @@ router.get('/:id', asyncBoundary(controller.getById));
 router.post('/', asyncBoundary(controller.create));
 router.put('/:id', asyncBoundary(controller.update));
 router.delete('/:id', asyncBoundary(controller.delete));
+
+// Team collaboration routes
+router.post('/:id/members', asyncBoundary(controller.addMember));
+router.delete('/:id/members/:memberUserId', asyncBoundary(controller.removeMember));
 
 export const projectsRouter = router;

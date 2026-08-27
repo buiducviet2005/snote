@@ -1,3 +1,8 @@
+export enum UserRole {
+  STUDENT = 'STUDENT',
+  ADMIN = 'ADMIN'
+}
+
 export enum UserStatus {
   ACTIVE = 'ACTIVE',
   SUSPENDED = 'SUSPENDED',
@@ -23,6 +28,12 @@ export enum ProjectStatus {
   ON_HOLD = 'ON_HOLD',
   COMPLETED = 'COMPLETED',
   ARCHIVED = 'ARCHIVED'
+}
+
+export enum ProjectMemberRole {
+  OWNER = 'OWNER',
+  MEMBER = 'MEMBER',
+  VIEWER = 'VIEWER'
 }
 
 export enum NoteType {

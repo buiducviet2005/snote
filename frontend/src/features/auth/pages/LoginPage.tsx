@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
-import { GraduationCap, Mail, Lock, Eye, EyeOff, ArrowRight, Sparkles } from 'lucide-react';
+import { GraduationCap, Mail, Lock, Eye, EyeOff, ArrowRight, Sparkles, ShieldCheck } from 'lucide-react';
 
 export const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -27,9 +27,16 @@ export const LoginPage: React.FC = () => {
     }
   };
 
-  const handleDemoFill = () => {
+  const handleFillStudent = () => {
     setEmail('sinhvien@snote.edu.vn');
     setPassword('Student@123456');
+    setError(null);
+  };
+
+  const handleFillAdmin = () => {
+    setEmail('admin@snote.edu.vn');
+    setPassword('Admin@123456');
+    setError(null);
   };
 
   return (
@@ -47,7 +54,7 @@ export const LoginPage: React.FC = () => {
         className="snote-card animate-scale-in"
         style={{
           width: '100%',
-          maxWidth: '440px',
+          maxWidth: '460px',
           padding: '36px',
           boxShadow: 'var(--shadow-lg)',
           borderRadius: 'var(--radius-xl)'
@@ -79,7 +86,7 @@ export const LoginPage: React.FC = () => {
               letterSpacing: '-0.03em'
             }}
           >
-            Chào mừng đến với <span style={{ background: 'linear-gradient(135deg, #6366f1, #a855f7)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>SNOTE</span>
+            Đăng nhập <span style={{ background: 'linear-gradient(135deg, #6366f1, #a855f7)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>SNOTE</span>
           </h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '13.5px', margin: 0 }}>
             Second Brain & Workspace học tập thông minh cho Sinh viên
@@ -109,7 +116,7 @@ export const LoginPage: React.FC = () => {
           {/* Email Input */}
           <div>
             <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
-              Email sinh viên
+              Email tài khoản
             </label>
             <div style={{ position: 'relative' }}>
               <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', display: 'flex' }}>
@@ -118,7 +125,7 @@ export const LoginPage: React.FC = () => {
               <input
                 type="email"
                 required
-                placeholder="sinhvien@snote.edu.vn"
+                placeholder="sinhvien@snote.edu.vn hoặc admin@snote.edu.vn"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="snote-input"
@@ -183,17 +190,31 @@ export const LoginPage: React.FC = () => {
           </button>
         </form>
 
-        {/* Demo Quick Fill */}
-        <div style={{ marginTop: '20px', textAlign: 'center' }}>
-          <button
-            type="button"
-            onClick={handleDemoFill}
-            className="btn btn-ghost btn-sm"
-            style={{ fontSize: '12px', color: 'var(--accent-primary)', width: '100%' }}
-          >
-            <Sparkles size={14} />
-            <span>Điền tài khoản sinh viên mẫu (sinhvien@snote.edu.vn)</span>
-          </button>
+        {/* Demo Quick Fills */}
+        <div style={{ marginTop: '22px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div style={{ fontSize: '11.5px', color: 'var(--text-muted)', textAlign: 'center', fontWeight: 600 }}>
+            TÀI KHOẢN TRẢI NGHIỆM MẪU (1-CLICK FILL):
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+            <button
+              type="button"
+              onClick={handleFillStudent}
+              className="btn btn-secondary btn-sm"
+              style={{ fontSize: '12px', justifyContent: 'center' }}
+            >
+              <Sparkles size={13} style={{ color: 'var(--accent-primary)' }} />
+              <span>Sinh Viên</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleFillAdmin}
+              className="btn btn-secondary btn-sm"
+              style={{ fontSize: '12px', justifyContent: 'center' }}
+            >
+              <ShieldCheck size={13} style={{ color: 'var(--color-danger)' }} />
+              <span>Admin Hệ Thống</span>
+            </button>
+          </div>
         </div>
 
         {/* Register Link */}

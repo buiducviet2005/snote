@@ -45,19 +45,19 @@ export class AuthController {
       throw new AuthError('Không tìm thấy Refresh Token');
     }
 
-    const { accessToken, newRefreshToken } = await this.authService.refresh(rawRefreshToken);
+    const { authResponse, refreshToken: newRefreshToken } = await this.authService.refreshTokens(rawRefreshToken);
 
     res.cookie(REFRESH_COOKIE_NAME, newRefreshToken, REFRESH_COOKIE_OPTIONS);
     res.status(200).json({
       success: true,
       message: 'Làm mới phiên đăng nhập thành công',
-      data: { accessToken }
+      data: authResponse
     });
   };
 
   logout = async (req: Request, res: Response): Promise<void> => {
     const rawRefreshToken = req.cookies?.[REFRESH_COOKIE_NAME] || req.body?.refreshToken;
-    await this.authService.logout(rawRefreshToken);
+    await this.authService.logout(rawRefreshToken, req.user?.id);
 
     res.clearCookie(REFRESH_COOKIE_NAME, REFRESH_COOKIE_OPTIONS);
     res.status(200).json({
@@ -76,6 +76,33 @@ export class AuthController {
     res.status(200).json({
       success: true,
       data: user
+    });
+  };
+
+  updateProfile = async (req: Request, res: Response): Promise<void> => {
+    const userId = req.user?.id;
+    if (!userId) {
+      throw new AuthError('Bạn chưa đăng nhập hoặc phiên làm việc đã hết hạn');
+    }
+
+    const updated = await this.authService.updateProfile(userId, req.body);
+    res.status(200).json({
+      success: true,
+      message: 'Cập nhật thông tin cá nhân thành công',
+      data: updated
+    });
+  };
+
+  changePassword = async (req: Request, res: Response): Promise<void> => {
+    const userId = req.user?.id;
+    if (!userId) {
+      throw new AuthError('Bạn chưa đăng nhập hoặc phiên làm việc đã hết hạn');
+    }
+
+    await this.authService.changePassword(userId, req.body);
+    res.status(200).json({
+      success: true,
+      message: 'Đổi mật khẩu thành công. Vui lòng đăng nhập lại trên các thiết bị khác nếu cần.'
     });
   };
 }

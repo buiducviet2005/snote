@@ -36,6 +36,24 @@ export class AuthRepository {
     });
   }
 
+  async updateUser(id: string, data: {
+    fullName?: string;
+    timezone?: string;
+    avatarUrl?: string | null;
+  }): Promise<User> {
+    return prisma.user.update({
+      where: { id },
+      data
+    });
+  }
+
+  async updatePassword(id: string, passwordHash: string): Promise<User> {
+    return prisma.user.update({
+      where: { id },
+      data: { passwordHash }
+    });
+  }
+
   async saveRefreshToken(data: {
     userId: string;
     tokenHash: string;

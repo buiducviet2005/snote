@@ -2,17 +2,19 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { env } from '../../config/env';
 import { AuthError } from '../errors/appErrors';
+import { UserRole } from '@prisma/client';
 
 export interface JwtPayload {
   sub: string;
   email?: string;
+  role?: UserRole;
   iat?: number;
   exp?: number;
 }
 
 /**
  * Middleware bắt buộc xác thực JWT Token.
- * Gắn `req.user = { id: sub }` phục vụ chống IDOR.
+ * Gắn `req.user = { id: sub, email, role }` phục vụ chống IDOR và RBAC.
  */
 export function authGuard(req: Request, _res: Response, next: NextFunction): void {
   const authHeader = req.headers.authorization;
@@ -34,7 +36,8 @@ export function authGuard(req: Request, _res: Response, next: NextFunction): voi
 
     req.user = {
       id: decoded.sub,
-      email: decoded.email
+      email: decoded.email,
+      role: decoded.role || UserRole.STUDENT
     };
 
     next();
@@ -68,7 +71,8 @@ export function optionalAuthGuard(req: Request, _res: Response, next: NextFuncti
     if (decoded.sub) {
       req.user = {
         id: decoded.sub,
-        email: decoded.email
+        email: decoded.email,
+        role: decoded.role || UserRole.STUDENT
       };
     }
   } catch {

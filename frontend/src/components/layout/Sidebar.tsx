@@ -14,29 +14,38 @@ import {
   LogOut,
   Sun,
   Moon,
-  GraduationCap
+  GraduationCap,
+  Sparkles,
+  ShieldCheck
 } from 'lucide-react';
 
 export const Sidebar: React.FC = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, isAdmin } = useAuth();
   const { theme, toggleTheme } = useTheme();
 
-  const navItems = [
+  const baseNavItems = [
     { to: '/notes', label: 'Ghi chú', icon: BookOpen },
     { to: '/tasks', label: 'Công việc', icon: CheckSquare },
     { to: '/schedule', label: 'Lịch trình', icon: Calendar },
     { to: '/progress', label: 'Tiến độ', icon: BarChart3 },
     { to: '/semesters', label: 'Môn & Học kỳ', icon: Layers },
-    { to: '/projects', label: 'Đồ án', icon: FolderKanban },
-    { to: '/settings', label: 'Cài đặt & Sao lưu', icon: Settings },
-    { to: '/status', label: 'Trạng thái Hệ thống', icon: Activity }
+    { to: '/projects', label: 'Đồ án & Nhóm', icon: FolderKanban },
+    { to: '/ai-chat', label: 'Trợ lý AI Copilot', icon: Sparkles, badge: 'AI' },
+    { to: '/settings', label: 'Cài đặt & Sao lưu', icon: Settings }
   ];
+
+  // Chỉ hiển thị mục Trạng thái hệ thống khi là Admin
+  const adminNavItems = isAdmin
+    ? [{ to: '/status', label: 'Trạng thái Hệ thống', icon: Activity, badge: 'ADMIN' }]
+    : [];
+
+  const navItems = [...baseNavItems, ...adminNavItems];
 
   return (
     <aside
       className="glass-panel"
       style={{
-        width: '250px',
+        width: '256px',
         borderRight: '1px solid var(--border-color)',
         display: 'flex',
         flexDirection: 'column',
@@ -125,7 +134,7 @@ export const Sidebar: React.FC = () => {
               style={({ isActive }) => ({
                 display: 'flex',
                 alignItems: 'center',
-                gap: '12px',
+                justifyContent: 'space-between',
                 padding: '9px 14px',
                 borderRadius: 'var(--radius-md)',
                 color: isActive ? '#ffffff' : 'var(--text-secondary)',
@@ -137,8 +146,25 @@ export const Sidebar: React.FC = () => {
                 transition: 'all var(--transition-fast)'
               })}
             >
-              <Icon size={18} />
-              <span>{item.label}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <Icon size={18} />
+                <span>{item.label}</span>
+              </div>
+              {item.badge && (
+                <span
+                  style={{
+                    fontSize: '10px',
+                    fontWeight: 700,
+                    padding: '2px 6px',
+                    borderRadius: '4px',
+                    backgroundColor: item.badge === 'ADMIN' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(99, 102, 241, 0.2)',
+                    color: item.badge === 'ADMIN' ? 'var(--color-danger)' : 'var(--accent-primary)',
+                    border: `1px solid ${item.badge === 'ADMIN' ? 'var(--color-danger)' : 'var(--accent-primary)'}`
+                  }}
+                >
+                  {item.badge}
+                </span>
+              )}
             </NavLink>
           );
         })}
@@ -167,9 +193,9 @@ export const Sidebar: React.FC = () => {
         >
           <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12.5px' }}>
             {theme === 'dark' ? <Moon size={15} /> : <Sun size={15} />}
-            <span>Giao diện: {theme === 'dark' ? 'Tối (Dark)' : 'Sáng (Light)'}</span>
+            <span>Giao diện: {theme === 'dark' ? 'Tối' : 'Sáng'}</span>
           </span>
-          <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Chuyển</span>
+          <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Đổi</span>
         </button>
 
         {/* User Profile */}
@@ -185,10 +211,10 @@ export const Sidebar: React.FC = () => {
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', overflow: 'hidden' }}>
               <div
                 style={{
-                  width: '32px',
-                  height: '32px',
+                  width: '34px',
+                  height: '34px',
                   borderRadius: 'var(--radius-full)',
-                  backgroundColor: 'var(--accent-primary)',
+                  backgroundColor: isAdmin ? 'var(--color-danger)' : 'var(--accent-primary)',
                   color: '#ffffff',
                   display: 'flex',
                   alignItems: 'center',
@@ -198,20 +224,28 @@ export const Sidebar: React.FC = () => {
                   flexShrink: 0
                 }}
               >
-                {user.fullName.charAt(0).toUpperCase()}
+                {isAdmin ? <ShieldCheck size={18} /> : (user.fullName ? user.fullName.charAt(0).toUpperCase() : 'U')}
               </div>
               <div style={{ overflow: 'hidden' }}>
                 <div
                   style={{
                     fontSize: '13px',
-                    fontWeight: 600,
+                    fontWeight: 700,
                     color: 'var(--text-primary)',
                     whiteSpace: 'nowrap',
                     textOverflow: 'ellipsis',
-                    overflow: 'hidden'
+                    overflow: 'hidden',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px'
                   }}
                 >
-                  {user.fullName}
+                  <span>{user.fullName}</span>
+                  {isAdmin && (
+                    <span style={{ fontSize: '9px', backgroundColor: 'var(--color-danger)', color: '#fff', padding: '1px 4px', borderRadius: '3px', fontWeight: 800 }}>
+                      ADMIN
+                    </span>
+                  )}
                 </div>
                 <div
                   style={{
@@ -230,7 +264,7 @@ export const Sidebar: React.FC = () => {
               onClick={logout}
               className="btn btn-ghost btn-icon"
               title="Đăng xuất"
-              style={{ color: 'var(--text-muted)' }}
+              style={{ color: 'var(--text-muted)', padding: '6px' }}
             >
               <LogOut size={16} />
             </button>

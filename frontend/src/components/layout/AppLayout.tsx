@@ -2,6 +2,7 @@ import React from 'react';
 import { Outlet } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
+import { FloatingAiChatbot } from '../../features/ai';
 
 export const AppLayout: React.FC = () => {
   return (
@@ -13,6 +14,9 @@ export const AppLayout: React.FC = () => {
           <Outlet />
         </main>
       </div>
+
+      {/* Global Floating AI Copilot - Always available, takes 0 screen space when collapsed */}
+      <FloatingAiChatbot />
     </div>
   );
 };

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { api, getStoredToken, setStoredToken, ApiResponse } from '../services/api';
+import { UserRole } from '@snote/shared';
 
 export interface User {
   id: string;
@@ -7,6 +8,7 @@ export interface User {
   fullName: string;
   avatarUrl?: string | null;
   timezone?: string;
+  role: UserRole;
   createdAt?: string;
 }
 
@@ -14,11 +16,14 @@ interface AuthContextType {
   user: User | null;
   token: string | null;
   isAuthenticated: boolean;
+  isAdmin: boolean;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (fullName: string, email: string, password: string, timezone?: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshProfile: () => Promise<void>;
+  updateProfile: (data: { fullName?: string; timezone?: string; avatarUrl?: string | null }) => Promise<void>;
+  changePassword: (data: { currentPassword: string; newPassword: string }) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -93,17 +98,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await fetchCurrentUser();
   };
 
+  const updateProfile = async (data: { fullName?: string; timezone?: string; avatarUrl?: string | null }) => {
+    const res = await api.put<ApiResponse<User>>('/auth/profile', data);
+    if (res.data) {
+      setUser(res.data);
+    }
+  };
+
+  const changePassword = async (data: { currentPassword: string; newPassword: string }) => {
+    await api.put('/auth/change-password', data);
+  };
+
   return (
     <AuthContext.Provider
       value={{
         user,
         token,
         isAuthenticated: Boolean(user && token),
+        isAdmin: user?.role === UserRole.ADMIN,
         loading,
         login,
         register,
         logout,
-        refreshProfile
+        refreshProfile,
+        updateProfile,
+        changePassword
       }}
     >
       {children}

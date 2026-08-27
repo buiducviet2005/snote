@@ -2,6 +2,7 @@ import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { AppLayout } from '../components/layout/AppLayout';
 import { ProtectedRoute } from '../components/layout/ProtectedRoute';
+import { AdminRoute } from '../components/layout/AdminRoute';
 import { LoginPage, RegisterPage } from '../features/auth';
 import { NotesListPage } from '../features/notes';
 import { TasksListPage } from '../features/tasks';
@@ -11,6 +12,7 @@ import { ProjectsListPage } from '../features/projects';
 import { ProgressDashboardPage } from '../features/progress';
 import { SettingsPage } from '../features/settings';
 import { SystemStatusPage } from '../features/status';
+import { AiChatPage } from '../features/ai';
 
 export const AppRouter: React.FC = () => {
   return (
@@ -28,9 +30,14 @@ export const AppRouter: React.FC = () => {
           <Route path="/schedule" element={<ScheduleWeekPage />} />
           <Route path="/semesters" element={<SemesterOverviewPage />} />
           <Route path="/projects" element={<ProjectsListPage />} />
+          <Route path="/ai-chat" element={<AiChatPage />} />
           <Route path="/progress" element={<ProgressDashboardPage />} />
           <Route path="/settings" element={<SettingsPage />} />
-          <Route path="/status" element={<SystemStatusPage />} />
+
+          {/* Admin Protected Routes */}
+          <Route element={<AdminRoute />}>
+            <Route path="/status" element={<SystemStatusPage />} />
+          </Route>
         </Route>
       </Route>
 

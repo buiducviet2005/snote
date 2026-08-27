@@ -2,9 +2,19 @@ import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import { AuthRepository } from './auth.repository';
-import { RegisterDto, LoginDto, AuthResponseDto, AuthTokens, TokenPayload, UserResponseDto } from './auth.types';
+import {
+  RegisterDto,
+  LoginDto,
+  AuthResponseDto,
+  AuthTokens,
+  TokenPayload,
+  UserResponseDto,
+  UpdateProfileDto,
+  ChangePasswordDto
+} from './auth.types';
 import { env } from '../../config/env';
-import { ConflictError, AuthError, NotFoundError } from '../../shared/errors/appErrors';
+import { ConflictError, AuthError, NotFoundError, ValidationError } from '../../shared/errors/appErrors';
+import { UserRole } from '@prisma/client';
 
 export class AuthService {
   constructor(private readonly authRepo: AuthRepository = new AuthRepository()) {}
@@ -32,6 +42,7 @@ export class AuthService {
       fullName: user.fullName,
       avatarUrl: user.avatarUrl,
       timezone: user.timezone,
+      role: (user.role as UserRole) || UserRole.STUDENT,
       createdAt: user.createdAt
     };
   }
@@ -52,13 +63,13 @@ export class AuthService {
 
     const { accessToken, refreshToken } = this.generateTokens({
       sub: user.id,
-      email: user.email
+      email: user.email,
+      role: (user.role as UserRole) || UserRole.STUDENT
     });
 
     // Lưu tokenHash vào CSDL với thời hạn 7 ngày
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7);
-
     await this.authRepo.saveRefreshToken({
       userId: user.id,
       tokenHash: this.hashToken(refreshToken),
@@ -87,12 +98,12 @@ export class AuthService {
 
     const { accessToken, refreshToken } = this.generateTokens({
       sub: user.id,
-      email: user.email
+      email: user.email,
+      role: (user.role as UserRole) || UserRole.STUDENT
     });
 
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7);
-
     await this.authRepo.saveRefreshToken({
       userId: user.id,
       tokenHash: this.hashToken(refreshToken),
@@ -108,56 +119,109 @@ export class AuthService {
     };
   }
 
-  async refresh(rawRefreshToken: string): Promise<{ accessToken: string; newRefreshToken: string }> {
-    let payload: TokenPayload;
+  async refreshTokens(oldRefreshToken: string): Promise<{ authResponse: AuthResponseDto; refreshToken: string }> {
+    let payload: any;
     try {
-      payload = jwt.verify(rawRefreshToken, env.JWT_REFRESH_SECRET) as TokenPayload;
+      payload = jwt.verify(oldRefreshToken, env.JWT_REFRESH_SECRET);
     } catch {
-      throw new AuthError('Refresh Token không hợp lệ hoặc đã hết hạn');
+      throw new AuthError('Refresh token không hợp lệ hoặc đã hết hạn');
     }
 
-    const tokenHash = this.hashToken(rawRefreshToken);
-    const storedToken = await this.authRepo.findRefreshToken(tokenHash);
-
-    if (!storedToken || storedToken.userId !== payload.sub) {
-      throw new AuthError('Refresh Token đã bị thu hồi hoặc không tồn tại');
+    const oldHash = this.hashToken(oldRefreshToken);
+    const existingToken = await this.authRepo.findRefreshToken(oldHash);
+    if (!existingToken) {
+      throw new AuthError('Refresh token đã bị thu hồi hoặc không tồn tại');
     }
 
-    // Token Rotation: Thu hồi token cũ và phát hành token mới
-    await this.authRepo.revokeRefreshToken(storedToken.id);
+    // Thu hồi token cũ (Token Rotation)
+    await this.authRepo.revokeRefreshToken(existingToken.id);
+
+    const user = await this.authRepo.findUserById(payload.sub);
+    if (!user) {
+      throw new NotFoundError('Không tìm thấy tài khoản người dùng');
+    }
 
     const { accessToken, refreshToken: newRefreshToken } = this.generateTokens({
-      sub: payload.sub,
-      email: payload.email
+      sub: user.id,
+      email: user.email,
+      role: (user.role as UserRole) || UserRole.STUDENT
     });
 
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7);
-
     await this.authRepo.saveRefreshToken({
-      userId: payload.sub,
+      userId: user.id,
       tokenHash: this.hashToken(newRefreshToken),
       expiresAt
     });
 
-    return { accessToken, newRefreshToken };
+    return {
+      authResponse: {
+        user: this.mapUserResponse(user),
+        accessToken
+      },
+      refreshToken: newRefreshToken
+    };
   }
 
-  async logout(rawRefreshToken?: string): Promise<void> {
-    if (rawRefreshToken) {
-      const tokenHash = this.hashToken(rawRefreshToken);
-      const storedToken = await this.authRepo.findRefreshToken(tokenHash);
-      if (storedToken) {
-        await this.authRepo.revokeRefreshToken(storedToken.id);
+  async logout(refreshToken?: string, userId?: string): Promise<void> {
+    if (refreshToken) {
+      const hash = this.hashToken(refreshToken);
+      const token = await this.authRepo.findRefreshToken(hash);
+      if (token) {
+        await this.authRepo.revokeRefreshToken(token.id);
       }
+    } else if (userId) {
+      await this.authRepo.revokeAllUserRefreshTokens(userId);
     }
   }
 
   async getMe(userId: string): Promise<UserResponseDto> {
     const user = await this.authRepo.findUserById(userId);
     if (!user) {
-      throw new NotFoundError('Không tìm thấy tài khoản người dùng');
+      throw new NotFoundError('Không tìm thấy thông tin tài khoản');
     }
     return this.mapUserResponse(user);
+  }
+
+  async updateProfile(userId: string, dto: UpdateProfileDto): Promise<UserResponseDto> {
+    const user = await this.authRepo.findUserById(userId);
+    if (!user) {
+      throw new NotFoundError('Không tìm thấy tài khoản người dùng');
+    }
+
+    const updated = await this.authRepo.updateUser(userId, {
+      fullName: dto.fullName?.trim() || undefined,
+      timezone: dto.timezone?.trim() || undefined,
+      avatarUrl: dto.avatarUrl
+    });
+
+    return this.mapUserResponse(updated);
+  }
+
+  async changePassword(userId: string, dto: ChangePasswordDto): Promise<void> {
+    if (!dto.currentPassword || !dto.newPassword) {
+      throw new ValidationError('Vui lòng cung cấp đầy đủ mật khẩu cũ và mật khẩu mới');
+    }
+
+    if (dto.newPassword.length < 6) {
+      throw new ValidationError('Mật khẩu mới phải có tối thiểu 6 ký tự');
+    }
+
+    const user = await this.authRepo.findUserById(userId);
+    if (!user) {
+      throw new NotFoundError('Không tìm thấy tài khoản người dùng');
+    }
+
+    const isMatch = await bcrypt.compare(dto.currentPassword, user.passwordHash);
+    if (!isMatch) {
+      throw new AuthError('Mật khẩu hiện tại không chính xác');
+    }
+
+    const newPasswordHash = await bcrypt.hash(dto.newPassword, 12);
+    await this.authRepo.updatePassword(userId, newPasswordHash);
+
+    // Hủy toàn bộ refresh token cũ để bảo vệ phiên
+    await this.authRepo.revokeAllUserRefreshTokens(userId);
   }
 }
