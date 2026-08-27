@@ -11,7 +11,8 @@ import {
   Trash2,
   ArrowRight,
   ArrowLeft,
-  Flame
+  Flame,
+  User
 } from 'lucide-react';
 
 interface TaskCardProps {
@@ -192,24 +193,24 @@ export const TaskCard: React.FC<TaskCardProps> = ({
             </span>
           )}
 
-          {/* Due date */}
-          {task.dueDate && (
+          {/* Assignee badge */}
+          {task.assignee && (
             <span
-              className={`badge ${
-                dueStatus === 'OVERDUE'
-                  ? 'badge-rose'
-                  : dueStatus === 'TODAY'
-                  ? 'badge-amber'
-                  : 'badge-neutral'
-              }`}
-              style={{ fontSize: '10.5px', padding: '2px 7px' }}
+              className="badge"
+              style={{
+                fontSize: '10.5px',
+                padding: '2px 7px',
+                backgroundColor: 'rgba(99, 102, 241, 0.15)',
+                color: 'var(--accent-primary)',
+                border: '1px solid var(--accent-border)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '3px'
+              }}
+              title={`Phụ trách: ${task.assignee.fullName || task.assignee.email}`}
             >
-              <Calendar size={11} />
-              <span>
-                {dueStatus === 'OVERDUE' && 'Quá hạn: '}
-                {dueStatus === 'TODAY' && 'Hôm nay: '}
-                {new Date(task.dueDate).toLocaleDateString('vi-VN')}
-              </span>
+              <User size={10} />
+              <span>{task.assignee.fullName?.split(' ').slice(-1)[0] || 'Phụ trách'}</span>
             </span>
           )}
         </div>

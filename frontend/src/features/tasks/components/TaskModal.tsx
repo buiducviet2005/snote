@@ -3,6 +3,7 @@ import { Modal } from '../../../components/common/Modal';
 import { api, ApiResponse } from '../../../services/api';
 import { useToast } from '../../../contexts/ToastContext';
 import { useAppFilter } from '../../../contexts/AppFilterContext';
+import { useAuth } from '../../../contexts/AuthContext';
 import { TaskStatus, TaskPriority } from '@snote/shared';
 import {
   CheckSquare,
@@ -13,7 +14,9 @@ import {
   Save,
   Clock,
   FileText,
-  FolderKanban
+  FolderKanban,
+  UserCheck,
+  User
 } from 'lucide-react';
 
 interface TaskModalProps {
@@ -33,12 +36,15 @@ export const TaskModal: React.FC<TaskModalProps> = ({
   defaultProjectId,
   defaultSubjectId
 }) => {
+  const { user: currentUser } = useAuth();
   const { subjects, selectedSubjectId } = useAppFilter();
   const [projects, setProjects] = useState<any[]>([]);
+  const [projectMembers, setProjectMembers] = useState<any[]>([]);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [subjectId, setSubjectId] = useState<string>('');
   const [projectId, setProjectId] = useState<string>('');
+  const [assigneeId, setAssigneeId] = useState<string>('');
   const [status, setStatus] = useState<TaskStatus>(TaskStatus.TODO);
   const [priority, setPriority] = useState<TaskPriority>(TaskPriority.MEDIUM);
   const [dueDate, setDueDate] = useState('');
@@ -55,12 +61,28 @@ export const TaskModal: React.FC<TaskModalProps> = ({
     }
   }, [isOpen]);
 
+  // When project changes, load its members for assignment
+  useEffect(() => {
+    if (projectId) {
+      api.get<ApiResponse<any>>(`/projects/${projectId}/workspace`)
+        .then((res) => {
+          setProjectMembers(res.data?.members || []);
+        })
+        .catch(() => {
+          setProjectMembers([]);
+        });
+    } else {
+      setProjectMembers([]);
+    }
+  }, [projectId]);
+
   useEffect(() => {
     if (taskToEdit) {
       setTitle(taskToEdit.title || '');
       setDescription(taskToEdit.description || '');
       setSubjectId(taskToEdit.subjectId || '');
       setProjectId(taskToEdit.projectId || '');
+      setAssigneeId(taskToEdit.userId || taskToEdit.assignee?.id || '');
       setStatus(taskToEdit.status || TaskStatus.TODO);
       setPriority(taskToEdit.priority || TaskPriority.MEDIUM);
       setDueDate(taskToEdit.dueDate ? new Date(taskToEdit.dueDate).toISOString().slice(0, 16) : '');
@@ -68,21 +90,18 @@ export const TaskModal: React.FC<TaskModalProps> = ({
     } else {
       setTitle('');
       setDescription('');
-      setSubjectId(defaultSubjectId || selectedSubjectId || (subjects[0]?.id || ''));
+      setSubjectId(defaultSubjectId || selectedSubjectId || '');
       setProjectId(defaultProjectId || '');
+      setAssigneeId(currentUser?.id || '');
       setStatus(TaskStatus.TODO);
       setPriority(TaskPriority.MEDIUM);
       setDueDate('');
       setTagsInput('');
     }
-  }, [taskToEdit, selectedSubjectId, subjects, isOpen, defaultProjectId, defaultSubjectId]);
+  }, [taskToEdit, selectedSubjectId, subjects, isOpen, defaultProjectId, defaultSubjectId, currentUser]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!subjectId && !projectId) {
-      showToast('Công việc phải gắn với một Môn học hoặc một Đồ án', 'error');
-      return;
-    }
 
     const tagNames = tagsInput
       .split(',')
@@ -95,8 +114,9 @@ export const TaskModal: React.FC<TaskModalProps> = ({
         await api.put(`/tasks/${taskToEdit.id}`, {
           title: title.trim(),
           description: description.trim() || undefined,
-          subjectId: subjectId || undefined,
-          projectId: projectId || undefined,
+          subjectId: subjectId || null,
+          projectId: projectId || null,
+          assigneeId: assigneeId || undefined,
           status,
           priority,
           dueDate: dueDate ? new Date(dueDate).toISOString() : null,
@@ -109,12 +129,13 @@ export const TaskModal: React.FC<TaskModalProps> = ({
           description: description.trim() || undefined,
           subjectId: subjectId || undefined,
           projectId: projectId || undefined,
+          assigneeId: assigneeId || undefined,
           status,
           priority,
           dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
           tagNames
         });
-        showToast('Tạo công việc mới thành công!', 'success');
+        showToast('Tạo công việc và giao việc thành công!', 'success');
       }
 
       onSuccess();
@@ -130,7 +151,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={taskToEdit ? 'Chỉnh Sửa Công Việc' : 'Giao Việc / Nhiệm Vụ Mới'}
+      title={taskToEdit ? 'Chỉnh Sửa Công Việc / Phân Công' : 'Giao Việc & Tạo Nhiệm Vụ Mới'}
       maxWidth="640px"
       icon={<CheckSquare size={20} />}
     >
@@ -138,12 +159,12 @@ export const TaskModal: React.FC<TaskModalProps> = ({
         {/* Title */}
         <div>
           <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
-            Tên công việc / Bài tập cần làm *
+            Tên công việc / Nhiệm vụ cần làm *
           </label>
           <input
             type="text"
             required
-            placeholder="Ví dụ: Hoàn thành bài tập tuần 3 về ACID Database & Migrations"
+            placeholder="Ví dụ: Thiết kế Database & API Endpoint cho Module Auth"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             className="snote-input"
@@ -162,7 +183,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
               onChange={(e) => setSubjectId(e.target.value)}
               className="snote-select"
             >
-              <option value="">-- Không chọn môn học --</option>
+              <option value="">📝 Việc cá nhân (Không thuộc môn học)</option>
               {subjects.map((sub) => (
                 <option key={sub.id} value={sub.id}>
                   {sub.code ? `[${sub.code}] ` : ''}{sub.name}
@@ -190,6 +211,32 @@ export const TaskModal: React.FC<TaskModalProps> = ({
             </select>
           </div>
         </div>
+
+        {/* Assignee Selection (Delegation for Project Leader/Members) */}
+        {projectId && projectMembers.length > 0 && (
+          <div style={{ backgroundColor: 'var(--accent-subtle)', padding: '12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--accent-border)' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 700, color: 'var(--accent-primary)', marginBottom: '6px' }}>
+              <UserCheck size={16} />
+              <span>Phân công người phụ trách (Giao việc cho thành viên)</span>
+            </label>
+            <select
+              value={assigneeId}
+              onChange={(e) => setAssigneeId(e.target.value)}
+              className="snote-select"
+              style={{ backgroundColor: 'var(--bg-primary)', fontWeight: 600 }}
+            >
+              {projectMembers.map((m: any) => {
+                const isLeader = m.role === 'OWNER';
+                const isMe = m.userId === currentUser?.id;
+                return (
+                  <option key={m.userId} value={m.userId}>
+                    {m.user?.fullName || m.user?.email} {isLeader ? '👑 (Trưởng nhóm)' : '👤 (Thành viên)'} {isMe ? '— [Bạn]' : ''}
+                  </option>
+                );
+              })}
+            </select>
+          </div>
+        )}
 
         {/* Priority & Due date */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
@@ -264,7 +311,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
             </span>
             <input
               type="text"
-              placeholder="Assignment, Lab1, Deadline, GroupWork"
+              placeholder="Assignment, Backend, Sprint1, Bug"
               value={tagsInput}
               onChange={(e) => setTagsInput(e.target.value)}
               className="snote-input"
@@ -288,7 +335,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
             className="btn btn-primary"
           >
             <Save size={15} />
-            <span>{loading ? 'Đang lưu...' : taskToEdit ? 'Lưu Thay Đổi' : 'Tạo Nhiệm Vụ'}</span>
+            <span>{loading ? 'Đang lưu...' : taskToEdit ? 'Lưu Thay Đổi' : 'Giao Việc / Tạo Task'}</span>
           </button>
         </div>
       </form>

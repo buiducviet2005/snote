@@ -1,6 +1,6 @@
 import { TasksRepository } from './tasks.repository';
 import { CreateTaskDto, UpdateTaskDto, TaskFilter, TaskResponseDto } from './tasks.types';
-import { NotFoundError, ValidationError } from '../../shared/errors/appErrors';
+import { NotFoundError } from '../../shared/errors/appErrors';
 
 export class TasksService {
   constructor(private readonly repository: TasksRepository = new TasksRepository()) {}
@@ -22,6 +22,9 @@ export class TasksService {
         name: tt.tag.name,
         color: tt.tag.color
       })),
+      assignee: task.user,
+      subject: task.subject,
+      project: task.project,
       createdAt: task.createdAt,
       updatedAt: task.updatedAt
     };
@@ -44,10 +47,6 @@ export class TasksService {
   }
 
   async createTask(userId: string, dto: CreateTaskDto): Promise<TaskResponseDto> {
-    if (!dto.subjectId && !dto.projectId) {
-      throw new ValidationError('Công việc bắt buộc phải gắn với ít nhất một Môn học hoặc Đồ án');
-    }
-
     const task = await this.repository.create(userId, dto);
     return this.mapDto(task);
   }

@@ -8,7 +8,11 @@ export class TasksRepository {
     const skip = (page - 1) * limit;
 
     const where: any = {
-      userId,
+      OR: [
+        { userId },
+        { project: { userId } },
+        { project: { members: { some: { userId } } } }
+      ],
       deletedAt: null,
       subjectId: filter?.subjectId || undefined,
       projectId: filter?.projectId || undefined,
@@ -16,10 +20,18 @@ export class TasksRepository {
       priority: filter?.priority || undefined
     };
 
+    if (filter?.assigneeId) {
+      where.userId = filter.assigneeId;
+    }
+
     if (filter?.search) {
-      where.OR = [
-        { title: { contains: filter.search, mode: 'insensitive' } },
-        { description: { contains: filter.search, mode: 'insensitive' } }
+      where.AND = [
+        {
+          OR: [
+            { title: { contains: filter.search, mode: 'insensitive' } },
+            { description: { contains: filter.search, mode: 'insensitive' } }
+          ]
+        }
       ];
     }
 
@@ -31,11 +43,25 @@ export class TasksRepository {
         take: limit,
         orderBy: [{ dueDate: 'asc' }, { priority: 'desc' }, { createdAt: 'desc' }],
         include: {
+          user: {
+            select: { id: true, fullName: true, email: true, avatarUrl: true }
+          },
           subject: {
             select: { id: true, name: true, code: true, color: true }
           },
           project: {
-            select: { id: true, name: true }
+            select: {
+              id: true,
+              name: true,
+              userId: true,
+              members: {
+                include: {
+                  user: {
+                    select: { id: true, fullName: true, email: true, avatarUrl: true }
+                  }
+                }
+              }
+            }
           },
           taskTags: {
             include: { tag: true }
@@ -49,13 +75,35 @@ export class TasksRepository {
 
   async findById(id: string, userId: string): Promise<any | null> {
     return prisma.task.findFirst({
-      where: { id, userId, deletedAt: null },
+      where: {
+        id,
+        deletedAt: null,
+        OR: [
+          { userId },
+          { project: { userId } },
+          { project: { members: { some: { userId } } } }
+        ]
+      },
       include: {
+        user: {
+          select: { id: true, fullName: true, email: true, avatarUrl: true }
+        },
         subject: {
           select: { id: true, name: true, code: true, color: true }
         },
         project: {
-          select: { id: true, name: true }
+          select: {
+            id: true,
+            name: true,
+            userId: true,
+            members: {
+              include: {
+                user: {
+                  select: { id: true, fullName: true, email: true, avatarUrl: true }
+                }
+              }
+            }
+          }
         },
         taskTags: {
           include: { tag: true }
@@ -85,9 +133,11 @@ export class TasksRepository {
       tagIds = await this.getOrCreateTags(userId, data.tagNames);
     }
 
+    const taskUserId = data.assigneeId || userId;
+
     return prisma.task.create({
       data: {
-        userId,
+        userId: taskUserId,
         title: data.title,
         description: data.description,
         subjectId: data.subjectId || null,
@@ -100,11 +150,25 @@ export class TasksRepository {
         }
       },
       include: {
+        user: {
+          select: { id: true, fullName: true, email: true, avatarUrl: true }
+        },
         subject: {
           select: { id: true, name: true, code: true, color: true }
         },
         project: {
-          select: { id: true, name: true }
+          select: {
+            id: true,
+            name: true,
+            userId: true,
+            members: {
+              include: {
+                user: {
+                  select: { id: true, fullName: true, email: true, avatarUrl: true }
+                }
+              }
+            }
+          }
         },
         taskTags: {
           include: { tag: true }
@@ -129,6 +193,7 @@ export class TasksRepository {
     return prisma.task.update({
       where: { id },
       data: {
+        userId: data.assigneeId ? data.assigneeId : undefined,
         title: data.title,
         description: data.description,
         subjectId: data.subjectId !== undefined ? (data.subjectId || null) : undefined,
@@ -140,11 +205,25 @@ export class TasksRepository {
         taskTags: taskTagsUpdate
       },
       include: {
+        user: {
+          select: { id: true, fullName: true, email: true, avatarUrl: true }
+        },
         subject: {
           select: { id: true, name: true, code: true, color: true }
         },
         project: {
-          select: { id: true, name: true }
+          select: {
+            id: true,
+            name: true,
+            userId: true,
+            members: {
+              include: {
+                user: {
+                  select: { id: true, fullName: true, email: true, avatarUrl: true }
+                }
+              }
+            }
+          }
         },
         taskTags: {
           include: { tag: true }
@@ -155,7 +234,14 @@ export class TasksRepository {
 
   async softDelete(id: string, userId: string): Promise<void> {
     await prisma.task.updateMany({
-      where: { id, userId },
+      where: {
+        id,
+        OR: [
+          { userId },
+          { project: { userId } },
+          { project: { members: { some: { userId, role: 'OWNER' } } } }
+        ]
+      },
       data: { deletedAt: new Date() }
     });
   }

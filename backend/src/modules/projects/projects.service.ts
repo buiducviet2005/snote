@@ -125,7 +125,8 @@ export class ProjectsService {
     }
 
     // Tìm target user theo email hoặc userId an toàn tránh lỗi cú pháp UUID
-    const input = dto.emailOrUserId.trim();
+    const rawInput = dto.emailOrUserId || (dto as any).userId || (dto as any).email || '';
+    const input = String(rawInput).trim();
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(input);
 
     const targetUser = await prisma.user.findFirst({

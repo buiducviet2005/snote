@@ -3,8 +3,9 @@ import { TaskStatus, TaskPriority } from '@prisma/client';
 export interface CreateTaskDto {
   title: string;
   description?: string;
-  subjectId?: string;
-  projectId?: string;
+  subjectId?: string | null;
+  projectId?: string | null;
+  assigneeId?: string | null;
   status?: TaskStatus;
   priority?: TaskPriority;
   dueDate?: string;
@@ -14,8 +15,9 @@ export interface CreateTaskDto {
 export interface UpdateTaskDto {
   title?: string;
   description?: string;
-  subjectId?: string;
-  projectId?: string;
+  subjectId?: string | null;
+  projectId?: string | null;
+  assigneeId?: string | null;
   status?: TaskStatus;
   priority?: TaskPriority;
   dueDate?: string | null;
@@ -25,6 +27,7 @@ export interface UpdateTaskDto {
 export interface TaskFilter {
   subjectId?: string;
   projectId?: string;
+  assigneeId?: string;
   status?: TaskStatus;
   priority?: TaskPriority;
   search?: string;
@@ -50,6 +53,23 @@ export interface TaskResponseDto {
   dueDate: Date | null;
   completedAt: Date | null;
   tags: TaskTagDto[];
+  assignee?: {
+    id: string;
+    fullName: string;
+    email: string;
+    avatarUrl?: string | null;
+  } | null;
+  subject?: {
+    id: string;
+    name: string;
+    code?: string | null;
+    color?: string | null;
+  } | null;
+  project?: {
+    id: string;
+    name: string;
+    members?: any[];
+  } | null;
   createdAt: Date;
   updatedAt: Date;
 }
