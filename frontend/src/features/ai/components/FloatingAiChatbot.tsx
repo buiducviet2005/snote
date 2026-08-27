@@ -32,6 +32,7 @@ interface ChatMessage {
 
 export const FloatingAiChatbot: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
   const [inputMessage, setInputMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const { selectedSubjectId, subjects, selectedSemesterId } = useAppFilter();
@@ -159,7 +160,7 @@ export const FloatingAiChatbot: React.FC = () => {
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="animate-scale-in"
+          className="animate-fade-in"
           style={{
             position: 'fixed',
             bottom: '24px',
@@ -202,24 +203,25 @@ export const FloatingAiChatbot: React.FC = () => {
       {/* 2. Expanded Floating Chat Drawer (Khi mở) */}
       {isOpen && (
         <div
-          className="snote-card animate-scale-in"
+          className="snote-card animate-fade-in"
           style={{
             position: 'fixed',
             bottom: '24px',
             right: '24px',
-            width: '440px',
+            width: isExpanded ? 'min(760px, calc(100vw - 32px))' : '460px',
             maxWidth: 'calc(100vw - 32px)',
-            height: '620px',
+            height: isExpanded ? 'min(840px, calc(100vh - 48px))' : '640px',
             maxHeight: 'calc(100vh - 48px)',
             zIndex: 9999,
             borderRadius: 'var(--radius-xl)',
-            boxShadow: '0 16px 40px rgba(0, 0, 0, 0.45)',
+            boxShadow: '0 20px 60px rgba(0, 0, 0, 0.6)',
             border: '1px solid var(--border-color)',
             display: 'flex',
             flexDirection: 'column',
             overflow: 'hidden',
             backgroundColor: 'var(--bg-secondary)',
-            backdropFilter: 'blur(20px)'
+            backdropFilter: 'blur(20px)',
+            transition: 'width 0.25s cubic-bezier(0.16, 1, 0.3, 1), height 0.25s cubic-bezier(0.16, 1, 0.3, 1)'
           }}
         >
           {/* Header */}
@@ -261,6 +263,15 @@ export const FloatingAiChatbot: React.FC = () => {
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <button
+                type="button"
+                onClick={() => setIsExpanded((prev) => !prev)}
+                className="btn btn-ghost btn-icon btn-sm"
+                title={isExpanded ? 'Thu nhỏ kích thước' : 'Phóng rộng khung chat'}
+                style={{ color: 'var(--text-secondary)' }}
+              >
+                {isExpanded ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
+              </button>
               <Link
                 to="/ai-chat"
                 onClick={() => setIsOpen(false)}
@@ -268,16 +279,8 @@ export const FloatingAiChatbot: React.FC = () => {
                 title="Mở toàn màn hình (/ai-chat)"
                 style={{ color: 'var(--text-secondary)' }}
               >
-                <Maximize2 size={15} />
+                <Maximize2 size={13} style={{ transform: 'rotate(45deg)' }} />
               </Link>
-              <button
-                onClick={() => setIsOpen(false)}
-                className="btn btn-ghost btn-icon btn-sm"
-                title="Thu nhỏ lại góc màn hình"
-                style={{ color: 'var(--text-secondary)' }}
-              >
-                <Minimize2 size={15} />
-              </button>
               <button
                 onClick={() => setIsOpen(false)}
                 className="btn btn-ghost btn-icon btn-sm"

@@ -51,7 +51,7 @@ export const LoginPage: React.FC = () => {
       }}
     >
       <div
-        className="snote-card animate-scale-in"
+        className="snote-card animate-fade-in"
         style={{
           width: '100%',
           maxWidth: '460px',

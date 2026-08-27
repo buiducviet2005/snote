@@ -500,7 +500,7 @@ export const NotesListPage: React.FC = () => {
         </div>
       ) : filteredNotes.length === 0 ? (
         <div
-          className="snote-card animate-scale-in"
+          className="snote-card animate-fade-in"
           style={{
             textAlign: 'center',
             padding: '60px 24px',
