@@ -16,7 +16,10 @@ import {
   FileText,
   FolderKanban,
   UserCheck,
-  User
+  Users,
+  Check,
+  User,
+  Shield
 } from 'lucide-react';
 
 interface TaskModalProps {
@@ -44,7 +47,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
   const [description, setDescription] = useState('');
   const [subjectId, setSubjectId] = useState<string>('');
   const [projectId, setProjectId] = useState<string>('');
-  const [assigneeId, setAssigneeId] = useState<string>('');
+  const [selectedAssigneeIds, setSelectedAssigneeIds] = useState<string[]>([]);
   const [status, setStatus] = useState<TaskStatus>(TaskStatus.TODO);
   const [priority, setPriority] = useState<TaskPriority>(TaskPriority.MEDIUM);
   const [dueDate, setDueDate] = useState('');
@@ -66,7 +69,17 @@ export const TaskModal: React.FC<TaskModalProps> = ({
     if (projectId) {
       api.get<ApiResponse<any>>(`/projects/${projectId}/workspace`)
         .then((res) => {
-          setProjectMembers(res.data?.members || []);
+          const members = res.data?.members || [];
+          setProjectMembers(members);
+          // If no assignee selected, default to current user if member, or first member
+          if (selectedAssigneeIds.length === 0 && currentUser) {
+            const isMember = members.some((m: any) => m.userId === currentUser.id);
+            if (isMember) {
+              setSelectedAssigneeIds([currentUser.id]);
+            } else if (members.length > 0) {
+              setSelectedAssigneeIds([members[0].userId]);
+            }
+          }
         })
         .catch(() => {
           setProjectMembers([]);
@@ -74,7 +87,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
     } else {
       setProjectMembers([]);
     }
-  }, [projectId]);
+  }, [projectId, currentUser]);
 
   useEffect(() => {
     if (taskToEdit) {
@@ -82,7 +95,17 @@ export const TaskModal: React.FC<TaskModalProps> = ({
       setDescription(taskToEdit.description || '');
       setSubjectId(taskToEdit.subjectId || '');
       setProjectId(taskToEdit.projectId || '');
-      setAssigneeId(taskToEdit.userId || taskToEdit.assignee?.id || '');
+
+      // Multi-assignees
+      const existingAssigneeIds = (taskToEdit.assignees || []).map((a: any) => a.id || a.userId);
+      if (existingAssigneeIds.length > 0) {
+        setSelectedAssigneeIds(existingAssigneeIds);
+      } else if (taskToEdit.userId) {
+        setSelectedAssigneeIds([taskToEdit.userId]);
+      } else if (taskToEdit.assignee?.id) {
+        setSelectedAssigneeIds([taskToEdit.assignee.id]);
+      }
+
       setStatus(taskToEdit.status || TaskStatus.TODO);
       setPriority(taskToEdit.priority || TaskPriority.MEDIUM);
       setDueDate(taskToEdit.dueDate ? new Date(taskToEdit.dueDate).toISOString().slice(0, 16) : '');
@@ -92,13 +115,25 @@ export const TaskModal: React.FC<TaskModalProps> = ({
       setDescription('');
       setSubjectId(defaultSubjectId || selectedSubjectId || '');
       setProjectId(defaultProjectId || '');
-      setAssigneeId(currentUser?.id || '');
+      setSelectedAssigneeIds(currentUser?.id ? [currentUser.id] : []);
       setStatus(TaskStatus.TODO);
       setPriority(TaskPriority.MEDIUM);
       setDueDate('');
       setTagsInput('');
     }
   }, [taskToEdit, selectedSubjectId, subjects, isOpen, defaultProjectId, defaultSubjectId, currentUser]);
+
+  const toggleAssignee = (userId: string) => {
+    setSelectedAssigneeIds((prev) => {
+      if (prev.includes(userId)) {
+        // Don't allow empty assignees if we can avoid it, but allow toggle
+        const filtered = prev.filter((id) => id !== userId);
+        return filtered.length > 0 ? filtered : [userId];
+      } else {
+        return [...prev, userId];
+      }
+    });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -116,7 +151,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
           description: description.trim() || undefined,
           subjectId: subjectId || null,
           projectId: projectId || null,
-          assigneeId: assigneeId || undefined,
+          assigneeIds: selectedAssigneeIds.length > 0 ? selectedAssigneeIds : undefined,
           status,
           priority,
           dueDate: dueDate ? new Date(dueDate).toISOString() : null,
@@ -129,7 +164,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
           description: description.trim() || undefined,
           subjectId: subjectId || undefined,
           projectId: projectId || undefined,
-          assigneeId: assigneeId || undefined,
+          assigneeIds: selectedAssigneeIds.length > 0 ? selectedAssigneeIds : undefined,
           status,
           priority,
           dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
@@ -147,15 +182,37 @@ export const TaskModal: React.FC<TaskModalProps> = ({
     }
   };
 
+  const currentProjectName = projects.find((p) => p.id === projectId)?.name;
+
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={taskToEdit ? 'Chỉnh Sửa Công Việc / Phân Công' : 'Giao Việc & Tạo Nhiệm Vụ Mới'}
-      maxWidth="640px"
+      title={taskToEdit ? 'Chỉnh Sửa Công Việc & Phân Công Nhóm' : 'Giao Việc & Tạo Nhiệm Vụ Mới'}
+      maxWidth="680px"
       icon={<CheckSquare size={20} />}
     >
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        {/* Project Header context if inside project */}
+        {defaultProjectId && currentProjectName && (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '10px 14px',
+              backgroundColor: 'rgba(168, 85, 247, 0.1)',
+              border: '1px solid rgba(168, 85, 247, 0.3)',
+              borderRadius: 'var(--radius-md)'
+            }}
+          >
+            <FolderKanban size={16} style={{ color: 'var(--color-purple)' }} />
+            <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)' }}>
+              Đang tạo nhiệm vụ trong đồ án: <b>{currentProjectName}</b>
+            </span>
+          </div>
+        )}
+
         {/* Title */}
         <div>
           <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
@@ -164,7 +221,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
           <input
             type="text"
             required
-            placeholder="Ví dụ: Thiết kế Database & API Endpoint cho Module Auth"
+            placeholder="Ví dụ: Thiết kế Database & Pipeline tích hợp API"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             className="snote-input"
@@ -195,12 +252,13 @@ export const TaskModal: React.FC<TaskModalProps> = ({
           <div>
             <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
               <FolderKanban size={13} style={{ color: 'var(--color-purple)' }} />
-              <span>Đồ án / Dự án nhóm liên kết</span>
+              <span>Đồ án / Dự án nhóm</span>
             </label>
             <select
               value={projectId}
               onChange={(e) => setProjectId(e.target.value)}
               className="snote-select"
+              disabled={Boolean(defaultProjectId)}
             >
               <option value="">-- Không gắn đồ án (Việc cá nhân) --</option>
               {projects.map((proj) => (
@@ -212,29 +270,71 @@ export const TaskModal: React.FC<TaskModalProps> = ({
           </div>
         </div>
 
-        {/* Assignee Selection (Delegation for Project Leader/Members) */}
+        {/* Multi-Assignee Selection (Phân công nhiều thành viên tham gia cùng làm) */}
         {projectId && projectMembers.length > 0 && (
-          <div style={{ backgroundColor: 'var(--accent-subtle)', padding: '12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--accent-border)' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 700, color: 'var(--accent-primary)', marginBottom: '6px' }}>
-              <UserCheck size={16} />
-              <span>Phân công người phụ trách (Giao việc cho thành viên)</span>
-            </label>
-            <select
-              value={assigneeId}
-              onChange={(e) => setAssigneeId(e.target.value)}
-              className="snote-select"
-              style={{ backgroundColor: 'var(--bg-primary)', fontWeight: 600 }}
-            >
+          <div style={{ backgroundColor: 'var(--accent-subtle)', padding: '14px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--accent-border)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 700, color: 'var(--accent-primary)', margin: 0 }}>
+                <Users size={16} />
+                <span>Thành viên tham gia thực hiện công việc ({selectedAssigneeIds.length} người)</span>
+              </label>
+              <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                Click để chọn 1 hoặc nhiều người
+              </span>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '8px' }}>
               {projectMembers.map((m: any) => {
                 const isLeader = m.role === 'OWNER';
                 const isMe = m.userId === currentUser?.id;
+                const isSelected = selectedAssigneeIds.includes(m.userId);
+
                 return (
-                  <option key={m.userId} value={m.userId}>
-                    {m.user?.fullName || m.user?.email} {isLeader ? '👑 (Trưởng nhóm)' : '👤 (Thành viên)'} {isMe ? '— [Bạn]' : ''}
-                  </option>
+                  <div
+                    key={m.userId}
+                    onClick={() => toggleAssignee(m.userId)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '8px 12px',
+                      borderRadius: 'var(--radius-md)',
+                      backgroundColor: isSelected ? 'var(--bg-primary)' : 'rgba(255,255,255,0.03)',
+                      border: isSelected ? '1.5px solid var(--accent-primary)' : '1px solid var(--border-color)',
+                      cursor: 'pointer',
+                      transition: 'all var(--transition-fast)',
+                      userSelect: 'none'
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: '18px',
+                        height: '18px',
+                        borderRadius: '4px',
+                        border: isSelected ? 'none' : '1.5px solid var(--border-color)',
+                        backgroundColor: isSelected ? 'var(--accent-primary)' : 'transparent',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: '#fff',
+                        flexShrink: 0
+                      }}
+                    >
+                      {isSelected && <Check size={12} strokeWidth={3} />}
+                    </div>
+
+                    <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <div style={{ fontSize: '12.5px', fontWeight: 700, color: isSelected ? 'var(--text-primary)' : 'var(--text-secondary)' }}>
+                        {m.user?.fullName || m.user?.email} {isMe ? '(Bạn)' : ''}
+                      </div>
+                      <div style={{ fontSize: '10.5px', color: isLeader ? 'var(--color-purple)' : 'var(--text-muted)' }}>
+                        {isLeader ? '👑 Trưởng nhóm' : '👤 Thành viên'}
+                      </div>
+                    </div>
+                  </div>
                 );
               })}
-            </select>
+            </div>
           </div>
         )}
 
@@ -293,7 +393,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
           </label>
           <textarea
             rows={3}
-            placeholder="Mô tả tóm tắt nội dung bài tập, tiêu chí chấm hoặc ghi chú..."
+            placeholder="Mô tả tóm tắt nội dung bài tập, tiêu chí chấm hoặc phân công công việc..."
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             className="snote-textarea"
@@ -311,7 +411,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
             </span>
             <input
               type="text"
-              placeholder="Assignment, Backend, Sprint1, Bug"
+              placeholder="Backend, Frontend, Sprint 1, Research"
               value={tagsInput}
               onChange={(e) => setTagsInput(e.target.value)}
               className="snote-input"
@@ -335,7 +435,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
             className="btn btn-primary"
           >
             <Save size={15} />
-            <span>{loading ? 'Đang lưu...' : taskToEdit ? 'Lưu Thay Đổi' : 'Giao Việc / Tạo Task'}</span>
+            <span>{loading ? 'Đang lưu...' : taskToEdit ? 'Lưu Thay Đổi' : 'Giao Việc & Tạo Task'}</span>
           </button>
         </div>
       </form>

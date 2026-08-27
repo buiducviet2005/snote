@@ -10,6 +10,7 @@ export class TasksRepository {
     const where: any = {
       OR: [
         { userId },
+        { assignees: { some: { userId } } },
         { project: { userId } },
         { project: { members: { some: { userId } } } }
       ],
@@ -21,7 +22,10 @@ export class TasksRepository {
     };
 
     if (filter?.assigneeId) {
-      where.userId = filter.assigneeId;
+      where.OR = [
+        { userId: filter.assigneeId },
+        { assignees: { some: { userId: filter.assigneeId } } }
+      ];
     }
 
     if (filter?.search) {
@@ -45,6 +49,13 @@ export class TasksRepository {
         include: {
           user: {
             select: { id: true, fullName: true, email: true, avatarUrl: true }
+          },
+          assignees: {
+            include: {
+              user: {
+                select: { id: true, fullName: true, email: true, avatarUrl: true }
+              }
+            }
           },
           subject: {
             select: { id: true, name: true, code: true, color: true }
@@ -80,6 +91,7 @@ export class TasksRepository {
         deletedAt: null,
         OR: [
           { userId },
+          { assignees: { some: { userId } } },
           { project: { userId } },
           { project: { members: { some: { userId } } } }
         ]
@@ -87,6 +99,13 @@ export class TasksRepository {
       include: {
         user: {
           select: { id: true, fullName: true, email: true, avatarUrl: true }
+        },
+        assignees: {
+          include: {
+            user: {
+              select: { id: true, fullName: true, email: true, avatarUrl: true }
+            }
+          }
         },
         subject: {
           select: { id: true, name: true, code: true, color: true }
@@ -133,11 +152,22 @@ export class TasksRepository {
       tagIds = await this.getOrCreateTags(userId, data.tagNames);
     }
 
-    const taskUserId = data.assigneeId || userId;
+    // Resolve assigned user IDs (multi-assignee support)
+    const assignedUserIds: string[] = [];
+    if (data.assigneeIds && data.assigneeIds.length > 0) {
+      assignedUserIds.push(...data.assigneeIds);
+    } else if (data.assigneeId) {
+      assignedUserIds.push(data.assigneeId);
+    } else {
+      assignedUserIds.push(userId);
+    }
+
+    const uniqueAssignees = Array.from(new Set(assignedUserIds));
+    const primaryUserId = uniqueAssignees[0] || userId;
 
     return prisma.task.create({
       data: {
-        userId: taskUserId,
+        userId: primaryUserId,
         title: data.title,
         description: data.description,
         subjectId: data.subjectId || null,
@@ -147,11 +177,21 @@ export class TasksRepository {
         dueDate: data.dueDate ? new Date(data.dueDate) : null,
         taskTags: {
           create: tagIds.map((tagId) => ({ tagId }))
+        },
+        assignees: {
+          create: uniqueAssignees.map((uid) => ({ userId: uid }))
         }
       },
       include: {
         user: {
           select: { id: true, fullName: true, email: true, avatarUrl: true }
+        },
+        assignees: {
+          include: {
+            user: {
+              select: { id: true, fullName: true, email: true, avatarUrl: true }
+            }
+          }
         },
         subject: {
           select: { id: true, name: true, code: true, color: true }
@@ -188,12 +228,34 @@ export class TasksRepository {
       };
     }
 
+    let assigneesUpdate: any = undefined;
+    let newPrimaryUserId: string | undefined = undefined;
+
+    if (data.assigneeIds !== undefined) {
+      const uniqueAssignees = Array.from(new Set(data.assigneeIds));
+      assigneesUpdate = {
+        deleteMany: {},
+        create: uniqueAssignees.map((uid) => ({ userId: uid }))
+      };
+      if (uniqueAssignees.length > 0) {
+        newPrimaryUserId = uniqueAssignees[0];
+      }
+    } else if (data.assigneeId !== undefined) {
+      if (data.assigneeId) {
+        assigneesUpdate = {
+          deleteMany: {},
+          create: [{ userId: data.assigneeId }]
+        };
+        newPrimaryUserId = data.assigneeId;
+      }
+    }
+
     const isCompleted = data.status === 'DONE';
 
     return prisma.task.update({
       where: { id },
       data: {
-        userId: data.assigneeId ? data.assigneeId : undefined,
+        userId: newPrimaryUserId,
         title: data.title,
         description: data.description,
         subjectId: data.subjectId !== undefined ? (data.subjectId || null) : undefined,
@@ -202,11 +264,19 @@ export class TasksRepository {
         priority: data.priority,
         dueDate: data.dueDate !== undefined ? (data.dueDate ? new Date(data.dueDate) : null) : undefined,
         completedAt: isCompleted ? new Date() : (data.status ? null : undefined),
-        taskTags: taskTagsUpdate
+        taskTags: taskTagsUpdate,
+        assignees: assigneesUpdate
       },
       include: {
         user: {
           select: { id: true, fullName: true, email: true, avatarUrl: true }
+        },
+        assignees: {
+          include: {
+            user: {
+              select: { id: true, fullName: true, email: true, avatarUrl: true }
+            }
+          }
         },
         subject: {
           select: { id: true, name: true, code: true, color: true }

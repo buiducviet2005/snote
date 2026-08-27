@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
-import { CheckCircle2, AlertCircle, Info, X } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Info, AlertTriangle, X } from 'lucide-react';
 
-export type ToastType = 'success' | 'error' | 'info';
+export type ToastType = 'success' | 'error' | 'info' | 'warning';
 
 export interface ToastMessage {
   id: string;
@@ -63,6 +63,11 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             border = 'rgba(239, 68, 68, 0.35)';
             iconColor = 'var(--color-danger)';
             IconComponent = AlertCircle;
+          } else if (toast.type === 'warning') {
+            bg = 'var(--bg-secondary)';
+            border = 'rgba(245, 158, 11, 0.35)';
+            iconColor = 'var(--color-warning)';
+            IconComponent = AlertTriangle;
           }
 
           return (

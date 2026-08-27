@@ -1,5 +1,6 @@
 import React from 'react';
 import { TaskStatus, TaskPriority } from '@snote/shared';
+import { useAuth } from '../../../contexts/AuthContext';
 import {
   CheckCircle2,
   Circle,
@@ -12,7 +13,9 @@ import {
   ArrowRight,
   ArrowLeft,
   Flame,
-  User
+  User,
+  Users,
+  Lock
 } from 'lucide-react';
 
 interface TaskCardProps {
@@ -30,6 +33,8 @@ export const TaskCard: React.FC<TaskCardProps> = ({
   onToggleStatus,
   onMoveStatus
 }) => {
+  const { user: currentUser } = useAuth();
+
   const getPriorityBadge = (priority: TaskPriority) => {
     switch (priority) {
       case TaskPriority.URGENT:
@@ -45,7 +50,21 @@ export const TaskCard: React.FC<TaskCardProps> = ({
 
   const priorityBadge = getPriorityBadge(task.priority);
   const isDone = task.status === TaskStatus.DONE;
-  const isInProgress = task.status === TaskStatus.IN_PROGRESS;
+
+  // Extract all assignees
+  const assigneesList: any[] = (task.assignees && task.assignees.length > 0)
+    ? task.assignees
+    : (task.assignee ? [task.assignee] : (task.user ? [task.user] : []));
+
+  // Check authorization
+  const isAssignee = assigneesList.some((u: any) => u.id === currentUser?.id);
+  const isCreator = task.userId === currentUser?.id;
+  const isProjectOwner =
+    task.project?.userId === currentUser?.id ||
+    (task.project?.members || []).some((m: any) => m.userId === currentUser?.id && m.role === 'OWNER');
+
+  const canComplete = task.canComplete !== undefined ? task.canComplete : (isAssignee || isCreator || isProjectOwner || !task.projectId);
+  const canEdit = task.canEdit !== undefined ? task.canEdit : (isAssignee || isCreator || isProjectOwner || !task.projectId);
 
   // Due date status
   let dueStatus: 'OVERDUE' | 'TODAY' | 'UPCOMING' | null = null;
@@ -68,7 +87,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
     <div
       className="snote-card animate-fade-in"
       style={{
-        padding: '14px',
+        padding: '16px',
         borderRadius: 'var(--radius-lg)',
         border: priorityBadge.isUrgent && !isDone ? '1px solid rgba(239, 68, 68, 0.4)' : '1px solid var(--border-color)',
         backgroundColor: isDone ? 'var(--bg-tertiary)' : 'var(--bg-card)',
@@ -76,7 +95,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
         boxShadow: 'var(--shadow-sm)',
         display: 'flex',
         flexDirection: 'column',
-        gap: '10px',
+        gap: '12px',
         transition: 'all var(--transition-fast)'
       }}
     >
@@ -84,30 +103,50 @@ export const TaskCard: React.FC<TaskCardProps> = ({
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '10px' }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', flex: 1 }}>
           <button
-            onClick={() => onToggleStatus(task.id, task.status)}
+            onClick={() => {
+              if (canComplete) {
+                onToggleStatus(task.id, task.status);
+              }
+            }}
+            disabled={!canComplete}
             className="btn btn-ghost btn-icon"
             style={{
               padding: '2px',
-              color: isDone ? 'var(--color-success)' : 'var(--text-muted)',
+              color: isDone ? 'var(--color-success)' : canComplete ? 'var(--text-muted)' : 'var(--border-color)',
+              cursor: canComplete ? 'pointer' : 'not-allowed',
               display: 'flex',
               flexShrink: 0,
               marginTop: '1px'
             }}
-            title={isDone ? 'Đánh dấu chưa hoàn thành' : 'Đánh dấu hoàn thành'}
+            title={
+              !canComplete
+                ? '🔒 Chỉ thành viên được phân công hoặc Trưởng nhóm mới có quyền hoàn thành task này'
+                : isDone
+                ? 'Đánh dấu chưa hoàn thành'
+                : 'Đánh dấu hoàn thành'
+            }
           >
-            {isDone ? <CheckCircle2 size={18} style={{ fill: 'rgba(16, 185, 129, 0.2)' }} /> : <Circle size={18} />}
+            {isDone ? (
+              <CheckCircle2 size={18} style={{ fill: 'rgba(16, 185, 129, 0.2)' }} />
+            ) : !canComplete ? (
+              <Lock size={16} style={{ color: 'var(--text-muted)' }} />
+            ) : (
+              <Circle size={18} />
+            )}
           </button>
 
           <div style={{ flex: 1 }}>
             <h4
-              onClick={() => onEdit(task)}
+              onClick={() => {
+                if (canEdit) onEdit(task);
+              }}
               style={{
                 margin: '0 0 4px 0',
                 fontSize: '14px',
                 fontWeight: 700,
                 color: isDone ? 'var(--text-muted)' : 'var(--text-primary)',
                 textDecoration: isDone ? 'line-through' : 'none',
-                cursor: 'pointer',
+                cursor: canEdit ? 'pointer' : 'default',
                 lineHeight: 1.35
               }}
             >
@@ -134,22 +173,26 @@ export const TaskCard: React.FC<TaskCardProps> = ({
 
         {/* Action icons */}
         <div style={{ display: 'flex', gap: '2px', flexShrink: 0 }}>
-          <button
-            onClick={() => onEdit(task)}
-            className="btn btn-ghost btn-icon"
-            style={{ padding: '4px', color: 'var(--text-muted)' }}
-            title="Chỉnh sửa công việc"
-          >
-            <Edit3 size={13} />
-          </button>
-          <button
-            onClick={() => onDelete(task.id, task.title)}
-            className="btn btn-ghost btn-icon"
-            style={{ padding: '4px', color: 'var(--color-danger)' }}
-            title="Xóa công việc"
-          >
-            <Trash2 size={13} />
-          </button>
+          {canEdit && (
+            <button
+              onClick={() => onEdit(task)}
+              className="btn btn-ghost btn-icon"
+              style={{ padding: '4px', color: 'var(--text-muted)' }}
+              title="Chỉnh sửa công việc"
+            >
+              <Edit3 size={13} />
+            </button>
+          )}
+          {(isCreator || isProjectOwner) && (
+            <button
+              onClick={() => onDelete(task.id, task.title)}
+              className="btn btn-ghost btn-icon"
+              style={{ padding: '4px', color: 'var(--color-danger)' }}
+              title="Xóa công việc"
+            >
+              <Trash2 size={13} />
+            </button>
+          )}
         </div>
       </div>
 
@@ -193,9 +236,9 @@ export const TaskCard: React.FC<TaskCardProps> = ({
             </span>
           )}
 
-          {/* Assignee badge */}
-          {task.assignee && (
-            <span
+          {/* Multi-Assignees Stack / Badge */}
+          {assigneesList.length > 0 && (
+            <div
               className="badge"
               style={{
                 fontSize: '10.5px',
@@ -205,19 +248,40 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                 border: '1px solid var(--accent-border)',
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '3px'
+                gap: '4px'
               }}
-              title={`Phụ trách: ${task.assignee.fullName || task.assignee.email}`}
+              title={`Thành viên tham gia: ${assigneesList.map((a: any) => a.fullName || a.email).join(', ')}`}
             >
-              <User size={10} />
-              <span>{task.assignee.fullName?.split(' ').slice(-1)[0] || 'Phụ trách'}</span>
-            </span>
+              <Users size={11} />
+              <span>
+                {assigneesList.length === 1
+                  ? (assigneesList[0].id === currentUser?.id ? 'Bạn' : assigneesList[0].fullName?.split(' ').slice(-1)[0] || 'Phụ trách')
+                  : (isAssignee ? `Bạn + ${assigneesList.length - 1} người` : `${assigneesList.length} người làm`)}
+              </span>
+            </div>
           )}
         </div>
+
+        {/* Due date */}
+        {task.dueDate && (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              fontSize: '11px',
+              color: dueStatus === 'OVERDUE' ? 'var(--color-danger)' : dueStatus === 'TODAY' ? 'var(--color-warning)' : 'var(--text-muted)',
+              fontWeight: dueStatus === 'OVERDUE' || dueStatus === 'TODAY' ? 700 : 500
+            }}
+          >
+            <Calendar size={11} />
+            <span>{new Date(task.dueDate).toLocaleDateString('vi-VN')}</span>
+          </div>
+        )}
       </div>
 
       {/* Quick Move Columns Bar */}
-      {onMoveStatus && (
+      {onMoveStatus && canComplete && (
         <div
           style={{
             display: 'flex',

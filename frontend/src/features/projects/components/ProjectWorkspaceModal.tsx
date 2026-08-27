@@ -26,7 +26,8 @@ import {
   MessageSquare,
   Sparkles,
   Tag,
-  AlertCircle
+  AlertCircle,
+  Lock
 } from 'lucide-react';
 
 interface ProjectWorkspaceModalProps {
@@ -58,6 +59,11 @@ export const ProjectWorkspaceModal: React.FC<ProjectWorkspaceModalProps> = ({
   const [inviteInput, setInviteInput] = useState('');
   const [inviteRole, setInviteRole] = useState<ProjectMemberRole>(ProjectMemberRole.MEMBER);
   const [inviteLoading, setInviteLoading] = useState(false);
+
+  // Quick Task form state
+  const [quickTaskTitle, setQuickTaskTitle] = useState('');
+  const [quickTaskAssignee, setQuickTaskAssignee] = useState('');
+  const [quickTaskLoading, setQuickTaskLoading] = useState(false);
 
   // Team Discussion state
   const [discussions, setDiscussions] = useState<any[]>([]);
@@ -96,8 +102,21 @@ export const ProjectWorkspaceModal: React.FC<ProjectWorkspaceModalProps> = ({
   const currentMember = members.find((m) => m.userId === currentUser?.id);
   const isOwner = currentMember?.role === ProjectMemberRole.OWNER || project.userId === currentUser?.id;
 
-  // Toggle Task Status directly
+  // Toggle Task Status directly with Authorization Check
   const handleToggleTaskStatus = async (task: any) => {
+    const assigneesList = (task.assignees && task.assignees.length > 0)
+      ? task.assignees
+      : (task.assignee ? [task.assignee] : (task.user ? [task.user] : []));
+
+    const isAssignee = assigneesList.some((u: any) => (u.id || u.userId) === currentUser?.id);
+    const isCreator = task.userId === currentUser?.id;
+    const canComplete = isAssignee || isCreator || isOwner;
+
+    if (!canComplete) {
+      showToast('🔒 Chỉ thành viên được phân công hoặc Trưởng nhóm mới có quyền hoàn thành task này', 'warning');
+      return;
+    }
+
     const nextStatus = task.status === 'DONE' ? 'TODO' : 'DONE';
     try {
       await api.patch(`/tasks/${task.id}/status`, { status: nextStatus });
@@ -106,6 +125,31 @@ export const ProjectWorkspaceModal: React.FC<ProjectWorkspaceModalProps> = ({
       onRefreshParent();
     } catch (err: any) {
       showToast(err.message || 'Lỗi khi cập nhật trạng thái việc', 'error');
+    }
+  };
+
+  // Quick Create Task for Project
+  const handleQuickCreateTask = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!quickTaskTitle.trim()) return;
+
+    setQuickTaskLoading(true);
+    try {
+      await api.post('/tasks', {
+        title: quickTaskTitle.trim(),
+        projectId,
+        assigneeIds: quickTaskAssignee ? [quickTaskAssignee] : (currentUser?.id ? [currentUser.id] : undefined),
+        status: TaskStatus.TODO,
+        priority: TaskPriority.MEDIUM
+      });
+      showToast('Đã thêm công việc vào đồ án thành công!', 'success');
+      setQuickTaskTitle('');
+      fetchWorkspace();
+      onRefreshParent();
+    } catch (err: any) {
+      showToast(err.message || 'Lỗi khi tạo nhanh công việc', 'error');
+    } finally {
+      setQuickTaskLoading(false);
     }
   };
 
@@ -339,30 +383,86 @@ export const ProjectWorkspaceModal: React.FC<ProjectWorkspaceModalProps> = ({
 
         {/* TAB 1: TASKS */}
         {activeTab === 'TASKS' && (
-          <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-              <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)' }}>
-                DANH SÁCH NHIỆM VỤ ĐỒ ÁN
-              </div>
-              <button
-                onClick={() => setIsTaskModalOpen(true)}
-                className="btn btn-primary btn-sm"
-                style={{ fontWeight: 600 }}
-              >
-                <Plus size={14} />
-                <span>Thêm Công Việc Đồ Án</span>
-              </button>
-            </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            {/* Quick Inline Task Creator */}
+            <form
+              onSubmit={handleQuickCreateTask}
+              style={{
+                display: 'flex',
+                gap: '10px',
+                backgroundColor: 'var(--bg-primary)',
+                padding: '12px 14px',
+                borderRadius: 'var(--radius-lg)',
+                border: '1px solid var(--border-color)',
+                alignItems: 'center',
+                flexWrap: 'wrap'
+              }}
+            >
+              <input
+                type="text"
+                required
+                placeholder="+ Thêm nhanh nhiệm vụ cho đồ án (Ví dụ: Thiết kế giao diện Dashboard)..."
+                value={quickTaskTitle}
+                onChange={(e) => setQuickTaskTitle(e.target.value)}
+                className="snote-input"
+                style={{ flex: 3, minWidth: '220px', fontSize: '13px' }}
+              />
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '380px', overflowY: 'auto' }}>
+              {members.length > 0 && (
+                <select
+                  value={quickTaskAssignee}
+                  onChange={(e) => setQuickTaskAssignee(e.target.value)}
+                  className="snote-select"
+                  style={{ flex: 1.5, minWidth: '160px', fontSize: '12.5px' }}
+                >
+                  <option value="">👤 Phân công: Mặc định (Bạn)</option>
+                  {members.map((m: any) => (
+                    <option key={m.userId} value={m.userId}>
+                      {m.user?.fullName || m.user?.email} {m.userId === currentUser?.id ? '(Bạn)' : ''}
+                    </option>
+                  ))}
+                </select>
+              )}
+
+              <button
+                type="submit"
+                disabled={quickTaskLoading || !quickTaskTitle.trim()}
+                className="btn btn-primary btn-sm"
+                style={{ fontWeight: 700, padding: '7px 14px' }}
+              >
+                {quickTaskLoading ? 'Đang thêm...' : '+ Thêm Nhanh'}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsTaskModalOpen(true)}
+                className="btn btn-secondary btn-sm"
+                style={{ padding: '7px 12px', fontSize: '12px' }}
+                title="Mở form chi tiết có mô tả, tags, mức độ ưu tiên"
+              >
+                <Plus size={13} />
+                <span>Form Chi Tiết</span>
+              </button>
+            </form>
+
+            {/* Task list */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '420px', overflowY: 'auto' }}>
               {tasks.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-muted)', background: 'var(--bg-primary)', borderRadius: 'var(--radius-lg)', border: '1px dashed var(--border-color)' }}>
                   <CheckSquare size={32} style={{ opacity: 0.4, marginBottom: '8px' }} />
-                  <p style={{ margin: 0, fontSize: '13.5px' }}>Đồ án chưa có công việc nào. Bấm <b>"Thêm Công Việc Đồ Án"</b> để bắt đầu phân chia nhiệm vụ.</p>
+                  <p style={{ margin: 0, fontSize: '13.5px' }}>Đồ án chưa có công việc nào. Nhập tiêu đề ở trên hoặc bấm <b>"Form Chi Tiết"</b> để bắt đầu phân công nhiệm vụ.</p>
                 </div>
               ) : (
                 tasks.map((task) => {
                   const isDone = task.status === 'DONE';
+                  const assigneesList: any[] = (task.assignees && task.assignees.length > 0)
+                    ? task.assignees
+                    : (task.assignee ? [task.assignee] : (task.user ? [task.user] : []));
+
+                  const isAssignee = assigneesList.some((u: any) => (u.id || u.userId) === currentUser?.id);
+                  const isCreator = task.userId === currentUser?.id;
+                  const canComplete = isAssignee || isCreator || isOwner;
+
                   return (
                     <div
                       key={task.id}
@@ -381,17 +481,30 @@ export const ProjectWorkspaceModal: React.FC<ProjectWorkspaceModalProps> = ({
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
                         <button
                           onClick={() => handleToggleTaskStatus(task)}
+                          disabled={!canComplete}
                           style={{
                             background: 'transparent',
                             border: 'none',
-                            cursor: 'pointer',
-                            color: isDone ? 'var(--color-success)' : 'var(--text-muted)',
+                            cursor: canComplete ? 'pointer' : 'not-allowed',
+                            color: isDone ? 'var(--color-success)' : canComplete ? 'var(--text-muted)' : 'var(--border-color)',
                             display: 'flex',
                             padding: 0
                           }}
-                          title={isDone ? 'Đánh dấu chưa xong' : 'Đánh dấu hoàn thành'}
+                          title={
+                            !canComplete
+                              ? '🔒 Chỉ thành viên được phân công hoặc Trưởng nhóm mới có quyền hoàn thành task này'
+                              : isDone
+                              ? 'Đánh dấu chưa xong'
+                              : 'Đánh dấu hoàn thành'
+                          }
                         >
-                          {isDone ? <CheckCircle2 size={19} /> : <Circle size={19} />}
+                          {isDone ? (
+                            <CheckCircle2 size={19} />
+                          ) : !canComplete ? (
+                            <Lock size={16} style={{ color: 'var(--text-muted)' }} />
+                          ) : (
+                            <Circle size={19} />
+                          )}
                         </button>
 
                         <div>
@@ -421,10 +534,28 @@ export const ProjectWorkspaceModal: React.FC<ProjectWorkspaceModalProps> = ({
                         </div>
                       </div>
 
-                      {task.assignee && (
-                        <div style={{ fontSize: '12px', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <User size={12} />
-                          <span>{task.assignee.fullName}</span>
+                      {/* Multi-Assignees Info */}
+                      {assigneesList.length > 0 && (
+                        <div
+                          className="badge"
+                          style={{
+                            fontSize: '11px',
+                            padding: '3px 8px',
+                            backgroundColor: 'rgba(99, 102, 241, 0.12)',
+                            color: 'var(--accent-primary)',
+                            border: '1px solid var(--accent-border)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px'
+                          }}
+                          title={`Phụ trách: ${assigneesList.map((a: any) => a.fullName || a.email).join(', ')}`}
+                        >
+                          <Users size={12} />
+                          <span>
+                            {assigneesList.length === 1
+                              ? (assigneesList[0].id === currentUser?.id || assigneesList[0].userId === currentUser?.id ? 'Bạn' : assigneesList[0].fullName?.split(' ').slice(-1)[0] || 'Phụ trách')
+                              : (isAssignee ? `Bạn + ${assigneesList.length - 1} người` : `${assigneesList.length} người làm`)}
+                          </span>
                         </div>
                       )}
                     </div>

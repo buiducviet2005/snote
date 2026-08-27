@@ -6,6 +6,7 @@ export interface CreateTaskDto {
   subjectId?: string | null;
   projectId?: string | null;
   assigneeId?: string | null;
+  assigneeIds?: string[];
   status?: TaskStatus;
   priority?: TaskPriority;
   dueDate?: string;
@@ -18,6 +19,7 @@ export interface UpdateTaskDto {
   subjectId?: string | null;
   projectId?: string | null;
   assigneeId?: string | null;
+  assigneeIds?: string[];
   status?: TaskStatus;
   priority?: TaskPriority;
   dueDate?: string | null;
@@ -41,6 +43,13 @@ export interface TaskTagDto {
   color: string | null;
 }
 
+export interface TaskAssigneeUserDto {
+  id: string;
+  fullName: string;
+  email: string;
+  avatarUrl?: string | null;
+}
+
 export interface TaskResponseDto {
   id: string;
   userId: string;
@@ -53,12 +62,10 @@ export interface TaskResponseDto {
   dueDate: Date | null;
   completedAt: Date | null;
   tags: TaskTagDto[];
-  assignee?: {
-    id: string;
-    fullName: string;
-    email: string;
-    avatarUrl?: string | null;
-  } | null;
+  assignees: TaskAssigneeUserDto[];
+  assignee?: TaskAssigneeUserDto | null;
+  canComplete?: boolean;
+  canEdit?: boolean;
   subject?: {
     id: string;
     name: string;
