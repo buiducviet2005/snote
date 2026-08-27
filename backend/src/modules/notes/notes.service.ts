@@ -1,6 +1,6 @@
 import { NotesRepository } from './notes.repository';
 import { CreateNoteDto, UpdateNoteDto, NoteFilter, NoteResponseDto } from './notes.types';
-import { NotFoundError, ValidationError } from '../../shared/errors/appErrors';
+import { NotFoundError } from '../../shared/errors/appErrors';
 
 export class NotesService {
   constructor(private readonly repository: NotesRepository = new NotesRepository()) {}
@@ -21,6 +21,8 @@ export class NotesService {
         name: nt.tag.name,
         color: nt.tag.color
       })),
+      subject: note.subject,
+      project: note.project,
       createdAt: note.createdAt,
       updatedAt: note.updatedAt
     };
@@ -43,10 +45,6 @@ export class NotesService {
   }
 
   async createNote(userId: string, dto: CreateNoteDto): Promise<NoteResponseDto> {
-    if (!dto.subjectId && !dto.projectId) {
-      throw new ValidationError('Ghi chú bắt buộc phải gắn với ít nhất một Môn học hoặc Đồ án');
-    }
-
     const note = await this.repository.create(userId, dto);
     return this.mapDto(note);
   }

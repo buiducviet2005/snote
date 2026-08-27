@@ -33,6 +33,12 @@ export class NotesRepository {
         take: limit,
         orderBy: [{ isPinned: 'desc' }, { createdAt: 'desc' }],
         include: {
+          subject: {
+            select: { id: true, name: true, code: true, color: true }
+          },
+          project: {
+            select: { id: true, name: true }
+          },
           noteTags: {
             include: { tag: true }
           }
@@ -47,6 +53,12 @@ export class NotesRepository {
     return prisma.note.findFirst({
       where: { id, userId, deletedAt: null },
       include: {
+        subject: {
+          select: { id: true, name: true, code: true, color: true }
+        },
+        project: {
+          select: { id: true, name: true }
+        },
         noteTags: {
           include: { tag: true }
         }
@@ -82,13 +94,19 @@ export class NotesRepository {
         content: data.content,
         subjectId: data.subjectId || null,
         projectId: data.projectId || null,
-        noteType: data.noteType || 'LECTURE',
+        noteType: data.noteType || 'GENERAL',
         isPinned: data.isPinned ?? false,
         noteTags: {
           create: tagIds.map((tagId) => ({ tagId }))
         }
       },
       include: {
+        subject: {
+          select: { id: true, name: true, code: true, color: true }
+        },
+        project: {
+          select: { id: true, name: true }
+        },
         noteTags: {
           include: { tag: true }
         }
@@ -120,6 +138,12 @@ export class NotesRepository {
         noteTags: noteTagsUpdate
       },
       include: {
+        subject: {
+          select: { id: true, name: true, code: true, color: true }
+        },
+        project: {
+          select: { id: true, name: true }
+        },
         noteTags: {
           include: { tag: true }
         }
@@ -132,5 +156,17 @@ export class NotesRepository {
       where: { id, userId },
       data: { deletedAt: new Date() }
     });
+  }
+
+  async togglePin(id: string, userId: string): Promise<any> {
+    const note = await this.findById(id, userId);
+    if (!note) return null;
+    return this.update(id, userId, { isPinned: !note.isPinned });
+  }
+
+  async toggleArchive(id: string, userId: string): Promise<any> {
+    const note = await this.findById(id, userId);
+    if (!note) return null;
+    return this.update(id, userId, { isArchived: !note.isArchived });
   }
 }

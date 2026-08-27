@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Modal } from '../../../components/common/Modal';
 import { MarkdownViewer } from '../../../components/common/MarkdownViewer';
-import { api } from '../../../services/api';
+import { api, ApiResponse } from '../../../services/api';
 import { useToast } from '../../../contexts/ToastContext';
 import { useAppFilter } from '../../../contexts/AppFilterContext';
 import { NoteType } from '@snote/shared';
@@ -22,7 +22,8 @@ import {
   Tag,
   Columns,
   Clock,
-  Calendar
+  Calendar,
+  FolderKanban
 } from 'lucide-react';
 
 export type NoteModalMode = 'WRITE' | 'PREVIEW' | 'SPLIT';
@@ -33,6 +34,8 @@ interface NoteModalProps {
   onSuccess: () => void;
   noteToEdit?: any | null;
   initialMode?: NoteModalMode;
+  defaultProjectId?: string;
+  defaultSubjectId?: string;
 }
 
 export const NoteModal: React.FC<NoteModalProps> = ({
@@ -40,13 +43,17 @@ export const NoteModal: React.FC<NoteModalProps> = ({
   onClose,
   onSuccess,
   noteToEdit,
-  initialMode
+  initialMode,
+  defaultProjectId,
+  defaultSubjectId
 }) => {
   const { subjects, selectedSubjectId } = useAppFilter();
+  const [projects, setProjects] = useState<any[]>([]);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [subjectId, setSubjectId] = useState<string>('');
-  const [noteType, setNoteType] = useState<NoteType>(NoteType.LECTURE);
+  const [projectId, setProjectId] = useState<string>('');
+  const [noteType, setNoteType] = useState<NoteType>(NoteType.GENERAL);
   const [tagsInput, setTagsInput] = useState('');
   const [mode, setMode] = useState<NoteModalMode>('PREVIEW');
   const [loading, setLoading] = useState(false);
@@ -54,24 +61,34 @@ export const NoteModal: React.FC<NoteModalProps> = ({
   const { showToast } = useToast();
 
   useEffect(() => {
+    if (isOpen) {
+      api.get<ApiResponse<any[]>>('/projects')
+        .then((res) => setProjects(res.data || []))
+        .catch(() => {});
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
     if (noteToEdit) {
       setTitle(noteToEdit.title || '');
       setContent(noteToEdit.content || '');
       setSubjectId(noteToEdit.subjectId || '');
-      setNoteType(noteToEdit.noteType || NoteType.LECTURE);
+      setProjectId(noteToEdit.projectId || '');
+      setNoteType(noteToEdit.noteType || NoteType.GENERAL);
       setTagsInput((noteToEdit.tags || []).map((t: any) => t.name).join(', '));
-      // Mở ghi chú đã có: Mặc định vào chế độ PREVIEW để đọc nội dung định dạng đẹp mắt
+      // Mở ghi chú đã có: Mặc định vào chế độ PREVIEW
       setMode(initialMode || 'PREVIEW');
     } else {
       setTitle('');
       setContent('');
-      setSubjectId(selectedSubjectId || (subjects[0]?.id || ''));
-      setNoteType(NoteType.LECTURE);
+      setSubjectId(defaultSubjectId || selectedSubjectId || '');
+      setProjectId(defaultProjectId || '');
+      setNoteType(defaultProjectId ? NoteType.PROJECT_LOG : (selectedSubjectId ? NoteType.LECTURE : NoteType.GENERAL));
       setTagsInput('');
-      // Tạo ghi chú mới: Mặc định vào chế độ WRITE để gõ nội dung
+      // Tạo ghi chú mới: Mặc định vào chế độ WRITE
       setMode(initialMode || 'WRITE');
     }
-  }, [noteToEdit, selectedSubjectId, subjects, isOpen, initialMode]);
+  }, [noteToEdit, selectedSubjectId, subjects, isOpen, initialMode, defaultProjectId, defaultSubjectId]);
 
   // Insert markdown helper at cursor position
   const insertMarkdown = (prefix: string, suffix: string = '', defaultText: string = '') => {
@@ -92,10 +109,6 @@ export const NoteModal: React.FC<NoteModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!subjectId) {
-      showToast('Ghi chú bắt buộc phải gắn với một Môn học (Ràng buộc chống rác)', 'error');
-      return;
-    }
 
     const tagNames = tagsInput
       .split(',')
@@ -108,20 +121,22 @@ export const NoteModal: React.FC<NoteModalProps> = ({
         await api.put(`/notes/${noteToEdit.id}`, {
           title: title.trim(),
           content,
-          subjectId,
+          subjectId: subjectId || null,
+          projectId: projectId || null,
           noteType,
           tagNames
         });
-        showToast('Cập nhật ghi chú bài giảng thành công!', 'success');
+        showToast('Cập nhật ghi chú thành công!', 'success');
       } else {
         await api.post('/notes', {
           title: title.trim(),
           content,
-          subjectId,
+          subjectId: subjectId || undefined,
+          projectId: projectId || undefined,
           noteType,
           tagNames
         });
-        showToast('Tạo ghi chú bài học mới thành công!', 'success');
+        showToast('Tạo ghi chú mới thành công!', 'success');
       }
 
       onSuccess();
@@ -144,7 +159,7 @@ export const NoteModal: React.FC<NoteModalProps> = ({
         noteToEdit
           ? mode === 'PREVIEW'
             ? 'Xem Chi Tiết Bài Ghi (Preview)'
-            : 'Chỉnh Sửa Ghi Chú Bài Học'
+            : 'Chỉnh Sửa Ghi Chú'
           : 'Soạn Thảo Ghi Chú Mới'
       }
       maxWidth={mode === 'SPLIT' ? '1060px' : '820px'}
@@ -154,12 +169,12 @@ export const NoteModal: React.FC<NoteModalProps> = ({
         {/* Title Input */}
         <div>
           <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
-            Tiêu đề ghi chú bài giảng *
+            Tiêu đề ghi chú *
           </label>
           <input
             type="text"
             required
-            placeholder="Ví dụ: Kiến trúc Modular Monolith & ACID Boundaries"
+            placeholder="Ví dụ: Ý tưởng nghiên cứu Modular Monolith hoặc Ghi chép cá nhân..."
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             className="snote-input"
@@ -167,19 +182,18 @@ export const NoteModal: React.FC<NoteModalProps> = ({
           />
         </div>
 
-        {/* Subject & Note Type Selectors */}
+        {/* Subject & Project Selectors (Flexible / Free note support) */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
           <div>
             <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
-              Môn học liên quan * (Anti-Junk)
+              Môn học liên quan (Tùy chọn)
             </label>
             <select
               value={subjectId}
               onChange={(e) => setSubjectId(e.target.value)}
-              required
               className="snote-select"
             >
-              <option value="">-- Chọn môn học --</option>
+              <option value="">📝 Ghi chú tự do / Cá nhân (Không thuộc môn học)</option>
               {subjects.map((sub) => (
                 <option key={sub.id} value={sub.id}>
                   {sub.code ? `[${sub.code}] ` : ''}{sub.name} ({sub.credits} TC)
@@ -189,41 +203,62 @@ export const NoteModal: React.FC<NoteModalProps> = ({
           </div>
 
           <div>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
+              <FolderKanban size={13} style={{ color: 'var(--color-purple)' }} />
+              <span>Đồ án / Dự án liên kết (Tùy chọn)</span>
+            </label>
+            <select
+              value={projectId}
+              onChange={(e) => setProjectId(e.target.value)}
+              className="snote-select"
+            >
+              <option value="">-- Không gắn đồ án --</option>
+              {projects.map((p) => (
+                <option key={p.id} value={p.id}>
+                  📁 {p.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Note Type & Tags */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+          <div>
             <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
-              Phân loại bài giảng
+              Phân loại ghi chú
             </label>
             <select
               value={noteType}
               onChange={(e) => setNoteType(e.target.value as NoteType)}
               className="snote-select"
             >
-              <option value={NoteType.LECTURE}>📖 Bài giảng (Lecture)</option>
+              <option value={NoteType.GENERAL}>📝 Ghi chú chung / Ý tưởng tự do (General)</option>
+              <option value={NoteType.LECTURE}>📖 Bài giảng lý thuyết (Lecture)</option>
               <option value={NoteType.LAB_REPORT}>🧪 Báo cáo thực hành (Lab)</option>
               <option value={NoteType.EXAM_PREP}>🎯 Ôn thi / Đề cương (Exam Prep)</option>
               <option value={NoteType.PROJECT_LOG}>🛠️ Nhật ký đồ án (Project Log)</option>
               <option value={NoteType.MEETING_MINUTES}>👥 Biên bản họp nhóm (Meeting)</option>
-              <option value={NoteType.GENERAL}>📝 Ghi chú chung (General)</option>
             </select>
           </div>
-        </div>
 
-        {/* Tags Input */}
-        <div>
-          <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
-            Thẻ phân loại tags (Phân cách bằng dấu phẩy)
-          </label>
-          <div style={{ position: 'relative' }}>
-            <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', display: 'flex' }}>
-              <Tag size={15} />
-            </span>
-            <input
-              type="text"
-              placeholder="Architecture, Database, TypeScript, Security"
-              value={tagsInput}
-              onChange={(e) => setTagsInput(e.target.value)}
-              className="snote-input"
-              style={{ paddingLeft: '36px' }}
-            />
+          <div>
+            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
+              Thẻ phân loại tags (Phân cách bằng dấu phẩy)
+            </label>
+            <div style={{ position: 'relative' }}>
+              <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', display: 'flex' }}>
+                <Tag size={15} />
+              </span>
+              <input
+                type="text"
+                placeholder="Architecture, Ideas, Database, Research"
+                value={tagsInput}
+                onChange={(e) => setTagsInput(e.target.value)}
+                className="snote-input"
+                style={{ paddingLeft: '36px' }}
+              />
+            </div>
           </div>
         </div>
 
@@ -363,7 +398,7 @@ export const NoteModal: React.FC<NoteModalProps> = ({
             <textarea
               ref={textareaRef}
               rows={12}
-              placeholder="Nhập nội dung bài học, mã nguồn, bảng biểu bằng cú pháp Markdown..."
+              placeholder="Nhập nội dung bài học, ý tưởng nghiên cứu, mã nguồn bằng cú pháp Markdown..."
               value={content}
               onChange={(e) => setContent(e.target.value)}
               className="snote-textarea"

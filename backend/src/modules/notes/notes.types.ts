@@ -3,8 +3,8 @@ import { NoteType } from '@prisma/client';
 export interface CreateNoteDto {
   title: string;
   content: string;
-  subjectId?: string;
-  projectId?: string;
+  subjectId?: string | null;
+  projectId?: string | null;
   noteType?: NoteType;
   tagNames?: string[];
   isPinned?: boolean;
@@ -13,8 +13,8 @@ export interface CreateNoteDto {
 export interface UpdateNoteDto {
   title?: string;
   content?: string;
-  subjectId?: string;
-  projectId?: string;
+  subjectId?: string | null;
+  projectId?: string | null;
   noteType?: NoteType;
   tagNames?: string[];
   isPinned?: boolean;
@@ -49,6 +49,16 @@ export interface NoteResponseDto {
   isPinned: boolean;
   isArchived: boolean;
   tags: TagDto[];
+  subject?: {
+    id: string;
+    name: string;
+    code?: string | null;
+    color?: string | null;
+  } | null;
+  project?: {
+    id: string;
+    name: string;
+  } | null;
   createdAt: Date;
   updatedAt: Date;
 }

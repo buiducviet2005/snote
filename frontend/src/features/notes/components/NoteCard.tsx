@@ -83,7 +83,7 @@ export const NoteCard: React.FC<NoteCardProps> = ({
               <span>{typeConfig.label}</span>
             </span>
 
-            {note.subject && (
+            {note.subject ? (
               <span
                 className="badge"
                 style={{
@@ -93,6 +93,14 @@ export const NoteCard: React.FC<NoteCardProps> = ({
                 }}
               >
                 {note.subject.code ? `[${note.subject.code}] ` : ''}{note.subject.name}
+              </span>
+            ) : note.project ? (
+              <span className="badge badge-purple" style={{ fontSize: '10.5px' }}>
+                📁 {note.project.name}
+              </span>
+            ) : (
+              <span className="badge badge-neutral" style={{ fontSize: '10.5px' }}>
+                📝 Ghi chú tự do
               </span>
             )}
           </div>
