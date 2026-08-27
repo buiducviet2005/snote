@@ -55,6 +55,69 @@ export class ProjectsRepository {
     });
   }
 
+  async findWorkspaceById(id: string, userId: string): Promise<any | null> {
+    return prisma.project.findFirst({
+      where: {
+        id,
+        OR: [
+          { userId },
+          { members: { some: { userId } } }
+        ],
+        deletedAt: null
+      },
+      include: {
+        subject: {
+          select: { id: true, name: true, code: true, color: true }
+        },
+        semester: {
+          select: { id: true, name: true, academicYear: true }
+        },
+        _count: {
+          select: { notes: true, tasks: true, members: true }
+        },
+        members: {
+          include: {
+            user: {
+              select: { id: true, email: true, fullName: true, avatarUrl: true }
+            }
+          },
+          orderBy: { role: 'asc' }
+        },
+        notes: {
+          where: { deletedAt: null },
+          orderBy: [
+            { isPinned: 'desc' },
+            { createdAt: 'desc' }
+          ],
+          include: {
+            noteTags: {
+              include: { tag: true }
+            },
+            user: {
+              select: { id: true, fullName: true, email: true }
+            }
+          }
+        },
+        tasks: {
+          where: { deletedAt: null },
+          orderBy: [
+            { dueDate: 'asc' },
+            { priority: 'desc' },
+            { createdAt: 'desc' }
+          ],
+          include: {
+            taskTags: {
+              include: { tag: true }
+            },
+            user: {
+              select: { id: true, fullName: true, email: true }
+            }
+          }
+        }
+      }
+    });
+  }
+
   async create(userId: string, data: CreateProjectDto): Promise<any> {
     return prisma.project.create({
       data: {
@@ -132,6 +195,15 @@ export class ProjectsRepository {
         userId: targetUserId,
         role
       }
+    });
+  }
+
+  async updateMemberRole(projectId: string, targetUserId: string, role: ProjectMemberRole): Promise<ProjectMember> {
+    return prisma.projectMember.update({
+      where: {
+        projectId_userId: { projectId, userId: targetUserId }
+      },
+      data: { role }
     });
   }
 

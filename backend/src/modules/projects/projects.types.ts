@@ -39,6 +39,10 @@ export interface AddProjectMemberDto {
   role?: ProjectMemberRole;
 }
 
+export interface UpdateProjectMemberRoleDto {
+  role: ProjectMemberRole;
+}
+
 export interface ProjectResponseDto {
   id: string;
   name: string;
@@ -54,4 +58,20 @@ export interface ProjectResponseDto {
   members?: ProjectMemberDto[];
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface ProjectWorkspaceDto extends ProjectResponseDto {
+  subject?: {
+    id: string;
+    name: string;
+    code: string | null;
+    color: string | null;
+  } | null;
+  semester?: {
+    id: string;
+    name: string;
+    academicYear: string;
+  } | null;
+  notes: any[];
+  tasks: any[];
 }

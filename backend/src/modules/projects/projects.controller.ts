@@ -27,6 +27,17 @@ export class ProjectsController {
     });
   };
 
+  getWorkspace = async (req: Request, res: Response): Promise<void> => {
+    const userId = req.user!.id;
+    const id = req.params.id as string;
+    const data = await this.service.getProjectWorkspace(id, userId);
+    res.status(200).json({
+      success: true,
+      message: 'Lấy không gian làm việc đồ án thành công',
+      data
+    });
+  };
+
   create = async (req: Request, res: Response): Promise<void> => {
     const userId = req.user!.id;
     const validated = createProjectSchema.parse(req.body);
@@ -67,6 +78,18 @@ export class ProjectsController {
     res.status(200).json({
       success: true,
       message: 'Thêm thành viên vào đồ án thành công',
+      data
+    });
+  };
+
+  updateMemberRole = async (req: Request, res: Response): Promise<void> => {
+    const userId = req.user!.id;
+    const id = req.params.id as string;
+    const targetUserId = req.params.memberUserId as string;
+    const data = await this.service.updateMemberRole(id, userId, targetUserId, req.body);
+    res.status(200).json({
+      success: true,
+      message: 'Cập nhật vai trò thành viên thành công',
       data
     });
   };

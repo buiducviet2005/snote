@@ -1,5 +1,13 @@
 import { ProjectsRepository } from './projects.repository';
-import { CreateProjectDto, UpdateProjectDto, ProjectResponseDto, AddProjectMemberDto, ProjectMemberDto } from './projects.types';
+import {
+  CreateProjectDto,
+  UpdateProjectDto,
+  ProjectResponseDto,
+  AddProjectMemberDto,
+  ProjectMemberDto,
+  UpdateProjectMemberRoleDto,
+  ProjectWorkspaceDto
+} from './projects.types';
 import { NotFoundError, ValidationError, ForbiddenError } from '../../shared/errors/appErrors';
 import { prisma } from '../../shared/db/prismaClient';
 
@@ -45,9 +53,47 @@ export class ProjectsService {
   async getProjectById(id: string, userId: string): Promise<ProjectResponseDto> {
     const project = await this.repo.findByIdAndUserId(id, userId);
     if (!project) {
-      throw new NotFoundError('Không tìm thấy đồ án yêu cầu');
+      throw new NotFoundError('Không tìm thấy đồ án yêu cầu hoặc bạn không có quyền truy cập');
     }
     return this.mapDto(project);
+  }
+
+  async getProjectWorkspace(id: string, userId: string): Promise<ProjectWorkspaceDto> {
+    const project = await this.repo.findWorkspaceById(id, userId);
+    if (!project) {
+      throw new NotFoundError('Không tìm thấy đồ án hoặc bạn chưa là thành viên của đồ án này');
+    }
+
+    return {
+      ...this.mapDto(project),
+      subject: project.subject,
+      semester: project.semester,
+      notes: project.notes.map((n: any) => ({
+        id: n.id,
+        title: n.title,
+        content: n.content,
+        noteType: n.noteType,
+        isPinned: n.isPinned,
+        isArchived: n.isArchived,
+        author: n.user,
+        tags: n.noteTags.map((nt: any) => nt.tag),
+        createdAt: n.createdAt,
+        updatedAt: n.updatedAt
+      })),
+      tasks: project.tasks.map((t: any) => ({
+        id: t.id,
+        title: t.title,
+        description: t.description,
+        status: t.status,
+        priority: t.priority,
+        dueDate: t.dueDate,
+        completedAt: t.completedAt,
+        assignee: t.user,
+        tags: t.taskTags.map((tt: any) => tt.tag),
+        createdAt: t.createdAt,
+        updatedAt: t.updatedAt
+      }))
+    };
   }
 
   async createProject(userId: string, dto: CreateProjectDto): Promise<ProjectResponseDto> {
@@ -62,12 +108,21 @@ export class ProjectsService {
   }
 
   async deleteProject(id: string, userId: string): Promise<void> {
-    await this.getProjectById(id, userId);
+    const project = await this.getProjectById(id, userId);
+    if (project.members?.find((m) => m.userId === userId)?.role !== 'OWNER') {
+      throw new ForbiddenError('Chỉ Trưởng nhóm (Owner) mới có quyền xóa toàn bộ đồ án này');
+    }
     await this.repo.softDelete(id, userId);
   }
 
   async addMember(projectId: string, currentUserId: string, dto: AddProjectMemberDto): Promise<ProjectResponseDto> {
     const project = await this.getProjectById(projectId, currentUserId);
+
+    // Kiểm tra quyền: Chỉ OWNER mới có quyền thêm thành viên
+    const currentMember = project.members?.find((m) => m.userId === currentUserId);
+    if (currentMember && currentMember.role === 'VIEWER') {
+      throw new ForbiddenError('Tài khoản của bạn chỉ có quyền Người xem (Viewer), không thể thêm thành viên');
+    }
 
     // Tìm target user theo email hoặc userId an toàn tránh lỗi cú pháp UUID
     const input = dto.emailOrUserId.trim();
@@ -88,8 +143,42 @@ export class ProjectsService {
     return this.getProjectById(projectId, currentUserId);
   }
 
+  async updateMemberRole(
+    projectId: string,
+    currentUserId: string,
+    targetUserId: string,
+    dto: UpdateProjectMemberRoleDto
+  ): Promise<ProjectResponseDto> {
+    const project = await this.getProjectById(projectId, currentUserId);
+
+    // Chỉ OWNER mới có quyền thay đổi vai trò
+    const currentMember = project.members?.find((m) => m.userId === currentUserId);
+    if (!currentMember || currentMember.role !== 'OWNER') {
+      throw new ForbiddenError('Chỉ Trưởng nhóm (Owner) mới có quyền thay đổi vai trò thành viên');
+    }
+
+    // Nếu chuyển quyền sang OWNER, cập nhật role cho targetUser
+    await this.repo.updateMemberRole(projectId, targetUserId, dto.role);
+    return this.getProjectById(projectId, currentUserId);
+  }
+
   async removeMember(projectId: string, currentUserId: string, targetUserId: string): Promise<void> {
-    await this.getProjectById(projectId, currentUserId);
+    const project = await this.getProjectById(projectId, currentUserId);
+
+    // Cho phép tự rời nhóm HOẶC Owner kick member
+    const isSelf = currentUserId === targetUserId;
+    const isOwner = project.members?.find((m) => m.userId === currentUserId)?.role === 'OWNER';
+
+    if (!isSelf && !isOwner) {
+      throw new ForbiddenError('Bạn không có quyền xóa thành viên này khỏi đồ án');
+    }
+
+    // Không cho phép xóa Owner duy nhất nếu còn thành viên khác
+    const targetMember = project.members?.find((m) => m.userId === targetUserId);
+    if (targetMember?.role === 'OWNER' && (project.members?.length || 0) > 1 && isSelf) {
+      throw new ValidationError('Vui lòng chuyển giao quyền Trưởng nhóm trước khi rời khỏi đồ án');
+    }
+
     await this.repo.removeMember(projectId, targetUserId);
   }
 }

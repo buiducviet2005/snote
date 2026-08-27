@@ -4,6 +4,7 @@ import { useAppFilter } from '../../../contexts/AppFilterContext';
 import { useToast } from '../../../contexts/ToastContext';
 import { ProjectModal } from '../components/ProjectModal';
 import { TeamMembersModal } from '../components/TeamMembersModal';
+import { ProjectWorkspaceModal } from '../components/ProjectWorkspaceModal';
 import { ProjectStatus } from '@snote/shared';
 import {
   FolderKanban,
@@ -18,7 +19,9 @@ import {
   Zap,
   CheckCircle2,
   Users,
-  UserPlus
+  UserPlus,
+  ExternalLink,
+  ArrowRight
 } from 'lucide-react';
 
 export const ProjectsListPage: React.FC = () => {
@@ -28,6 +31,7 @@ export const ProjectsListPage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [projectToEdit, setProjectToEdit] = useState<any | null>(null);
   const [memberProject, setMemberProject] = useState<any | null>(null);
+  const [workspaceProjectId, setWorkspaceProjectId] = useState<string | null>(null);
   const { showToast } = useToast();
 
   const fetchProjects = useCallback(async () => {
@@ -87,7 +91,7 @@ export const ProjectsListPage: React.FC = () => {
             <span className="badge badge-purple">{projects.length} đồ án</span>
           </div>
           <p style={{ margin: '4px 0 0 0', fontSize: '13.5px', color: 'var(--text-secondary)' }}>
-            Theo dõi đề tài nghiên cứu, bài tập lớn và quản lý phân công thành viên nhóm
+            Không gian cộng tác: Giao việc nhóm, ghi chú kỹ thuật, phân quyền và theo dõi tiến độ
           </p>
         </div>
 
@@ -142,7 +146,7 @@ export const ProjectsListPage: React.FC = () => {
             Chưa có đồ án hoặc dự án nào
           </h3>
           <p style={{ margin: '0 0 20px 0', fontSize: '13.5px', color: 'var(--text-secondary)', maxWidth: '420px', marginLeft: 'auto', marginRight: 'auto' }}>
-            Tạo đồ án môn học để theo dõi nhật ký phát triển, tài liệu kỹ thuật và mời bạn học cùng làm nhóm.
+            Tạo đồ án môn học để theo dõi nhật ký phát triển, giao việc cho nhóm và mời bạn học cùng làm.
           </p>
           <button
             onClick={() => {
@@ -175,10 +179,12 @@ export const ProjectsListPage: React.FC = () => {
                   display: 'flex',
                   flexDirection: 'column',
                   justifyContent: 'space-between',
-                  minHeight: '230px'
+                  minHeight: '250px',
+                  transition: 'border-color var(--transition-fast)'
                 }}
               >
                 <div>
+                  {/* Card Header Status & Member Chip */}
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
                     <span className={`badge ${statusConfig.badgeClass}`}>
                       <StatusIcon size={12} />
@@ -190,7 +196,7 @@ export const ProjectsListPage: React.FC = () => {
                         onClick={() => setMemberProject(proj)}
                         className="badge badge-purple"
                         style={{ cursor: 'pointer', border: '1px solid var(--color-purple)' }}
-                        title="Quản lý thành viên nhóm"
+                        title="Quản lý & phân quyền thành viên"
                       >
                         <Users size={11} />
                         <span>{memberCount} Thành viên</span>
@@ -205,25 +211,31 @@ export const ProjectsListPage: React.FC = () => {
                     </div>
                   </div>
 
+                  {/* Project Title (Click to open Full Workspace) */}
                   <h3
-                    onClick={() => {
-                      setProjectToEdit(proj);
-                      setIsModalOpen(true);
-                    }}
+                    onClick={() => setWorkspaceProjectId(proj.id)}
                     style={{
                       margin: '0 0 8px 0',
                       fontSize: '17px',
                       fontWeight: 700,
                       color: 'var(--text-primary)',
                       lineHeight: 1.35,
-                      cursor: 'pointer'
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px'
                     }}
+                    title="Nhấp để mở Không Gian Làm Việc Đồ Án (Tasks, Notes, Thảo luận)"
+                    onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--accent-primary)')}
+                    onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-primary)')}
                   >
-                    {proj.name}
+                    <span>{proj.name}</span>
+                    <ArrowRight size={14} style={{ opacity: 0.6 }} />
                   </h3>
 
                   {proj.description && (
                     <p
+                      onClick={() => setWorkspaceProjectId(proj.id)}
                       style={{
                         margin: '0 0 14px 0',
                         fontSize: '13px',
@@ -232,7 +244,8 @@ export const ProjectsListPage: React.FC = () => {
                         display: '-webkit-box',
                         WebkitLineClamp: 3,
                         WebkitBoxOrient: 'vertical',
-                        overflow: 'hidden'
+                        overflow: 'hidden',
+                        cursor: 'pointer'
                       }}
                     >
                       {proj.description}
@@ -240,6 +253,7 @@ export const ProjectsListPage: React.FC = () => {
                   )}
                 </div>
 
+                {/* Footer Actions & Stats */}
                 <div
                   style={{
                     display: 'flex',
@@ -265,13 +279,13 @@ export const ProjectsListPage: React.FC = () => {
 
                   <div style={{ display: 'flex', gap: '4px' }}>
                     <button
-                      onClick={() => setMemberProject(proj)}
-                      className="btn btn-ghost btn-sm"
-                      style={{ color: 'var(--color-purple)', padding: '4px 8px', fontSize: '12px' }}
-                      title="Mời bạn học vào nhóm"
+                      onClick={() => setWorkspaceProjectId(proj.id)}
+                      className="btn btn-secondary btn-sm"
+                      style={{ padding: '4px 10px', fontSize: '12px', fontWeight: 600, color: 'var(--accent-primary)' }}
+                      title="Mở không gian làm việc đồ án"
                     >
-                      <UserPlus size={13} />
-                      <span>Nhóm</span>
+                      <ExternalLink size={13} />
+                      <span>Không gian</span>
                     </button>
                     <button
                       onClick={() => {
@@ -279,7 +293,8 @@ export const ProjectsListPage: React.FC = () => {
                         setIsModalOpen(true);
                       }}
                       className="btn btn-ghost btn-sm"
-                      style={{ color: 'var(--accent-primary)', padding: '4px 8px', fontSize: '12px' }}
+                      style={{ color: 'var(--text-secondary)', padding: '4px 8px', fontSize: '12px' }}
+                      title="Chỉnh sửa thông tin đồ án"
                     >
                       <Edit3 size={13} />
                       <span>Sửa</span>
@@ -288,9 +303,9 @@ export const ProjectsListPage: React.FC = () => {
                       onClick={() => handleDelete(proj.id, proj.name)}
                       className="btn btn-ghost btn-sm"
                       style={{ color: 'var(--color-danger)', padding: '4px 8px', fontSize: '12px' }}
+                      title="Xóa đồ án"
                     >
                       <Trash2 size={13} />
-                      <span>Xóa</span>
                     </button>
                   </div>
                 </div>
@@ -308,7 +323,7 @@ export const ProjectsListPage: React.FC = () => {
         projectToEdit={projectToEdit}
       />
 
-      {/* Team Members Collaboration Modal */}
+      {/* Team Members Modal */}
       {memberProject && (
         <TeamMembersModal
           isOpen={Boolean(memberProject)}
@@ -318,6 +333,16 @@ export const ProjectsListPage: React.FC = () => {
             fetchProjects();
             setMemberProject(null);
           }}
+        />
+      )}
+
+      {/* Full Project Workspace & Collaboration Modal */}
+      {workspaceProjectId && (
+        <ProjectWorkspaceModal
+          isOpen={Boolean(workspaceProjectId)}
+          onClose={() => setWorkspaceProjectId(null)}
+          projectId={workspaceProjectId}
+          onRefreshParent={fetchProjects}
         />
       )}
     </div>
