@@ -37,6 +37,8 @@ Tài liệu này đóng vai trò là **Nguồn Chân lý Duy nhất (Single Sour
 SNOTE/
 ├── .gitignore                            # Cấu hình bỏ qua các file nhạy cảm và build artifacts
 ├── docker-compose.yml                    # Cấu hình container PostgreSQL 16 local
+├── package.json                          # Root scripts điều phối (dev, build, type-check)
+├── README.md                             # Hướng dẫn khởi chạy & tổng quan hệ thống
 ├── RULES.md                              # Bảng quy tắc & luật phát triển bắt buộc của dự án
 ├── DOCS/                                 # Thư mục lưu trữ tài liệu quy chuẩn kỹ thuật
 │   ├── RULES.md                          # Bản sao quy tắc dự án trong thư mục docs
@@ -46,8 +48,21 @@ SNOTE/
 │   ├── step_3.md                         # Bước 3: Thiết kế kiến trúc hệ thống (Modular Monolith)
 │   ├── step_3_setup.md                   # Bước 3.3: Hướng dẫn thiết lập Backend Skeleton từ số 0
 │   ├── step_3_frontend.md                # Bước 3.4: Hướng dẫn thiết lập Frontend SPA Feature-based
+│   ├── step_3_repo_structure.md          # Bước 3.5: Cấu trúc repo & tổ chức mã nguồn
 │   ├── step_3_setup_checklist.md         # Bảng checklist theo dõi tiến độ thiết lập Bước 3
-│   └── step_3_integration_checklist.md   # Bảng checklist kiểm tra kết nối Frontend & Backend
+│   ├── step_3_integration_checklist.md   # Bảng checklist kiểm tra kết nối Frontend & Backend
+│   └── step_3.5_checklist.md             # Bảng checklist thực thi Bước 3.5
+├── packages/                             # Các thư viện dùng chung (Shared Packages)
+│   └── shared/                           # Types, Enums & DTOs dùng chung toàn dự án
+│       ├── package.json                  # Khai báo package @snote/shared
+│       ├── tsconfig.json                 # Cấu hình TypeScript cho shared library
+│       └── src/
+│           ├── enums.ts                  # Enums chuẩn (NoteType, TaskStatus, TaskPriority...)
+│           ├── contracts/
+│           │   ├── notes.contract.ts     # DTO Note Request & Response interfaces
+│           │   ├── tasks.contract.ts     # DTO Task Request & Response interfaces
+│           │   └── api.contract.ts       # ApiResponse wrapper & pagination
+│           └── index.ts                  # Public API của shared package
 ├── backend/                              # Mã nguồn Backend API (Node.js + Express + Prisma)
 │   ├── .env                              # Biến môi trường local (Không commit vào Git)
 │   ├── .env.example                      # File mẫu biến môi trường
@@ -138,6 +153,8 @@ SNOTE/
 | :--- | :--- |
 | [/.gitignore](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/.gitignore) | Khai báo danh sách các file/folder không đưa lên Git (`.env`, `node_modules/`, `dist/`, logs, database volume). |
 | [/docker-compose.yml](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/docker-compose.yml) | Khởi chạy container PostgreSQL 16 (`ainote_postgres`) trên cổng `5432` với persistent volume `postgres_data`. |
+| [/package.json](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/package.json) | Root package manifest chứa scripts điều phối toàn dự án (`dev`, `build`, `type-check`). |
+| [/README.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/README.md) | Tài liệu tổng quan, kiến trúc, yêu cầu môi trường và hướng dẫn khởi chạy nhanh dự án. |
 | [/RULES.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/RULES.md) | Bản quy tắc và luật phát triển bắt buộc áp dụng xuyên suốt mọi phiên làm việc cho AI Agent và lập trình viên. |
 
 ---
@@ -151,13 +168,29 @@ SNOTE/
 | [DOCS/step_3.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/step_3.md) | Thiết kế kiến trúc hệ thống tổng thể (Modular Monolith), phân rã 10 Bounded Contexts, quy chuẩn config, logger, error, security. |
 | [DOCS/step_3_setup.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/step_3_setup.md) | Tài liệu kỹ thuật chi tiết của Bước nhỏ 3.3 (Setup backend skeleton từ số 0). |
 | [DOCS/step_3_frontend.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/step_3_frontend.md) | Tài liệu kỹ thuật chi tiết của Bước nhỏ 3.4 (Setup Frontend SPA Vite + React + React Router). |
+| [DOCS/step_3_repo_structure.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/step_3_repo_structure.md) | Tài liệu kỹ thuật chi tiết của Bước nhỏ 3.5 (Cấu trúc Repo & Tổ chức mã nguồn toàn project). |
 | [DOCS/step_3_setup_checklist.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/step_3_setup_checklist.md) | Bảng theo dõi tiến độ nghiệm thu kỹ thuật từng tác vụ của Bước 3 (`25 / 28` tác vụ hoàn thành). |
 | [DOCS/step_3_integration_checklist.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/step_3_integration_checklist.md) | Bảng theo dõi và nhật ký kiểm thử kết nối mạng, CORS và data flow giữa Frontend SPA và Backend API (`7 / 7` đạt). |
+| [DOCS/step_3.5_checklist.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/step_3.5_checklist.md) | Bảng theo dõi tiến độ thực thi cấu trúc repo và thư viện dùng chung Bước 3.5 (`6 / 6` hoàn thành). |
 | [DOCS/PROJECT_STRUCTURE_AND_MAP.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/PROJECT_STRUCTURE_AND_MAP.md) | Tài liệu tra cứu cấu trúc dự án, từ điển tệp tin và công nghệ sử dụng (File này). |
 
 ---
 
-### 3.3. Thư mục Backend (`backend/`)
+### 3.3. Thư mục Thư viện Dùng chung (`packages/shared/`)
+
+| Đường dẫn tệp | Chức năng chi tiết |
+| :--- | :--- |
+| [packages/shared/package.json](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/packages/shared/package.json) | Khai báo package `@snote/shared` xuất bản các kiểu dữ liệu và contracts dùng chung. |
+| [packages/shared/tsconfig.json](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/packages/shared/tsconfig.json) | Cấu hình TypeScript xuất file định nghĩa `.d.ts` vào thư mục `dist/`. |
+| [packages/shared/src/enums.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/packages/shared/src/enums.ts) | Định nghĩa các Enums chuẩn: `NoteType`, `TaskStatus`, `TaskPriority`, `SemesterStatus`, `ScheduleEventType`. |
+| [packages/shared/src/contracts/notes.contract.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/packages/shared/src/contracts/notes.contract.ts) | Định nghĩa interfaces `CreateNoteDto`, `UpdateNoteDto`, `NoteResponseDto`. |
+| [packages/shared/src/contracts/tasks.contract.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/packages/shared/src/contracts/tasks.contract.ts) | Định nghĩa interfaces `CreateTaskDto`, `UpdateTaskDto`, `TaskResponseDto`. |
+| [packages/shared/src/contracts/api.contract.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/packages/shared/src/contracts/api.contract.ts) | Định nghĩa wrapper `ApiResponse<T>` và `PaginationQuery`. |
+| [packages/shared/src/index.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/packages/shared/src/index.ts) | Export Public API duy nhất cho `@snote/shared`. |
+
+---
+
+### 3.4. Thư mục Backend (`backend/`)
 
 | Đường dẫn tệp | Chức năng chi tiết |
 | :--- | :--- |
