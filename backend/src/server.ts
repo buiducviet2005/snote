@@ -1,3 +1,4 @@
+// SNOTE Backend Server - Loaded with PostgreSQL 18 Local Database
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
