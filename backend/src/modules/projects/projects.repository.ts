@@ -8,7 +8,7 @@ export class ProjectsRepository {
       where: {
         OR: [
           { userId },
-          { members: { some: { userId } } }
+          { members: { some: { userId, status: 'ACCEPTED' } } }
         ],
         semesterId: semesterId || undefined,
         subjectId: subjectId || undefined,
@@ -28,6 +28,45 @@ export class ProjectsRepository {
         }
       }
     });
+  }
+
+  async findInvitations(userId: string): Promise<any[]> {
+    return prisma.project.findMany({
+      where: {
+        deletedAt: null,
+        members: {
+          some: {
+            userId,
+            status: 'PENDING'
+          }
+        }
+      },
+      include: {
+        user: {
+          select: { id: true, fullName: true, email: true }
+        },
+        subject: {
+          select: { id: true, name: true, code: true, color: true }
+        },
+        members: {
+          where: { userId },
+          select: { id: true, role: true, status: true, joinedAt: true }
+        }
+      }
+    });
+  }
+
+  async respondToInvitation(projectId: string, userId: string, accept: boolean): Promise<any> {
+    if (accept) {
+      return prisma.projectMember.update({
+        where: { projectId_userId: { projectId, userId } },
+        data: { status: 'ACCEPTED', joinedAt: new Date() }
+      });
+    } else {
+      return prisma.projectMember.deleteMany({
+        where: { projectId, userId }
+      });
+    }
   }
 
   async findByIdAndUserId(id: string, userId: string): Promise<any | null> {
@@ -131,7 +170,7 @@ export class ProjectsRepository {
         status: data.status ?? 'ACTIVE',
         members: {
           create: [
-            { userId, role: 'OWNER' }
+            { userId, role: 'OWNER', status: 'ACCEPTED' }
           ]
         }
       },
@@ -184,16 +223,22 @@ export class ProjectsRepository {
     });
   }
 
-  async addMember(projectId: string, targetUserId: string, role: ProjectMemberRole = 'MEMBER'): Promise<ProjectMember> {
+  async addMember(
+    projectId: string,
+    targetUserId: string,
+    role: ProjectMemberRole = 'MEMBER',
+    status: 'PENDING' | 'ACCEPTED' = 'PENDING'
+  ): Promise<ProjectMember> {
     return prisma.projectMember.upsert({
       where: {
         projectId_userId: { projectId, userId: targetUserId }
       },
-      update: { role },
+      update: { role, status },
       create: {
         projectId,
         userId: targetUserId,
-        role
+        role,
+        status
       }
     });
   }

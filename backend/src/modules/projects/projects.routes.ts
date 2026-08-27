@@ -8,6 +8,11 @@ const controller = new ProjectsController();
 
 router.use(authGuard);
 
+// Project invitations routes (must be before /:id)
+router.get('/invitations', asyncBoundary(controller.getInvitations));
+router.post('/:id/invitations/accept', asyncBoundary(controller.acceptInvitation));
+router.post('/:id/invitations/decline', asyncBoundary(controller.declineInvitation));
+
 router.get('/', asyncBoundary(controller.getAll));
 router.get('/:id', asyncBoundary(controller.getById));
 router.get('/:id/workspace', asyncBoundary(controller.getWorkspace));

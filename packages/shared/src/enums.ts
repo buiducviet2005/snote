@@ -36,6 +36,12 @@ export enum ProjectMemberRole {
   VIEWER = 'VIEWER'
 }
 
+export enum ProjectMemberStatus {
+  PENDING = 'PENDING',
+  ACCEPTED = 'ACCEPTED',
+  DECLINED = 'DECLINED'
+}
+
 export enum NoteType {
   LECTURE = 'LECTURE',
   LAB_REPORT = 'LAB_REPORT',

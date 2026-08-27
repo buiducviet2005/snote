@@ -182,4 +182,12 @@ export class ProjectsService {
 
     await this.repo.removeMember(projectId, targetUserId);
   }
+
+  async getInvitations(userId: string): Promise<any[]> {
+    return this.repo.findInvitations(userId);
+  }
+
+  async respondInvitation(projectId: string, userId: string, accept: boolean): Promise<void> {
+    await this.repo.respondToInvitation(projectId, userId, accept);
+  }
 }

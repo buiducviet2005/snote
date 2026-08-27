@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { api, ApiResponse } from '../../../services/api';
 import { useAppFilter } from '../../../contexts/AppFilterContext';
 import { useToast } from '../../../contexts/ToastContext';
@@ -20,8 +20,6 @@ import {
   LayoutGrid,
   Columns,
   Sparkles,
-  ChevronDown,
-  ChevronRight,
   Folder,
   FolderKanban,
   FileText,
@@ -30,11 +28,13 @@ import {
   Trash2,
   Edit3,
   Eye,
-  Tag
+  Tag,
+  CheckCircle2,
+  SlidersHorizontal,
+  Bookmark
 } from 'lucide-react';
 
 export type NoteViewDensity = 'GRID' | 'COMPACT' | 'LIST' | 'SPLIT';
-export type NoteGrouping = 'NONE' | 'BY_SUBJECT' | 'BY_TYPE';
 
 export const NotesListPage: React.FC = () => {
   const { selectedSubjectId, selectedSemesterId, subjects } = useAppFilter();
@@ -42,11 +42,12 @@ export const NotesListPage: React.FC = () => {
   const [projects, setProjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
-  const [filterType, setFilterType] = useState<string>('ALL');
+
+  // Unified Filter State
+  const [selectedSourceFilter, setSelectedSourceFilter] = useState<string>('ALL'); // 'ALL' | 'FREE' | `sub_${id}` | `proj_${id}`
+  const [selectedTypeFilter, setSelectedTypeFilter] = useState<string>('ALL'); // 'ALL' | NoteType
   const [activeTab, setActiveTab] = useState<'ALL' | 'PINNED' | 'ARCHIVED'>('ALL');
   const [viewDensity, setViewDensity] = useState<NoteViewDensity>('GRID');
-  const [grouping, setGrouping] = useState<NoteGrouping>('BY_SUBJECT');
-  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
   const [selectedNoteForSplit, setSelectedNoteForSplit] = useState<any | null>(null);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -65,7 +66,6 @@ export const NotesListPage: React.FC = () => {
     try {
       const params = new URLSearchParams();
       if (selectedSubjectId) params.append('subjectId', selectedSubjectId);
-      if (filterType !== 'ALL') params.append('noteType', filterType);
       if (search.trim()) params.append('search', search.trim());
       if (activeTab === 'PINNED') params.append('isPinned', 'true');
       if (activeTab === 'ARCHIVED') {
@@ -78,7 +78,6 @@ export const NotesListPage: React.FC = () => {
       const fetchedNotes = res.data || [];
       setNotes(fetchedNotes);
 
-      // Auto-select first note for split mode if none selected
       if (fetchedNotes.length > 0 && !selectedNoteForSplit) {
         setSelectedNoteForSplit(fetchedNotes[0]);
       }
@@ -87,7 +86,7 @@ export const NotesListPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [selectedSubjectId, filterType, search, activeTab, showToast, selectedNoteForSplit]);
+  }, [selectedSubjectId, search, activeTab, showToast, selectedNoteForSplit]);
 
   useEffect(() => {
     fetchNotes();
@@ -150,98 +149,93 @@ export const NotesListPage: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const toggleSection = (sectionId: string) => {
-    setCollapsedSections((prev) => ({
-      ...prev,
-      [sectionId]: !prev[sectionId]
-    }));
-  };
-
-  // Grouping Logic
-  const getGroupedNotes = () => {
-    if (grouping === 'NONE') {
-      return [{ id: 'all', title: 'Tất cả bài ghi', icon: FileText, items: notes }];
-    }
-
-    if (grouping === 'BY_SUBJECT') {
-      const groups: { id: string; title: string; subtitle?: string; icon: any; color?: string; items: any[] }[] = [];
-
-      // 1. By Subjects
-      subjects.forEach((sub) => {
-        const subNotes = notes.filter((n) => n.subjectId === sub.id);
-        if (subNotes.length > 0) {
-          groups.push({
-            id: `sub_${sub.id}`,
-            title: sub.name,
-            subtitle: sub.code ? `[${sub.code}]` : undefined,
-            icon: Folder,
-            color: sub.color || 'var(--accent-primary)',
-            items: subNotes
-          });
+  // Filtered Notes Calculation
+  const filteredNotes = useMemo(() => {
+    return notes.filter((n) => {
+      // 1. Source Filter (Môn học / Đồ án / Tự do)
+      if (selectedSourceFilter !== 'ALL') {
+        if (selectedSourceFilter === 'FREE') {
+          if (n.subjectId || n.projectId) return false;
+        } else if (selectedSourceFilter.startsWith('sub_')) {
+          const subId = selectedSourceFilter.replace('sub_', '');
+          if (n.subjectId !== subId) return false;
+        } else if (selectedSourceFilter.startsWith('proj_')) {
+          const projId = selectedSourceFilter.replace('proj_', '');
+          if (n.projectId !== projId) return false;
         }
-      });
-
-      // 2. By Projects
-      projects.forEach((proj) => {
-        const projNotes = notes.filter((n) => n.projectId === proj.id);
-        if (projNotes.length > 0) {
-          groups.push({
-            id: `proj_${proj.id}`,
-            title: `Đồ án: ${proj.name}`,
-            icon: FolderKanban,
-            color: 'var(--color-purple)',
-            items: projNotes
-          });
-        }
-      });
-
-      // 3. Free Notes (Unassigned)
-      const freeNotes = notes.filter((n) => !n.subjectId && !n.projectId);
-      if (freeNotes.length > 0) {
-        groups.push({
-          id: 'free_notes',
-          title: '📝 Ghi Chú Tự Do & Ý Tưởng Cá Nhân',
-          icon: FileText,
-          color: 'var(--text-muted)',
-          items: freeNotes
-        });
       }
 
-      return groups;
-    }
+      // 2. Note Type Filter
+      if (selectedTypeFilter !== 'ALL') {
+        if (n.noteType !== selectedTypeFilter) return false;
+      }
 
-    if (grouping === 'BY_TYPE') {
-      const typeLabels: Record<string, { label: string; icon: any; color: string }> = {
-        LECTURE: { label: '📖 Bài Giảng Lý Thuyết', icon: BookOpen, color: 'var(--color-info)' },
-        LAB_REPORT: { label: '🧪 Báo Cáo Thực Hành', icon: Layers, color: 'var(--color-success)' },
-        EXAM_PREP: { label: '🎯 Đề Cương Ôn Thi', icon: Sparkles, color: 'var(--color-danger)' },
-        PROJECT_LOG: { label: '🛠️ Nhật Ký Đồ Án', icon: FolderKanban, color: 'var(--color-purple)' },
-        MEETING_MINUTES: { label: '👥 Biên Bản Họp Nhóm', icon: FileText, color: 'var(--color-warning)' },
-        GENERAL: { label: '📝 Ghi Chú Tự Do & Khác', icon: FileText, color: 'var(--text-secondary)' }
-      };
+      return true;
+    });
+  }, [notes, selectedSourceFilter, selectedTypeFilter]);
 
-      const groups: any[] = [];
-      Object.entries(typeLabels).forEach(([typeKey, meta]) => {
-        const matchingNotes = notes.filter((n) => n.noteType === typeKey);
-        if (matchingNotes.length > 0) {
-          groups.push({
-            id: `type_${typeKey}`,
-            title: meta.label,
-            icon: meta.icon,
-            color: meta.color,
-            items: matchingNotes
-          });
-        }
+  // Compute Source Counts
+  const sourcePills = useMemo(() => {
+    const pills: { id: string; label: string; count: number; icon: any; color?: string }[] = [
+      { id: 'ALL', label: 'Tất cả bài ghi', count: notes.length, icon: FileText }
+    ];
+
+    // Subjects
+    subjects.forEach((sub) => {
+      const count = notes.filter((n) => n.subjectId === sub.id).length;
+      if (count > 0 || selectedSubjectId === sub.id) {
+        pills.push({
+          id: `sub_${sub.id}`,
+          label: sub.code ? `[${sub.code}] ${sub.name}` : sub.name,
+          count,
+          icon: Folder,
+          color: sub.color || 'var(--color-info)'
+        });
+      }
+    });
+
+    // Projects
+    projects.forEach((proj) => {
+      const count = notes.filter((n) => n.projectId === proj.id).length;
+      if (count > 0) {
+        pills.push({
+          id: `proj_${proj.id}`,
+          label: `📁 ${proj.name}`,
+          count,
+          icon: FolderKanban,
+          color: 'var(--color-purple)'
+        });
+      }
+    });
+
+    // Free notes
+    const freeCount = notes.filter((n) => !n.subjectId && !n.projectId).length;
+    if (freeCount > 0) {
+      pills.push({
+        id: 'FREE',
+        label: '📝 Ghi chú tự do',
+        count: freeCount,
+        icon: Bookmark,
+        color: 'var(--text-muted)'
       });
-
-      return groups;
     }
 
-    return [{ id: 'all', title: 'Tất cả bài ghi', icon: FileText, items: notes }];
-  };
+    return pills;
+  }, [notes, subjects, projects, selectedSubjectId]);
 
-  const groupedNotes = getGroupedNotes();
-  const currentSubjectObj = subjects.find((s) => s.id === selectedSubjectId);
+  const typePills = [
+    { id: 'ALL', label: 'Tất cả loại bài', icon: Sparkles },
+    { id: NoteType.LECTURE, label: '📖 Bài giảng lý thuyết', icon: BookOpen },
+    { id: NoteType.LAB_REPORT, label: '🧪 Thực hành (Lab)', icon: Layers },
+    { id: NoteType.EXAM_PREP, label: '🎯 Đề cương ôn thi', icon: CheckCircle2 },
+    { id: NoteType.PROJECT_LOG, label: '🛠️ Nhật ký đồ án', icon: FolderKanban },
+    { id: NoteType.MEETING_MINUTES, label: '👥 Họp nhóm', icon: FileText },
+    { id: NoteType.GENERAL, label: '📝 Ghi chú chung', icon: Bookmark }
+  ];
+
+  // Active Filter Summary Label
+  const activeSourceObj = sourcePills.find((p) => p.id === selectedSourceFilter);
+  const activeTypeObj = typePills.find((p) => p.id === selectedTypeFilter);
 
   return (
     <div style={{ maxWidth: '1440px', margin: '0 auto' }}>
@@ -250,19 +244,17 @@ export const NotesListPage: React.FC = () => {
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <h1 style={{ fontSize: '24px', fontWeight: 800, margin: 0, letterSpacing: '-0.02em' }}>
-              Không Gian Ghi Chú Bài Học & Ý Tưởng
+              Kho Tri Thức & Ghi Chú Bài Học
             </h1>
-            <span className="badge badge-blue">{notes.length} bài ghi</span>
+            <span className="badge badge-blue">{filteredNotes.length}/{notes.length} bài ghi</span>
           </div>
           <p style={{ margin: '4px 0 0 0', fontSize: '13.5px', color: 'var(--text-secondary)' }}>
-            {currentSubjectObj
-              ? `Đang lọc theo môn: [${currentSubjectObj.code || 'CODE'}] ${currentSubjectObj.name}`
-              : 'Tổ chức tri thức Second Brain linh hoạt theo môn học, đồ án nhóm và ghi chú tự do'}
+            Hệ thống Second Brain cá nhân hóa: lọc tri thức thông minh theo môn học, đồ án và chủ đề
           </p>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-          {/* View Density Switcher (4 Modes) */}
+          {/* View Density Switcher */}
           <div style={{ display: 'flex', background: 'var(--bg-secondary)', padding: '3px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
             <button
               onClick={() => setViewDensity('GRID')}
@@ -273,7 +265,7 @@ export const NotesListPage: React.FC = () => {
                 background: viewDensity === 'GRID' ? 'var(--accent-subtle)' : 'transparent',
                 borderRadius: 'var(--radius-sm)'
               }}
-              title="Dạng Thẻ To Chi Tiết (Cards Grid)"
+              title="Dạng Thẻ Chi Tiết (Cards Grid)"
             >
               <LayoutGrid size={16} />
             </button>
@@ -330,114 +322,175 @@ export const NotesListPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Filter, Search & Grouping Control Bar */}
+      {/* 2-Tier Clean Visual Filter Deck */}
       <div
         className="snote-card"
         style={{
-          padding: '12px 16px',
-          marginBottom: '20px',
+          padding: '16px 20px',
+          marginBottom: '24px',
           display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
+          flexDirection: 'column',
           gap: '14px',
-          flexWrap: 'wrap'
+          backgroundColor: 'var(--bg-secondary)',
+          borderRadius: 'var(--radius-xl)'
         }}
       >
-        {/* Search */}
-        <div style={{ flex: 1, minWidth: '220px', position: 'relative' }}>
-          <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', display: 'flex' }}>
-            <Search size={16} />
-          </span>
-          <input
-            type="text"
-            placeholder="Tìm kiếm nhanh tiêu đề, nội dung ghi chú..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="snote-input"
-            style={{ paddingLeft: '38px', paddingRight: search ? '36px' : '14px' }}
-          />
-          {search && (
+        {/* Tier 1: Search & Tab Bar */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '14px', flexWrap: 'wrap' }}>
+          <div style={{ flex: 1, minWidth: '240px', position: 'relative' }}>
+            <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', display: 'flex' }}>
+              <Search size={16} />
+            </span>
+            <input
+              type="text"
+              placeholder="Tìm kiếm nhanh tiêu đề, nội dung ghi chép..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="snote-input"
+              style={{ paddingLeft: '38px', paddingRight: search ? '36px' : '14px' }}
+            />
+            {search && (
+              <button
+                onClick={() => setSearch('')}
+                style={{
+                  position: 'absolute',
+                  right: '10px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'var(--text-muted)',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  padding: 0
+                }}
+              >
+                <X size={14} />
+              </button>
+            )}
+          </div>
+
+          {/* Quick Pin / Archive Status Filter */}
+          <div style={{ display: 'flex', background: 'var(--bg-input)', padding: '3px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
             <button
-              onClick={() => setSearch('')}
-              style={{
-                position: 'absolute',
-                right: '10px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                background: 'transparent',
-                border: 'none',
-                color: 'var(--text-muted)',
-                cursor: 'pointer',
-                display: 'flex',
-                padding: 0
-              }}
+              onClick={() => setActiveTab('ALL')}
+              className={`btn btn-sm ${activeTab === 'ALL' ? 'btn-primary' : 'btn-ghost'}`}
+              style={{ fontSize: '12.5px', padding: '5px 12px' }}
             >
-              <X size={14} />
+              Tất cả
             </button>
-          )}
+            <button
+              onClick={() => setActiveTab('PINNED')}
+              className={`btn btn-sm ${activeTab === 'PINNED' ? 'btn-primary' : 'btn-ghost'}`}
+              style={{ fontSize: '12.5px', padding: '5px 12px' }}
+            >
+              <Pin size={12} style={{ fill: activeTab === 'PINNED' ? 'currentColor' : 'none' }} />
+              <span>Đã ghim</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('ARCHIVED')}
+              className={`btn btn-sm ${activeTab === 'ARCHIVED' ? 'btn-primary' : 'btn-ghost'}`}
+              style={{ fontSize: '12.5px', padding: '5px 12px' }}
+            >
+              <Archive size={12} />
+              <span>Lưu trữ</span>
+            </button>
+          </div>
         </div>
 
-        {/* Grouping Selector */}
-        <div style={{ minWidth: '190px' }}>
-          <select
-            value={grouping}
-            onChange={(e) => setGrouping(e.target.value as NoteGrouping)}
-            className="snote-select"
-            style={{ fontSize: '13px', fontWeight: 600 }}
-          >
-            <option value="BY_SUBJECT">📁 Gom nhóm: Môn học & Đồ án</option>
-            <option value="BY_TYPE">🏷️ Gom nhóm: Phân loại bài</option>
-            <option value="NONE">🗃️ Không gom nhóm (Hiển thị phẳng)</option>
-          </select>
+        {/* Tier 2: Source Filter Pills (Môn học / Đồ án / Tự do) */}
+        <div>
+          <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <Folder size={12} />
+            <span>1. NGUỒN BÀI HỌC / THƯ MỤC LIÊN KẾT:</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            {sourcePills.map((pill) => {
+              const isActive = selectedSourceFilter === pill.id;
+              const Icon = pill.icon;
+              return (
+                <button
+                  key={pill.id}
+                  onClick={() => setSelectedSourceFilter(pill.id)}
+                  className={`filter-chip ${isActive ? 'active' : ''}`}
+                >
+                  <span style={{ color: isActive ? 'inherit' : (pill.color || 'inherit'), display: 'flex' }}>
+                    <Icon size={13} />
+                  </span>
+                  <span>{pill.label}</span>
+                  <span style={{ opacity: 0.7, fontSize: '11px' }}>({pill.count})</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
-        {/* Note Type Filter */}
-        <div style={{ minWidth: '170px' }}>
-          <select
-            value={filterType}
-            onChange={(e) => setFilterType(e.target.value)}
-            className="snote-select"
-            style={{ fontSize: '13px' }}
-          >
-            <option value="ALL">Tất cả loại bài</option>
-            <option value={NoteType.LECTURE}>📖 Bài giảng lý thuyết</option>
-            <option value={NoteType.LAB_REPORT}>🧪 Thực hành (Lab)</option>
-            <option value={NoteType.EXAM_PREP}>🎯 Ôn thi / Đề cương</option>
-            <option value={NoteType.PROJECT_LOG}>🛠️ Đồ án môn học</option>
-            <option value={NoteType.MEETING_MINUTES}>👥 Họp nhóm</option>
-            <option value={NoteType.GENERAL}>📝 Ghi chú tự do</option>
-          </select>
-        </div>
-
-        {/* Tab Switcher */}
-        <div style={{ display: 'flex', background: 'var(--bg-input)', padding: '3px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
-          <button
-            onClick={() => setActiveTab('ALL')}
-            className={`btn btn-sm ${activeTab === 'ALL' ? 'btn-primary' : 'btn-ghost'}`}
-            style={{ fontSize: '12.5px', padding: '5px 12px' }}
-          >
-            Tất cả
-          </button>
-          <button
-            onClick={() => setActiveTab('PINNED')}
-            className={`btn btn-sm ${activeTab === 'PINNED' ? 'btn-primary' : 'btn-ghost'}`}
-            style={{ fontSize: '12.5px', padding: '5px 12px' }}
-          >
-            <Pin size={12} style={{ fill: activeTab === 'PINNED' ? 'currentColor' : 'none' }} />
-            <span>Đã ghim</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('ARCHIVED')}
-            className={`btn btn-sm ${activeTab === 'ARCHIVED' ? 'btn-primary' : 'btn-ghost'}`}
-            style={{ fontSize: '12.5px', padding: '5px 12px' }}
-          >
-            <Archive size={12} />
-            <span>Lưu trữ</span>
-          </button>
+        {/* Tier 3: Note Type Filter Pills (Loại bài) */}
+        <div>
+          <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <Tag size={12} />
+            <span>2. PHÂN LOẠI NỘI DUNG:</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            {typePills.map((pill) => {
+              const isActive = selectedTypeFilter === pill.id;
+              return (
+                <button
+                  key={pill.id}
+                  onClick={() => setSelectedTypeFilter(pill.id)}
+                  className={`filter-chip ${isActive ? 'active' : ''}`}
+                >
+                  <span>{pill.label}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 
-      {/* Main Content Area */}
+      {/* Clear Active Filter Banner (Làm nổi bật mục đang lọc) */}
+      {(selectedSourceFilter !== 'ALL' || selectedTypeFilter !== 'ALL' || search) && (
+        <div
+          className="snote-card animate-fade-in"
+          style={{
+            marginBottom: '20px',
+            padding: '10px 16px',
+            backgroundColor: 'var(--accent-subtle)',
+            borderLeft: '4px solid var(--accent-primary)',
+            borderRadius: 'var(--radius-md)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '8px'
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'var(--text-primary)' }}>
+            <SlidersHorizontal size={15} style={{ color: 'var(--accent-primary)' }} />
+            <span>
+              Đang lọc: <b>{activeSourceObj?.label}</b> • <b>{activeTypeObj?.label}</b>
+              {search && <span> • Từ khóa: <i>"{search}"</i></span>}
+            </span>
+            <span className="badge badge-purple" style={{ fontSize: '10.5px' }}>
+              Tìm thấy {filteredNotes.length} bài
+            </span>
+          </div>
+
+          <button
+            onClick={() => {
+              setSelectedSourceFilter('ALL');
+              setSelectedTypeFilter('ALL');
+              setSearch('');
+            }}
+            className="btn btn-ghost btn-sm"
+            style={{ padding: '2px 8px', fontSize: '11.5px', color: 'var(--accent-primary)' }}
+          >
+            Xóa tất cả bộ lọc
+          </button>
+        </div>
+      )}
+
+      {/* Notes Container */}
       {loading ? (
         <div style={{ textAlign: 'center', padding: '80px 0', color: 'var(--text-muted)' }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', fontSize: '14px' }}>
@@ -445,9 +498,9 @@ export const NotesListPage: React.FC = () => {
             <span>Đang tải các bài ghi chép...</span>
           </div>
         </div>
-      ) : notes.length === 0 ? (
+      ) : filteredNotes.length === 0 ? (
         <div
-          className="snote-card"
+          className="snote-card animate-scale-in"
           style={{
             textAlign: 'center',
             padding: '60px 24px',
@@ -472,10 +525,10 @@ export const NotesListPage: React.FC = () => {
             <BookOpen size={28} />
           </div>
           <h3 style={{ margin: '0 0 8px 0', fontSize: '17px', fontWeight: 700, color: 'var(--text-primary)' }}>
-            Chưa tìm thấy ghi chú nào
+            Không tìm thấy ghi chú nào phù hợp bộ lọc
           </h3>
           <p style={{ margin: '0 0 20px 0', fontSize: '13.5px', color: 'var(--text-secondary)', maxWidth: '420px', marginLeft: 'auto', marginRight: 'auto' }}>
-            Tạo ghi chú mới để lưu lại kiến thức môn học, đồ án hoặc các ý tưởng cá nhân tự do.
+            Thử chuyển đổi bộ lọc nguồn, loại bài ghi hoặc tạo một ghi chú mới ngay bây giờ.
           </p>
           <button
             onClick={handleOpenCreate}
@@ -483,11 +536,11 @@ export const NotesListPage: React.FC = () => {
             style={{ padding: '10px 20px', fontWeight: 700 }}
           >
             <Plus size={16} />
-            <span>Tạo Ghi Chú Đầu Tiên</span>
+            <span>Tạo Ghi Chú Mới</span>
           </button>
         </div>
       ) : viewDensity === 'SPLIT' ? (
-        /* SPLIT WORKSPACE: Master list on left, Full markdown reader on right */
+        /* SPLIT WORKSPACE: Left tree list, Right full markdown live reader */
         <div style={{ display: 'grid', gridTemplateColumns: '380px 1fr', gap: '20px', alignItems: 'start' }}>
           {/* Left Column: Note list tree */}
           <div
@@ -502,7 +555,7 @@ export const NotesListPage: React.FC = () => {
               gap: '8px'
             }}
           >
-            {notes.map((note) => {
+            {filteredNotes.map((note) => {
               const isSelected = selectedNoteForSplit?.id === note.id;
               return (
                 <div
@@ -522,9 +575,17 @@ export const NotesListPage: React.FC = () => {
                     <span className="badge badge-neutral" style={{ fontSize: '10px', padding: '1px 6px' }}>
                       {note.noteType}
                     </span>
-                    {note.subject && (
+                    {note.subject ? (
                       <span className="badge badge-blue" style={{ fontSize: '10px', padding: '1px 6px' }}>
                         {note.subject.code || note.subject.name}
+                      </span>
+                    ) : note.project ? (
+                      <span className="badge badge-purple" style={{ fontSize: '10px', padding: '1px 6px' }}>
+                        📁 {note.project.name}
+                      </span>
+                    ) : (
+                      <span className="badge badge-neutral" style={{ fontSize: '10px', padding: '1px 6px' }}>
+                        📝 Tự do
                       </span>
                     )}
                   </div>
@@ -602,183 +663,132 @@ export const NotesListPage: React.FC = () => {
             )}
           </div>
         </div>
-      ) : (
-        /* CATEGORIZED SECTIONS / ACCORDIONS */
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-          {groupedNotes.map((group) => {
-            const isCollapsed = Boolean(collapsedSections[group.id]);
-            const GroupIcon = group.icon;
+      ) : viewDensity === 'GRID' ? (
+        /* GRID VIEW: 2-3 Column Rich Cards with Live Markdown Preview */
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '20px' }}>
+          {filteredNotes.map((note: any) => (
+            <NoteCard
+              key={note.id}
+              note={note}
+              onView={handleOpenView}
+              onEdit={handleOpenEdit}
+              onDelete={handleDelete}
+              onTogglePin={handleTogglePin}
+              onToggleArchive={handleToggleArchive}
+            />
+          ))}
+        </div>
+      ) : viewDensity === 'COMPACT' ? (
+        /* COMPACT VIEW: 4-5 Column Dense Cards */
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '14px' }}>
+          {filteredNotes.map((note: any) => (
+            <div
+              key={note.id}
+              onClick={() => handleOpenView(note)}
+              className="snote-card"
+              style={{
+                padding: '14px',
+                backgroundColor: 'var(--bg-secondary)',
+                borderRadius: 'var(--radius-lg)',
+                cursor: 'pointer',
+                border: '1px solid var(--border-color)',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                height: '160px',
+                transition: 'var(--transition-fast)'
+              }}
+            >
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                  <span className="badge badge-neutral" style={{ fontSize: '9.5px', padding: '1px 5px' }}>
+                    {note.noteType}
+                  </span>
+                  {note.isPinned && <Pin size={11} style={{ color: 'var(--accent-primary)', fill: 'currentColor' }} />}
+                </div>
+                <h4 style={{ margin: '0 0 6px 0', fontSize: '13.5px', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.3, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                  {note.title}
+                </h4>
+                <p style={{ margin: 0, fontSize: '11.5px', color: 'var(--text-secondary)', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: 1.4 }}>
+                  {note.content.replace(/[#*`_]/g, '')}
+                </p>
+              </div>
 
-            return (
-              <div key={group.id} className="animate-fade-in">
-                {/* Section Header Accordion Toggle */}
-                {grouping !== 'NONE' && (
-                  <div
-                    onClick={() => toggleSection(group.id)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '10px 14px',
-                      backgroundColor: 'var(--bg-secondary)',
-                      borderRadius: 'var(--radius-lg)',
-                      border: '1px solid var(--border-color)',
-                      marginBottom: '14px',
-                      cursor: 'pointer',
-                      userSelect: 'none',
-                      transition: 'var(--transition-fast)'
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <span style={{ color: group.color || 'var(--accent-primary)', display: 'flex' }}>
-                        <GroupIcon size={18} />
-                      </span>
-                      <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 800, color: 'var(--text-primary)' }}>
-                        {group.title} {group.subtitle && <span style={{ color: 'var(--text-muted)', fontSize: '13px' }}>{group.subtitle}</span>}
-                      </h3>
-                      <span className="badge badge-neutral" style={{ fontSize: '11px', fontWeight: 700 }}>
-                        {group.items.length} bài
-                      </span>
-                    </div>
-
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-muted)' }}>
-                      <span style={{ fontSize: '12px' }}>{isCollapsed ? 'Mở rộng' : 'Thu gọn'}</span>
-                      {isCollapsed ? <ChevronRight size={16} /> : <ChevronDown size={16} />}
-                    </div>
-                  </div>
-                )}
-
-                {/* Section Items Grid / Compact / List */}
-                {!isCollapsed && (
-                  <>
-                    {viewDensity === 'GRID' && (
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '18px' }}>
-                        {group.items.map((note: any) => (
-                          <NoteCard
-                            key={note.id}
-                            note={note}
-                            onView={handleOpenView}
-                            onEdit={handleOpenEdit}
-                            onDelete={handleDelete}
-                            onTogglePin={handleTogglePin}
-                            onToggleArchive={handleToggleArchive}
-                          />
-                        ))}
-                      </div>
-                    )}
-
-                    {viewDensity === 'COMPACT' && (
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '14px' }}>
-                        {group.items.map((note: any) => (
-                          <div
-                            key={note.id}
-                            onClick={() => handleOpenView(note)}
-                            className="snote-card"
-                            style={{
-                              padding: '14px',
-                              backgroundColor: 'var(--bg-secondary)',
-                              borderRadius: 'var(--radius-lg)',
-                              cursor: 'pointer',
-                              border: '1px solid var(--border-color)',
-                              display: 'flex',
-                              flexDirection: 'column',
-                              justifyContent: 'space-between',
-                              height: '160px',
-                              transition: 'var(--transition-fast)'
-                            }}
-                          >
-                            <div>
-                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
-                                <span className="badge badge-neutral" style={{ fontSize: '9.5px', padding: '1px 5px' }}>
-                                  {note.noteType}
-                                </span>
-                                {note.isPinned && <Pin size={11} style={{ color: 'var(--accent-primary)', fill: 'currentColor' }} />}
-                              </div>
-                              <h4 style={{ margin: '0 0 6px 0', fontSize: '13.5px', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.3, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                                {note.title}
-                              </h4>
-                              <p style={{ margin: 0, fontSize: '11.5px', color: 'var(--text-secondary)', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: 1.4 }}>
-                                {note.content.replace(/[#*`_]/g, '')}
-                              </p>
-                            </div>
-
-                            <div style={{ fontSize: '10.5px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '8px', borderTop: '1px solid var(--border-subtle)' }}>
-                              <span>{new Date(note.createdAt).toLocaleDateString('vi-VN')}</span>
-                              {note.subject && <span style={{ color: note.subject.color || 'var(--accent-primary)' }}>{note.subject.code || note.subject.name}</span>}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    {viewDensity === 'LIST' && (
-                      <div className="snote-card" style={{ padding: '0', borderRadius: 'var(--radius-xl)', overflow: 'hidden' }}>
-                        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
-                          <thead>
-                            <tr style={{ borderBottom: '1px solid var(--border-color)', backgroundColor: 'var(--bg-input)' }}>
-                              <th style={{ padding: '12px 16px', fontWeight: 700, color: 'var(--text-secondary)' }}>Tiêu đề ghi chú</th>
-                              <th style={{ padding: '12px 16px', fontWeight: 700, color: 'var(--text-secondary)' }}>Phân loại</th>
-                              <th style={{ padding: '12px 16px', fontWeight: 700, color: 'var(--text-secondary)' }}>Môn học / Đồ án</th>
-                              <th style={{ padding: '12px 16px', fontWeight: 700, color: 'var(--text-secondary)' }}>Ngày tạo</th>
-                              <th style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 700, color: 'var(--text-secondary)' }}>Thao tác</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {group.items.map((note: any) => (
-                              <tr
-                                key={note.id}
-                                style={{ borderBottom: '1px solid var(--border-subtle)', transition: 'var(--transition-fast)' }}
-                                className="table-row-hover"
-                              >
-                                <td style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--text-primary)', cursor: 'pointer' }} onClick={() => handleOpenView(note)}>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                    {note.isPinned && <Pin size={12} style={{ color: 'var(--accent-primary)', fill: 'currentColor' }} />}
-                                    <span>{note.title}</span>
-                                  </div>
-                                </td>
-                                <td style={{ padding: '12px 16px' }}>
-                                  <span className="badge badge-neutral" style={{ fontSize: '10.5px' }}>{note.noteType}</span>
-                                </td>
-                                <td style={{ padding: '12px 16px' }}>
-                                  {note.subject ? (
-                                    <span className="badge badge-blue" style={{ fontSize: '10.5px' }}>
-                                      {note.subject.code || note.subject.name}
-                                    </span>
-                                  ) : note.project ? (
-                                    <span className="badge badge-purple" style={{ fontSize: '10.5px' }}>
-                                      📁 {note.project.name}
-                                    </span>
-                                  ) : (
-                                    <span className="badge badge-neutral" style={{ fontSize: '10.5px' }}>📝 Tự do</span>
-                                  )}
-                                </td>
-                                <td style={{ padding: '12px 16px', color: 'var(--text-muted)', fontSize: '12px' }}>
-                                  {new Date(note.createdAt).toLocaleDateString('vi-VN')}
-                                </td>
-                                <td style={{ padding: '12px 16px', textAlign: 'right' }}>
-                                  <div style={{ display: 'inline-flex', gap: '4px' }}>
-                                    <button onClick={() => handleOpenView(note)} className="btn btn-ghost btn-icon" style={{ padding: '4px' }} title="Xem">
-                                      <Eye size={14} />
-                                    </button>
-                                    <button onClick={() => handleOpenEdit(note)} className="btn btn-ghost btn-icon" style={{ padding: '4px' }} title="Sửa">
-                                      <Edit3 size={14} />
-                                    </button>
-                                    <button onClick={() => handleDelete(note.id, note.title)} className="btn btn-ghost btn-icon" style={{ padding: '4px', color: 'var(--color-danger)' }} title="Xóa">
-                                      <Trash2 size={14} />
-                                    </button>
-                                  </div>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
-                  </>
+              <div style={{ fontSize: '10.5px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '8px', borderTop: '1px solid var(--border-subtle)' }}>
+                <span>{new Date(note.createdAt).toLocaleDateString('vi-VN')}</span>
+                {note.subject ? (
+                  <span style={{ color: note.subject.color || 'var(--accent-primary)' }}>{note.subject.code || note.subject.name}</span>
+                ) : note.project ? (
+                  <span style={{ color: 'var(--color-purple)' }}>📁 {note.project.name}</span>
+                ) : (
+                  <span>📝 Tự do</span>
                 )}
               </div>
-            );
-          })}
+            </div>
+          ))}
+        </div>
+      ) : (
+        /* LIST VIEW: Full-width Table Rows */
+        <div className="snote-card" style={{ padding: '0', borderRadius: 'var(--radius-xl)', overflow: 'hidden' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
+            <thead>
+              <tr style={{ borderBottom: '1px solid var(--border-color)', backgroundColor: 'var(--bg-input)' }}>
+                <th style={{ padding: '12px 16px', fontWeight: 700, color: 'var(--text-secondary)' }}>Tiêu đề ghi chú</th>
+                <th style={{ padding: '12px 16px', fontWeight: 700, color: 'var(--text-secondary)' }}>Phân loại</th>
+                <th style={{ padding: '12px 16px', fontWeight: 700, color: 'var(--text-secondary)' }}>Môn học / Đồ án</th>
+                <th style={{ padding: '12px 16px', fontWeight: 700, color: 'var(--text-secondary)' }}>Ngày tạo</th>
+                <th style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 700, color: 'var(--text-secondary)' }}>Thao tác</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredNotes.map((note: any) => (
+                <tr
+                  key={note.id}
+                  style={{ borderBottom: '1px solid var(--border-subtle)', transition: 'var(--transition-fast)' }}
+                  className="table-row-hover"
+                >
+                  <td style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--text-primary)', cursor: 'pointer' }} onClick={() => handleOpenView(note)}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      {note.isPinned && <Pin size={12} style={{ color: 'var(--accent-primary)', fill: 'currentColor' }} />}
+                      <span>{note.title}</span>
+                    </div>
+                  </td>
+                  <td style={{ padding: '12px 16px' }}>
+                    <span className="badge badge-neutral" style={{ fontSize: '10.5px' }}>{note.noteType}</span>
+                  </td>
+                  <td style={{ padding: '12px 16px' }}>
+                    {note.subject ? (
+                      <span className="badge badge-blue" style={{ fontSize: '10.5px' }}>
+                        {note.subject.code || note.subject.name}
+                      </span>
+                    ) : note.project ? (
+                      <span className="badge badge-purple" style={{ fontSize: '10.5px' }}>
+                        📁 {note.project.name}
+                      </span>
+                    ) : (
+                      <span className="badge badge-neutral" style={{ fontSize: '10.5px' }}>📝 Tự do</span>
+                    )}
+                  </td>
+                  <td style={{ padding: '12px 16px', color: 'var(--text-muted)', fontSize: '12px' }}>
+                    {new Date(note.createdAt).toLocaleDateString('vi-VN')}
+                  </td>
+                  <td style={{ padding: '12px 16px', textAlign: 'right' }}>
+                    <div style={{ display: 'inline-flex', gap: '4px' }}>
+                      <button onClick={() => handleOpenView(note)} className="btn btn-ghost btn-icon" style={{ padding: '4px' }} title="Xem">
+                        <Eye size={14} />
+                      </button>
+                      <button onClick={() => handleOpenEdit(note)} className="btn btn-ghost btn-icon" style={{ padding: '4px' }} title="Sửa">
+                        <Edit3 size={14} />
+                      </button>
+                      <button onClick={() => handleDelete(note.id, note.title)} className="btn btn-ghost btn-icon" style={{ padding: '4px', color: 'var(--color-danger)' }} title="Xóa">
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
 

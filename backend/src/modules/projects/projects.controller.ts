@@ -104,4 +104,33 @@ export class ProjectsController {
       message: 'Xóa thành viên khỏi đồ án thành công'
     });
   };
+
+  getInvitations = async (req: Request, res: Response): Promise<void> => {
+    const userId = req.user!.id;
+    const data = await this.service.getInvitations(userId);
+    res.status(200).json({
+      success: true,
+      data
+    });
+  };
+
+  acceptInvitation = async (req: Request, res: Response): Promise<void> => {
+    const userId = req.user!.id;
+    const id = req.params.id as string;
+    await this.service.respondInvitation(id, userId, true);
+    res.status(200).json({
+      success: true,
+      message: 'Bạn đã chấp nhận tham gia đồ án thành công'
+    });
+  };
+
+  declineInvitation = async (req: Request, res: Response): Promise<void> => {
+    const userId = req.user!.id;
+    const id = req.params.id as string;
+    await this.service.respondInvitation(id, userId, false);
+    res.status(200).json({
+      success: true,
+      message: 'Bạn đã từ chối tham gia đồ án'
+    });
+  };
 }
