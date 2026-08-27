@@ -45,10 +45,18 @@ Dự án SNOTE được triển khai nghiêm ngặt theo **Lộ trình 6 bước
 
 ---
 
-## 🗺️ ĐIỀU 4: DUY TRÌ TỪ ĐIỂN VÀ BẢN ĐỒ MÃ NGUỒN (PROJECT MAP RULE)
+## 🗺️ ĐIỀU 4: DUY TRÌ TỪ ĐIỂN MÃ NGUỒN & MA TRẬN CÔNG NGHỆ (PROJECT MAP & TECH MATRIX RULE)
 
-- Duy trì file **`DOCS/PROJECT_STRUCTURE_AND_MAP.md`** làm từ điển cấu trúc và bản đồ mã nguồn duy nhất.
-- **Yêu cầu bắt buộc:** Mỗi khi thêm mới, sửa đổi hoặc xóa bất kỳ file, folder, thư viện công nghệ hay chức năng nào trong dự án, **phải cập nhật ngay lập tức** vào file `DOCS/PROJECT_STRUCTURE_AND_MAP.md`.
+1. **Duy trì Bản đồ & Từ điển Duy nhất:** Duy trì file **`DOCS/PROJECT_STRUCTURE_AND_MAP.md`** làm từ điển cấu trúc, danh mục mã nguồn và ma trận công nghệ duy nhất của dự án.
+2. **Kê khai Toàn diện Công nghệ Sử dụng:**
+   - Bắt buộc phải kê khai chi tiết toàn bộ các công nghệ, thư viện, framework, driver, database, công cụ:
+     - **Tên công nghệ & phiên bản cụ thể**.
+     - **Chức năng & Nhiệm vụ cốt lõi** trong hệ thống.
+     - **Vị trí áp dụng cụ thể** trong dự án (`backend/`, `frontend/`, `packages/shared/`, `infrastructure`, `root`...).
+     - **Lý do lựa chọn & vai trò kiến trúc**.
+3. **Từ điển Cấu trúc & Tệp tin Chi tiết:**
+   - Ghi rõ cấu trúc cây thư mục, tên mọi file, chức năng chi tiết của từng file, công nghệ sử dụng trong file đó và vị trí của chúng.
+4. **Cập nhật Bắt buộc & Tức thì:** Mỗi khi thêm mới, sửa đổi hoặc xóa bất kỳ file, folder, thư viện công nghệ hay chức năng nào trong dự án, **phải cập nhật ngay lập tức** vào file `DOCS/PROJECT_STRUCTURE_AND_MAP.md` để có thể truy xuất và tìm hiểu bất cứ lúc nào.
 
 ---
 
@@ -101,7 +109,7 @@ Mỗi khi thực thi bất kỳ nhiệm vụ nào gồm nhiều bước (Multi-s
    - Sử dụng **Pino** log định dạng JSON có cấu trúc, gắn kèm `x-request-id` cho từng request.
    - Middleware bắt lỗi tập trung: Map lỗi sang mã HTTP chuẩn, ghi log chi tiết nội bộ nhưng **không trả stack trace ra client**.
 6. **Frontend Architecture:**
-   - Tổ chức theo mô hình **Feature-based** (`features/notes`, `features/tasks`, `features/schedule`, `features/semesters`).
+   - Tổ chức theo mô hình **Feature-based** (`features/notes`, `features/tasks`, `features/schedule`, `features/semesters`, `features/status`).
    - Sử dụng React 19 + TypeScript + React Router DOM (Client-side SPA).
 
 ---
