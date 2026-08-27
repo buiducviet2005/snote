@@ -1,5 +1,19 @@
 import React from 'react';
 import { NoteType } from '@snote/shared';
+import {
+  Pin,
+  Archive,
+  Trash2,
+  Edit3,
+  Clock,
+  BookOpen,
+  Tag,
+  FileText,
+  FlaskConical,
+  GraduationCap,
+  FolderKanban,
+  Users
+} from 'lucide-react';
 
 interface NoteCardProps {
   note: any;
@@ -16,111 +30,110 @@ export const NoteCard: React.FC<NoteCardProps> = ({
   onTogglePin,
   onToggleArchive
 }) => {
-  const getNoteTypeBadge = (type: NoteType) => {
+  const getNoteTypeConfig = (type: NoteType) => {
     switch (type) {
       case NoteType.LECTURE:
-        return { label: 'Bài giảng', bg: 'rgba(59, 130, 246, 0.15)', color: '#60a5fa' };
+        return { label: 'Bài giảng', badgeClass: 'badge-blue', icon: BookOpen };
       case NoteType.LAB_REPORT:
-        return { label: 'Thực hành', bg: 'rgba(16, 185, 129, 0.15)', color: '#34d399' };
+        return { label: 'Thực hành', badgeClass: 'badge-green', icon: FlaskConical };
       case NoteType.EXAM_PREP:
-        return { label: 'Ôn thi', bg: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24' };
+        return { label: 'Ôn thi', badgeClass: 'badge-amber', icon: GraduationCap };
       case NoteType.PROJECT_LOG:
-        return { label: 'Đồ án', bg: 'rgba(139, 92, 246, 0.15)', color: '#a78bfa' };
+        return { label: 'Đồ án', badgeClass: 'badge-purple', icon: FolderKanban };
+      case NoteType.MEETING_MINUTES:
+        return { label: 'Họp nhóm', badgeClass: 'badge-rose', icon: Users };
       default:
-        return { label: 'Ghi chú', bg: 'rgba(148, 163, 184, 0.15)', color: '#cbd5e1' };
+        return { label: 'Ghi chú', badgeClass: 'badge-neutral', icon: FileText };
     }
   };
 
-  const badge = getNoteTypeBadge(note.noteType);
+  const typeConfig = getNoteTypeConfig(note.noteType);
+  const TypeIcon = typeConfig.icon;
+
+  // Calculate reading time estimate (~200 words per minute)
+  const words = (note.content || '').trim().split(/\s+/).filter(Boolean).length;
+  const readTimeMin = Math.max(1, Math.ceil(words / 200));
 
   return (
     <div
+      className="snote-card animate-fade-in"
       style={{
-        backgroundColor: 'var(--bg-secondary)',
         border: note.isPinned ? '1px solid var(--accent-primary)' : '1px solid var(--border-color)',
-        borderRadius: '12px',
-        padding: '20px',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
         position: 'relative',
-        boxShadow: note.isPinned ? '0 4px 16px rgba(59,130,246,0.15)' : '0 2px 8px rgba(0,0,0,0.1)',
-        transition: 'all 0.2s ease'
+        boxShadow: note.isPinned ? 'var(--shadow-accent)' : 'var(--shadow-sm)',
+        background: 'var(--bg-secondary)',
+        borderRadius: 'var(--radius-lg)',
+        padding: '20px',
+        minHeight: '220px'
       }}
     >
-      {/* Header */}
+      {/* Card Header */}
       <div>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-            <span
-              style={{
-                fontSize: '11px',
-                fontWeight: 700,
-                backgroundColor: badge.bg,
-                color: badge.color,
-                padding: '3px 8px',
-                borderRadius: '6px'
-              }}
-            >
-              {badge.label}
+            <span className={`badge ${typeConfig.badgeClass}`}>
+              <TypeIcon size={12} />
+              <span>{typeConfig.label}</span>
             </span>
+
             {note.subject && (
               <span
+                className="badge"
                 style={{
-                  fontSize: '11px',
-                  fontWeight: 600,
-                  color: 'var(--text-secondary)',
-                  backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                  padding: '3px 8px',
-                  borderRadius: '6px'
+                  backgroundColor: note.subject.color ? `${note.subject.color}20` : 'rgba(255, 255, 255, 0.06)',
+                  color: note.subject.color || 'var(--text-secondary)',
+                  border: `1px solid ${note.subject.color ? `${note.subject.color}40` : 'var(--border-color)'}`
                 }}
               >
-                {note.subject.name}
+                {note.subject.code ? `[${note.subject.code}] ` : ''}{note.subject.name}
               </span>
             )}
           </div>
 
+          {/* Quick Pin / Archive Action */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
             <button
               onClick={() => onTogglePin(note.id)}
               title={note.isPinned ? 'Bỏ ghim' : 'Ghim lên đầu'}
+              className="btn btn-ghost btn-icon"
               style={{
-                background: 'transparent',
-                border: 'none',
-                cursor: 'pointer',
-                fontSize: '16px',
-                padding: '4px',
-                opacity: note.isPinned ? 1 : 0.4
+                padding: '5px',
+                color: note.isPinned ? 'var(--accent-primary)' : 'var(--text-muted)'
               }}
             >
-              📌
+              <Pin size={15} style={{ fill: note.isPinned ? 'currentColor' : 'none' }} />
             </button>
             <button
               onClick={() => onToggleArchive(note.id)}
-              title={note.isArchived ? 'Khôi phục' : 'Lưu trữ'}
+              title={note.isArchived ? 'Khôi phục khỏi lưu trữ' : 'Lưu trữ ghi chú'}
+              className="btn btn-ghost btn-icon"
               style={{
-                background: 'transparent',
-                border: 'none',
-                cursor: 'pointer',
-                fontSize: '14px',
-                padding: '4px',
-                opacity: note.isArchived ? 1 : 0.4
+                padding: '5px',
+                color: note.isArchived ? 'var(--color-warning)' : 'var(--text-muted)'
               }}
             >
-              📦
+              <Archive size={15} />
             </button>
           </div>
         </div>
 
-        {/* Title */}
+        {/* Note Title */}
         <h3
+          onClick={() => onEdit(note)}
           style={{
-            margin: '0 0 8px 0',
+            margin: '0 0 10px 0',
             fontSize: '16px',
             fontWeight: 700,
             color: 'var(--text-primary)',
-            lineHeight: 1.4
+            lineHeight: 1.4,
+            cursor: 'pointer',
+            transition: 'color var(--transition-fast)'
           }}
+          onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--accent-primary)')}
+          onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-primary)')}
         >
           {note.title}
         </h3>
@@ -131,14 +144,14 @@ export const NoteCard: React.FC<NoteCardProps> = ({
             margin: '0 0 14px 0',
             fontSize: '13px',
             color: 'var(--text-secondary)',
-            lineHeight: 1.5,
+            lineHeight: 1.6,
             display: '-webkit-box',
             WebkitLineClamp: 3,
             WebkitBoxOrient: 'vertical',
             overflow: 'hidden'
           }}
         >
-          {note.content || <i>(Không có nội dung)</i>}
+          {note.content || <i style={{ color: 'var(--text-muted)' }}>Chưa có nội dung ghi chép.</i>}
         </p>
 
         {/* Tags */}
@@ -147,23 +160,18 @@ export const NoteCard: React.FC<NoteCardProps> = ({
             {note.tags.map((tag: any) => (
               <span
                 key={tag.id || tag.name}
-                style={{
-                  fontSize: '11px',
-                  color: 'var(--text-secondary)',
-                  backgroundColor: 'rgba(255, 255, 255, 0.04)',
-                  border: '1px solid var(--border-color)',
-                  padding: '2px 8px',
-                  borderRadius: '12px'
-                }}
+                className="badge badge-neutral"
+                style={{ fontSize: '11px', padding: '2px 8px' }}
               >
-                #{tag.name}
+                <Tag size={10} style={{ opacity: 0.6 }} />
+                <span>{tag.name}</span>
               </span>
             ))}
           </div>
         )}
       </div>
 
-      {/* Footer Actions */}
+      {/* Footer Info & Actions */}
       <div
         style={{
           display: 'flex',
@@ -172,38 +180,33 @@ export const NoteCard: React.FC<NoteCardProps> = ({
           paddingTop: '12px',
           borderTop: '1px solid var(--border-color)',
           fontSize: '12px',
-          color: 'var(--text-secondary)'
+          color: 'var(--text-muted)'
         }}
       >
-        <span>{new Date(note.updatedAt || note.createdAt).toLocaleDateString('vi-VN')}</span>
-        <div style={{ display: 'flex', gap: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span>{new Date(note.updatedAt || note.createdAt).toLocaleDateString('vi-VN')}</span>
+          <span>•</span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <Clock size={11} /> {readTimeMin} phút đọc
+          </span>
+        </div>
+
+        <div style={{ display: 'flex', gap: '6px' }}>
           <button
             onClick={() => onEdit(note)}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: 'var(--accent-primary)',
-              cursor: 'pointer',
-              fontWeight: 600,
-              fontSize: '12px',
-              padding: '2px 6px'
-            }}
+            className="btn btn-ghost btn-sm"
+            style={{ padding: '4px 8px', fontSize: '12px', color: 'var(--accent-primary)' }}
           >
-            Sửa
+            <Edit3 size={13} />
+            <span>Sửa</span>
           </button>
           <button
             onClick={() => onDelete(note.id, note.title)}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: '#ef4444',
-              cursor: 'pointer',
-              fontWeight: 600,
-              fontSize: '12px',
-              padding: '2px 6px'
-            }}
+            className="btn btn-ghost btn-sm"
+            style={{ padding: '4px 8px', fontSize: '12px', color: 'var(--color-danger)' }}
           >
-            Xóa
+            <Trash2 size={13} />
+            <span>Xóa</span>
           </button>
         </div>
       </div>

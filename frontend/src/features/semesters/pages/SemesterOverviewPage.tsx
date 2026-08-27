@@ -4,6 +4,18 @@ import { useAppFilter } from '../../../contexts/AppFilterContext';
 import { useToast } from '../../../contexts/ToastContext';
 import { SemesterModal } from '../components/SemesterModal';
 import { SubjectModal } from '../components/SubjectModal';
+import {
+  Layers,
+  BookOpen,
+  Plus,
+  Trash2,
+  User,
+  Award,
+  CheckSquare,
+  FileText,
+  Sparkles,
+  Zap
+} from 'lucide-react';
 
 export const SemesterOverviewPage: React.FC = () => {
   const { selectedSemesterId, setSelectedSemesterId, semesters, refreshFilterData } = useAppFilter();
@@ -43,211 +55,228 @@ export const SemesterOverviewPage: React.FC = () => {
     }
   };
 
+  const totalCredits = subjects.reduce((sum, s) => sum + (s.credits || 0), 0);
+  const currentSemesterObj = semesters.find((s) => s.id === selectedSemesterId);
+
   return (
-    <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+    <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
       {/* Top Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
         <div>
-          <h1 style={{ fontSize: '24px', fontWeight: 800, margin: '0 0 6px 0', color: 'var(--text-primary)' }}>
-            📁 Quản lý Học Kỳ & Môn Học
-          </h1>
-          <p style={{ margin: 0, fontSize: '14px', color: 'var(--text-secondary)' }}>
-            Trục tổ chức kiến thức trọng tâm của sinh viên (Anti-Junk Context)
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <h1 style={{ fontSize: '24px', fontWeight: 800, margin: 0, letterSpacing: '-0.02em' }}>
+              Quản Lý Học Kỳ & Môn Học
+            </h1>
+            <span className="badge badge-purple">
+              {subjects.length} Môn ({totalCredits} Tín chỉ)
+            </span>
+          </div>
+          <p style={{ margin: '4px 0 0 0', fontSize: '13.5px', color: 'var(--text-secondary)' }}>
+            Trục kiến trúc gắn kết tri thức và bài tập cho sinh viên (Anti-Junk Context)
           </p>
         </div>
+
         <div style={{ display: 'flex', gap: '10px' }}>
           <button
             onClick={() => setIsSemesterModalOpen(true)}
-            style={{
-              padding: '10px 16px',
-              borderRadius: '8px',
-              border: '1px solid var(--border-color)',
-              background: 'var(--bg-secondary)',
-              color: 'var(--text-primary)',
-              fontWeight: 600,
-              fontSize: '13px',
-              cursor: 'pointer'
-            }}
+            className="btn btn-secondary"
+            style={{ fontWeight: 600 }}
           >
-            + Thêm Học Kỳ
+            <Plus size={15} />
+            <span>Thêm Học Kỳ</span>
           </button>
           <button
             onClick={() => setIsSubjectModalOpen(true)}
-            style={{
-              padding: '10px 18px',
-              borderRadius: '8px',
-              border: 'none',
-              background: 'var(--accent-primary)',
-              color: '#fff',
-              fontWeight: 600,
-              fontSize: '13px',
-              cursor: 'pointer'
-            }}
+            className="btn btn-primary"
+            style={{ fontWeight: 700 }}
           >
-            + Thêm Môn Học
+            <Plus size={15} />
+            <span>Thêm Môn Học</span>
           </button>
         </div>
       </div>
 
-      {/* Semester Tabs */}
-      <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '8px', marginBottom: '24px' }}>
+      {/* Semester Selection Tabs */}
+      <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '12px', marginBottom: '24px' }}>
         <button
           onClick={() => setSelectedSemesterId(null)}
-          style={{
-            padding: '10px 16px',
-            borderRadius: '10px',
-            border: selectedSemesterId === null ? '1px solid var(--accent-primary)' : '1px solid var(--border-color)',
-            background: selectedSemesterId === null ? 'rgba(59, 130, 246, 0.15)' : 'var(--bg-secondary)',
-            color: selectedSemesterId === null ? 'var(--accent-primary)' : 'var(--text-secondary)',
-            fontWeight: 600,
-            fontSize: '13px',
-            cursor: 'pointer',
-            whiteSpace: 'nowrap'
-          }}
+          className={`btn ${selectedSemesterId === null ? 'btn-primary' : 'btn-secondary'}`}
+          style={{ padding: '8px 16px', fontSize: '13px' }}
         >
-          Tất cả học kỳ
+          <Layers size={14} />
+          <span>Tất cả học kỳ</span>
         </button>
-        {semesters.map((sem) => (
-          <button
-            key={sem.id}
-            onClick={() => setSelectedSemesterId(sem.id)}
-            style={{
-              padding: '10px 16px',
-              borderRadius: '10px',
-              border: selectedSemesterId === sem.id ? '1px solid var(--accent-primary)' : '1px solid var(--border-color)',
-              background: selectedSemesterId === sem.id ? 'rgba(59, 130, 246, 0.15)' : 'var(--bg-secondary)',
-              color: selectedSemesterId === sem.id ? 'var(--accent-primary)' : 'var(--text-secondary)',
-              fontWeight: 600,
-              fontSize: '13px',
-              cursor: 'pointer',
-              whiteSpace: 'nowrap',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px'
-            }}
-          >
-            <span>{sem.name}</span>
-            {sem.isCurrent && (
-              <span style={{ fontSize: '10px', background: 'var(--accent-primary)', color: '#fff', padding: '2px 6px', borderRadius: '4px' }}>
-                Active
-              </span>
-            )}
-          </button>
-        ))}
+
+        {semesters.map((sem) => {
+          const isSelected = selectedSemesterId === sem.id;
+          return (
+            <button
+              key={sem.id}
+              onClick={() => setSelectedSemesterId(sem.id)}
+              className={`btn ${isSelected ? 'btn-primary' : 'btn-secondary'}`}
+              style={{
+                padding: '8px 16px',
+                fontSize: '13px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}
+            >
+              <span>{sem.name}</span>
+              {sem.isCurrent && (
+                <span
+                  style={{
+                    fontSize: '10px',
+                    backgroundColor: isSelected ? 'rgba(255,255,255,0.25)' : 'var(--accent-primary)',
+                    color: '#ffffff',
+                    padding: '2px 6px',
+                    borderRadius: '4px',
+                    fontWeight: 700
+                  }}
+                >
+                  Active
+                </span>
+              )}
+            </button>
+          );
+        })}
       </div>
 
       {/* Subjects Grid */}
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--text-secondary)' }}>
-          Đang tải danh sách môn học...
+        <div style={{ textAlign: 'center', padding: '80px 0', color: 'var(--text-muted)' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', fontSize: '14px' }}>
+            <Sparkles size={18} className="pulse-urgent" style={{ color: 'var(--accent-primary)' }} />
+            <span>Đang tải danh sách môn học...</span>
+          </div>
         </div>
       ) : subjects.length === 0 ? (
         <div
+          className="snote-card"
           style={{
             textAlign: 'center',
-            padding: '60px 20px',
-            background: 'var(--bg-secondary)',
-            border: '1px dashed var(--border-color)',
-            borderRadius: '16px',
-            color: 'var(--text-secondary)'
+            padding: '60px 24px',
+            border: '2px dashed var(--border-color)',
+            borderRadius: 'var(--radius-xl)',
+            background: 'var(--bg-secondary)'
           }}
         >
-          <div style={{ fontSize: '36px', marginBottom: '12px' }}>📖</div>
-          <h3 style={{ margin: '0 0 6px 0', color: 'var(--text-primary)' }}>Chưa có môn học nào trong học kỳ này</h3>
-          <p style={{ margin: '0 0 16px 0', fontSize: '14px' }}>
-            Môn học là trục gắn kết ghi chú và công việc để tránh tạo rác dữ liệu.
+          <div
+            style={{
+              width: '56px',
+              height: '56px',
+              borderRadius: 'var(--radius-full)',
+              backgroundColor: 'var(--accent-subtle)',
+              color: 'var(--accent-primary)',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginBottom: '16px'
+            }}
+          >
+            <BookOpen size={28} />
+          </div>
+          <h3 style={{ margin: '0 0 8px 0', fontSize: '17px', fontWeight: 700, color: 'var(--text-primary)' }}>
+            Chưa có môn học nào trong học kỳ này
+          </h3>
+          <p style={{ margin: '0 0 20px 0', fontSize: '13.5px', color: 'var(--text-secondary)', maxWidth: '420px', marginLeft: 'auto', marginRight: 'auto' }}>
+            Môn học là trục liên kết bắt buộc giúp ghi chú và bài tập được phân loại khoa học.
           </p>
           <button
             onClick={() => setIsSubjectModalOpen(true)}
-            style={{
-              padding: '10px 20px',
-              borderRadius: '8px',
-              border: 'none',
-              background: 'var(--accent-primary)',
-              color: '#fff',
-              fontWeight: 600,
-              cursor: 'pointer'
-            }}
+            className="btn btn-primary"
+            style={{ padding: '10px 20px', fontWeight: 700 }}
           >
-            + Thêm Môn Học Đầu Tiên
+            <Plus size={16} />
+            <span>Thêm Môn Học Đầu Tiên</span>
           </button>
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '20px' }}>
-          {subjects.map((sub) => (
-            <div
-              key={sub.id}
-              style={{
-                background: 'var(--bg-secondary)',
-                border: '1px solid var(--border-color)',
-                borderTop: `4px solid ${sub.color || 'var(--accent-primary)'}`,
-                borderRadius: '12px',
-                padding: '20px',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
-              }}
-            >
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                  <span
-                    style={{
-                      fontSize: '11px',
-                      fontWeight: 700,
-                      color: 'var(--accent-primary)',
-                      background: 'rgba(59, 130, 246, 0.12)',
-                      padding: '3px 8px',
-                      borderRadius: '4px'
-                    }}
-                  >
-                    {sub.code || 'NO-CODE'}
-                  </span>
-                  <span style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 600 }}>
-                    {sub.credits} Tín chỉ
-                  </span>
-                </div>
-                <h3 style={{ margin: '0 0 8px 0', fontSize: '17px', fontWeight: 700, color: 'var(--text-primary)' }}>
-                  {sub.name}
-                </h3>
-                {sub.lecturer && (
-                  <p style={{ margin: '0 0 14px 0', fontSize: '13px', color: 'var(--text-secondary)' }}>
-                    👨‍🏫 {sub.lecturer}
-                  </p>
-                )}
-              </div>
-
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '20px' }}>
+          {subjects.map((sub) => {
+            const subColor = sub.color || 'var(--accent-primary)';
+            return (
               <div
+                key={sub.id}
+                className="snote-card animate-fade-in"
                 style={{
+                  background: 'var(--bg-secondary)',
+                  border: '1px solid var(--border-color)',
+                  borderTop: `4px solid ${subColor}`,
+                  borderRadius: 'var(--radius-lg)',
+                  padding: '20px',
                   display: 'flex',
-                  alignItems: 'center',
+                  flexDirection: 'column',
                   justifyContent: 'space-between',
-                  paddingTop: '14px',
-                  borderTop: '1px solid var(--border-color)',
-                  fontSize: '12px',
-                  color: 'var(--text-secondary)'
+                  minHeight: '200px'
                 }}
               >
                 <div>
-                  📝 <b>{sub.notesCount || 0}</b> Ghi chú &nbsp;•&nbsp; ✅ <b>{sub.tasksCount || 0}</b> Việc
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+                    <span
+                      className="badge"
+                      style={{
+                        backgroundColor: `${subColor}18`,
+                        color: subColor,
+                        border: `1px solid ${subColor}35`,
+                        fontWeight: 700
+                      }}
+                    >
+                      {sub.code || 'CODE'}
+                    </span>
+                    <span className="badge badge-neutral">
+                      <Award size={11} />
+                      <span>{sub.credits} Tín chỉ</span>
+                    </span>
+                  </div>
+
+                  <h3 style={{ margin: '0 0 8px 0', fontSize: '17px', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.35 }}>
+                    {sub.name}
+                  </h3>
+
+                  {sub.lecturer && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '14px' }}>
+                      <User size={13} style={{ color: 'var(--text-muted)' }} />
+                      <span>{sub.lecturer}</span>
+                    </div>
+                  )}
                 </div>
-                <button
-                  onClick={() => handleDeleteSubject(sub.id, sub.name)}
-                  title="Xóa môn học"
+
+                <div
                   style={{
-                    background: 'transparent',
-                    border: 'none',
-                    color: '#ef4444',
-                    cursor: 'pointer',
-                    fontSize: '14px',
-                    padding: '4px'
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    paddingTop: '14px',
+                    borderTop: '1px solid var(--border-color)',
+                    fontSize: '12px',
+                    color: 'var(--text-muted)'
                   }}
                 >
-                  🗑️
-                </button>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <FileText size={12} />
+                      <b>{sub.notesCount || 0}</b> ghi chú
+                    </span>
+                    <span>•</span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <CheckSquare size={12} />
+                      <b>{sub.tasksCount || 0}</b> việc
+                    </span>
+                  </div>
+
+                  <button
+                    onClick={() => handleDeleteSubject(sub.id, sub.name)}
+                    className="btn btn-ghost btn-icon"
+                    style={{ color: 'var(--color-danger)', padding: '4px' }}
+                    title="Xóa môn học"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

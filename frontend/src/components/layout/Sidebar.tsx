@@ -1,59 +1,77 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { useTheme } from '../../contexts/ThemeContext';
+import {
+  BookOpen,
+  CheckSquare,
+  Calendar,
+  BarChart3,
+  Layers,
+  FolderKanban,
+  Settings,
+  Activity,
+  LogOut,
+  Sun,
+  Moon,
+  GraduationCap
+} from 'lucide-react';
 
 export const Sidebar: React.FC = () => {
   const { user, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
 
   const navItems = [
-    { to: '/notes', label: 'Ghi chú', icon: '📚' },
-    { to: '/tasks', label: 'Công việc', icon: '✅' },
-    { to: '/schedule', label: 'Lịch trình', icon: '📅' },
-    { to: '/progress', label: 'Tiến độ', icon: '📊' },
-    { to: '/semesters', label: 'Môn & Học kỳ', icon: '📁' },
-    { to: '/projects', label: 'Đồ án', icon: '🛠️' },
-    { to: '/settings', label: 'Cài đặt & Sao lưu', icon: '⚙️' },
-    { to: '/status', label: 'Trạng thái Hệ thống', icon: '🩺' }
+    { to: '/notes', label: 'Ghi chú', icon: BookOpen },
+    { to: '/tasks', label: 'Công việc', icon: CheckSquare },
+    { to: '/schedule', label: 'Lịch trình', icon: Calendar },
+    { to: '/progress', label: 'Tiến độ', icon: BarChart3 },
+    { to: '/semesters', label: 'Môn & Học kỳ', icon: Layers },
+    { to: '/projects', label: 'Đồ án', icon: FolderKanban },
+    { to: '/settings', label: 'Cài đặt & Sao lưu', icon: Settings },
+    { to: '/status', label: 'Trạng thái Hệ thống', icon: Activity }
   ];
 
   return (
     <aside
+      className="glass-panel"
       style={{
-        width: '240px',
-        backgroundColor: 'var(--bg-secondary)',
+        width: '250px',
         borderRight: '1px solid var(--border-color)',
         display: 'flex',
         flexDirection: 'column',
         height: '100vh',
         position: 'sticky',
         top: 0,
-        flexShrink: 0
+        flexShrink: 0,
+        zIndex: 50
       }}
     >
       {/* Brand Header */}
       <div
         style={{
-          padding: '24px 20px',
+          padding: '20px 20px',
           display: 'flex',
           alignItems: 'center',
-          gap: '10px',
+          gap: '12px',
           borderBottom: '1px solid var(--border-color)'
         }}
       >
         <div
           style={{
-            width: '36px',
-            height: '36px',
-            borderRadius: '8px',
-            background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
+            width: '38px',
+            height: '38px',
+            borderRadius: 'var(--radius-md)',
+            background: 'linear-gradient(135deg, #6366f1, #a855f7)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: '20px',
-            color: '#fff'
+            color: '#ffffff',
+            boxShadow: 'var(--shadow-accent)',
+            flexShrink: 0
           }}
         >
-          🎓
+          <GraduationCap size={22} />
         </div>
         <div>
           <h2
@@ -61,103 +79,164 @@ export const Sidebar: React.FC = () => {
               margin: 0,
               fontSize: '18px',
               fontWeight: 800,
-              letterSpacing: '-0.5px',
-              background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
+              letterSpacing: '-0.03em',
+              background: 'linear-gradient(135deg, #6366f1, #a855f7)',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent'
             }}
           >
             SNOTE
           </h2>
-          <span style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 500 }}>
-            Academic Flow V1
+          <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 500, letterSpacing: '0.04em' }}>
+            ACADEMIC BRAIN
           </span>
         </div>
       </div>
 
       {/* Navigation Links */}
-      <nav style={{ padding: '16px 12px', display: 'flex', flexDirection: 'column', gap: '4px', flex: 1, overflowY: 'auto' }}>
-        {navItems.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            style={({ isActive }) => ({
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              padding: '10px 14px',
-              borderRadius: '8px',
-              color: isActive ? '#ffffff' : 'var(--text-secondary)',
-              backgroundColor: isActive ? 'var(--accent-primary)' : 'transparent',
-              textDecoration: 'none',
-              fontSize: '14px',
-              fontWeight: isActive ? 600 : 500,
-              transition: 'all 0.15s ease'
-            })}
-          >
-            <span style={{ fontSize: '16px' }}>{item.icon}</span>
-            <span>{item.label}</span>
-          </NavLink>
-        ))}
-      </nav>
-
-      {/* User Footer */}
-      {user && (
+      <nav
+        style={{
+          padding: '16px 12px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '4px',
+          flex: 1,
+          overflowY: 'auto'
+        }}
+      >
         <div
           style={{
-            padding: '16px',
-            borderTop: '1px solid var(--border-color)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: '8px',
-            backgroundColor: 'rgba(0,0,0,0.1)'
+            fontSize: '11px',
+            fontWeight: 700,
+            textTransform: 'uppercase',
+            color: 'var(--text-muted)',
+            padding: '4px 12px 8px 12px',
+            letterSpacing: '0.05em'
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', overflow: 'hidden' }}>
-            <div
-              style={{
-                width: '32px',
-                height: '32px',
-                borderRadius: '50%',
-                backgroundColor: 'var(--accent-primary)',
-                color: '#fff',
+          Không gian học tập
+        </div>
+        {navItems.map((item) => {
+          const Icon = item.icon;
+          return (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              style={({ isActive }) => ({
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '13px',
-                fontWeight: 700,
-                flexShrink: 0
-              }}
+                gap: '12px',
+                padding: '9px 14px',
+                borderRadius: 'var(--radius-md)',
+                color: isActive ? '#ffffff' : 'var(--text-secondary)',
+                backgroundColor: isActive ? 'var(--accent-primary)' : 'transparent',
+                textDecoration: 'none',
+                fontSize: '13.5px',
+                fontWeight: isActive ? 600 : 500,
+                boxShadow: isActive ? 'var(--shadow-accent)' : 'none',
+                transition: 'all var(--transition-fast)'
+              })}
             >
-              {user.fullName.charAt(0).toUpperCase()}
-            </div>
-            <div style={{ overflow: 'hidden' }}>
-              <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
-                {user.fullName}
-              </div>
-              <div style={{ fontSize: '11px', color: 'var(--text-secondary)', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
-                {user.email}
-              </div>
-            </div>
-          </div>
-          <button
-            onClick={logout}
-            title="Đăng xuất"
+              <Icon size={18} />
+              <span>{item.label}</span>
+            </NavLink>
+          );
+        })}
+      </nav>
+
+      {/* Theme & User Controls Footer */}
+      <div
+        style={{
+          padding: '14px 16px',
+          borderTop: '1px solid var(--border-color)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '12px',
+          background: 'var(--bg-card)'
+        }}
+      >
+        {/* Quick Theme Toggle */}
+        <button
+          onClick={toggleTheme}
+          className="btn btn-secondary btn-sm"
+          style={{
+            width: '100%',
+            justifyContent: 'space-between',
+            padding: '7px 12px'
+          }}
+        >
+          <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12.5px' }}>
+            {theme === 'dark' ? <Moon size={15} /> : <Sun size={15} />}
+            <span>Giao diện: {theme === 'dark' ? 'Tối (Dark)' : 'Sáng (Light)'}</span>
+          </span>
+          <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Chuyển</span>
+        </button>
+
+        {/* User Profile */}
+        {user && (
+          <div
             style={{
-              background: 'transparent',
-              border: 'none',
-              color: 'var(--text-secondary)',
-              cursor: 'pointer',
-              fontSize: '16px',
-              padding: '6px',
-              borderRadius: '6px'
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '10px'
             }}
           >
-            🚪
-          </button>
-        </div>
-      )}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', overflow: 'hidden' }}>
+              <div
+                style={{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: 'var(--radius-full)',
+                  backgroundColor: 'var(--accent-primary)',
+                  color: '#ffffff',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '13px',
+                  fontWeight: 700,
+                  flexShrink: 0
+                }}
+              >
+                {user.fullName.charAt(0).toUpperCase()}
+              </div>
+              <div style={{ overflow: 'hidden' }}>
+                <div
+                  style={{
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    color: 'var(--text-primary)',
+                    whiteSpace: 'nowrap',
+                    textOverflow: 'ellipsis',
+                    overflow: 'hidden'
+                  }}
+                >
+                  {user.fullName}
+                </div>
+                <div
+                  style={{
+                    fontSize: '11px',
+                    color: 'var(--text-muted)',
+                    whiteSpace: 'nowrap',
+                    textOverflow: 'ellipsis',
+                    overflow: 'hidden'
+                  }}
+                >
+                  {user.email}
+                </div>
+              </div>
+            </div>
+            <button
+              onClick={logout}
+              className="btn btn-ghost btn-icon"
+              title="Đăng xuất"
+              style={{ color: 'var(--text-muted)' }}
+            >
+              <LogOut size={16} />
+            </button>
+          </div>
+        )}
+      </div>
     </aside>
   );
 };

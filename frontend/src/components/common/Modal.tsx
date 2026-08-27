@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { X } from 'lucide-react';
 
 interface ModalProps {
   isOpen: boolean;
@@ -6,6 +7,7 @@ interface ModalProps {
   title: string;
   children: React.ReactNode;
   maxWidth?: string;
+  icon?: React.ReactNode;
 }
 
 export const Modal: React.FC<ModalProps> = ({
@@ -13,7 +15,8 @@ export const Modal: React.FC<ModalProps> = ({
   onClose,
   title,
   children,
-  maxWidth = '560px'
+  maxWidth = '560px',
+  icon
 }) => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -39,8 +42,9 @@ export const Modal: React.FC<ModalProps> = ({
         left: 0,
         right: 0,
         bottom: 0,
-        backgroundColor: 'rgba(0, 0, 0, 0.65)',
-        backdropFilter: 'blur(4px)',
+        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+        backdropFilter: 'blur(8px)',
+        WebkitBackdropFilter: 'blur(8px)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -50,13 +54,14 @@ export const Modal: React.FC<ModalProps> = ({
       onClick={onClose}
     >
       <div
+        className="animate-scale-in"
         style={{
           width: '100%',
           maxWidth,
           backgroundColor: 'var(--bg-secondary)',
           border: '1px solid var(--border-color)',
-          borderRadius: '14px',
-          boxShadow: '0 20px 40px rgba(0, 0, 0, 0.4)',
+          borderRadius: 'var(--radius-xl)',
+          boxShadow: 'var(--shadow-lg)',
           overflow: 'hidden',
           display: 'flex',
           flexDirection: 'column',
@@ -64,33 +69,34 @@ export const Modal: React.FC<ModalProps> = ({
         }}
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Modal Header */}
         <div
           style={{
             padding: '18px 24px',
             borderBottom: '1px solid var(--border-color)',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'space-between'
+            justifyContent: 'space-between',
+            background: 'var(--bg-card)'
           }}
         >
-          <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)' }}>
-            {title}
-          </h3>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            {icon && <span style={{ color: 'var(--accent-primary)', display: 'flex' }}>{icon}</span>}
+            <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: 'var(--text-primary)' }}>
+              {title}
+            </h3>
+          </div>
           <button
             onClick={onClose}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: 'var(--text-secondary)',
-              fontSize: '20px',
-              cursor: 'pointer',
-              padding: '4px 8px',
-              borderRadius: '6px'
-            }}
+            className="btn btn-ghost btn-icon"
+            style={{ padding: '6px', color: 'var(--text-secondary)' }}
+            title="Đóng (Esc)"
           >
-            ✕
+            <X size={18} />
           </button>
         </div>
+
+        {/* Modal Body */}
         <div style={{ padding: '24px', overflowY: 'auto' }}>{children}</div>
       </div>
     </div>

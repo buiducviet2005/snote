@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
+import { GraduationCap, Mail, Lock, Eye, EyeOff, ArrowRight, Sparkles } from 'lucide-react';
 
 export const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
@@ -19,84 +21,185 @@ export const LoginPage: React.FC = () => {
       await login(email.trim(), password);
       navigate('/notes');
     } catch (err: any) {
-      setError(err.message || 'Đăng nhập không thành công, vui lòng thử lại');
+      setError(err.message || 'Đăng nhập không thành công, vui lòng kiểm tra lại email hoặc mật khẩu');
     } finally {
       setLoading(false);
     }
   };
 
+  const handleDemoFill = () => {
+    setEmail('sinhvien@snote.edu.vn');
+    setPassword('Student@123456');
+  };
+
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-primary)', padding: '24px' }}>
-      <div style={{ width: '100%', maxWidth: '420px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '16px', padding: '36px', boxShadow: '0 8px 30px rgba(0,0,0,0.3)' }}>
+    <div
+      style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'radial-gradient(ellipse at top, rgba(99, 102, 241, 0.15), var(--bg-primary) 70%)',
+        padding: '24px'
+      }}
+    >
+      <div
+        className="snote-card animate-scale-in"
+        style={{
+          width: '100%',
+          maxWidth: '440px',
+          padding: '36px',
+          boxShadow: 'var(--shadow-lg)',
+          borderRadius: 'var(--radius-xl)'
+        }}
+      >
+        {/* Brand Banner */}
         <div style={{ textAlign: 'center', marginBottom: '28px' }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
-            <span style={{ fontSize: '28px' }}>🎓</span>
-            <span style={{ fontSize: '24px', fontWeight: 800, background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-              SNOTE
-            </span>
+          <div
+            style={{
+              width: '52px',
+              height: '52px',
+              borderRadius: 'var(--radius-lg)',
+              background: 'linear-gradient(135deg, #6366f1, #a855f7)',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#ffffff',
+              marginBottom: '14px',
+              boxShadow: 'var(--shadow-accent)'
+            }}
+          >
+            <GraduationCap size={28} />
           </div>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '14px', margin: 0 }}>Hệ thống Quản lý Học tập & Ghi chú Thông minh</p>
+          <h1
+            style={{
+              fontSize: '26px',
+              fontWeight: 800,
+              margin: '0 0 6px 0',
+              letterSpacing: '-0.03em'
+            }}
+          >
+            Chào mừng đến với <span style={{ background: 'linear-gradient(135deg, #6366f1, #a855f7)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>SNOTE</span>
+          </h1>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '13.5px', margin: 0 }}>
+            Second Brain & Workspace học tập thông minh cho Sinh viên
+          </p>
         </div>
 
+        {/* Error Alert */}
         {error && (
-          <div style={{ background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#f87171', padding: '12px 16px', borderRadius: '8px', marginBottom: '20px', fontSize: '14px' }}>
+          <div
+            className="animate-fade-in"
+            style={{
+              background: 'var(--color-danger-subtle)',
+              border: '1px solid rgba(239, 68, 68, 0.3)',
+              color: 'var(--color-danger)',
+              padding: '12px 16px',
+              borderRadius: 'var(--radius-md)',
+              marginBottom: '20px',
+              fontSize: '13.5px',
+              lineHeight: 1.4
+            }}
+          >
             {error}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+          {/* Email Input */}
           <div>
             <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
               Email sinh viên
             </label>
-            <input
-              type="email"
-              required
-              placeholder="sinhvien@snote.edu.vn"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              style={{ width: '100%', padding: '12px 14px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-primary)', color: 'var(--text-primary)', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
-            />
+            <div style={{ position: 'relative' }}>
+              <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', display: 'flex' }}>
+                <Mail size={16} />
+              </span>
+              <input
+                type="email"
+                required
+                placeholder="sinhvien@snote.edu.vn"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="snote-input"
+                style={{ paddingLeft: '38px' }}
+              />
+            </div>
           </div>
 
+          {/* Password Input */}
           <div>
             <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
               Mật khẩu
             </label>
-            <input
-              type="password"
-              required
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              style={{ width: '100%', padding: '12px 14px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-primary)', color: 'var(--text-primary)', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
-            />
+            <div style={{ position: 'relative' }}>
+              <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', display: 'flex' }}>
+                <Lock size={16} />
+              </span>
+              <input
+                type={showPassword ? 'text' : 'password'}
+                required
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="snote-input"
+                style={{ paddingLeft: '38px', paddingRight: '38px' }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                style={{
+                  position: 'absolute',
+                  right: '12px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'var(--text-muted)',
+                  cursor: 'pointer',
+                  padding: 0,
+                  display: 'flex'
+                }}
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
           </div>
 
+          {/* Submit Button */}
           <button
             type="submit"
             disabled={loading}
+            className="btn btn-primary"
             style={{
-              marginTop: '8px',
               padding: '12px',
-              borderRadius: '8px',
-              border: 'none',
-              background: 'var(--accent-primary)',
-              color: '#ffffff',
-              fontSize: '15px',
-              fontWeight: 600,
-              cursor: loading ? 'not-allowed' : 'pointer',
-              opacity: loading ? 0.7 : 1,
-              transition: 'all 0.2s ease'
+              fontSize: '14.5px',
+              fontWeight: 700,
+              marginTop: '6px'
             }}
           >
-            {loading ? 'Đang đăng nhập...' : 'Đăng nhập'}
+            {loading ? 'Đang xác thực...' : 'Đăng Nhập'}
+            {!loading && <ArrowRight size={16} />}
           </button>
         </form>
 
-        <div style={{ marginTop: '24px', textAlign: 'center', fontSize: '14px', color: 'var(--text-secondary)' }}>
-          Chưa có tài khoản?{' '}
-          <Link to="/register" style={{ color: 'var(--accent-primary)', textDecoration: 'none', fontWeight: 600 }}>
+        {/* Demo Quick Fill */}
+        <div style={{ marginTop: '20px', textAlign: 'center' }}>
+          <button
+            type="button"
+            onClick={handleDemoFill}
+            className="btn btn-ghost btn-sm"
+            style={{ fontSize: '12px', color: 'var(--accent-primary)', width: '100%' }}
+          >
+            <Sparkles size={14} />
+            <span>Điền tài khoản sinh viên mẫu (sinhvien@snote.edu.vn)</span>
+          </button>
+        </div>
+
+        {/* Register Link */}
+        <div style={{ marginTop: '20px', paddingTop: '18px', borderTop: '1px solid var(--border-color)', textAlign: 'center', fontSize: '13.5px', color: 'var(--text-secondary)' }}>
+          Chưa có tài khoản sinh viên?{' '}
+          <Link to="/register" style={{ color: 'var(--accent-primary)', textDecoration: 'none', fontWeight: 700 }}>
             Đăng ký ngay
           </Link>
         </div>

@@ -4,6 +4,16 @@ import { api } from '../../../services/api';
 import { useToast } from '../../../contexts/ToastContext';
 import { useAppFilter } from '../../../contexts/AppFilterContext';
 import { TaskStatus, TaskPriority } from '@snote/shared';
+import {
+  CheckSquare,
+  Calendar,
+  Layers,
+  Flame,
+  Tag,
+  Save,
+  Clock,
+  FileText
+} from 'lucide-react';
 
 interface TaskModalProps {
   isOpen: boolean;
@@ -52,7 +62,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!subjectId) {
-      showToast('Công việc bắt buộc phải gắn với một Môn học (Anti-Junk constraint)', 'error');
+      showToast('Công việc bắt buộc phải gắn với một Môn học (Ràng buộc chống rác)', 'error');
       return;
     }
 
@@ -84,7 +94,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
           dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
           tagNames
         });
-        showToast('Tạo công việc mới thành công!', 'success');
+        showToast('Tạo công việc bài tập mới thành công!', 'success');
       }
 
       onSuccess();
@@ -100,33 +110,38 @@ export const TaskModal: React.FC<TaskModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={taskToEdit ? 'Chỉnh Sửa Công Việc' : 'Tạo Công Việc Sinh Viên Mới'}
+      title={taskToEdit ? 'Chỉnh Sửa Công Việc' : 'Giao Việc / Bài Tập Mới'}
+      maxWidth="620px"
+      icon={<CheckSquare size={20} />}
     >
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        {/* Title */}
         <div>
-          <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '6px' }}>
-            Tên công việc / Bài tập *
+          <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
+            Tên công việc / Bài tập cần làm *
           </label>
           <input
             type="text"
             required
-            placeholder="Ví dụ: Hoàn thành bài tập tuần 3 về Indexing"
+            placeholder="Ví dụ: Hoàn thành bài tập tuần 3 về ACID Database & Migrations"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-primary)', color: 'var(--text-primary)', fontSize: '14px', boxSizing: 'border-box' }}
+            className="snote-input"
+            style={{ fontSize: '14.5px', fontWeight: 600 }}
           />
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+        {/* Subject & Priority */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
           <div>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '6px' }}>
-              Môn học liên quan *
+            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
+              Môn học liên quan * (Anti-Junk)
             </label>
             <select
               value={subjectId}
               onChange={(e) => setSubjectId(e.target.value)}
               required
-              style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-primary)', color: 'var(--text-primary)', boxSizing: 'border-box' }}
+              className="snote-select"
             >
               <option value="">-- Chọn môn học --</option>
               {subjects.map((sub) => (
@@ -138,13 +153,13 @@ export const TaskModal: React.FC<TaskModalProps> = ({
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '6px' }}>
+            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
               Mức độ ưu tiên
             </label>
             <select
               value={priority}
               onChange={(e) => setPriority(e.target.value as TaskPriority)}
-              style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-primary)', color: 'var(--text-primary)', boxSizing: 'border-box' }}
+              className="snote-select"
             >
               <option value={TaskPriority.LOW}>🟢 Thấp (Low)</option>
               <option value={TaskPriority.MEDIUM}>🟡 Trung bình (Medium)</option>
@@ -154,76 +169,87 @@ export const TaskModal: React.FC<TaskModalProps> = ({
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+        {/* Due date & Initial status */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
           <div>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '6px' }}>
-              Hạn nộp (Deadline)
+            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
+              Hạn chót nộp bài (Deadline)
             </label>
             <input
               type="datetime-local"
               value={dueDate}
               onChange={(e) => setDueDate(e.target.value)}
-              style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-primary)', color: 'var(--text-primary)', boxSizing: 'border-box' }}
+              className="snote-input"
             />
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '6px' }}>
-              Trạng thái
+            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
+              Trạng thái ban đầu
             </label>
             <select
               value={status}
               onChange={(e) => setStatus(e.target.value as TaskStatus)}
-              style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-primary)', color: 'var(--text-primary)', boxSizing: 'border-box' }}
+              className="snote-select"
             >
               <option value={TaskStatus.TODO}>📋 Cần làm (TODO)</option>
               <option value={TaskStatus.IN_PROGRESS}>⚡ Đang làm (IN_PROGRESS)</option>
-              <option value={TaskStatus.DONE}>✅ Đã xong (DONE)</option>
+              <option value={TaskStatus.DONE}>✅ Đã hoàn thành (DONE)</option>
               <option value={TaskStatus.CANCELLED}>🚫 Đã hủy (CANCELLED)</option>
             </select>
           </div>
         </div>
 
+        {/* Description */}
         <div>
-          <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '6px' }}>
-            Mô tả chi tiết / Hướng dẫn
+          <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
+            Mô tả chi tiết / Ghi chú yêu cầu
           </label>
           <textarea
             rows={3}
-            placeholder="Ghi chú thêm về yêu cầu đề bài hoặc checklist phụ..."
+            placeholder="Mô tả tóm tắt nội dung bài tập, tiêu chí chấm hoặc ghi chú..."
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-primary)', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'inherit', boxSizing: 'border-box' }}
+            className="snote-textarea"
           />
         </div>
 
+        {/* Tags */}
         <div>
-          <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '6px' }}>
-            Thẻ tags (Phân cách bằng dấu phẩy)
+          <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
+            Thẻ tags phân loại
           </label>
-          <input
-            type="text"
-            placeholder="Assignment, Lab1, Deadline"
-            value={tagsInput}
-            onChange={(e) => setTagsInput(e.target.value)}
-            style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-primary)', color: 'var(--text-primary)', boxSizing: 'border-box' }}
-          />
+          <div style={{ position: 'relative' }}>
+            <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', display: 'flex' }}>
+              <Tag size={15} />
+            </span>
+            <input
+              type="text"
+              placeholder="Assignment, Lab1, Deadline, GroupWork"
+              value={tagsInput}
+              onChange={(e) => setTagsInput(e.target.value)}
+              className="snote-input"
+              style={{ paddingLeft: '36px' }}
+            />
+          </div>
         </div>
 
+        {/* Form Actions */}
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '12px' }}>
           <button
             type="button"
             onClick={onClose}
-            style={{ padding: '10px 16px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer' }}
+            className="btn btn-secondary"
           >
-            Hủy
+            Hủy bỏ
           </button>
           <button
             type="submit"
             disabled={loading}
-            style={{ padding: '10px 20px', borderRadius: '8px', border: 'none', background: 'var(--accent-primary)', color: '#fff', fontWeight: 600, cursor: loading ? 'not-allowed' : 'pointer' }}
+            className="btn btn-primary"
           >
-            {loading ? 'Đang lưu...' : taskToEdit ? 'Lưu Thay Đổi' : 'Tạo Công Việc'}
+            <Save size={15} />
+            <span>{loading ? 'Đang lưu...' : taskToEdit ? 'Lưu Thay Đổi' : 'Giao Việc Mới'}</span>
           </button>
         </div>
       </form>

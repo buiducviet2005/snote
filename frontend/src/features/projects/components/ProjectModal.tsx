@@ -4,6 +4,7 @@ import { api } from '../../../services/api';
 import { useToast } from '../../../contexts/ToastContext';
 import { useAppFilter } from '../../../contexts/AppFilterContext';
 import { ProjectStatus } from '@snote/shared';
+import { FolderKanban, Calendar, BookOpen, Save } from 'lucide-react';
 
 interface ProjectModalProps {
   isOpen: boolean;
@@ -83,34 +84,37 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={projectToEdit ? 'Chỉnh Sửa Đồ Án' : 'Thêm Đồ Án / Dự Án Môn Học Mới'}
+      title={projectToEdit ? 'Chỉnh Sửa Đồ Án' : 'Thêm Đồ Án Mới'}
+      maxWidth="620px"
+      icon={<FolderKanban size={20} />}
     >
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
         <div>
-          <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '6px' }}>
-            Tên đồ án / Dự án *
+          <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
+            Tên đề tài / Đồ án môn học *
           </label>
           <input
             type="text"
             required
-            placeholder="Ví dụ: Đồ án Xây dựng Ứng dụng SNOTE"
+            placeholder="Ví dụ: Đồ án Xây dựng Ứng dụng SNOTE với Modular Monolith"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-primary)', color: 'var(--text-primary)', fontSize: '14px', boxSizing: 'border-box' }}
+            className="snote-input"
+            style={{ fontSize: '14.5px', fontWeight: 600 }}
           />
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
           <div>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '6px' }}>
+            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
               Môn học liên quan
             </label>
             <select
               value={subjectId}
               onChange={(e) => setSubjectId(e.target.value)}
-              style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-primary)', color: 'var(--text-primary)', boxSizing: 'border-box' }}
+              className="snote-select"
             >
-              <option value="">-- Dự án độc lập --</option>
+              <option value="">-- Dự án nghiên cứu độc lập --</option>
               {subjects.map((sub) => (
                 <option key={sub.id} value={sub.id}>
                   {sub.code ? `[${sub.code}] ` : ''}{sub.name}
@@ -120,13 +124,13 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '6px' }}>
-              Trạng thái
+            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
+              Trạng thái dự án
             </label>
             <select
               value={status}
               onChange={(e) => setStatus(e.target.value as ProjectStatus)}
-              style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-primary)', color: 'var(--text-primary)', boxSizing: 'border-box' }}
+              className="snote-select"
             >
               <option value={ProjectStatus.PLANNED}>📋 Lên kế hoạch (PLANNED)</option>
               <option value={ProjectStatus.ACTIVE}>⚡ Đang triển khai (ACTIVE)</option>
@@ -137,27 +141,27 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
         </div>
 
         <div>
-          <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '6px' }}>
-            Hạn báo cáo / Deadline
+          <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
+            Hạn báo cáo / Nghiệm thu
           </label>
           <input
             type="date"
             value={dueDate}
             onChange={(e) => setDueDate(e.target.value)}
-            style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-primary)', color: 'var(--text-primary)', boxSizing: 'border-box' }}
+            className="snote-input"
           />
         </div>
 
         <div>
-          <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '6px' }}>
-            Mô tả mục tiêu đồ án
+          <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
+            Mô tả mục tiêu đề tài
           </label>
           <textarea
             rows={3}
             placeholder="Mô tả công nghệ sử dụng, phân công nhiệm vụ hoặc tài liệu đề tài..."
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-primary)', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'inherit', boxSizing: 'border-box' }}
+            className="snote-textarea"
           />
         </div>
 
@@ -165,16 +169,17 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            style={{ padding: '10px 16px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer' }}
+            className="btn btn-secondary"
           >
-            Hủy
+            Hủy bỏ
           </button>
           <button
             type="submit"
             disabled={loading}
-            style={{ padding: '10px 20px', borderRadius: '8px', border: 'none', background: 'var(--accent-primary)', color: '#fff', fontWeight: 600, cursor: loading ? 'not-allowed' : 'pointer' }}
+            className="btn btn-primary"
           >
-            {loading ? 'Đang lưu...' : projectToEdit ? 'Lưu Thay Đổi' : 'Tạo Đồ Án'}
+            <Save size={15} />
+            <span>{loading ? 'Đang lưu...' : projectToEdit ? 'Lưu Thay Đổi' : 'Tạo Đồ Án'}</span>
           </button>
         </div>
       </form>

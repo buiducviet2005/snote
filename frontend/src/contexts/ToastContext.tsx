@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
+import { CheckCircle2, AlertCircle, Info, X } from 'lucide-react';
 
 export type ToastType = 'success' | 'error' | 'info';
 
@@ -23,7 +24,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id));
-    }, 4000);
+    }, 4500);
   }, []);
 
   const removeToast = (id: string) => {
@@ -42,58 +43,63 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           display: 'flex',
           flexDirection: 'column',
           gap: '10px',
-          maxWidth: '380px'
+          maxWidth: '400px',
+          pointerEvents: 'none'
         }}
       >
         {toasts.map((toast) => {
-          let bg = 'rgba(30, 41, 59, 0.95)';
-          let border = 'rgba(59, 130, 246, 0.3)';
-          let icon = 'ℹ️';
+          let bg = 'var(--bg-secondary)';
+          let border = 'var(--border-color)';
+          let iconColor = 'var(--color-info)';
+          let IconComponent = Info;
 
           if (toast.type === 'success') {
-            bg = 'rgba(16, 185, 129, 0.15)';
-            border = 'rgba(16, 185, 129, 0.4)';
-            icon = '✅';
+            bg = 'var(--bg-secondary)';
+            border = 'rgba(16, 185, 129, 0.35)';
+            iconColor = 'var(--color-success)';
+            IconComponent = CheckCircle2;
           } else if (toast.type === 'error') {
-            bg = 'rgba(239, 68, 68, 0.15)';
-            border = 'rgba(239, 68, 68, 0.4)';
-            icon = '⚠️';
+            bg = 'var(--bg-secondary)';
+            border = 'rgba(239, 68, 68, 0.35)';
+            iconColor = 'var(--color-danger)';
+            IconComponent = AlertCircle;
           }
 
           return (
             <div
               key={toast.id}
+              className="animate-fade-in"
               style={{
                 background: bg,
-                backdropFilter: 'blur(8px)',
+                backdropFilter: 'blur(12px)',
+                WebkitBackdropFilter: 'blur(12px)',
                 border: `1px solid ${border}`,
                 color: 'var(--text-primary)',
-                padding: '12px 18px',
-                borderRadius: '10px',
-                boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
+                padding: '12px 16px',
+                borderRadius: 'var(--radius-lg)',
+                boxShadow: 'var(--shadow-lg)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 gap: '12px',
-                fontSize: '14px',
-                fontWeight: 500
+                fontSize: '13.5px',
+                fontWeight: 500,
+                pointerEvents: 'auto'
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span>{icon}</span>
-                <span>{toast.message}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span style={{ color: iconColor, display: 'flex', flexShrink: 0 }}>
+                  <IconComponent size={18} />
+                </span>
+                <span style={{ lineHeight: 1.4 }}>{toast.message}</span>
               </div>
               <button
                 onClick={() => removeToast(toast.id)}
-                style={{
-                  background: 'transparent',
-                  border: 'none',
-                  color: 'var(--text-secondary)',
-                  cursor: 'pointer',
-                  fontSize: '14px'
-                }}
+                className="btn btn-ghost btn-icon"
+                style={{ padding: '4px', color: 'var(--text-muted)' }}
+                title="Đóng"
               >
-                ✕
+                <X size={14} />
               </button>
             </div>
           );

@@ -4,6 +4,20 @@ import { useAppFilter } from '../../../contexts/AppFilterContext';
 import { useToast } from '../../../contexts/ToastContext';
 import { EventModal } from '../components/EventModal';
 import { ScheduleEventType } from '@snote/shared';
+import {
+  Calendar,
+  Clock,
+  MapPin,
+  Plus,
+  ChevronLeft,
+  ChevronRight,
+  Trash2,
+  GraduationCap,
+  Sparkles,
+  BookOpen,
+  AlertCircle,
+  Users
+} from 'lucide-react';
 
 export const ScheduleWeekPage: React.FC = () => {
   const { selectedSubjectId, selectedSemesterId } = useAppFilter();
@@ -35,7 +49,7 @@ export const ScheduleWeekPage: React.FC = () => {
       const res = await api.get<ApiResponse<any[]>>(`/schedule?${params.toString()}`);
       setEvents(res.data || []);
     } catch {
-      showToast('Không thể tải lịch trình', 'error');
+      showToast('Không thể tải lịch trình học tập', 'error');
     } finally {
       setLoading(false);
     }
@@ -88,83 +102,101 @@ export const ScheduleWeekPage: React.FC = () => {
   const getEventBadge = (type: ScheduleEventType) => {
     switch (type) {
       case ScheduleEventType.CLASS:
-        return { label: 'Lớp học', color: '#3b82f6', bg: 'rgba(59, 130, 246, 0.15)' };
+        return { label: 'Tiết học', color: 'var(--color-info)', badgeClass: 'badge-blue' };
       case ScheduleEventType.EXAM:
-        return { label: 'Lịch thi', color: '#ef4444', bg: 'rgba(239, 68, 68, 0.15)' };
+        return { label: 'Lịch thi', color: 'var(--color-danger)', badgeClass: 'badge-rose' };
       case ScheduleEventType.DEADLINE:
-        return { label: 'Hạn nộp', color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.15)' };
+        return { label: 'Hạn chót', color: 'var(--color-warning)', badgeClass: 'badge-amber' };
       case ScheduleEventType.GROUP_MEETING:
-        return { label: 'Họp nhóm', color: '#8b5cf6', bg: 'rgba(139, 92, 246, 0.15)' };
+        return { label: 'Họp nhóm', color: 'var(--color-purple)', badgeClass: 'badge-purple' };
       default:
-        return { label: 'Cá nhân', color: '#10b981', bg: 'rgba(16, 185, 129, 0.15)' };
+        return { label: 'Cá nhân', color: 'var(--color-success)', badgeClass: 'badge-green' };
     }
   };
 
   return (
-    <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+    <div style={{ maxWidth: '1380px', margin: '0 auto' }}>
+      {/* Top Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
         <div>
-          <h1 style={{ fontSize: '24px', fontWeight: 800, margin: '0 0 6px 0', color: 'var(--text-primary)' }}>
-            📅 Thời Khóa Biểu & Lịch Trình Tuần
-          </h1>
-          <p style={{ margin: 0, fontSize: '14px', color: 'var(--text-secondary)' }}>
-            Theo dõi các buổi học cố định, lịch thi và các mốc deadline quan trọng
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <h1 style={{ fontSize: '24px', fontWeight: 800, margin: 0, letterSpacing: '-0.02em' }}>
+              Thời Khóa Biểu & Lịch Tuần
+            </h1>
+            <span className="badge badge-blue">{events.length} sự kiện tuần này</span>
+          </div>
+          <p style={{ margin: '4px 0 0 0', fontSize: '13.5px', color: 'var(--text-secondary)' }}>
+            Theo dõi các buổi học cố định, ca thi và các mốc deadline quan trọng
           </p>
         </div>
+
         <button
           onClick={() => setIsModalOpen(true)}
-          style={{
-            padding: '11px 20px',
-            borderRadius: '8px',
-            border: 'none',
-            background: 'var(--accent-primary)',
-            color: '#fff',
-            fontWeight: 600,
-            fontSize: '14px',
-            cursor: 'pointer',
-            boxShadow: '0 4px 14px rgba(59,130,246,0.3)'
-          }}
+          className="btn btn-primary"
+          style={{ padding: '9px 18px', fontWeight: 700 }}
         >
-          + Thêm Sự Kiện Lịch
+          <Plus size={16} />
+          <span>Thêm Sự Kiện Lịch</span>
         </button>
       </div>
 
-      {/* Week Navigation */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', backgroundColor: 'var(--bg-secondary)', padding: '12px 18px', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
-        <div style={{ display: 'flex', gap: '8px' }}>
+      {/* Week Navigator Bar */}
+      <div
+        className="snote-card"
+        style={{
+          padding: '12px 18px',
+          marginBottom: '20px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '12px'
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <button
             onClick={handlePrevWeek}
-            style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'transparent', color: 'var(--text-primary)', cursor: 'pointer' }}
+            className="btn btn-secondary btn-sm"
+            style={{ padding: '6px 12px' }}
           >
-            ← Tuần trước
+            <ChevronLeft size={14} />
+            <span>Tuần trước</span>
           </button>
           <button
             onClick={handleCurrentWeek}
-            style={{ padding: '6px 14px', borderRadius: '6px', border: '1px solid var(--accent-primary)', background: 'rgba(59, 130, 246, 0.15)', color: 'var(--accent-primary)', fontWeight: 600, cursor: 'pointer' }}
+            className="btn btn-primary btn-sm"
+            style={{ padding: '6px 14px', fontWeight: 700 }}
           >
             Tuần này
           </button>
           <button
             onClick={handleNextWeek}
-            style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'transparent', color: 'var(--text-primary)', cursor: 'pointer' }}
+            className="btn btn-secondary btn-sm"
+            style={{ padding: '6px 12px' }}
           >
-            Tuần sau →
+            <span>Tuần sau</span>
+            <ChevronRight size={14} />
           </button>
         </div>
 
-        <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)' }}>
-          {weekDays[0].toLocaleDateString('vi-VN')} &nbsp;–&nbsp; {weekDays[6].toLocaleDateString('vi-VN')}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)' }}>
+          <Calendar size={16} style={{ color: 'var(--accent-primary)' }} />
+          <span>
+            {weekDays[0].toLocaleDateString('vi-VN')} &nbsp;–&nbsp; {weekDays[6].toLocaleDateString('vi-VN')}
+          </span>
         </div>
       </div>
 
       {/* 7 Days Grid */}
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--text-secondary)' }}>
-          Đang tải lịch trình...
+        <div style={{ textAlign: 'center', padding: '80px 0', color: 'var(--text-muted)' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', fontSize: '14px' }}>
+            <Sparkles size={18} className="pulse-urgent" style={{ color: 'var(--accent-primary)' }} />
+            <span>Đang tải lịch trình tuần...</span>
+          </div>
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '12px', alignItems: 'start' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '14px', alignItems: 'start' }}>
           {weekDays.map((day, idx) => {
             const isToday = new Date().toDateString() === day.toDateString();
             const dayEvents = events.filter((e) => new Date(e.startTime).toDateString() === day.toDateString());
@@ -172,30 +204,37 @@ export const ScheduleWeekPage: React.FC = () => {
             return (
               <div
                 key={day.toISOString()}
+                className="snote-card"
                 style={{
-                  backgroundColor: 'var(--bg-secondary)',
+                  backgroundColor: isToday ? 'var(--bg-card)' : 'var(--bg-secondary)',
                   border: isToday ? '2px solid var(--accent-primary)' : '1px solid var(--border-color)',
-                  borderRadius: '10px',
-                  padding: '12px 10px',
-                  minHeight: '360px',
+                  borderRadius: 'var(--radius-lg)',
+                  padding: '14px 10px',
+                  minHeight: '400px',
                   display: 'flex',
-                  flexDirection: 'column'
+                  flexDirection: 'column',
+                  boxShadow: isToday ? 'var(--shadow-accent)' : 'var(--shadow-sm)'
                 }}
               >
-                {/* Day Header */}
-                <div style={{ textAlign: 'center', paddingBottom: '8px', borderBottom: '1px solid var(--border-color)', marginBottom: '10px' }}>
-                  <div style={{ fontSize: '12px', fontWeight: 600, color: isToday ? 'var(--accent-primary)' : 'var(--text-secondary)' }}>
+                {/* Day Column Header */}
+                <div style={{ textAlign: 'center', paddingBottom: '10px', borderBottom: '1px solid var(--border-color)', marginBottom: '12px' }}>
+                  <div style={{ fontSize: '12px', fontWeight: 700, color: isToday ? 'var(--accent-primary)' : 'var(--text-secondary)' }}>
                     {daysOfWeek[idx]}
                   </div>
-                  <div style={{ fontSize: '16px', fontWeight: 800, color: isToday ? 'var(--accent-primary)' : 'var(--text-primary)' }}>
+                  <div style={{ fontSize: '20px', fontWeight: 800, color: isToday ? 'var(--accent-primary)' : 'var(--text-primary)', marginTop: '2px' }}>
                     {day.getDate()}
                   </div>
+                  {isToday && (
+                    <span className="badge badge-blue" style={{ fontSize: '9.5px', padding: '1px 6px', marginTop: '4px' }}>
+                      Hôm nay
+                    </span>
+                  )}
                 </div>
 
-                {/* Events list */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
+                {/* Day Events List */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', flex: 1 }}>
                   {dayEvents.length === 0 ? (
-                    <div style={{ textAlign: 'center', color: 'var(--text-secondary)', fontSize: '11px', marginTop: '30px' }}>
+                    <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '11.5px', marginTop: '40px' }}>
                       Trống
                     </div>
                   ) : (
@@ -206,34 +245,42 @@ export const ScheduleWeekPage: React.FC = () => {
                       return (
                         <div
                           key={evt.id}
+                          className="snote-card animate-fade-in"
                           style={{
                             backgroundColor: 'var(--bg-primary)',
                             borderLeft: `3px solid ${badge.color}`,
-                            borderRadius: '6px',
-                            padding: '8px',
-                            fontSize: '12px'
+                            borderRadius: 'var(--radius-sm)',
+                            padding: '10px',
+                            boxShadow: 'none'
                           }}
                         >
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2px' }}>
-                            <span style={{ fontSize: '10px', fontWeight: 700, color: badge.color }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+                            <span className={`badge ${badge.badgeClass}`} style={{ fontSize: '10px', padding: '1px 6px' }}>
                               {badge.label}
                             </span>
                             <button
                               onClick={() => handleDelete(evt.id, evt.title)}
-                              style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '10px', padding: 0 }}
+                              className="btn btn-ghost btn-icon"
+                              style={{ padding: '2px', color: 'var(--text-muted)' }}
+                              title="Xóa sự kiện"
                             >
-                              ✕
+                              <Trash2 size={11} />
                             </button>
                           </div>
-                          <div style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: '2px', lineHeight: 1.3 }}>
+
+                          <div style={{ fontWeight: 700, fontSize: '12.5px', color: 'var(--text-primary)', marginBottom: '4px', lineHeight: 1.35 }}>
                             {evt.title}
                           </div>
-                          <div style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>
-                            ⏰ {timeStr}
+
+                          <div style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '2px' }}>
+                            <Clock size={11} />
+                            <span>{timeStr}</span>
                           </div>
+
                           {evt.location && (
-                            <div style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>
-                              📍 {evt.location}
+                            <div style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              <MapPin size={11} />
+                              <span>{evt.location}</span>
                             </div>
                           )}
                         </div>

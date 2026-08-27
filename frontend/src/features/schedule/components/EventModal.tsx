@@ -4,6 +4,7 @@ import { api } from '../../../services/api';
 import { useToast } from '../../../contexts/ToastContext';
 import { useAppFilter } from '../../../contexts/AppFilterContext';
 import { ScheduleEventType } from '@snote/shared';
+import { Calendar, Clock, MapPin, Layers, Save, Tag } from 'lucide-react';
 
 interface EventModalProps {
   isOpen: boolean;
@@ -55,7 +56,7 @@ export const EventModal: React.FC<EventModalProps> = ({
         location: location.trim() || undefined
       });
 
-      showToast('Thêm sự kiện lịch thành công!', 'success');
+      showToast('Thêm sự kiện lịch trình thành công!', 'success');
       onSuccess();
       onClose();
     } catch (err: any) {
@@ -66,10 +67,17 @@ export const EventModal: React.FC<EventModalProps> = ({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Thêm Lịch Học & Sự Kiện Mới">
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Thêm Lịch Học & Sự Kiện Mới"
+      maxWidth="600px"
+      icon={<Calendar size={20} />}
+    >
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        {/* Title */}
         <div>
-          <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '6px' }}>
+          <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
             Tên sự kiện / Tiêu đề buổi học *
           </label>
           <input
@@ -78,19 +86,21 @@ export const EventModal: React.FC<EventModalProps> = ({
             placeholder="Ví dụ: Buổi học Lý thuyết Kiến trúc Phần mềm"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-primary)', color: 'var(--text-primary)', boxSizing: 'border-box' }}
+            className="snote-input"
+            style={{ fontSize: '14.5px', fontWeight: 600 }}
           />
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+        {/* Subject & Event Type */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
           <div>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '6px' }}>
+            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
               Môn học (Nếu có)
             </label>
             <select
               value={subjectId}
               onChange={(e) => setSubjectId(e.target.value)}
-              style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-primary)', color: 'var(--text-primary)', boxSizing: 'border-box' }}
+              className="snote-select"
             >
               <option value="">-- Không gắn môn --</option>
               {subjects.map((sub) => (
@@ -102,26 +112,27 @@ export const EventModal: React.FC<EventModalProps> = ({
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '6px' }}>
+            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
               Loại sự kiện
             </label>
             <select
               value={eventType}
               onChange={(e) => setEventType(e.target.value as ScheduleEventType)}
-              style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-primary)', color: 'var(--text-primary)', boxSizing: 'border-box' }}
+              className="snote-select"
             >
-              <option value={ScheduleEventType.CLASS}>🏫 Lớp học cố định (CLASS)</option>
+              <option value={ScheduleEventType.CLASS}>🏫 Tiết học cố định (CLASS)</option>
               <option value={ScheduleEventType.EXAM}>🎯 Lịch thi / Kiểm tra (EXAM)</option>
-              <option value={ScheduleEventType.DEADLINE}>⏰ Hạn nộp bài tập (DEADLINE)</option>
+              <option value={ScheduleEventType.DEADLINE}>⏰ Hạn nộp bài (DEADLINE)</option>
               <option value={ScheduleEventType.GROUP_MEETING}>👥 Họp nhóm đồ án (GROUP)</option>
               <option value={ScheduleEventType.PERSONAL}>☕ Việc cá nhân (PERSONAL)</option>
             </select>
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+        {/* Start and End Times */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
           <div>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '6px' }}>
+            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
               Bắt đầu *
             </label>
             <input
@@ -129,12 +140,12 @@ export const EventModal: React.FC<EventModalProps> = ({
               required
               value={startTime}
               onChange={(e) => setStartTime(e.target.value)}
-              style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-primary)', color: 'var(--text-primary)', boxSizing: 'border-box' }}
+              className="snote-input"
             />
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '6px' }}>
+            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
               Kết thúc *
             </label>
             <input
@@ -142,38 +153,47 @@ export const EventModal: React.FC<EventModalProps> = ({
               required
               value={endTime}
               onChange={(e) => setEndTime(e.target.value)}
-              style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-primary)', color: 'var(--text-primary)', boxSizing: 'border-box' }}
+              className="snote-input"
             />
           </div>
         </div>
 
+        {/* Location */}
         <div>
-          <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '6px' }}>
-            Địa điểm / Phòng học / Link Meet
+          <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
+            Địa điểm / Phòng học / Link Online
           </label>
-          <input
-            type="text"
-            placeholder="Phòng B1-302 hoặc Google Meet"
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
-            style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-primary)', color: 'var(--text-primary)', boxSizing: 'border-box' }}
-          />
+          <div style={{ position: 'relative' }}>
+            <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', display: 'flex' }}>
+              <MapPin size={15} />
+            </span>
+            <input
+              type="text"
+              placeholder="Ví dụ: Phòng B1-302 hoặc Google Meet"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              className="snote-input"
+              style={{ paddingLeft: '36px' }}
+            />
+          </div>
         </div>
 
+        {/* Actions */}
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '12px' }}>
           <button
             type="button"
             onClick={onClose}
-            style={{ padding: '10px 16px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer' }}
+            className="btn btn-secondary"
           >
-            Hủy
+            Hủy bỏ
           </button>
           <button
             type="submit"
             disabled={loading}
-            style={{ padding: '10px 20px', borderRadius: '8px', border: 'none', background: 'var(--accent-primary)', color: '#fff', fontWeight: 600, cursor: loading ? 'not-allowed' : 'pointer' }}
+            className="btn btn-primary"
           >
-            {loading ? 'Đang lưu...' : 'Thêm Sự Kiện'}
+            <Save size={15} />
+            <span>{loading ? 'Đang lưu...' : 'Thêm Vào Lịch'}</span>
           </button>
         </div>
       </form>

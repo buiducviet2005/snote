@@ -3,6 +3,7 @@ import { Modal } from '../../../components/common/Modal';
 import { api } from '../../../services/api';
 import { useToast } from '../../../contexts/ToastContext';
 import { useAppFilter } from '../../../contexts/AppFilterContext';
+import { Layers, Calendar, Save } from 'lucide-react';
 
 interface SemesterModalProps {
   isOpen: boolean;
@@ -42,10 +43,16 @@ export const SemesterModal: React.FC<SemesterModalProps> = ({ isOpen, onClose, o
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Thêm Học Kỳ Mới">
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Thêm Học Kỳ Mới"
+      maxWidth="500px"
+      icon={<Layers size={20} />}
+    >
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
         <div>
-          <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '6px' }}>
+          <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
             Tên học kỳ *
           </label>
           <input
@@ -54,12 +61,13 @@ export const SemesterModal: React.FC<SemesterModalProps> = ({ isOpen, onClose, o
             placeholder="Ví dụ: Học kỳ 1 (2025 - 2026)"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-primary)', color: 'var(--text-primary)', boxSizing: 'border-box' }}
+            className="snote-input"
+            style={{ fontSize: '14.5px', fontWeight: 600 }}
           />
         </div>
 
         <div>
-          <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '6px' }}>
+          <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
             Năm học *
           </label>
           <input
@@ -68,20 +76,20 @@ export const SemesterModal: React.FC<SemesterModalProps> = ({ isOpen, onClose, o
             placeholder="Ví dụ: 2025-2026"
             value={academicYear}
             onChange={(e) => setAcademicYear(e.target.value)}
-            style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-primary)', color: 'var(--text-primary)', boxSizing: 'border-box' }}
+            className="snote-input"
           />
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 0' }}>
           <input
             type="checkbox"
             id="isCurrent"
             checked={isCurrent}
             onChange={(e) => setIsCurrent(e.target.checked)}
-            style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+            style={{ width: '17px', height: '17px', cursor: 'pointer' }}
           />
-          <label htmlFor="isCurrent" style={{ fontSize: '14px', cursor: 'pointer', color: 'var(--text-primary)' }}>
-            Đặt làm học kỳ hiện tại (Active)
+          <label htmlFor="isCurrent" style={{ fontSize: '13.5px', cursor: 'pointer', color: 'var(--text-primary)', fontWeight: 500 }}>
+            Đặt làm học kỳ hiện tại (Active Semester)
           </label>
         </div>
 
@@ -89,16 +97,17 @@ export const SemesterModal: React.FC<SemesterModalProps> = ({ isOpen, onClose, o
           <button
             type="button"
             onClick={onClose}
-            style={{ padding: '10px 16px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer' }}
+            className="btn btn-secondary"
           >
-            Hủy
+            Hủy bỏ
           </button>
           <button
             type="submit"
             disabled={loading}
-            style={{ padding: '10px 20px', borderRadius: '8px', border: 'none', background: 'var(--accent-primary)', color: '#fff', fontWeight: 600, cursor: loading ? 'not-allowed' : 'pointer' }}
+            className="btn btn-primary"
           >
-            {loading ? 'Đang lưu...' : 'Tạo học kỳ'}
+            <Save size={15} />
+            <span>{loading ? 'Đang lưu...' : 'Tạo Học Kỳ'}</span>
           </button>
         </div>
       </form>
