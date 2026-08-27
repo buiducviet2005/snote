@@ -60,7 +60,7 @@ export const NoteCard: React.FC<NoteCardProps> = ({
 
   return (
     <div
-      className="snote-card animate-fade-in"
+      className="snote-card stagger-card"
       style={{
         border: note.isPinned ? '1px solid var(--accent-primary)' : '1px solid var(--border-color)',
         display: 'flex',

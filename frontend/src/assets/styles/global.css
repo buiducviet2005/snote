@@ -549,21 +549,70 @@ code, pre, kbd {
   }
 }
 
+/* Animations & Transitions System (transitions.dev & transitions-polish) */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px) translateZ(0);
+  }
+  to {
+    opacity: 1;
+    transform: translateZ(0);
+  }
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px) translateZ(0);
+  }
+  to {
+    opacity: 1;
+    transform: translateZ(0);
+  }
+}
+
 @keyframes pulseGlow {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.5; transform: scale(0.96); }
+  0%, 100% { opacity: 1; transform: scale(1) translateZ(0); }
+  50% { opacity: 0.5; transform: scale(0.96) translateZ(0); }
 }
 
 .animate-fade-in {
-  animation: fadeIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: fadeIn var(--duration-fast) var(--ease-smooth-out);
+  will-change: opacity, transform;
+  transform: translateZ(0);
 }
 
 .animate-scale-in {
-  animation: fadeIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: fadeIn var(--duration-fast) var(--ease-smooth-out);
+  will-change: opacity, transform;
+  transform: translateZ(0);
 }
+
+/* Stagger Animation for Cards & Lists */
+.stagger-card {
+  animation: fadeIn var(--duration-fast) var(--ease-smooth-out) both;
+  will-change: opacity, transform;
+  transform: translateZ(0);
+}
+
+.stagger-card:nth-child(1) { animation-delay: 0ms; }
+.stagger-card:nth-child(2) { animation-delay: 40ms; }
+.stagger-card:nth-child(3) { animation-delay: 80ms; }
+.stagger-card:nth-child(4) { animation-delay: 120ms; }
+.stagger-card:nth-child(5) { animation-delay: 160ms; }
+.stagger-card:nth-child(6) { animation-delay: 200ms; }
+.stagger-card:nth-child(7) { animation-delay: 240ms; }
+.stagger-card:nth-child(8) { animation-delay: 280ms; }
+.stagger-card:nth-child(9) { animation-delay: 320ms; }
+.stagger-card:nth-child(n+10) { animation-delay: 360ms; }
 
 .pulse-urgent {
   animation: pulseGlow 1.5s infinite ease-in-out;
+}
+
+.table-row-hover {
+  transition: background-color var(--duration-quick) var(--ease-smooth-out);
 }
 
 .table-row-hover:hover {
@@ -584,6 +633,7 @@ code, pre, kbd {
   padding: clamp(10px, 2vw, 24px);
   overflow-y: auto;
   overscroll-behavior: contain;
+  animation: fadeIn var(--duration-quick) var(--ease-smooth-out);
 }
 
 .modal-dialog {
@@ -597,8 +647,10 @@ code, pre, kbd {
   max-height: calc(100dvh - clamp(16px, 3vw, 40px));
   min-height: 0;
   position: relative;
+  transform: translateZ(0);
   transition: max-width var(--duration-fast) var(--ease-smooth-out),
-              height var(--duration-fast) var(--ease-smooth-out);
+              height var(--duration-fast) var(--ease-smooth-out),
+              box-shadow var(--duration-fast) var(--ease-smooth-out);
 }
 
 .modal-dialog.modal-expanded {
@@ -635,9 +687,23 @@ code, pre, kbd {
 .modal-body::-webkit-scrollbar-thumb {
   background: rgba(148, 163, 184, 0.25);
   border-radius: var(--radius-full);
+  transition: background var(--duration-quick) var(--ease-smooth-out);
 }
 
 .modal-body::-webkit-scrollbar-thumb:hover {
   background: rgba(148, 163, 184, 0.45);
 }
+
+/* Accessibility: Prefers Reduced Motion Guard */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 

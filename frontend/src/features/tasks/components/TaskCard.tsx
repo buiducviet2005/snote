@@ -85,7 +85,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
 
   return (
     <div
-      className="snote-card animate-fade-in"
+      className="snote-card stagger-card"
       style={{
         padding: '16px',
         borderRadius: 'var(--radius-lg)',

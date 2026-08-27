@@ -278,7 +278,7 @@ export const ProjectsListPage: React.FC = () => {
             return (
               <div
                 key={proj.id}
-                className="snote-card animate-fade-in"
+                className="snote-card stagger-card"
                 style={{
                   display: 'flex',
                   flexDirection: 'column',

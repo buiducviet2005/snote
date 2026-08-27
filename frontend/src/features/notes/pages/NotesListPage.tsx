@@ -685,7 +685,7 @@ export const NotesListPage: React.FC = () => {
             <div
               key={note.id}
               onClick={() => handleOpenView(note)}
-              className="snote-card"
+              className="snote-card stagger-card"
               style={{
                 padding: '14px',
                 backgroundColor: 'var(--bg-secondary)',
