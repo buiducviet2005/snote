@@ -162,7 +162,7 @@ export const NoteModal: React.FC<NoteModalProps> = ({
             : 'Chỉnh Sửa Ghi Chú'
           : 'Soạn Thảo Ghi Chú Mới'
       }
-      maxWidth={mode === 'SPLIT' ? '1060px' : '820px'}
+      maxWidth={mode === 'SPLIT' ? '1200px' : '900px'}
       icon={<BookOpen size={20} />}
     >
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
