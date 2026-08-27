@@ -38,3 +38,29 @@ export interface ScheduleEventResponseDto {
   createdAt: Date;
   updatedAt: Date;
 }
+
+export interface UnifiedScheduleItemDto {
+  id: string;
+  itemType: 'EVENT' | 'TASK' | 'PROJECT';
+  title: string;
+  location?: string | null;
+  eventType: ScheduleEventType;
+  startTime: Date;
+  endTime: Date;
+  isRecurring?: boolean;
+  recurrenceRule?: string | null;
+  status?: string | null;
+  priority?: string | null;
+  subjectId?: string | null;
+  projectId?: string | null;
+  subject?: {
+    id: string;
+    name: string;
+    code?: string | null;
+    color?: string | null;
+  } | null;
+  project?: {
+    id: string;
+    name: string;
+  } | null;
+}

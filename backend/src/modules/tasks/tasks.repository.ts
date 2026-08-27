@@ -31,6 +31,12 @@ export class TasksRepository {
         take: limit,
         orderBy: [{ dueDate: 'asc' }, { priority: 'desc' }, { createdAt: 'desc' }],
         include: {
+          subject: {
+            select: { id: true, name: true, code: true, color: true }
+          },
+          project: {
+            select: { id: true, name: true }
+          },
           taskTags: {
             include: { tag: true }
           }
@@ -45,6 +51,12 @@ export class TasksRepository {
     return prisma.task.findFirst({
       where: { id, userId, deletedAt: null },
       include: {
+        subject: {
+          select: { id: true, name: true, code: true, color: true }
+        },
+        project: {
+          select: { id: true, name: true }
+        },
         taskTags: {
           include: { tag: true }
         }
@@ -88,6 +100,12 @@ export class TasksRepository {
         }
       },
       include: {
+        subject: {
+          select: { id: true, name: true, code: true, color: true }
+        },
+        project: {
+          select: { id: true, name: true }
+        },
         taskTags: {
           include: { tag: true }
         }
@@ -122,6 +140,12 @@ export class TasksRepository {
         taskTags: taskTagsUpdate
       },
       include: {
+        subject: {
+          select: { id: true, name: true, code: true, color: true }
+        },
+        project: {
+          select: { id: true, name: true }
+        },
         taskTags: {
           include: { tag: true }
         }

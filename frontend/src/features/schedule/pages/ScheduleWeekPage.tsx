@@ -3,7 +3,8 @@ import { api, ApiResponse } from '../../../services/api';
 import { useAppFilter } from '../../../contexts/AppFilterContext';
 import { useToast } from '../../../contexts/ToastContext';
 import { EventModal } from '../components/EventModal';
-import { ScheduleEventType } from '@snote/shared';
+import { ScheduleEventType, TaskStatus } from '@snote/shared';
+import confetti from 'canvas-confetti';
 import {
   Calendar,
   Clock,
@@ -16,7 +17,12 @@ import {
   Sparkles,
   BookOpen,
   AlertCircle,
-  Users
+  Users,
+  CheckCircle2,
+  Circle,
+  FolderKanban,
+  CheckSquare,
+  Flame
 } from 'lucide-react';
 
 export const ScheduleWeekPage: React.FC = () => {
@@ -71,6 +77,22 @@ export const ScheduleWeekPage: React.FC = () => {
     }
   };
 
+  const handleToggleTaskStatus = async (taskId: string, currentStatus: string) => {
+    const nextStatus = currentStatus === 'DONE' ? 'TODO' : 'DONE';
+    try {
+      await api.patch(`/tasks/${taskId}/status`, { status: nextStatus });
+      if (nextStatus === 'DONE') {
+        confetti({ particleCount: 60, spread: 60, origin: { y: 0.7 } });
+        showToast('🎉 Tuyệt vời! Đã hoàn thành nhiệm vụ!', 'success');
+      } else {
+        showToast('Đã mở lại nhiệm vụ', 'info');
+      }
+      fetchEvents();
+    } catch (err: any) {
+      showToast(err.message || 'Lỗi cập nhật nhiệm vụ', 'error');
+    }
+  };
+
   const handlePrevWeek = () => {
     const prev = new Date(currentWeekStart);
     prev.setDate(prev.getDate() - 7);
@@ -121,12 +143,12 @@ export const ScheduleWeekPage: React.FC = () => {
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <h1 style={{ fontSize: '24px', fontWeight: 800, margin: 0, letterSpacing: '-0.02em' }}>
-              Thời Khóa Biểu & Lịch Tuần
+              Thời Khóa Biểu & Lịch Trình Hợp Nhất
             </h1>
-            <span className="badge badge-blue">{events.length} sự kiện tuần này</span>
+            <span className="badge badge-blue">{events.length} mốc lịch tuần này</span>
           </div>
           <p style={{ margin: '4px 0 0 0', fontSize: '13.5px', color: 'var(--text-secondary)' }}>
-            Theo dõi các buổi học cố định, ca thi và các mốc deadline quan trọng
+            Đồng bộ toàn diện: Tiết học trên lớp, Hạn nộp bài tập (Tasks), và Deadline Đồ án nhóm
           </p>
         </div>
 
@@ -196,7 +218,7 @@ export const ScheduleWeekPage: React.FC = () => {
           </div>
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '14px', alignItems: 'start' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(175px, 1fr))', gap: '14px', alignItems: 'start' }}>
           {weekDays.map((day, idx) => {
             const isToday = new Date().toDateString() === day.toDateString();
             const dayEvents = events.filter((e) => new Date(e.startTime).toDateString() === day.toDateString());
@@ -210,7 +232,7 @@ export const ScheduleWeekPage: React.FC = () => {
                   border: isToday ? '2px solid var(--accent-primary)' : '1px solid var(--border-color)',
                   borderRadius: 'var(--radius-lg)',
                   padding: '14px 10px',
-                  minHeight: '400px',
+                  minHeight: '420px',
                   display: 'flex',
                   flexDirection: 'column',
                   boxShadow: isToday ? 'var(--shadow-accent)' : 'var(--shadow-sm)'
@@ -231,20 +253,122 @@ export const ScheduleWeekPage: React.FC = () => {
                   )}
                 </div>
 
-                {/* Day Events List */}
+                {/* Day Events & Tasks List */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', flex: 1 }}>
                   {dayEvents.length === 0 ? (
                     <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '11.5px', marginTop: '40px' }}>
                       Trống
                     </div>
                   ) : (
-                    dayEvents.map((evt) => {
-                      const badge = getEventBadge(evt.eventType);
-                      const timeStr = `${new Date(evt.startTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })} - ${new Date(evt.endTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}`;
+                    dayEvents.map((item) => {
+                      // 1. Task Item
+                      if (item.itemType === 'TASK') {
+                        const isDone = item.status === 'DONE';
+                        return (
+                          <div
+                            key={item.id}
+                            className="snote-card animate-fade-in"
+                            style={{
+                              backgroundColor: 'var(--bg-primary)',
+                              borderLeft: '3px solid var(--color-warning)',
+                              borderRadius: 'var(--radius-sm)',
+                              padding: '10px',
+                              boxShadow: 'none',
+                              opacity: isDone ? 0.7 : 1
+                            }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+                              <span className="badge badge-amber" style={{ fontSize: '9.5px', padding: '1px 5px', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                                <CheckSquare size={10} />
+                                <span>Hạn Task</span>
+                              </span>
+
+                              {item.priority && (
+                                <span className={`badge ${item.priority === 'URGENT' ? 'badge-rose' : 'badge-neutral'}`} style={{ fontSize: '9px', padding: '1px 4px' }}>
+                                  {item.priority}
+                                </span>
+                              )}
+                            </div>
+
+                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
+                              <button
+                                onClick={() => handleToggleTaskStatus(item.id, item.status)}
+                                style={{
+                                  background: 'transparent',
+                                  border: 'none',
+                                  cursor: 'pointer',
+                                  color: isDone ? 'var(--color-success)' : 'var(--text-muted)',
+                                  display: 'flex',
+                                  padding: 0,
+                                  marginTop: '2px'
+                                }}
+                                title={isDone ? 'Mở lại' : 'Hoàn thành'}
+                              >
+                                {isDone ? <CheckCircle2 size={15} /> : <Circle size={15} />}
+                              </button>
+
+                              <div
+                                style={{
+                                  fontWeight: 600,
+                                  fontSize: '12px',
+                                  color: isDone ? 'var(--text-muted)' : 'var(--text-primary)',
+                                  textDecoration: isDone ? 'line-through' : 'none',
+                                  lineHeight: 1.35
+                                }}
+                              >
+                                {item.title}
+                              </div>
+                            </div>
+
+                            <div style={{ fontSize: '10.5px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '4px' }}>
+                              <Clock size={10} />
+                              <span>{new Date(item.startTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</span>
+                              {item.project && <span style={{ color: 'var(--color-purple)' }}>• {item.project.name}</span>}
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      // 2. Project Deadline Item
+                      if (item.itemType === 'PROJECT') {
+                        return (
+                          <div
+                            key={item.id}
+                            className="snote-card animate-fade-in"
+                            style={{
+                              backgroundColor: 'var(--bg-primary)',
+                              borderLeft: '3px solid var(--color-purple)',
+                              borderRadius: 'var(--radius-sm)',
+                              padding: '10px',
+                              boxShadow: 'none'
+                            }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+                              <span className="badge badge-purple" style={{ fontSize: '9.5px', padding: '1px 5px', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                                <FolderKanban size={10} />
+                                <span>Hạn Đồ Án</span>
+                              </span>
+                            </div>
+
+                            <div style={{ fontWeight: 700, fontSize: '12px', color: 'var(--text-primary)', lineHeight: 1.35 }}>
+                              {item.title}
+                            </div>
+
+                            <div style={{ fontSize: '10.5px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '4px' }}>
+                              <Clock size={10} />
+                              <span>{new Date(item.startTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</span>
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      // 3. Regular Schedule Event
+                      const badge = getEventBadge(item.eventType);
+                      const timeStr = `${new Date(item.startTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })} - ${new Date(item.endTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}`;
 
                       return (
                         <div
-                          key={evt.id}
+                          key={item.id}
                           className="snote-card animate-fade-in"
                           style={{
                             backgroundColor: 'var(--bg-primary)',
@@ -259,7 +383,7 @@ export const ScheduleWeekPage: React.FC = () => {
                               {badge.label}
                             </span>
                             <button
-                              onClick={() => handleDelete(evt.id, evt.title)}
+                              onClick={() => handleDelete(item.id, item.title)}
                               className="btn btn-ghost btn-icon"
                               style={{ padding: '2px', color: 'var(--text-muted)' }}
                               title="Xóa sự kiện"
@@ -269,7 +393,7 @@ export const ScheduleWeekPage: React.FC = () => {
                           </div>
 
                           <div style={{ fontWeight: 700, fontSize: '12.5px', color: 'var(--text-primary)', marginBottom: '4px', lineHeight: 1.35 }}>
-                            {evt.title}
+                            {item.title}
                           </div>
 
                           <div style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '2px' }}>
@@ -277,10 +401,10 @@ export const ScheduleWeekPage: React.FC = () => {
                             <span>{timeStr}</span>
                           </div>
 
-                          {evt.location && (
+                          {item.location && (
                             <div style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
                               <MapPin size={11} />
-                              <span>{evt.location}</span>
+                              <span>{item.location}</span>
                             </div>
                           )}
                         </div>

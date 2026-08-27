@@ -1,5 +1,10 @@
 import { ScheduleRepository } from './schedule.repository';
-import { CreateScheduleEventDto, UpdateScheduleEventDto, ScheduleEventResponseDto } from './schedule.types';
+import {
+  CreateScheduleEventDto,
+  UpdateScheduleEventDto,
+  ScheduleEventResponseDto,
+  UnifiedScheduleItemDto
+} from './schedule.types';
 import { NotFoundError } from '../../shared/errors/appErrors';
 
 export class ScheduleService {
@@ -28,11 +33,10 @@ export class ScheduleService {
     endDate?: string,
     semesterId?: string,
     subjectId?: string
-  ): Promise<ScheduleEventResponseDto[]> {
+  ): Promise<UnifiedScheduleItemDto[]> {
     const start = startDate ? new Date(startDate) : undefined;
     const end = endDate ? new Date(endDate) : undefined;
-    const list = await this.repo.findByRange(userId, start, end, semesterId, subjectId);
-    return list.map((e) => this.mapDto(e));
+    return this.repo.findUnifiedSchedule(userId, start, end, semesterId, subjectId);
   }
 
   async getEventById(id: string, userId: string): Promise<ScheduleEventResponseDto> {

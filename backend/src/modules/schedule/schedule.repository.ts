@@ -1,16 +1,16 @@
 import { prisma } from '../../shared/db/prismaClient';
 import { ScheduleEvent } from '@prisma/client';
-import { CreateScheduleEventDto, UpdateScheduleEventDto } from './schedule.types';
+import { CreateScheduleEventDto, UpdateScheduleEventDto, UnifiedScheduleItemDto } from './schedule.types';
 
 export class ScheduleRepository {
-  async findByRange(
+  async findUnifiedSchedule(
     userId: string,
     startDate?: Date,
     endDate?: Date,
     semesterId?: string,
     subjectId?: string
-  ): Promise<ScheduleEvent[]> {
-    const where: any = {
+  ): Promise<UnifiedScheduleItemDto[]> {
+    const eventWhere: any = {
       userId,
       deletedAt: null,
       semesterId: semesterId || undefined,
@@ -18,13 +18,113 @@ export class ScheduleRepository {
     };
 
     if (startDate && endDate) {
-      where.startTime = { gte: startDate, lte: endDate };
+      eventWhere.startTime = { gte: startDate, lte: endDate };
     }
 
-    return prisma.scheduleEvent.findMany({
-      where,
-      orderBy: { startTime: 'asc' }
+    // 1. Fetch Calendar Events
+    const events = await prisma.scheduleEvent.findMany({
+      where: eventWhere,
+      orderBy: { startTime: 'asc' },
+      include: {
+        subject: {
+          select: { id: true, name: true, code: true, color: true }
+        }
+      }
     });
+
+    const unifiedList: UnifiedScheduleItemDto[] = events.map((e: any) => ({
+      id: e.id,
+      itemType: 'EVENT',
+      title: e.title,
+      location: e.location,
+      eventType: e.eventType,
+      startTime: e.startTime,
+      endTime: e.endTime,
+      isRecurring: e.isRecurring,
+      recurrenceRule: e.recurrenceRule,
+      subjectId: e.subjectId,
+      subject: e.subject
+    }));
+
+    // 2. Fetch Tasks with due date in range
+    if (startDate && endDate) {
+      const tasks = await prisma.task.findMany({
+        where: {
+          userId,
+          deletedAt: null,
+          dueDate: { gte: startDate, lte: endDate },
+          subjectId: subjectId || undefined
+        },
+        include: {
+          subject: {
+            select: { id: true, name: true, code: true, color: true }
+          },
+          project: {
+            select: { id: true, name: true }
+          }
+        }
+      });
+
+      for (const t of tasks) {
+        if (t.dueDate) {
+          unifiedList.push({
+            id: t.id,
+            itemType: 'TASK',
+            title: t.title,
+            location: t.project ? `Đồ án: ${t.project.name}` : undefined,
+            eventType: 'DEADLINE',
+            startTime: t.dueDate,
+            endTime: t.dueDate,
+            status: t.status,
+            priority: t.priority,
+            subjectId: t.subjectId,
+            projectId: t.projectId,
+            subject: t.subject,
+            project: t.project
+          });
+        }
+      }
+
+      // 3. Fetch Projects with due date in range
+      const projects = await prisma.project.findMany({
+        where: {
+          OR: [
+            { userId },
+            { members: { some: { userId } } }
+          ],
+          deletedAt: null,
+          dueDate: { gte: startDate, lte: endDate },
+          subjectId: subjectId || undefined
+        },
+        include: {
+          subject: {
+            select: { id: true, name: true, code: true, color: true }
+          }
+        }
+      });
+
+      for (const p of projects) {
+        if (p.dueDate) {
+          unifiedList.push({
+            id: p.id,
+            itemType: 'PROJECT',
+            title: `[Hạn Đồ Án] ${p.name}`,
+            location: p.description ? p.description.slice(0, 50) : undefined,
+            eventType: 'DEADLINE',
+            startTime: p.dueDate,
+            endTime: p.dueDate,
+            status: p.status,
+            subjectId: p.subjectId,
+            projectId: p.id,
+            subject: p.subject,
+            project: { id: p.id, name: p.name }
+          });
+        }
+      }
+    }
+
+    // Sort all events & deadlines chronologically
+    return unifiedList.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
   }
 
   async findByIdAndUserId(id: string, userId: string): Promise<ScheduleEvent | null> {

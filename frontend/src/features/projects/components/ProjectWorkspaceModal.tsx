@@ -715,6 +715,8 @@ export const ProjectWorkspaceModal: React.FC<ProjectWorkspaceModalProps> = ({
             onRefreshParent();
           }}
           taskToEdit={null}
+          defaultProjectId={projectId}
+          defaultSubjectId={project.subjectId}
         />
       )}
 

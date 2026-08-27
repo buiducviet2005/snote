@@ -16,18 +16,28 @@ import {
   Zap,
   CheckCircle2,
   X,
-  Sparkles
+  Sparkles,
+  FolderKanban
 } from 'lucide-react';
 
 export const TasksListPage: React.FC = () => {
   const { selectedSubjectId, selectedSemesterId, subjects } = useAppFilter();
   const [tasks, setTasks] = useState<any[]>([]);
+  const [projects, setProjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
   const [filterPriority, setFilterPriority] = useState<string>('ALL');
+  const [filterProjectId, setFilterProjectId] = useState<string>('ALL');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<any | null>(null);
   const { showToast } = useToast();
+
+  useEffect(() => {
+    // Fetch available projects for filter
+    api.get<ApiResponse<any[]>>('/projects')
+      .then((res) => setProjects(res.data || []))
+      .catch(() => {});
+  }, []);
 
   const fetchTasks = useCallback(async () => {
     setLoading(true);
@@ -35,6 +45,7 @@ export const TasksListPage: React.FC = () => {
       const params = new URLSearchParams();
       if (selectedSubjectId) params.append('subjectId', selectedSubjectId);
       if (filterPriority !== 'ALL') params.append('priority', filterPriority);
+      if (filterProjectId !== 'ALL') params.append('projectId', filterProjectId);
       if (search.trim()) params.append('search', search.trim());
 
       const res = await api.get<ApiResponse<any[]>>(`/tasks?${params.toString()}`);
@@ -44,7 +55,7 @@ export const TasksListPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [selectedSubjectId, filterPriority, search, showToast]);
+  }, [selectedSubjectId, filterPriority, filterProjectId, search, showToast]);
 
   useEffect(() => {
     fetchTasks();
@@ -194,7 +205,7 @@ export const TasksListPage: React.FC = () => {
         }}
       >
         {/* Search */}
-        <div style={{ flex: 1, minWidth: '240px', position: 'relative' }}>
+        <div style={{ flex: 1, minWidth: '220px', position: 'relative' }}>
           <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', display: 'flex' }}>
             <Search size={16} />
           </span>
@@ -227,8 +238,25 @@ export const TasksListPage: React.FC = () => {
           )}
         </div>
 
+        {/* Project Filter */}
+        <div style={{ minWidth: '180px' }}>
+          <select
+            value={filterProjectId}
+            onChange={(e) => setFilterProjectId(e.target.value)}
+            className="snote-select"
+            style={{ fontSize: '13px' }}
+          >
+            <option value="ALL">Tất cả đồ án & việc</option>
+            {projects.map((p) => (
+              <option key={p.id} value={p.id}>
+                📁 {p.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
         {/* Priority Filter */}
-        <div style={{ minWidth: '200px' }}>
+        <div style={{ minWidth: '180px' }}>
           <select
             value={filterPriority}
             onChange={(e) => setFilterPriority(e.target.value)}

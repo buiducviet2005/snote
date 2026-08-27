@@ -177,6 +177,21 @@ export const TaskCard: React.FC<TaskCardProps> = ({
             </span>
           )}
 
+          {/* Project badge */}
+          {task.project && (
+            <span
+              className="badge badge-purple"
+              style={{
+                fontSize: '10.5px',
+                padding: '2px 7px',
+                border: '1px solid rgba(168, 85, 247, 0.3)'
+              }}
+              title={`Đồ án: ${task.project.name}`}
+            >
+              📁 {task.project.name}
+            </span>
+          )}
+
           {/* Due date */}
           {task.dueDate && (
             <span
