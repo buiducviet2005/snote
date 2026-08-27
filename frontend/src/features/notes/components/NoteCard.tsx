@@ -5,6 +5,7 @@ import {
   Archive,
   Trash2,
   Edit3,
+  Eye,
   Clock,
   BookOpen,
   Tag,
@@ -17,6 +18,7 @@ import {
 
 interface NoteCardProps {
   note: any;
+  onView: (note: any) => void;
   onEdit: (note: any) => void;
   onDelete: (id: string, title: string) => void;
   onTogglePin: (id: string) => void;
@@ -25,6 +27,7 @@ interface NoteCardProps {
 
 export const NoteCard: React.FC<NoteCardProps> = ({
   note,
+  onView,
   onEdit,
   onDelete,
   onTogglePin,
@@ -120,9 +123,9 @@ export const NoteCard: React.FC<NoteCardProps> = ({
           </div>
         </div>
 
-        {/* Note Title */}
+        {/* Note Title (Click to Preview) */}
         <h3
-          onClick={() => onEdit(note)}
+          onClick={() => onView(note)}
           style={{
             margin: '0 0 10px 0',
             fontSize: '16px',
@@ -132,6 +135,7 @@ export const NoteCard: React.FC<NoteCardProps> = ({
             cursor: 'pointer',
             transition: 'color var(--transition-fast)'
           }}
+          title="Nhấp để xem toàn bộ nội dung ghi chú (Preview)"
           onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--accent-primary)')}
           onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-primary)')}
         >
@@ -140,6 +144,7 @@ export const NoteCard: React.FC<NoteCardProps> = ({
 
         {/* Content Snippet */}
         <p
+          onClick={() => onView(note)}
           style={{
             margin: '0 0 14px 0',
             fontSize: '13px',
@@ -148,8 +153,10 @@ export const NoteCard: React.FC<NoteCardProps> = ({
             display: '-webkit-box',
             WebkitLineClamp: 3,
             WebkitBoxOrient: 'vertical',
-            overflow: 'hidden'
+            overflow: 'hidden',
+            cursor: 'pointer'
           }}
+          title="Nhấp để xem nội dung"
         >
           {note.content || <i style={{ color: 'var(--text-muted)' }}>Chưa có nội dung ghi chép.</i>}
         </p>
@@ -193,9 +200,19 @@ export const NoteCard: React.FC<NoteCardProps> = ({
 
         <div style={{ display: 'flex', gap: '6px' }}>
           <button
+            onClick={() => onView(note)}
+            className="btn btn-ghost btn-sm"
+            style={{ padding: '4px 8px', fontSize: '12px', color: 'var(--color-info)' }}
+            title="Xem trước nội dung (Preview)"
+          >
+            <Eye size={13} />
+            <span>Xem</span>
+          </button>
+          <button
             onClick={() => onEdit(note)}
             className="btn btn-ghost btn-sm"
             style={{ padding: '4px 8px', fontSize: '12px', color: 'var(--accent-primary)' }}
+            title="Chỉnh sửa nội dung ghi chú"
           >
             <Edit3 size={13} />
             <span>Sửa</span>
@@ -204,6 +221,7 @@ export const NoteCard: React.FC<NoteCardProps> = ({
             onClick={() => onDelete(note.id, note.title)}
             className="btn btn-ghost btn-sm"
             style={{ padding: '4px 8px', fontSize: '12px', color: 'var(--color-danger)' }}
+            title="Xóa ghi chú"
           >
             <Trash2 size={13} />
             <span>Xóa</span>

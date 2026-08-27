@@ -3,7 +3,7 @@ import { api, ApiResponse } from '../../../services/api';
 import { useAppFilter } from '../../../contexts/AppFilterContext';
 import { useToast } from '../../../contexts/ToastContext';
 import { NoteCard } from '../components/NoteCard';
-import { NoteModal } from '../components/NoteModal';
+import { NoteModal, NoteModalMode } from '../components/NoteModal';
 import { NoteType } from '@snote/shared';
 import {
   BookOpen,
@@ -29,6 +29,7 @@ export const NotesListPage: React.FC = () => {
   const [viewMode, setViewMode] = useState<'GRID' | 'LIST'>('GRID');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [noteToEdit, setNoteToEdit] = useState<any | null>(null);
+  const [modalMode, setModalMode] = useState<NoteModalMode>('PREVIEW');
   const { showToast } = useToast();
 
   const fetchNotes = useCallback(async () => {
@@ -92,11 +93,19 @@ export const NotesListPage: React.FC = () => {
 
   const handleOpenCreate = () => {
     setNoteToEdit(null);
+    setModalMode('WRITE');
+    setIsModalOpen(true);
+  };
+
+  const handleOpenView = (note: any) => {
+    setNoteToEdit(note);
+    setModalMode('PREVIEW');
     setIsModalOpen(true);
   };
 
   const handleOpenEdit = (note: any) => {
     setNoteToEdit(note);
+    setModalMode('WRITE');
     setIsModalOpen(true);
   };
 
@@ -315,6 +324,7 @@ export const NotesListPage: React.FC = () => {
             <NoteCard
               key={note.id}
               note={note}
+              onView={handleOpenView}
               onEdit={handleOpenEdit}
               onDelete={handleDelete}
               onTogglePin={handleTogglePin}
@@ -324,12 +334,13 @@ export const NotesListPage: React.FC = () => {
         </div>
       )}
 
-      {/* Modal Form */}
+      {/* Modal Form with Mode Support */}
       <NoteModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSuccess={fetchNotes}
         noteToEdit={noteToEdit}
+        initialMode={modalMode}
       />
     </div>
   );

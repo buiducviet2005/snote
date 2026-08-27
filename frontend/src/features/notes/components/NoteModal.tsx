@@ -15,26 +15,32 @@ import {
   Code,
   Quote,
   Table,
-  Link as LinkIcon,
   Eye,
   Edit3,
   Sparkles,
   Save,
-  Tag
+  Tag,
+  Columns,
+  Clock,
+  Calendar
 } from 'lucide-react';
+
+export type NoteModalMode = 'WRITE' | 'PREVIEW' | 'SPLIT';
 
 interface NoteModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
   noteToEdit?: any | null;
+  initialMode?: NoteModalMode;
 }
 
 export const NoteModal: React.FC<NoteModalProps> = ({
   isOpen,
   onClose,
   onSuccess,
-  noteToEdit
+  noteToEdit,
+  initialMode
 }) => {
   const { subjects, selectedSubjectId } = useAppFilter();
   const [title, setTitle] = useState('');
@@ -42,7 +48,7 @@ export const NoteModal: React.FC<NoteModalProps> = ({
   const [subjectId, setSubjectId] = useState<string>('');
   const [noteType, setNoteType] = useState<NoteType>(NoteType.LECTURE);
   const [tagsInput, setTagsInput] = useState('');
-  const [isPreview, setIsPreview] = useState(false);
+  const [mode, setMode] = useState<NoteModalMode>('PREVIEW');
   const [loading, setLoading] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { showToast } = useToast();
@@ -54,15 +60,18 @@ export const NoteModal: React.FC<NoteModalProps> = ({
       setSubjectId(noteToEdit.subjectId || '');
       setNoteType(noteToEdit.noteType || NoteType.LECTURE);
       setTagsInput((noteToEdit.tags || []).map((t: any) => t.name).join(', '));
+      // Mở ghi chú đã có: Mặc định vào chế độ PREVIEW để đọc nội dung định dạng đẹp mắt
+      setMode(initialMode || 'PREVIEW');
     } else {
       setTitle('');
       setContent('');
       setSubjectId(selectedSubjectId || (subjects[0]?.id || ''));
       setNoteType(NoteType.LECTURE);
       setTagsInput('');
+      // Tạo ghi chú mới: Mặc định vào chế độ WRITE để gõ nội dung
+      setMode(initialMode || 'WRITE');
     }
-    setIsPreview(false);
-  }, [noteToEdit, selectedSubjectId, subjects, isOpen]);
+  }, [noteToEdit, selectedSubjectId, subjects, isOpen, initialMode]);
 
   // Insert markdown helper at cursor position
   const insertMarkdown = (prefix: string, suffix: string = '', defaultText: string = '') => {
@@ -124,12 +133,21 @@ export const NoteModal: React.FC<NoteModalProps> = ({
     }
   };
 
+  const words = (content || '').trim().split(/\s+/).filter(Boolean).length;
+  const readTimeMin = Math.max(1, Math.ceil(words / 200));
+
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={noteToEdit ? 'Chỉnh Sửa Ghi Chú' : 'Soạn Thảo Ghi Chú Mới'}
-      maxWidth="780px"
+      title={
+        noteToEdit
+          ? mode === 'PREVIEW'
+            ? 'Xem Chi Tiết Bài Ghi (Preview)'
+            : 'Chỉnh Sửa Ghi Chú Bài Học'
+          : 'Soạn Thảo Ghi Chú Mới'
+      }
+      maxWidth={mode === 'SPLIT' ? '1060px' : '820px'}
       icon={<BookOpen size={20} />}
     >
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -209,150 +227,264 @@ export const NoteModal: React.FC<NoteModalProps> = ({
           </div>
         </div>
 
-        {/* Markdown Editor Section */}
+        {/* Markdown Mode Switcher & Formatting Toolbar */}
         <div>
-          {/* Header & Formatting Toolbar */}
           <div
             style={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              marginBottom: '8px',
+              marginBottom: '10px',
               flexWrap: 'wrap',
-              gap: '8px'
+              gap: '10px',
+              backgroundColor: 'var(--bg-primary)',
+              padding: '8px 12px',
+              borderRadius: 'var(--radius-lg)',
+              border: '1px solid var(--border-color)'
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap' }}>
+            {/* View Mode Segmented Control (WRITE / PREVIEW / SPLIT) */}
+            <div style={{ display: 'flex', background: 'var(--bg-input)', padding: '3px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
               <button
                 type="button"
-                onClick={() => insertMarkdown('**', '**', 'chữ in đậm')}
-                className="btn btn-secondary btn-sm btn-icon"
-                title="In đậm (Bold)"
+                onClick={() => setMode('WRITE')}
+                className={`btn btn-sm ${mode === 'WRITE' ? 'btn-primary' : 'btn-ghost'}`}
+                style={{ fontSize: '12px', padding: '4px 10px', display: 'flex', alignItems: 'center', gap: '5px' }}
+                title="Chế độ soạn thảo toàn màn hình"
               >
-                <Bold size={14} />
+                <Edit3 size={13} />
+                <span>Viết (Write)</span>
               </button>
+
               <button
                 type="button"
-                onClick={() => insertMarkdown('*', '*', 'chữ in nghiêng')}
-                className="btn btn-secondary btn-sm btn-icon"
-                title="In nghiêng (Italic)"
+                onClick={() => setMode('PREVIEW')}
+                className={`btn btn-sm ${mode === 'PREVIEW' ? 'btn-primary' : 'btn-ghost'}`}
+                style={{ fontSize: '12px', padding: '4px 10px', display: 'flex', alignItems: 'center', gap: '5px' }}
+                title="Chế độ xem trước Markdown đã render"
               >
-                <Italic size={14} />
+                <Eye size={13} />
+                <span>Xem trước (Preview)</span>
               </button>
+
               <button
                 type="button"
-                onClick={() => insertMarkdown('## ', '', 'Tiêu đề mục')}
-                className="btn btn-secondary btn-sm btn-icon"
-                title="Tiêu đề H2"
+                onClick={() => setMode('SPLIT')}
+                className={`btn btn-sm ${mode === 'SPLIT' ? 'btn-primary' : 'btn-ghost'}`}
+                style={{ fontSize: '12px', padding: '4px 10px', display: 'flex', alignItems: 'center', gap: '5px' }}
+                title="Chế độ chia đôi: Vừa gõ vừa xem kết quả real-time"
               >
-                <Heading2 size={14} />
-              </button>
-              <button
-                type="button"
-                onClick={() => insertMarkdown('- ', '', 'Mục danh sách')}
-                className="btn btn-secondary btn-sm btn-icon"
-                title="Danh sách gạch đầu dòng"
-              >
-                <List size={14} />
-              </button>
-              <button
-                type="button"
-                onClick={() => insertMarkdown('- [ ] ', '', 'Công việc cần làm')}
-                className="btn btn-secondary btn-sm btn-icon"
-                title="Danh sách Checkbox"
-              >
-                <CheckSquare size={14} />
-              </button>
-              <button
-                type="button"
-                onClick={() => insertMarkdown('```ts\n', '\n```', '// Mã nguồn')}
-                className="btn btn-secondary btn-sm btn-icon"
-                title="Khối mã nguồn (Code block)"
-              >
-                <Code size={14} />
-              </button>
-              <button
-                type="button"
-                onClick={() => insertMarkdown('> ', '', 'Trích dẫn quan trọng')}
-                className="btn btn-secondary btn-sm btn-icon"
-                title="Trích dẫn (Quote)"
-              >
-                <Quote size={14} />
-              </button>
-              <button
-                type="button"
-                onClick={() => insertMarkdown('| Tiêu đề 1 | Tiêu đề 2 |\n| --- | --- |\n| Giá trị 1 | Giá trị 2 |', '', '')}
-                className="btn btn-secondary btn-sm btn-icon"
-                title="Bảng biểu (Table)"
-              >
-                <Table size={14} />
+                <Columns size={13} />
+                <span>Chia đôi (Split)</span>
               </button>
             </div>
 
-            {/* Toggle Preview Button */}
-            <button
-              type="button"
-              onClick={() => setIsPreview(!isPreview)}
-              className="btn btn-secondary btn-sm"
-              style={{
-                color: isPreview ? 'var(--accent-primary)' : 'var(--text-secondary)',
-                borderColor: isPreview ? 'var(--accent-primary)' : 'var(--border-color)'
-              }}
-            >
-              {isPreview ? <Edit3 size={13} /> : <Eye size={13} />}
-              <span>{isPreview ? 'Chế độ Viết' : 'Xem Preview'}</span>
-            </button>
+            {/* Formatting Toolbar (Active in WRITE and SPLIT modes) */}
+            {mode !== 'PREVIEW' ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  onClick={() => insertMarkdown('**', '**', 'chữ in đậm')}
+                  className="btn btn-secondary btn-sm btn-icon"
+                  title="In đậm (Bold)"
+                >
+                  <Bold size={13} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => insertMarkdown('*', '*', 'chữ in nghiêng')}
+                  className="btn btn-secondary btn-sm btn-icon"
+                  title="In nghiêng (Italic)"
+                >
+                  <Italic size={13} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => insertMarkdown('## ', '', 'Tiêu đề mục')}
+                  className="btn btn-secondary btn-sm btn-icon"
+                  title="Tiêu đề H2"
+                >
+                  <Heading2 size={13} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => insertMarkdown('- ', '', 'Mục danh sách')}
+                  className="btn btn-secondary btn-sm btn-icon"
+                  title="Danh sách gạch đầu dòng"
+                >
+                  <List size={13} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => insertMarkdown('- [ ] ', '', 'Công việc cần làm')}
+                  className="btn btn-secondary btn-sm btn-icon"
+                  title="Danh sách Checkbox"
+                >
+                  <CheckSquare size={13} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => insertMarkdown('```ts\n', '\n```', '// Mã nguồn')}
+                  className="btn btn-secondary btn-sm btn-icon"
+                  title="Khối mã nguồn (Code block)"
+                >
+                  <Code size={13} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => insertMarkdown('> ', '', 'Trích dẫn quan trọng')}
+                  className="btn btn-secondary btn-sm btn-icon"
+                  title="Trích dẫn (Quote)"
+                >
+                  <Quote size={13} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => insertMarkdown('| Tiêu đề 1 | Tiêu đề 2 |\n| --- | --- |\n| Giá trị 1 | Giá trị 2 |', '', '')}
+                  className="btn btn-secondary btn-sm btn-icon"
+                  title="Bảng biểu (Table)"
+                >
+                  <Table size={13} />
+                </button>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px', color: 'var(--text-muted)' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <Clock size={12} /> {readTimeMin} phút đọc
+                </span>
+                <span>•</span>
+                <span>{words} từ</span>
+              </div>
+            )}
           </div>
 
-          {/* Editor / Preview Container */}
-          {isPreview ? (
-            <div
-              className="snote-card"
-              style={{
-                minHeight: '260px',
-                maxHeight: '380px',
-                overflowY: 'auto',
-                padding: '16px',
-                background: 'var(--bg-input)'
-              }}
-            >
-              <MarkdownViewer content={content} />
-            </div>
-          ) : (
+          {/* Content Area Rendering according to Mode */}
+          {mode === 'WRITE' && (
             <textarea
               ref={textareaRef}
-              rows={10}
-              placeholder="Nhập nội dung bài học, mã nguồn, công thức bằng cú pháp Markdown..."
+              rows={12}
+              placeholder="Nhập nội dung bài học, mã nguồn, bảng biểu bằng cú pháp Markdown..."
               value={content}
               onChange={(e) => setContent(e.target.value)}
               className="snote-textarea"
               style={{
                 lineHeight: '1.6',
                 fontFamily: 'inherit',
-                fontSize: '13.5px',
-                resize: 'vertical'
+                fontSize: '14px',
+                resize: 'vertical',
+                minHeight: '280px'
               }}
             />
           )}
+
+          {mode === 'PREVIEW' && (
+            <div
+              className="snote-card"
+              style={{
+                minHeight: '280px',
+                maxHeight: '440px',
+                overflowY: 'auto',
+                padding: '20px',
+                background: 'var(--bg-primary)',
+                border: '1px solid var(--border-color)'
+              }}
+            >
+              {content.trim() ? (
+                <MarkdownViewer content={content} />
+              ) : (
+                <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-muted)', fontSize: '13.5px' }}>
+                  <i>Chưa có nội dung ghi chú. Bấm vào <b>"Viết (Write)"</b> để bắt đầu soạn bài.</i>
+                </div>
+              )}
+            </div>
+          )}
+
+          {mode === 'SPLIT' && (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+              <div>
+                <div style={{ fontSize: '11.5px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '6px' }}>
+                  MÃ NGUỒN MARKDOWN:
+                </div>
+                <textarea
+                  ref={textareaRef}
+                  rows={14}
+                  placeholder="Gõ mã Markdown tại đây..."
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  className="snote-textarea"
+                  style={{
+                    lineHeight: '1.6',
+                    fontFamily: 'inherit',
+                    fontSize: '13.5px',
+                    minHeight: '320px',
+                    maxHeight: '440px'
+                  }}
+                />
+              </div>
+
+              <div>
+                <div style={{ fontSize: '11.5px', fontWeight: 700, color: 'var(--accent-primary)', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <Sparkles size={12} />
+                  <span>KẾT QUẢ HIỂN THỊ REAL-TIME:</span>
+                </div>
+                <div
+                  className="snote-card"
+                  style={{
+                    minHeight: '320px',
+                    maxHeight: '440px',
+                    overflowY: 'auto',
+                    padding: '16px',
+                    background: 'var(--bg-primary)',
+                    border: '1px solid var(--border-color)'
+                  }}
+                >
+                  {content.trim() ? (
+                    <MarkdownViewer content={content} />
+                  ) : (
+                    <div style={{ color: 'var(--text-muted)', fontSize: '13px' }}>
+                      <i>Kết quả render xem trước sẽ hiển thị trực tiếp tại đây khi bạn gõ...</i>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Modal Actions */}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '12px' }}>
-          <button
-            type="button"
-            onClick={onClose}
-            className="btn btn-secondary"
-          >
-            Hủy bỏ
-          </button>
-          <button
-            type="submit"
-            disabled={loading}
-            className="btn btn-primary"
-          >
-            <Save size={15} />
-            <span>{loading ? 'Đang lưu trữ...' : noteToEdit ? 'Lưu Thay Đổi' : 'Tạo Ghi Chú'}</span>
-          </button>
+        {/* Modal Actions Footer */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px' }}>
+          <div>
+            {mode === 'PREVIEW' && (
+              <button
+                type="button"
+                onClick={() => setMode('WRITE')}
+                className="btn btn-secondary btn-sm"
+                style={{ fontWeight: 600 }}
+              >
+                <Edit3 size={14} />
+                <span>Chuyển Sang Chế Độ Sửa</span>
+              </button>
+            )}
+          </div>
+
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button
+              type="button"
+              onClick={onClose}
+              className="btn btn-secondary"
+            >
+              Đóng
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="btn btn-primary"
+              style={{ fontWeight: 700 }}
+            >
+              <Save size={15} />
+              <span>{loading ? 'Đang lưu trữ...' : noteToEdit ? 'Lưu Thay Đổi' : 'Tạo Ghi Chú'}</span>
+            </button>
+          </div>
         </div>
       </form>
     </Modal>
