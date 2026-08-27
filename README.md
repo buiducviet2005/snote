@@ -79,3 +79,4 @@ npm run dev
 * [DOCS/step_3_setup.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/step_3_setup.md): Bước 3.3 – Thiết lập Backend Skeleton từ số 0.
 * [DOCS/step_3_frontend.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/step_3_frontend.md): Bước 3.4 – Thiết lập Frontend SPA Feature-based.
 * [DOCS/step_3_repo_structure.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/step_3_repo_structure.md): Bước 3.5 – Cấu trúc Repo & Tổ chức mã nguồn.
+* [DOCS/COMMANDS_PLAYBOOK.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/COMMANDS_PLAYBOOK.md): Sổ tay tra cứu toàn bộ câu lệnh CLI điều khiển & vận hành dự án.

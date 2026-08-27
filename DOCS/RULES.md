@@ -31,7 +31,7 @@ Dự án SNOTE được triển khai nghiêm ngặt theo **Lộ trình 6 bước
 - **Bước 3.2:** Thiết kế domain nội bộ & ranh giới module (*10 Bounded Contexts, Layered Pattern, Acyclic Graph*).
 - **Bước 3.3:** Chọn stack backend, thiết lập môi trường & dựng skeleton từ số 0 (*`DOCS/step_3_setup.md`*).
 - **Bước 3.4:** Chọn stack frontend, thiết lập SPA Feature-based & React Router (*`DOCS/step_3_frontend.md`*).
-- **Bước 3.5:** Thiết kế cấu trúc repo & tổ chức mã nguồn tổng thể.
+- **Bước 3.5:** Thiết kế cấu trúc repo & tổ chức mã nguồn tổng thể (*`DOCS/step_3_repo_structure.md`*).
 - **Bước 3.6:** Chuẩn cấu hình môi trường & quản lý secrets (*Fail-fast Zod validation, .env.example*).
 - **Bước 3.7:** Chuẩn logging, error handling & bảo mật cơ bản (*Pino JSON, Custom AppErrors, Dual-token JWT, anti-IDOR, Helmet, CORS*).
 
@@ -52,7 +52,14 @@ Dự án SNOTE được triển khai nghiêm ngặt theo **Lộ trình 6 bước
 
 ---
 
-## ✅ ĐIỀU 5: QUY TRÌNH THỰC THI QUA CHECKLIST (CHECKLIST-FIRST WORKFLOW)
+## 📖 ĐIỀU 5: DUY TRÌ SỔ TAY CÂU LỆNH ĐIỀU KHIỂN DỰ ÁN (COMMAND PLAYBOOK RULE)
+
+- Duy trì file **`DOCS/COMMANDS_PLAYBOOK.md`** làm sổ tay tra cứu toàn bộ câu lệnh điều khiển, vận hành và kiểm tra dự án SNOTE.
+- **Yêu cầu bắt buộc:** Mỗi khi có chức năng mới, script mới, migration mới, lệnh API mới hoặc bất kỳ câu lệnh nào mà lập trình viên (Dev) cần biết để điều khiển hoặc kiểm tra dự án, **phải cập nhật và bổ sung ngay lập tức vào file `DOCS/COMMANDS_PLAYBOOK.md`**.
+
+---
+
+## ✅ ĐIỀU 6: QUY TRÌNH THỰC THI QUA CHECKLIST (CHECKLIST-FIRST WORKFLOW)
 
 Mỗi khi thực thi bất kỳ nhiệm vụ nào gồm nhiều bước (Multi-step Task):
 1. **Bước 1 (Checklist First):** **BẮT BUỘC PHẢI TẠO FILE CHECKLIST TRƯỚC** (dạng bảng Markdown có các ô `[ ]`, ID, mô tả công việc, file liên quan và tiêu chí đạt).
@@ -61,7 +68,7 @@ Mỗi khi thực thi bất kỳ nhiệm vụ nào gồm nhiều bước (Multi-s
 
 ---
 
-## ⚡ ĐIỀU 6: THỰC THI LỆNH & GIỚI HẠN THAO TÁC NGUY HIỂM (EXECUTION PROTOCOL)
+## ⚡ ĐIỀU 7: THỰC THI LỆNH & GIỚI HẠN THAO TÁC NGUY HIỂM (EXECUTION PROTOCOL)
 
 1. **Tự động thực thi:** Chấp nhận tự động chạy mọi câu lệnh tạo file, sửa code, cài đặt thư viện (`npm install`), chạy build, test, khởi chạy server và thực thi các bước trong nhiệm vụ mà **không cần hỏi lại người dùng**.
 2. **Chỉ hỏi khi thao tác nguy hiểm:** AI Agent **BẮT BUỘC PHẢI HỎI Ý KIẾN NGƯỜI DÙNG TRƯỚC KHI:**
@@ -70,7 +77,7 @@ Mỗi khi thực thi bất kỳ nhiệm vụ nào gồm nhiều bước (Multi-s
 
 ---
 
-## ⚙️ ĐIỀU 7: QUY CHUẨN KỸ THUẬT & RÀNG BUỘC CỐT LÕI
+## ⚙️ ĐIỀU 8: QUY CHUẨN KỸ THUẬT & RÀNG BUỘC CỐT LÕI
 
 1. **Kiến trúc Hệ thống:**
    - Sử dụng mô hình **Modular Monolith**: 1 Backend process duy nhất, 1 Database PostgreSQL duy nhất để giữ trọn vẹn ranh giới Transaction ACID.
@@ -92,7 +99,7 @@ Mỗi khi thực thi bất kỳ nhiệm vụ nào gồm nhiều bước (Multi-s
 
 ---
 
-## 🔒 ĐIỀU 8: QUẢN LÝ GIT & AN TOÀN MÃ NGUỒN
+## 🔒 ĐIỀU 9: QUẢN LÝ GIT & AN TOÀN MÃ NGUỒN
 
 1. **Bảo mật thông tin:** Tuyệt đối không commit file `.env`, thư mục `node_modules/`, `dist/`, logs hay dữ liệu database cục bộ vào Git.
 2. **Commit chuẩn mực:** Đặt commit message có cấu trúc rõ ràng theo chuẩn Conventional Commits (ví dụ: `feat: ...`, `docs: ...`, `fix: ...`, `refactor: ...`).

@@ -51,7 +51,8 @@ SNOTE/
 │   ├── step_3_repo_structure.md          # Bước 3.5: Cấu trúc repo & tổ chức mã nguồn
 │   ├── step_3_setup_checklist.md         # Bảng checklist theo dõi tiến độ thiết lập Bước 3
 │   ├── step_3_integration_checklist.md   # Bảng checklist kiểm tra kết nối Frontend & Backend
-│   └── step_3.5_checklist.md             # Bảng checklist thực thi Bước 3.5
+│   ├── step_3.5_checklist.md             # Bảng checklist thực thi Bước 3.5
+│   └── COMMANDS_PLAYBOOK.md              # Sổ tay toàn bộ câu lệnh điều khiển & vận hành dự án
 ├── packages/                             # Các thư viện dùng chung (Shared Packages)
 │   └── shared/                           # Types, Enums & DTOs dùng chung toàn dự án
 │       ├── package.json                  # Khai báo package @snote/shared
@@ -172,6 +173,7 @@ SNOTE/
 | [DOCS/step_3_setup_checklist.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/step_3_setup_checklist.md) | Bảng theo dõi tiến độ nghiệm thu kỹ thuật từng tác vụ của Bước 3 (`25 / 28` tác vụ hoàn thành). |
 | [DOCS/step_3_integration_checklist.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/step_3_integration_checklist.md) | Bảng theo dõi và nhật ký kiểm thử kết nối mạng, CORS và data flow giữa Frontend SPA và Backend API (`7 / 7` đạt). |
 | [DOCS/step_3.5_checklist.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/step_3.5_checklist.md) | Bảng theo dõi tiến độ thực thi cấu trúc repo và thư viện dùng chung Bước 3.5 (`6 / 6` hoàn thành). |
+| [DOCS/COMMANDS_PLAYBOOK.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/COMMANDS_PLAYBOOK.md) | Sổ tay tập trung toàn bộ câu lệnh CLI: Khởi chạy, Docker, Prisma, Build, Test, Git và Clean dự án. |
 | [DOCS/PROJECT_STRUCTURE_AND_MAP.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/PROJECT_STRUCTURE_AND_MAP.md) | Tài liệu tra cứu cấu trúc dự án, từ điển tệp tin và công nghệ sử dụng (File này). |
 
 ---
