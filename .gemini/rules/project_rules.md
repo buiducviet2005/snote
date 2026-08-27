@@ -83,12 +83,15 @@ Mỗi khi thực thi bất kỳ nhiệm vụ nào gồm nhiều bước (Multi-s
 
 ---
 
-## ⚡ ĐIỀU 8: THỰC THI LỆNH & GIỚI HẠN THAO TÁC NGUY HIỂM (EXECUTION PROTOCOL)
+## ⚡ ĐIỀU 8: THỰC THI TỰ CHỦ TOÀN DIỆN & GIỚI HẠN THAO TÁC NGUY HIỂM (AUTONOMOUS EXECUTION PROTOCOL)
 
-1. **Tự động thực thi:** Chấp nhận tự động chạy mọi câu lệnh tạo file, sửa code, cài đặt thư viện (`npm install`), chạy build, test, khởi chạy server và thực thi các bước trong nhiệm vụ mà **không cần hỏi lại người dùng**.
-2. **Chỉ hỏi khi thao tác nguy hiểm:** AI Agent **BẮT BUỘC PHẢI HỎI Ý KIẾN NGƯỜI DÙNG TRƯỚC KHI:**
+1. **Tự Chủ Toàn Diện (Autonomous Execution Skill):**
+   - Kích hoạt kỹ năng chuyên biệt `autonomous-task-execution` (`.agents/skills/autonomous-task-execution/SKILL.md`).
+   - Tự động chấp nhận và thực thi **MỌI YÊU CẦU, LỆNH TẠO/SỬA FILE, CÀI ĐẶT PACKAGE, CHẠY BUILD, TEST, FIX LỖI VÀ COMMIT** liên tục cho đến khi hoàn thành 100% nhiệm vụ được giao mà **không cần xin phép hay hỏi quyền trung gian từ người dùng**.
+2. **Chỉ Hỏi Khi Thao Tác Nguy Hiểm (Destructive Guardrail):** AI Agent **BẮT BUỘC PHẢI HỎI Ý KIẾN NGƯỜI DÙNG TRƯỚC KHI:**
    - Xóa file hoặc xóa thư mục trong dự án.
-   - Chạy các lệnh có ảnh hưởng cực kỳ lớn hoặc không thể khôi phục (như drop database, xóa dữ liệu quan trọng, reset hard git làm mất commit...).
+   - Chạy các lệnh có tính hủy diệt database hoặc dữ liệu không thể khôi phục (`DROP DATABASE`, `TRUNCATE`...).
+   - Chạy các lệnh Git nguy hiểm làm mất commit lịch sử (`git reset --hard`, `git push --force`...).
 
 ---
 

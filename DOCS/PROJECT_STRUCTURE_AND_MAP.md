@@ -111,9 +111,16 @@ SNOTE/
 ├── package-lock.json                         # Khóa phiên bản toàn bộ dependencies của root và workspaces
 ├── README.md                                 # Hướng dẫn tổng quan & cài đặt hệ thống SNOTE
 ├── RULES.md                                  # BẢNG QUY TẮC & LUẬT BẤT BIẾN CỦA DỰ ÁN (Nguồn luật số 1)
+├── .agents/                                  # Cấu hình Agent & Workspace Skills
+│   └── skills/
+│       └── autonomous-task-execution/
+│           └── SKILL.md                      # Kỹ năng thực thi tự chủ liên tục 100% không xin phép
 ├── .gemini/                                  # Cấu hình AI Assistant & Subagents
-│   └── rules/
-│       └── project_rules.md                  # Bản sao quy tắc dự án phục vụ AI Agent
+│   ├── rules/
+│   │   └── project_rules.md                  # Bản sao quy tắc dự án phục vụ AI Agent
+│   └── skills/
+│       └── autonomous-task-execution/
+│           └── SKILL.md                      # Bản sao kỹ năng thực thi tự chủ cho Gemini Agent
 ├── DOCS/                                     # TRUNG TÂM TÀI LIỆU QUY CHUẨN KỸ THUẬT DỰ ÁN
 │   ├── RULES.md                              # Bản sao quy tắc dự án trong thư mục docs
 │   ├── PROJECT_STRUCTURE_AND_MAP.md          # Tài liệu này: Từ điển cấu trúc, tệp tin & ma trận công nghệ
@@ -317,6 +324,8 @@ SNOTE/
 | [package.json](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/package.json) | Điều phối các scripts của Monorepo: `dev` (chạy song song backend + frontend), `build`, `type-check`, `lint`, `prisma:generate`, `clean`. | `npm workspaces`, `concurrently` |
 | [docker-compose.yml](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/docker-compose.yml) | Khởi chạy container `snote-postgres` trên cổng 5432, cấu hình user `postgres`, database `snote_db` và volume lưu trữ bền vững. | `Docker`, `PostgreSQL 16 Alpine` |
 | [RULES.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/RULES.md) | Bảng quy tắc, chuẩn mực, thẩm quyền tài liệu, quy ước tên SNOTE và checklist-first workflow bắt buộc đọc trước mọi hành động. | `Markdown` |
+| [.agents/skills/autonomous-task-execution/SKILL.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/.agents/skills/autonomous-task-execution/SKILL.md) | Kỹ năng AI thực thi tự chủ liên tục 100% không xin phép, tự động lập checklist, build, test, fix lỗi và hoàn tất mục tiêu. | `Antigravity Workspace Skill` |
+| [.gemini/skills/autonomous-task-execution/SKILL.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/.gemini/skills/autonomous-task-execution/SKILL.md) | Bản sao kỹ năng thực thi tự chủ cho Gemini Agent trong thư mục cấu hình `.gemini/`. | `Gemini Skill` |
 | [README.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/README.md) | Giới thiệu dự án SNOTE, kiến trúc Modular Monolith, yêu cầu môi trường và hướng dẫn chạy dev/build từng bước. | `Markdown` |
 | [.gitignore](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/.gitignore) | Khai báo loại bỏ `node_modules/`, `.env`, `dist/`, `coverage/`, logs và dữ liệu database local khỏi Git. | `Git` |
 
