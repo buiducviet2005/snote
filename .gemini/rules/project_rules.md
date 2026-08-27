@@ -6,7 +6,8 @@
 4. **TỰ CHỦ TÀI LIỆU:** Tự động tích hợp hoặc tách tài liệu và đánh số thứ tự khi có dữ liệu mới. Được quyền tự tạo mới tài liệu khi cần mở rộng.
 5. **BẢN ĐỒ MÃ NGUỒN:** Bắt buộc cập nhật ngay `DOCS/PROJECT_STRUCTURE_AND_MAP.md` mỗi khi thêm/sửa/xóa bất kỳ file, folder, chức năng hay công nghệ nào.
 6. **SỔ TAY CÂU LỆNH (COMMAND PLAYBOOK):** Bắt buộc cập nhật `DOCS/COMMANDS_PLAYBOOK.md` mỗi khi có chức năng mới, script mới, migration mới hoặc câu lệnh điều khiển/kiểm tra dự án mới.
-7. **CHECKLIST FIRST:** Mỗi khi thực thi nhiệm vụ gồm nhiều bước, BẮT BUỘC phải tạo file checklist trước, sau đó mới thực thi các bước nhỏ và đánh dấu `[x]`.
-8. **THỰC THI LỆNH & GIỚI HẠN NGUY HIỂM:** Tự động chạy mọi lệnh tạo file, sửa code, cài đặt gói, chạy test, build, khởi chạy server. BẮT BUỘC HỎI Ý KIẾN trước khi xóa file hoặc chạy lệnh nguy hiểm không thể khôi phục.
-9. **KỸ THUẬT CỐT LÕI:** Modular Monolith, PostgreSQL 16, Prisma ORM + Raw SQL, React Vite SPA Feature-based, ràng buộc chống note rác (`subject_id IS NOT NULL OR project_id IS NOT NULL`), anti-IDOR, Fail-Fast Zod config.
-10. **AN TOÀN GIT:** Không commit `.env`, `node_modules/`, `dist/`. Remote: `https://github.com/naverisme/snote.git`.
+7. **TRI THỨC CHAT AI (AI CHAT DOCS - APPEND ONLY):** Duy trì thư mục `DOCS/ai_chat_docs/`. Mỗi khi có kiến thức mới, kỹ thuật mới, BẮT BUỘC tạo file tài liệu mới được đánh số thứ tự để mở rộng tri thức, TUYỆT ĐỐI KHÔNG SỬA/XÓA làm mất ngữ cảnh lịch sử.
+8. **CHECKLIST FIRST:** Mỗi khi thực thi nhiệm vụ gồm nhiều bước, BẮT BUỘC phải tạo file checklist trước, sau đó mới thực thi các bước nhỏ và đánh dấu `[x]`.
+9. **THỰC THI LỆNH & GIỚI HẠN NGUY HIỂM:** Tự động chạy mọi lệnh tạo file, sửa code, cài đặt gói, chạy test, build, khởi chạy server. BẮT BUỘC HỎI Ý KIẾN trước khi xóa file hoặc chạy lệnh nguy hiểm không thể khôi phục.
+10. **KỸ THUẬT CỐT LÕI:** Modular Monolith, PostgreSQL 16, Prisma ORM + Raw SQL, React Vite SPA Feature-based, ràng buộc chống note rác (`subject_id IS NOT NULL OR project_id IS NOT NULL`), anti-IDOR, Fail-Fast Zod config.
+11. **AN TOÀN GIT:** Không commit `.env`, `node_modules/`, `dist/`. Remote: `https://github.com/naverisme/snote.git`.

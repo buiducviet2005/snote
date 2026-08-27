@@ -32,8 +32,8 @@ Dự án SNOTE được triển khai nghiêm ngặt theo **Lộ trình 6 bước
 - **Bước 3.3:** Chọn stack backend, thiết lập môi trường & dựng skeleton từ số 0 (*`DOCS/step_3_setup.md`*).
 - **Bước 3.4:** Chọn stack frontend, thiết lập SPA Feature-based & React Router (*`DOCS/step_3_frontend.md`*).
 - **Bước 3.5:** Thiết kế cấu trúc repo & tổ chức mã nguồn tổng thể (*`DOCS/step_3_repo_structure.md`*).
-- **Bước 3.6:** Chuẩn cấu hình môi trường & quản lý secrets (*Fail-fast Zod validation, .env.example*).
-- **Bước 3.7:** Chuẩn logging, error handling & bảo mật cơ bản (*Pino JSON, Custom AppErrors, Dual-token JWT, anti-IDOR, Helmet, CORS*).
+- **Bước 3.6:** Chuẩn hóa hệ thống Logging, Error Handling & Bảo mật Backend (*`DOCS/step_3_observability_security.md`*).
+- **Bước 3.7:** Tổng kết chuẩn bảo mật & chuyển giao sang Bước 4 (Backend Core).
 
 ---
 
@@ -59,7 +59,14 @@ Dự án SNOTE được triển khai nghiêm ngặt theo **Lộ trình 6 bước
 
 ---
 
-## ✅ ĐIỀU 6: QUY TRÌNH THỰC THI QUA CHECKLIST (CHECKLIST-FIRST WORKFLOW)
+## 🧠 ĐIỀU 6: QUẢN LÝ TRI THỨC VÀ TÀI LIỆU DÀNH RIÊNG CHO CHAT AI (AI CHAT DOCS RULE)
+
+1. **Thư mục Tri thức Chuyên biệt:** Duy trì thư mục **`DOCS/ai_chat_docs/`** làm trung tâm tri thức lưu trữ: các thành tựu đã đạt được, danh mục việc cần làm, quy trình kỹ thuật, hướng phát triển và các ranh giới/luật nghiên cứu để AI không đi lệch quỹ đạo.
+2. **Nguyên tắc Tạo Mới Bất biến (Create New / Append-Only):** Mỗi khi tiếp nhận kiến thức mới, kỹ thuật mới hoặc tài liệu mới, AI Agent **phải tự động cập nhật và TẠO FILE TÀI LIỆU MỚI** trong thư mục `DOCS/ai_chat_docs/` để mở rộng tri thức, **TUYỆT ĐỐI KHÔNG CHỈNH SỬA / XÓA BỎ LÀM MẤT NGỮ CẢNH LỊCH SỬ**.
+
+---
+
+## ✅ ĐIỀU 7: QUY TRÌNH THỰC THI QUA CHECKLIST (CHECKLIST-FIRST WORKFLOW)
 
 Mỗi khi thực thi bất kỳ nhiệm vụ nào gồm nhiều bước (Multi-step Task):
 1. **Bước 1 (Checklist First):** **BẮT BUỘC PHẢI TẠO FILE CHECKLIST TRƯỚC** (dạng bảng Markdown có các ô `[ ]`, ID, mô tả công việc, file liên quan và tiêu chí đạt).
@@ -68,7 +75,7 @@ Mỗi khi thực thi bất kỳ nhiệm vụ nào gồm nhiều bước (Multi-s
 
 ---
 
-## ⚡ ĐIỀU 7: THỰC THI LỆNH & GIỚI HẠN THAO TÁC NGUY HIỂM (EXECUTION PROTOCOL)
+## ⚡ ĐIỀU 8: THỰC THI LỆNH & GIỚI HẠN THAO TÁC NGUY HIỂM (EXECUTION PROTOCOL)
 
 1. **Tự động thực thi:** Chấp nhận tự động chạy mọi câu lệnh tạo file, sửa code, cài đặt thư viện (`npm install`), chạy build, test, khởi chạy server và thực thi các bước trong nhiệm vụ mà **không cần hỏi lại người dùng**.
 2. **Chỉ hỏi khi thao tác nguy hiểm:** AI Agent **BẮT BUỘC PHẢI HỎI Ý KIẾN NGƯỜI DÙNG TRƯỚC KHI:**
@@ -77,7 +84,7 @@ Mỗi khi thực thi bất kỳ nhiệm vụ nào gồm nhiều bước (Multi-s
 
 ---
 
-## ⚙️ ĐIỀU 8: QUY CHUẨN KỸ THUẬT & RÀNG BUỘC CỐT LÕI
+## ⚙️ ĐIỀU 9: QUY CHUẨN KỸ THUẬT & RÀNG BUỘC CỐT LÕI
 
 1. **Kiến trúc Hệ thống:**
    - Sử dụng mô hình **Modular Monolith**: 1 Backend process duy nhất, 1 Database PostgreSQL duy nhất để giữ trọn vẹn ranh giới Transaction ACID.
@@ -99,7 +106,7 @@ Mỗi khi thực thi bất kỳ nhiệm vụ nào gồm nhiều bước (Multi-s
 
 ---
 
-## 🔒 ĐIỀU 9: QUẢN LÝ GIT & AN TOÀN MÃ NGUỒN
+## 🔒 ĐIỀU 10: QUẢN LÝ GIT & AN TOÀN MÃ NGUỒN
 
 1. **Bảo mật thông tin:** Tuyệt đối không commit file `.env`, thư mục `node_modules/`, `dist/`, logs hay dữ liệu database cục bộ vào Git.
 2. **Commit chuẩn mực:** Đặt commit message có cấu trúc rõ ràng theo chuẩn Conventional Commits (ví dụ: `feat: ...`, `docs: ...`, `fix: ...`, `refactor: ...`).

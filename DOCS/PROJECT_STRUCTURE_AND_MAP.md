@@ -54,7 +54,14 @@ SNOTE/
 │   ├── step_3_integration_checklist.md   # Bảng checklist kiểm tra kết nối Frontend & Backend
 │   ├── step_3.5_checklist.md             # Bảng checklist thực thi Bước 3.5
 │   ├── step_3.6_checklist.md             # Bảng checklist thực thi Bước 3.6
-│   └── COMMANDS_PLAYBOOK.md              # Sổ tay toàn bộ câu lệnh điều khiển & vận hành dự án
+│   ├── COMMANDS_PLAYBOOK.md              # Sổ tay toàn bộ câu lệnh điều khiển & vận hành dự án
+│   └── ai_chat_docs/                     # Trung tâm tri thức & tài liệu dành riêng cho Chat AI
+│       ├── README.md                     # Bản đồ tri thức & nguyên tắc làm việc với AI Docs
+│       ├── 01_PROJECT_ACHIEVEMENTS.md    # Tổng kết thành tựu & cột mốc đã hoàn thành 100%
+│       ├── 02_PENDING_TASKS_AND_ROADMAP.md # Danh mục công việc cần làm & lộ trình tiếp theo
+│       ├── 03_DEVELOPMENT_WORKFLOW_AND_PROCESS.md # Quy trình phát triển & chuẩn mực kỹ thuật
+│       ├── 04_RESEARCH_GUARDRAILS_AND_LAWS.md # Ranh giới nghiên cứu & các luật bất biến
+│       └── 05_AI_ROADMAP_AND_FUTURE_STRATEGY.md # Lộ trình AI & chiến lược tương lai 4 giai đoạn
 ├── packages/                             # Các thư viện dùng chung (Shared Packages)
 │   └── shared/                           # Types, Enums & DTOs dùng chung toàn dự án
 │       ├── package.json                  # Khai báo package @snote/shared
@@ -187,7 +194,20 @@ SNOTE/
 
 ---
 
-### 3.3. Thư mục Thư viện Dùng chung (`packages/shared/`)
+### 3.3. Thư mục Tri thức Chat AI (`DOCS/ai_chat_docs/`)
+
+| Đường dẫn tệp | Chức năng chi tiết |
+| :--- | :--- |
+| [DOCS/ai_chat_docs/README.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/ai_chat_docs/README.md) | Bản đồ tri thức và nguyên tắc mở rộng bất biến (Append-Only) cho AI Agent. |
+| [DOCS/ai_chat_docs/01_PROJECT_ACHIEVEMENTS.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/ai_chat_docs/01_PROJECT_ACHIEVEMENTS.md) | Tổng kết toàn bộ các thành tựu, quyết định kiến trúc và kết quả kỹ thuật đã hoàn thành 100%. |
+| [DOCS/ai_chat_docs/02_PENDING_TASKS_AND_ROADMAP.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/ai_chat_docs/02_PENDING_TASKS_AND_ROADMAP.md) | Danh mục chi tiết các công việc cần làm tiếp theo từ Bước 3.7 đến Bước 8. |
+| [DOCS/ai_chat_docs/03_DEVELOPMENT_WORKFLOW_AND_PROCESS.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/ai_chat_docs/03_DEVELOPMENT_WORKFLOW_AND_PROCESS.md) | Quy trình chuẩn mực Checklist-First, DDD Layering, Error Handling, Logging, Git. |
+| [DOCS/ai_chat_docs/04_RESEARCH_GUARDRAILS_AND_LAWS.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/ai_chat_docs/04_RESEARCH_GUARDRAILS_AND_LAWS.md) | Ranh giới kỹ thuật bất biến (Anti-Junk notes, Single ACID DB, Anti-IDOR, Modular Monolith). |
+| [DOCS/ai_chat_docs/05_AI_ROADMAP_AND_FUTURE_STRATEGY.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/ai_chat_docs/05_AI_ROADMAP_AND_FUTURE_STRATEGY.md) | Lộ trình và chiến lược AI 4 giai đoạn (Smart Extraction $\rightarrow$ Exam Predictor $\rightarrow$ Multi-modal $\rightarrow$ Autonomous). |
+
+---
+
+### 3.4. Thư mục Thư viện Dùng chung (`packages/shared/`)
 
 | Đường dẫn tệp | Chức năng chi tiết |
 | :--- | :--- |
@@ -201,7 +221,7 @@ SNOTE/
 
 ---
 
-### 3.4. Thư mục Backend (`backend/`)
+### 3.5. Thư mục Backend (`backend/`)
 
 | Đường dẫn tệp | Chức năng chi tiết |
 | :--- | :--- |
@@ -232,7 +252,7 @@ SNOTE/
 
 ---
 
-### 3.4. Thư mục Frontend (`frontend/`)
+### 3.6. Thư mục Frontend (`frontend/`)
 
 | Đường dẫn tệp | Chức năng chi tiết |
 | :--- | :--- |
