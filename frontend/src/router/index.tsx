@@ -5,6 +5,7 @@ import { NotesListPage } from '../features/notes';
 import { TasksListPage } from '../features/tasks';
 import { ScheduleWeekPage } from '../features/schedule';
 import { SemesterOverviewPage } from '../features/semesters';
+import { StatusPage } from '../features/status';
 
 const router = createBrowserRouter([
   {
@@ -15,7 +16,8 @@ const router = createBrowserRouter([
       { path: 'notes', element: <NotesListPage /> },
       { path: 'tasks', element: <TasksListPage /> },
       { path: 'schedule', element: <ScheduleWeekPage /> },
-      { path: 'semesters', element: <SemesterOverviewPage /> }
+      { path: 'semesters', element: <SemesterOverviewPage /> },
+      { path: 'status', element: <StatusPage /> }
     ]
   }
 ]);

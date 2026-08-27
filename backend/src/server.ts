@@ -7,6 +7,7 @@ import { logger } from './shared/utils/logger';
 import { errorHandler } from './shared/middleware/errorHandler';
 import { apiRateLimiter } from './shared/middleware/rateLimit';
 import { notesRouter } from './modules/notes';
+import { healthRouter } from './modules/health';
 
 // 1. Khởi tạo Express Application
 const app = express();
@@ -45,15 +46,8 @@ app.use(
 // 6. Global API Rate Limiting
 app.use('/api/', apiRateLimiter);
 
-// 7. Health Check Endpoint
-app.get('/health', (_req, res) => {
-  res.status(200).json({
-    status: 'ok',
-    service: 'snote-backend',
-    environment: env.NODE_ENV,
-    timestamp: new Date().toISOString()
-  });
-});
+// 7. Health Check Probes (/health, /health/live, /health/ready)
+app.use('/health', healthRouter);
 
 // 8. Đăng ký Domain Routes
 app.use('/api/notes', notesRouter);

@@ -20,6 +20,9 @@ export const Sidebar: React.FC = () => {
         <NavLink to="/semesters" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
           <span>🎓</span> Học kỳ & Môn học
         </NavLink>
+        <NavLink to="/status" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+          <span>⚡</span> Trạng thái (Status)
+        </NavLink>
       </nav>
     </aside>
   );

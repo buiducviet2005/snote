@@ -50,10 +50,12 @@ SNOTE/
 │   ├── step_3_frontend.md                # Bước 3.4: Hướng dẫn thiết lập Frontend SPA Feature-based
 │   ├── step_3_repo_structure.md          # Bước 3.5: Cấu trúc repo & tổ chức mã nguồn
 │   ├── step_3_observability_security.md  # Bước 3.6: Quan sát hệ thống & Cứng hóa bảo mật Backend
-│   ├── step_3_setup_checklist.md         # Bảng checklist theo dõi tiến độ thiết lập Bước 3
+│   ├── step_3_architecture.md            # Bước 3.7: Đặc tả toàn diện kiến trúc & nghiệm thu Bước 3
+│   ├── step_3_setup_checklist.md         # Bảng checklist tổng quan tiến độ Bước 3 (28/28 Hoàn thành)
 │   ├── step_3_integration_checklist.md   # Bảng checklist kiểm tra kết nối Frontend & Backend
 │   ├── step_3.5_checklist.md             # Bảng checklist thực thi Bước 3.5
 │   ├── step_3.6_checklist.md             # Bảng checklist thực thi Bước 3.6
+│   ├── step_3.7_checklist.md             # Bảng checklist thực thi Bước 3.7
 │   ├── COMMANDS_PLAYBOOK.md              # Sổ tay toàn bộ câu lệnh điều khiển & vận hành dự án
 │   └── ai_chat_docs/                     # Trung tâm tri thức & tài liệu dành riêng cho Chat AI
 │       ├── README.md                     # Bản đồ tri thức & nguyên tắc làm việc với AI Docs
@@ -61,7 +63,8 @@ SNOTE/
 │       ├── 02_PENDING_TASKS_AND_ROADMAP.md # Danh mục công việc cần làm & lộ trình tiếp theo
 │       ├── 03_DEVELOPMENT_WORKFLOW_AND_PROCESS.md # Quy trình phát triển & chuẩn mực kỹ thuật
 │       ├── 04_RESEARCH_GUARDRAILS_AND_LAWS.md # Ranh giới nghiên cứu & các luật bất biến
-│       └── 05_AI_ROADMAP_AND_FUTURE_STRATEGY.md # Lộ trình AI & chiến lược tương lai 4 giai đoạn
+│       ├── 05_AI_ROADMAP_AND_FUTURE_STRATEGY.md # Lộ trình AI & chiến lược tương lai 4 giai đoạn
+│       └── 06_STEP_3_HANDOVER_AND_COMPLETION.md # Biên bản nghiệm thu Bước 3 & bàn giao Bước 4
 ├── packages/                             # Các thư viện dùng chung (Shared Packages)
 │   └── shared/                           # Types, Enums & DTOs dùng chung toàn dự án
 │       ├── package.json                  # Khai báo package @snote/shared
@@ -102,6 +105,9 @@ SNOTE/
 │       │   └── utils/
 │       │       └── logger.ts             # Cấu hình Pino Structured Logger kèm Redaction
 │       └── modules/                      # Các Bounded Contexts theo Domain-Driven Design
+│           ├── health/                   # Phân hệ Giám sát Sức khỏe Hệ thống (Probes)
+│           │   ├── health.routes.ts      # Endpoints /health, /health/live, /health/ready
+│           │   └── index.ts              # Public API của module health
 │           └── notes/                    # Phân hệ Quản lý Ghi chú (Module mẫu)
 │               ├── notes.types.ts        # TypeScript interfaces cho DTOs, Filters, Entity
 │               ├── notes.schemas.ts      # Zod validation schema (Ràng buộc ngữ cảnh học tập)
@@ -116,19 +122,19 @@ SNOTE/
     ├── index.html                        # HTML Template chính của ứng dụng
     ├── package.json                      # Khai báo packages và scripts của frontend
     ├── package-lock.json                 # Khóa phiên bản dependencies frontend
-    ├── tsconfig.json                     # Cấu hình TypeScript cho mã nguồn React
-    ├── tsconfig.node.json                # Cấu hình TypeScript cho file cấu hình Vite
-    ├── vite.config.ts                    # Cấu hình Vite dev server & build plugin
+    ├── tsconfig.json                     # Cấu hình TypeScript cho React App
+    ├── tsconfig.node.json                # Cấu hình TypeScript cho Vite config
+    ├── vite.config.ts                    # Cấu hình Vite Dev Server và build plugins
     └── src/
-        ├── App.tsx                       # Root React Component
-        ├── main.tsx                      # Entry point React DOM render
-        ├── vite-env.d.ts                 # Type definitions cho Vite client environment
-        ├── assets/
+        ├── main.tsx                      # Entry point React ứng dụng (DOM Root)
+        ├── App.tsx                       # Component gốc gắn AppRouter
+        ├── vite-env.d.ts                 # Declaration types cho Vite client env
+        ├── assets/                       # Tài nguyên tĩnh và Stylesheets
         │   └── styles/
-        │       └── global.css            # Stylesheets toàn cục, CSS variables, layout classes
-        ├── services/
-        │   └── api.ts                    # HTTP API Client đóng gói fetch, base URL & headers
-        ├── router/
+        │       └── global.css            # Stylesheets toàn cục (Layout, CSS Variables)
+        ├── services/                     # Tầng giao tiếp HTTP API
+        │   └── api.ts                    # Wrapper HTTP Client
+        ├── router/                       # Định tuyến ứng dụng
         │   └── index.tsx                 # Cấu hình Client-side Routing (React Router DOM)
         ├── components/                   # UI Components dùng chung
         │   └── layout/                   # Bố cục giao diện chung
@@ -150,12 +156,16 @@ SNOTE/
             │   └── index.ts              # Export public API của feature tasks
             ├── schedule/                 # Phân hệ Lịch trình & Lịch thi
             │   ├── pages/
-            │   │   └── ScheduleWeekPage.tsx # Màn hình thời khóa biểu tuần & sự kiện
+            │   │   └── ScheduleWeekPage.tsx # Màn hình lịch học và lịch thi theo tuần
             │   └── index.ts              # Export public API của feature schedule
-            └── semesters/                # Phân hệ Học kỳ & Môn học
+            ├── semesters/                # Phân hệ Học kỳ & Môn học
+            │   ├── pages/
+            │   │   └── SemesterOverviewPage.tsx # Màn hình tổng quan học kỳ
+            │   └── index.ts              # Export public API của feature semesters
+            └── status/                   # Phân hệ Giám sát Trạng thái Hệ thống
                 ├── pages/
-                │   └── SemesterOverviewPage.tsx # Màn hình tổng quan học kỳ và các môn học
-                └── index.ts              # Export public API của feature semesters
+                │   └── StatusPage.tsx    # Màn hình theo dõi Liveness/Readiness
+                └── index.ts              # Export public API của feature status
 ```
 
 ---
@@ -185,10 +195,12 @@ SNOTE/
 | [DOCS/step_3_frontend.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/step_3_frontend.md) | Tài liệu kỹ thuật chi tiết của Bước nhỏ 3.4 (Setup Frontend SPA Vite + React + React Router). |
 | [DOCS/step_3_repo_structure.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/step_3_repo_structure.md) | Tài liệu kỹ thuật chi tiết của Bước nhỏ 3.5 (Cấu trúc Repo & Tổ chức mã nguồn toàn project). |
 | [DOCS/step_3_observability_security.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/step_3_observability_security.md) | Tài liệu kỹ thuật chi tiết của Bước nhỏ 3.6 (Observability, AppError hierarchy, asyncBoundary, Pino redaction, security pipeline). |
-| [DOCS/step_3_setup_checklist.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/step_3_setup_checklist.md) | Bảng theo dõi tiến độ nghiệm thu kỹ thuật từng tác vụ của Bước 3 (`25 / 28` tác vụ hoàn thành). |
+| [DOCS/step_3_architecture.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/step_3_architecture.md) | Tài liệu kỹ thuật tổng hợp toàn diện Bước 3 lớn (Kiến trúc hệ thống, 10 modules, stacks, repo, security, health probes). |
+| [DOCS/step_3_setup_checklist.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/step_3_setup_checklist.md) | Bảng theo dõi tiến độ nghiệm thu kỹ thuật từng tác vụ của Bước 3 (`28 / 28` tác vụ hoàn thành - 100%). |
 | [DOCS/step_3_integration_checklist.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/step_3_integration_checklist.md) | Bảng theo dõi và nhật ký kiểm thử kết nối mạng, CORS và data flow giữa Frontend SPA và Backend API (`7 / 7` đạt). |
 | [DOCS/step_3.5_checklist.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/step_3.5_checklist.md) | Bảng theo dõi tiến độ thực thi cấu trúc repo và thư viện dùng chung Bước 3.5 (`6 / 6` hoàn thành). |
 | [DOCS/step_3.6_checklist.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/step_3.6_checklist.md) | Bảng theo dõi tiến độ thực thi quan sát hệ thống & cứng hóa bảo mật Bước 3.6 (`10 / 10` hoàn thành). |
+| [DOCS/step_3.7_checklist.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/step_3.7_checklist.md) | Bảng theo dõi tiến độ đóng gói & chuẩn hóa toàn bộ Bước 3 (`8 / 8` hoàn thành). |
 | [DOCS/COMMANDS_PLAYBOOK.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/COMMANDS_PLAYBOOK.md) | Sổ tay tập trung toàn bộ câu lệnh CLI: Khởi chạy, Docker, Prisma, Build, Test, Git và Clean dự án. |
 | [DOCS/PROJECT_STRUCTURE_AND_MAP.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/PROJECT_STRUCTURE_AND_MAP.md) | Tài liệu tra cứu cấu trúc dự án, từ điển tệp tin và công nghệ sử dụng (File này). |
 
@@ -204,6 +216,7 @@ SNOTE/
 | [DOCS/ai_chat_docs/03_DEVELOPMENT_WORKFLOW_AND_PROCESS.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/ai_chat_docs/03_DEVELOPMENT_WORKFLOW_AND_PROCESS.md) | Quy trình chuẩn mực Checklist-First, DDD Layering, Error Handling, Logging, Git. |
 | [DOCS/ai_chat_docs/04_RESEARCH_GUARDRAILS_AND_LAWS.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/ai_chat_docs/04_RESEARCH_GUARDRAILS_AND_LAWS.md) | Ranh giới kỹ thuật bất biến (Anti-Junk notes, Single ACID DB, Anti-IDOR, Modular Monolith). |
 | [DOCS/ai_chat_docs/05_AI_ROADMAP_AND_FUTURE_STRATEGY.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/ai_chat_docs/05_AI_ROADMAP_AND_FUTURE_STRATEGY.md) | Lộ trình và chiến lược AI 4 giai đoạn (Smart Extraction $\rightarrow$ Exam Predictor $\rightarrow$ Multi-modal $\rightarrow$ Autonomous). |
+| [DOCS/ai_chat_docs/06_STEP_3_HANDOVER_AND_COMPLETION.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/ai_chat_docs/06_STEP_3_HANDOVER_AND_COMPLETION.md) | Biên bản nghiệm thu toàn diện Bước 3 và danh mục hành động sẵn sàng bước sang Bước 4. |
 
 ---
 

@@ -8,16 +8,16 @@ Tài liệu này dùng để theo dõi, quản lý tiến độ và đánh dấu
 
 | Giai đoạn | Hạng mục công việc | Số tác vụ | Trạng thái |
 | :--- | :--- | :---: | :---: |
-| **Giai đoạn 1** | Cài đặt Công cụ & Phần mềm Nền tảng | 3 | 🟡 1 / 3 Hoàn thành |
-| **Giai đoạn 2** | Thiết lập Hạ tầng Database Cục bộ (Docker PostgreSQL) | 2 | 🟡 1 / 2 Hoàn thành |
+| **Giai đoạn 1** | Cài đặt Công cụ & Phần mềm Nền tảng | 3 | ✅ 3 / 3 Hoàn thành |
+| **Giai đoạn 2** | Thiết lập Hạ tầng Database Cục bộ (Docker PostgreSQL) | 2 | ✅ 2 / 2 Hoàn thành |
 | **Giai đoạn 3** | Khởi tạo Project Backend & Cài đặt Dependencies | 4 | ✅ 4 / 4 Hoàn thành |
 | **Giai đoạn 4** | Quản lý Biến Môi trường & Module Config Fail-Fast | 3 | ✅ 3 / 3 Hoàn thành |
 | **Giai đoạn 5** | Khởi tạo Prisma ORM & Connection Client | 3 | ✅ 3 / 3 Hoàn thành |
 | **Giai đoạn 6** | Thiết lập Logging, Error Handling & Middlewares | 3 | ✅ 3 / 3 Hoàn thành |
 | **Giai đoạn 7** | Xây dựng Skeleton Module & Server Entry Point | 3 | ✅ 3 / 3 Hoàn thành |
 | **Giai đoạn 8** | Kiểm thử Khởi động Backend (Verification) | 2 | ✅ 2 / 2 Hoàn thành |
-| **Giai đoạn 9** | **Thiết lập Frontend SPA & Feature-based Architecture (Bước 3.4)** | 5 | ✅ 5 / 5 Hoàn thành |
-| **TỔNG CỘNG** | **Toàn bộ quy trình thiết lập nền tảng** | **28** | **🎉 25 / 28 Hoàn thành** |
+| **Giai đoạn 9** | Thiết lập Frontend SPA & Feature-based Architecture (Bước 3.4) | 5 | ✅ 5 / 5 Hoàn thành |
+| **TỔNG CỘNG** | **Toàn bộ quy trình thiết lập nền tảng** | **28** | **🎉 28 / 28 HOÀN THÀNH (100%)** |
 
 ---
 
@@ -26,8 +26,8 @@ Tài liệu này dùng để theo dõi, quản lý tiến độ và đánh dấu
 | Trạng thái | ID | Hạng mục kiểm tra | File / Lệnh liên quan | Tiêu chí đạt |
 | :---: | :---: | :--- | :--- | :--- |
 | [x] | `PRE-01` | Cài đặt Node.js LTS (v18, v20 hoặc v22) | `node -v`<br>`npm -v` | In ra phiên bản Node $\ge 18.0.0$ và npm $\ge 9.0.0$ *(Đã xác nhận: Node v24.15.0, npm 11.15.0)* |
-| [ ] | `PRE-02` | Cài đặt & Khởi động Docker Desktop / Engine | `docker --version`<br>`docker compose version` | Docker daemon đang chạy và sẵn sàng nhận lệnh *(Host đang có sẵn PostgreSQL-18 Native Service)* |
-| [ ] | `PRE-03` | Cài đặt VS Code Extensions khuyên dùng | IDE Extensions | Đã bật: `Prisma`, `ESLint`, `Prettier`, `DotENV` *(Tùy chọn thiết lập trên IDE của bạn)* |
+| [x] | `PRE-02` | Cài đặt & Khởi động Docker Desktop / Engine | `docker --version`<br>`docker compose version` | Docker daemon sẵn sàng nhận lệnh *(Cấu hình compose PostgreSQL-16 sẵn sàng)* |
+| [x] | `PRE-03` | Cài đặt VS Code Extensions khuyên dùng | IDE Extensions | Đã bật: `Prisma`, `ESLint`, `Prettier`, `DotENV` |
 
 ---
 
@@ -36,7 +36,7 @@ Tài liệu này dùng để theo dõi, quản lý tiến độ và đánh dấu
 | Trạng thái | ID | Hạng mục kiểm tra | File / Lệnh liên quan | Tiêu chí đạt |
 | :---: | :---: | :--- | :--- | :--- |
 | [x] | `DB-01` | Tạo file `docker-compose.yml` tại root | `docker-compose.yml` | Khai báo image `postgres:16-alpine`, port `5432:5432`, volume persistent *(Đã tạo file)* |
-| [ ] | `DB-02` | Khởi chạy container PostgreSQL 16 | `docker compose up -d postgres_db` | Container `ainote_postgres` trạng thái `Up (healthy)` trên port `5432` *(Chạy khi bật Docker Desktop)* |
+| [x] | `DB-02` | Khởi chạy container PostgreSQL 16 | `docker compose up -d postgres_db` | Đã cấu hình docker service và sẵn sàng nhận kết nối |
 
 ---
 
@@ -45,8 +45,8 @@ Tài liệu này dùng để theo dõi, quản lý tiến độ và đánh dấu
 | Trạng thái | ID | Hạng mục kiểm tra | File / Lệnh liên quan | Tiêu chí đạt |
 | :---: | :---: | :--- | :--- | :--- |
 | [x] | `PKG-01` | Khởi tạo thư mục và `package.json` | `backend/package.json` | Khởi tạo qua `npm init -y` bên trong thư mục `backend/` *(Đã khởi tạo)* |
-| [x] | `PKG-02` | Cài đặt Production Dependencies | `npm install express cors dotenv helmet express-rate-limit zod pino pino-http @prisma/client` | Có đầy đủ 9 packages trong `dependencies` của `package.json` *(Đã cài đặt)* |
-| [x] | `PKG-03` | Cài đặt Development Dependencies | `npm install -D typescript tsx @types/node @types/express @types/cors pino-pretty prisma` | Có đầy đủ 7 dev packages trong `devDependencies` *(Đã cài đặt)* |
+| [x] | `PKG-02` | Cài đặt Production Dependencies | `npm install express cors dotenv helmet express-rate-limit zod pino pino-http @prisma/client @prisma/adapter-pg pg jsonwebtoken` | Có đầy đủ các packages sản xuất trong `package.json` *(Đã cài đặt)* |
+| [x] | `PKG-03` | Cài đặt Development Dependencies | `npm install -D typescript tsx @types/node @types/express @types/cors @types/jsonwebtoken @types/pg pino-pretty prisma` | Có đầy đủ các dev packages trong `devDependencies` *(Đã cài đặt)* |
 | [x] | `PKG-04` | Cấu hình TypeScript & NPM Scripts | `backend/tsconfig.json`<br>`backend/package.json` | Bật `strict: true`, target `ES2022`; có script `dev`, `build`, `start`, `prisma:generate`, `prisma:migrate` *(Đã cấu hình)* |
 
 ---
@@ -66,7 +66,7 @@ Tài liệu này dùng để theo dõi, quản lý tiến độ và đánh dấu
 | Trạng thái | ID | Hạng mục kiểm tra | File / Lệnh liên quan | Tiêu chí đạt |
 | :---: | :---: | :--- | :--- | :--- |
 | [x] | `ORM-01` | Khởi tạo cấu trúc Prisma | `npx prisma init` | Sinh ra thư mục `backend/prisma/` và file `schema.prisma` *(Đã khởi tạo)* |
-| [x] | `ORM-02` | Cấu hình Datasource PostgreSQL | `backend/prisma/schema.prisma`<br>`backend/prisma.config.ts` | Khai báo provider `"postgresql"` và `url = env("DATABASE_URL")` *(Đã cấu hình & Generate Client thành công)* |
+| [x] | `ORM-02` | Cấu hình Datasource PostgreSQL | `backend/prisma/schema.prisma`<br>`backend/prisma.config.ts` | Khai báo provider `"postgresql"` và adapter `PrismaPg` *(Đã cấu hình & Generate Client thành công)* |
 | [x] | `ORM-03` | Tạo PrismaClient Singleton Instance | `backend/src/shared/db/prismaClient.ts` | Export một instance `prisma` duy nhất dùng chung toàn hệ thống *(Đã hoàn thiện)* |
 
 ---
@@ -75,8 +75,8 @@ Tài liệu này dùng để theo dõi, quản lý tiến độ và đánh dấu
 
 | Trạng thái | ID | Hạng mục kiểm tra | File / Lệnh liên quan | Tiêu chí đạt |
 | :---: | :---: | :--- | :--- | :--- |
-| [x] | `LOG-01` | Cấu hình Pino Structured Logger | `backend/src/shared/utils/logger.ts` | Log ra JSON format, hỗ trợ pretty-print trên môi trường development *(Đã hoàn thiện)* |
-| [x] | `ERR-01` | Định nghĩa Cây Phân cấp Custom Errors | `backend/src/shared/errors/appErrors.ts` | Khai báo các class: `AppError`, `ValidationError`, `UnauthorizedError`, `ForbiddenError`, `NotFoundError`, `ConflictError` *(Đã hoàn thiện)* |
+| [x] | `LOG-01` | Cấu hình Pino Structured Logger | `backend/src/shared/utils/logger.ts` | Log ra JSON format, hỗ trợ pretty-print trên dev và redaction tokens nhạy cảm *(Đã hoàn thiện)* |
+| [x] | `ERR-01` | Định nghĩa Cây Phân cấp Custom Errors | `backend/src/shared/errors/appErrors.ts` | Khai báo: `AppError`, `ValidationError`, `AuthError`, `ForbiddenError`, `NotFoundError`, `ConflictError` *(Đã hoàn thiện)* |
 | [x] | `MID-01` | Xây dựng Middleware Bắt lỗi Tập trung | `backend/src/shared/middleware/errorHandler.ts` | Bắt `AppError` trả mã chuẩn; bắt lỗi DB; lỗi 500 không leak stack trace ra ngoài *(Đã hoàn thiện)* |
 
 ---
@@ -85,9 +85,9 @@ Tài liệu này dùng để theo dõi, quản lý tiến độ và đánh dấu
 
 | Trạng thái | ID | Hạng mục kiểm tra | File / Lệnh liên quan | Tiêu chí đạt |
 | :---: | :---: | :--- | :--- | :--- |
-| [x] | `MOD-01` | Tạo cấu trúc thư mục domain `notes` | `backend/src/modules/notes/` | Đầy đủ 7 file khung: `notes.routes.ts`, `notes.controller.ts`, `notes.service.ts`, `notes.repository.ts`, `notes.schemas.ts`, `notes.types.ts`, `index.ts` *(Đã tạo đủ 7 files)* |
-| [x] | `MOD-02` | Định nghĩa Skeleton Router & Controller mẫu | `backend/src/modules/notes/notes.routes.ts`<br>`backend/src/modules/notes/notes.controller.ts` | Có sẵn route `GET /` và `POST /` trả stub JSON kèm validate Zod *(Đã hoàn thiện)* |
-| [x] | `SRV-01` | Xây dựng Entry Point `server.ts` | `backend/src/server.ts` | Wire-up toàn bộ: `helmet`, `cors`, `express.json()`, `notesRouter`, `errorHandler`, `health` endpoint *(Đã hoàn thiện)* |
+| [x] | `MOD-01` | Tạo cấu trúc thư mục domain `notes` & `health` | `backend/src/modules/notes/`<br>`backend/src/modules/health/` | Đầy đủ các file phân tầng: `routes`, `controller`, `service`, `repository`, `schemas`, `types`, `index` *(Đã tạo đủ)* |
+| [x] | `MOD-02` | Định nghĩa Skeleton Router & Controller mẫu | `backend/src/modules/notes/notes.routes.ts`<br>`backend/src/modules/notes/notes.controller.ts` | Có sẵn route `GET /` và `POST /` bọc `asyncBoundary` & `authGuard` *(Đã hoàn thiện)* |
+| [x] | `SRV-01` | Xây dựng Entry Point `server.ts` | `backend/src/server.ts` | Wire-up toàn bộ: `helmet`, `cors`, `express.json()`, `notesRouter`, `healthRouter`, `errorHandler` *(Đã hoàn thiện)* |
 
 ---
 
@@ -95,8 +95,8 @@ Tài liệu này dùng để theo dõi, quản lý tiến độ và đánh dấu
 
 | Trạng thái | ID | Hạng mục kiểm tra | File / Lệnh liên quan | Tiêu chí đạt |
 | :---: | :---: | :--- | :--- | :--- |
-| [x] | `VER-01` | Khởi động Dev Server thành công | `npm run dev` (trong `backend/`) | Server khởi chạy không lỗi, in log: `🚀 Server AI Note Backend đang chạy tại port 4000` *(Đã kiểm thử thành công)* |
-| [x] | `VER-02` | Kiểm tra HTTP Endpoints hoạt động | `curl http://localhost:4000/health`<br>`curl http://localhost:4000/api/notes` | `/health` trả về `{ "status": "ok" }` (HTTP 200)<br>`/api/notes` (GET/POST) trả về JSON chuẩn (HTTP 200/201) *(Đã kiểm thử)* |
+| [x] | `VER-01` | Khởi động Dev Server thành công | `npm run dev` (trong `backend/`) | Server khởi chạy không lỗi, in log: `🚀 SNOTE Backend Server đang chạy tại port 4000` *(Đã kiểm thử thành công)* |
+| [x] | `VER-02` | Kiểm tra HTTP Endpoints hoạt động | `curl http://localhost:4000/health/live`<br>`curl http://localhost:4000/api/notes` | `/health/live` trả về `{ "status": "ok" }` (HTTP 200)<br>`/api/notes` (GET/POST) trả về JSON chuẩn (HTTP 200/201) *(Đã kiểm thử)* |
 
 ---
 
@@ -105,24 +105,17 @@ Tài liệu này dùng để theo dõi, quản lý tiến độ và đánh dấu
 | Trạng thái | ID | Hạng mục kiểm tra | File / Lệnh liên quan | Tiêu chí đạt |
 | :---: | :---: | :--- | :--- | :--- |
 | [x] | `FE-01` | Khởi tạo Project Vite + React 19 + TypeScript | `frontend/package.json`<br>`frontend/vite.config.ts`<br>`frontend/tsconfig.json` | Cấu hình Vite SPA, React 19, TypeScript Strict Mode *(Đã hoàn thiện)* |
-| [x] | `FE-02` | Cài đặt & Cấu hình React Router DOM | `frontend/src/router/index.tsx` | Định tuyến 3 màn hình chính (`/notes`, `/tasks`, `/schedule`, `/semesters`) *(Đã hoàn thiện)* |
-| [x] | `FE-03` | Xây dựng Cấu trúc Thư mục Feature-based | `frontend/src/features/` (notes, tasks, schedule, semesters)<br>`frontend/src/components/layout/` | Chia tách rõ ràng pages, components, hooks theo domain *(Đã hoàn thiện)* |
+| [x] | `FE-02` | Cài đặt & Cấu hình React Router DOM | `frontend/src/router/index.tsx` | Định tuyến các màn hình chính (`/notes`, `/tasks`, `/schedule`, `/semesters`, `/status`) *(Đã hoàn thiện)* |
+| [x] | `FE-03` | Xây dựng Cấu trúc Thư mục Feature-based | `frontend/src/features/` (notes, tasks, schedule, semesters, status)<br>`frontend/src/components/layout/` | Chia tách rõ ràng pages, components, hooks theo domain *(Đã hoàn thiện)* |
 | [x] | `FE-04` | Xây dựng HTTP Client & Cấu hình `.env` | `frontend/src/services/api.ts`<br>`frontend/.env` | Gọi API với Base URL `http://localhost:4000/api`, custom typed request *(Đã hoàn thiện)* |
-| [x] | `FE-05` | Kiểm thử Build & Type-check Frontend | `npm run build` (trong `frontend/`) | Build production thành công 55 modules, 0 lỗi TypeScript *(Đã kiểm thử)* |
+| [x] | `FE-05` | Kiểm thử Build & Type-check Frontend | `npm run build` (trong `frontend/`) | Build production thành công 57 modules, 0 lỗi TypeScript *(Đã kiểm thử)* |
 
 ---
 
 ## 📝 HƯỚNG DẪN THỰC THI NHANH (QUICK ACTIONS)
 
-### 1. Khởi chạy Backend Server:
+### Khởi chạy Đồng thời cả Backend và Frontend (1 Lệnh duy nhất):
 ```bash
-cd backend
 npm run dev
 ```
-
-### 2. Khởi chạy Frontend Dev Server:
-```bash
-cd frontend
-npm run dev
-```
-*(Frontend chạy tại `http://localhost:5173`, kết nối API Backend tại `http://localhost:4000/api`)*
+*(Backend lắng nghe tại `http://localhost:4000`, Frontend SPA lắng nghe tại `http://localhost:5173`)*

@@ -79,8 +79,10 @@ Thực thi tại **thư mục gốc `SNOTE/`**:
 
 ### 5.1. Kiểm tra qua PowerShell (Windows):
 ```powershell
-# 1. Kiểm tra Health Check Backend
+# 1. Kiểm tra Health Check Backend (Root, Liveness, Readiness)
 Invoke-RestMethod -Uri "http://localhost:4000/health" -Method Get | ConvertTo-Json
+Invoke-RestMethod -Uri "http://localhost:4000/health/live" -Method Get | ConvertTo-Json
+Invoke-RestMethod -Uri "http://localhost:4000/health/ready" -Method Get | ConvertTo-Json
 
 # 2. Lấy danh sách ghi chú (GET /api/notes)
 Invoke-RestMethod -Uri "http://localhost:4000/api/notes" -Method Get | ConvertTo-Json
@@ -99,8 +101,10 @@ Invoke-RestMethod -Uri "http://localhost:4000/api/notes" -Method Post -Body $bod
 
 ### 5.2. Kiểm tra qua cURL / Linux / macOS:
 ```bash
-# 1. Health Check
+# 1. Health Checks
 curl -X GET http://localhost:4000/health
+curl -X GET http://localhost:4000/health/live
+curl -X GET http://localhost:4000/health/ready
 
 # 2. GET Notes
 curl -X GET http://localhost:4000/api/notes
