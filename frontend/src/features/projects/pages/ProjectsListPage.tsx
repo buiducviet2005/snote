@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { api, ApiResponse } from '../../../services/api';
 import { useAppFilter } from '../../../contexts/AppFilterContext';
 import { useToast } from '../../../contexts/ToastContext';
+import { useAuth } from '../../../contexts/AuthContext';
 import { ProjectModal } from '../components/ProjectModal';
 import { TeamMembersModal } from '../components/TeamMembersModal';
 import { ProjectWorkspaceModal } from '../components/ProjectWorkspaceModal';
@@ -26,10 +27,12 @@ import {
   MailCheck,
   Check,
   X,
+  LogOut,
   ShieldAlert
 } from 'lucide-react';
 
 export const ProjectsListPage: React.FC = () => {
+  const { user } = useAuth();
   const { selectedSubjectId, selectedSemesterId } = useAppFilter();
   const [projects, setProjects] = useState<any[]>([]);
   const [invitations, setInvitations] = useState<any[]>([]);
@@ -55,7 +58,7 @@ export const ProjectsListPage: React.FC = () => {
       setProjects(resProjects.data || []);
       setInvitations(resInvites.data || []);
     } catch {
-      showToast('Không thể tải danh sách đồ án', 'error');
+      showToast('Không thể tải danh sách dự án', 'error');
     } finally {
       setLoading(false);
     }
@@ -69,7 +72,7 @@ export const ProjectsListPage: React.FC = () => {
     try {
       await api.post(`/projects/${id}/invitations/accept`, {});
       confetti({ particleCount: 70, spread: 60, origin: { y: 0.6 } });
-      showToast(`🎉 Bạn đã tham gia đồ án "${name}"!`, 'success');
+      showToast(`🎉 Bạn đã tham gia dự án "${name}"!`, 'success');
       fetchProjects();
     } catch (err: any) {
       showToast(err.message || 'Lỗi khi chấp nhận lời mời', 'error');
@@ -77,10 +80,10 @@ export const ProjectsListPage: React.FC = () => {
   };
 
   const handleDeclineInvitation = async (id: string, name: string) => {
-    if (!window.confirm(`Bạn có chắc chắn muốn từ chối tham gia đồ án "${name}" không?`)) return;
+    if (!window.confirm(`Bạn có chắc chắn muốn từ chối tham gia dự án "${name}" không?`)) return;
     try {
       await api.post(`/projects/${id}/invitations/decline`, {});
-      showToast(`Đã từ chối lời mời đồ án "${name}"`, 'info');
+      showToast(`Đã từ chối lời mời dự án "${name}"`, 'info');
       fetchProjects();
     } catch (err: any) {
       showToast(err.message || 'Lỗi khi từ chối lời mời', 'error');
@@ -88,14 +91,27 @@ export const ProjectsListPage: React.FC = () => {
   };
 
   const handleDelete = async (id: string, name: string) => {
-    if (!window.confirm(`Bạn có chắc chắn muốn xóa đồ án "${name}" không?`)) return;
+    if (!window.confirm(`Bạn có chắc chắn muốn xóa dự án / bài tập lớn "${name}" không?`)) return;
 
     try {
       await api.delete(`/projects/${id}`);
-      showToast(`Đã xóa đồ án "${name}"`, 'success');
+      showToast(`Đã xóa dự án "${name}"`, 'success');
       fetchProjects();
     } catch (err: any) {
-      showToast(err.message || 'Lỗi khi xóa đồ án', 'error');
+      showToast(err.message || 'Lỗi khi xóa dự án', 'error');
+    }
+  };
+
+  const handleLeave = async (id: string, name: string) => {
+    if (!user) return;
+    if (!window.confirm(`Bạn có chắc chắn muốn rời khỏi nhóm dự án "${name}" không?`)) return;
+
+    try {
+      await api.delete(`/projects/${id}/members/${user.id}`);
+      showToast(`Bạn đã rời khỏi nhóm dự án "${name}"`, 'success');
+      fetchProjects();
+    } catch (err: any) {
+      showToast(err.message || 'Lỗi khi rời nhóm', 'error');
     }
   };
 
@@ -113,19 +129,13 @@ export const ProjectsListPage: React.FC = () => {
   };
 
   return (
-    <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
-      {/* Top Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <h1 style={{ fontSize: '24px', fontWeight: 800, margin: 0, letterSpacing: '-0.02em' }}>
-              Quản Lý Đồ Án & Dự Án Nhóm
-            </h1>
-            <span className="badge badge-purple">{projects.length} đồ án</span>
-          </div>
-          <p style={{ margin: '4px 0 0 0', fontSize: '13.5px', color: 'var(--text-secondary)' }}>
-            Theo dõi tiến độ, phân công thành viên và xây dựng không gian làm việc số cho đồ án môn học
-          </p>
+    <div style={{ maxWidth: '1280px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '18px' }}>
+      {/* Top Action Bar */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <span className="badge badge-purple" style={{ fontSize: '11px', padding: '3px 8px' }}>
+            {projects.length} Dự án & Bài tập lớn
+          </span>
         </div>
 
         <button
@@ -133,11 +143,11 @@ export const ProjectsListPage: React.FC = () => {
             setProjectToEdit(null);
             setIsModalOpen(true);
           }}
-          className="btn btn-primary"
-          style={{ padding: '9px 18px', fontWeight: 700 }}
+          className="btn btn-primary btn-sm"
+          style={{ padding: '7px 14px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}
         >
-          <Plus size={16} />
-          <span>Tạo Đồ Án Mới</span>
+          <Plus size={15} />
+          <span>Tạo Dự Án Mới</span>
         </button>
       </div>
 
@@ -156,7 +166,7 @@ export const ProjectsListPage: React.FC = () => {
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
             <MailCheck size={18} style={{ color: 'var(--accent-primary)' }} />
             <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 800, color: 'var(--text-primary)' }}>
-              Lời Mời Tham Gia Đồ Án Nhóm ({invitations.length})
+              Lời Mời Tham Gia Dự Án Nhóm ({invitations.length})
             </h3>
           </div>
 
@@ -221,7 +231,7 @@ export const ProjectsListPage: React.FC = () => {
         <div style={{ textAlign: 'center', padding: '80px 0', color: 'var(--text-muted)' }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', fontSize: '14px' }}>
             <Sparkles size={18} className="pulse-urgent" style={{ color: 'var(--accent-primary)' }} />
-            <span>Đang tải danh sách đồ án...</span>
+            <span>Đang tải danh sách dự án...</span>
           </div>
         </div>
       ) : projects.length === 0 ? (
@@ -251,10 +261,10 @@ export const ProjectsListPage: React.FC = () => {
             <FolderKanban size={28} />
           </div>
           <h3 style={{ margin: '0 0 8px 0', fontSize: '17px', fontWeight: 700, color: 'var(--text-primary)' }}>
-            Chưa có đồ án hoặc dự án nhóm nào
+            Chưa có dự án hoặc bài tập lớn nào
           </h3>
           <p style={{ margin: '0 0 20px 0', fontSize: '13.5px', color: 'var(--text-secondary)', maxWidth: '420px', marginLeft: 'auto', marginRight: 'auto' }}>
-            Tạo không gian đồ án để theo dõi bài tập lớn, phân chia công việc cho thành viên và lưu trữ tài liệu nhóm.
+            Tạo không gian dự án để theo dõi bài tập lớn, phân chia công việc cho thành viên và lưu trữ tài liệu nhóm.
           </p>
           <button
             onClick={() => {
@@ -265,7 +275,7 @@ export const ProjectsListPage: React.FC = () => {
             style={{ padding: '10px 20px', fontWeight: 700 }}
           >
             <Plus size={16} />
-            <span>Tạo Đồ Án Đầu Tiên</span>
+            <span>Tạo Dự Án Đầu Tiên</span>
           </button>
         </div>
       ) : (
@@ -274,6 +284,9 @@ export const ProjectsListPage: React.FC = () => {
             const statusMeta = getStatusBadge(proj.status);
             const StatusIcon = statusMeta.icon;
             const membersCount = proj.members?.length || proj._count?.members || 1;
+            const currentMember = proj.members?.find((m: any) => m.userId === user?.id);
+            const isOwner = currentMember?.role === 'OWNER' || proj.userId === user?.id;
+            const isMember = Boolean(currentMember);
 
             return (
               <div
@@ -313,19 +326,30 @@ export const ProjectsListPage: React.FC = () => {
                           setIsModalOpen(true);
                         }}
                         className="btn btn-ghost btn-icon"
-                        title="Chỉnh sửa đồ án"
+                        title="Chỉnh sửa dự án"
                         style={{ padding: '6px', color: 'var(--text-secondary)' }}
                       >
                         <Edit3 size={15} />
                       </button>
-                      <button
-                        onClick={() => handleDelete(proj.id, proj.name)}
-                        className="btn btn-ghost btn-icon"
-                        title="Xóa đồ án"
-                        style={{ padding: '6px', color: 'var(--color-danger)' }}
-                      >
-                        <Trash2 size={15} />
-                      </button>
+                      {isOwner ? (
+                        <button
+                          onClick={() => handleDelete(proj.id, proj.name)}
+                          className="btn btn-ghost btn-icon"
+                          title="Xóa dự án / bài tập lớn (Chỉ Trưởng nhóm)"
+                          style={{ padding: '6px', color: 'var(--color-danger)' }}
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      ) : isMember ? (
+                        <button
+                          onClick={() => handleLeave(proj.id, proj.name)}
+                          className="btn btn-ghost btn-icon"
+                          title="Rời khỏi nhóm dự án"
+                          style={{ padding: '6px', color: 'var(--color-danger)' }}
+                        >
+                          <LogOut size={15} />
+                        </button>
+                      ) : null}
                     </div>
                   </div>
 
@@ -342,14 +366,14 @@ export const ProjectsListPage: React.FC = () => {
                       alignItems: 'center',
                       gap: '6px'
                     }}
-                    title="Mở Không Gian Làm Việc Đồ Án"
+                    title="Mở Không Gian Làm Việc Dự Án"
                   >
                     <span>{proj.name}</span>
                     <ExternalLink size={13} style={{ color: 'var(--text-muted)' }} />
                   </h3>
 
                   <p style={{ margin: '0 0 16px 0', fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                    {proj.description || 'Chưa có mô tả chi tiết cho đồ án này.'}
+                    {proj.description || 'Chưa có mô tả chi tiết cho dự án này.'}
                   </p>
 
                   {/* Stats Counter Row */}

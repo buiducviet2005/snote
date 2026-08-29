@@ -53,7 +53,7 @@ export class ProjectsService {
   async getProjectById(id: string, userId: string): Promise<ProjectResponseDto> {
     const project = await this.repo.findByIdAndUserId(id, userId);
     if (!project) {
-      throw new NotFoundError('Không tìm thấy đồ án yêu cầu hoặc bạn không có quyền truy cập');
+      throw new NotFoundError('Không tìm thấy dự án yêu cầu hoặc bạn không có quyền truy cập');
     }
     return this.mapDto(project);
   }
@@ -61,7 +61,7 @@ export class ProjectsService {
   async getProjectWorkspace(id: string, userId: string): Promise<ProjectWorkspaceDto> {
     const project = await this.repo.findWorkspaceById(id, userId);
     if (!project) {
-      throw new NotFoundError('Không tìm thấy đồ án hoặc bạn chưa là thành viên của đồ án này');
+      throw new NotFoundError('Không tìm thấy dự án hoặc bạn chưa là thành viên của dự án này');
     }
 
     return {
@@ -102,15 +102,20 @@ export class ProjectsService {
   }
 
   async updateProject(id: string, userId: string, dto: UpdateProjectDto): Promise<ProjectResponseDto> {
-    await this.getProjectById(id, userId);
+    const project = await this.getProjectById(id, userId);
+    const currentMember = project.members?.find((m) => m.userId === userId);
+    if (currentMember?.role === 'VIEWER') {
+      throw new ForbiddenError('Tài khoản của bạn chỉ có quyền Người xem (Viewer), không thể chỉnh sửa thông tin dự án');
+    }
     const updated = await this.repo.update(id, userId, dto);
     return this.mapDto(updated);
   }
 
   async deleteProject(id: string, userId: string): Promise<void> {
     const project = await this.getProjectById(id, userId);
-    if (project.members?.find((m) => m.userId === userId)?.role !== 'OWNER') {
-      throw new ForbiddenError('Chỉ Trưởng nhóm (Owner) mới có quyền xóa toàn bộ đồ án này');
+    const memberRole = project.members?.find((m) => m.userId === userId)?.role;
+    if (memberRole !== 'OWNER') {
+      throw new ForbiddenError('Chỉ Trưởng nhóm (Owner) mới có quyền xóa toàn bộ dự án / bài tập lớn này');
     }
     await this.repo.softDelete(id, userId);
   }
@@ -118,10 +123,15 @@ export class ProjectsService {
   async addMember(projectId: string, currentUserId: string, dto: AddProjectMemberDto): Promise<ProjectResponseDto> {
     const project = await this.getProjectById(projectId, currentUserId);
 
-    // Kiểm tra quyền: Chỉ OWNER mới có quyền thêm thành viên
+    // Kiểm tra quyền: Chỉ OWNER và ADMIN mới có quyền thêm/mời thành viên
     const currentMember = project.members?.find((m) => m.userId === currentUserId);
-    if (currentMember && currentMember.role === 'VIEWER') {
-      throw new ForbiddenError('Tài khoản của bạn chỉ có quyền Người xem (Viewer), không thể thêm thành viên');
+    if (!currentMember || (currentMember.role !== 'OWNER' && currentMember.role !== 'ADMIN')) {
+      throw new ForbiddenError('Chỉ Trưởng nhóm (Owner) hoặc Quản trị viên (Admin) mới có quyền mời thành viên vào dự án');
+    }
+
+    // Admin không thể tự phong thành viên mới thành OWNER
+    if (currentMember.role === 'ADMIN' && dto.role === 'OWNER') {
+      throw new ForbiddenError('Chỉ Trưởng nhóm (Owner) mới có quyền chỉ định vai trò Trưởng nhóm');
     }
 
     // Tìm target user theo email hoặc userId an toàn tránh lỗi cú pháp UUID
@@ -151,33 +161,67 @@ export class ProjectsService {
     dto: UpdateProjectMemberRoleDto
   ): Promise<ProjectResponseDto> {
     const project = await this.getProjectById(projectId, currentUserId);
-
-    // Chỉ OWNER mới có quyền thay đổi vai trò
     const currentMember = project.members?.find((m) => m.userId === currentUserId);
-    if (!currentMember || currentMember.role !== 'OWNER') {
-      throw new ForbiddenError('Chỉ Trưởng nhóm (Owner) mới có quyền thay đổi vai trò thành viên');
+    if (!currentMember || (currentMember.role !== 'OWNER' && currentMember.role !== 'ADMIN')) {
+      throw new ForbiddenError('Chỉ Trưởng nhóm (Owner) hoặc Quản trị viên (Admin) mới có quyền phân quyền thành viên');
     }
 
-    // Nếu chuyển quyền sang OWNER, cập nhật role cho targetUser
+    const targetMember = project.members?.find((m) => m.userId === targetUserId);
+    if (!targetMember) {
+      throw new NotFoundError('Không tìm thấy thành viên trong dự án này');
+    }
+
+    // Nếu current user là ADMIN:
+    if (currentMember.role === 'ADMIN') {
+      if (targetMember.role === 'OWNER') {
+        throw new ForbiddenError('Quản trị viên không thể thay đổi vai trò của Trưởng nhóm');
+      }
+      if (targetMember.role === 'ADMIN' && targetUserId !== currentUserId) {
+        throw new ForbiddenError('Quản trị viên không thể thay đổi vai trò của Quản trị viên khác');
+      }
+      if (dto.role === 'OWNER') {
+        throw new ForbiddenError('Chỉ Trưởng nhóm mới có quyền chuyển giao quyền Trưởng nhóm');
+      }
+    }
+
     await this.repo.updateMemberRole(projectId, targetUserId, dto.role);
     return this.getProjectById(projectId, currentUserId);
   }
 
   async removeMember(projectId: string, currentUserId: string, targetUserId: string): Promise<void> {
     const project = await this.getProjectById(projectId, currentUserId);
-
-    // Cho phép tự rời nhóm HOẶC Owner kick member
     const isSelf = currentUserId === targetUserId;
-    const isOwner = project.members?.find((m) => m.userId === currentUserId)?.role === 'OWNER';
+    const currentMember = project.members?.find((m) => m.userId === currentUserId);
+    const targetMember = project.members?.find((m) => m.userId === targetUserId);
 
-    if (!isSelf && !isOwner) {
-      throw new ForbiddenError('Bạn không có quyền xóa thành viên này khỏi đồ án');
+    if (!targetMember) {
+      throw new NotFoundError('Không tìm thấy thành viên cần thao tác trong dự án');
     }
 
-    // Không cho phép xóa Owner duy nhất nếu còn thành viên khác
-    const targetMember = project.members?.find((m) => m.userId === targetUserId);
-    if (targetMember?.role === 'OWNER' && (project.members?.length || 0) > 1 && isSelf) {
-      throw new ValidationError('Vui lòng chuyển giao quyền Trưởng nhóm trước khi rời khỏi đồ án');
+    if (isSelf) {
+      // 1. Tự rời nhóm (Out nhóm)
+      if (targetMember.role === 'OWNER' && (project.members?.length || 0) > 1) {
+        throw new ValidationError('Vui lòng chuyển giao quyền Trưởng nhóm (Owner) cho thành viên khác trước khi rời khỏi dự án');
+      }
+    } else {
+      // 2. Kick thành viên
+      if (!currentMember) {
+        throw new ForbiddenError('Bạn không phải là thành viên của dự án này');
+      }
+
+      if (currentMember.role === 'OWNER') {
+        // Owner có quyền kick bất kỳ ai khác
+      } else if (currentMember.role === 'ADMIN') {
+        // Admin có thể kick MEMBER hoặc VIEWER, nhưng KHÔNG kick OWNER hoặc ADMIN khác
+        if (targetMember.role === 'OWNER') {
+          throw new ForbiddenError('Quản trị viên không thể xóa Trưởng nhóm khỏi dự án');
+        }
+        if (targetMember.role === 'ADMIN') {
+          throw new ForbiddenError('Quản trị viên không thể xóa Quản trị viên khác khỏi dự án');
+        }
+      } else {
+        throw new ForbiddenError('Bạn không có quyền xóa thành viên này khỏi dự án');
+      }
     }
 
     await this.repo.removeMember(projectId, targetUserId);

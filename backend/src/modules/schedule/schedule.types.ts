@@ -10,6 +10,8 @@ export interface CreateScheduleEventDto {
   endTime: string;
   isRecurring?: boolean;
   recurrenceRule?: string;
+  repeatWeeks?: number;
+  notes?: string;
 }
 
 export interface UpdateScheduleEventDto {
@@ -43,16 +45,20 @@ export interface UnifiedScheduleItemDto {
   id: string;
   itemType: 'EVENT' | 'TASK' | 'PROJECT';
   title: string;
+  description?: string | null;
   location?: string | null;
   eventType: ScheduleEventType;
   startTime: Date;
   endTime: Date;
+  dueDate?: Date | null;
+  createdAt?: Date;
   isRecurring?: boolean;
   recurrenceRule?: string | null;
   status?: string | null;
   priority?: string | null;
   subjectId?: string | null;
   projectId?: string | null;
+  assignees?: Array<{ id: string; name: string; avatarUrl?: string | null }>;
   subject?: {
     id: string;
     name: string;

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Modal } from '../../../components/common/Modal';
+import { StudyDateTimePicker } from '../../../components/common/StudyDateTimePicker';
 import { api } from '../../../services/api';
 import { useToast } from '../../../contexts/ToastContext';
 import { useAppFilter } from '../../../contexts/AppFilterContext';
@@ -84,19 +85,19 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={projectToEdit ? 'Chỉnh Sửa Đồ Án' : 'Thêm Đồ Án Mới'}
+      title={projectToEdit ? 'Chỉnh Sửa Dự Án / Bài Tập Lớn' : 'Thêm Dự Án / Bài Tập Lớn Mới'}
       maxWidth="620px"
       icon={<FolderKanban size={20} />}
     >
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
         <div>
           <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
-            Tên đề tài / Đồ án môn học *
+            Tên dự án / đề tài / bài tập lớn *
           </label>
           <input
             type="text"
             required
-            placeholder="Ví dụ: Đồ án Xây dựng Ứng dụng SNOTE với Modular Monolith"
+            placeholder="Ví dụ: Dự án Xây dựng Ứng dụng SNOTE (Modular Monolith)"
             value={name}
             onChange={(e) => setName(e.target.value)}
             className="snote-input"
@@ -114,7 +115,7 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
               onChange={(e) => setSubjectId(e.target.value)}
               className="snote-select"
             >
-              <option value="">-- Dự án nghiên cứu độc lập --</option>
+              <option value="">-- Dự án nghiên cứu độc lập / Khởi nghiệp --</option>
               {subjects.map((sub) => (
                 <option key={sub.id} value={sub.id}>
                   {sub.code ? `[${sub.code}] ` : ''}{sub.name}
@@ -141,24 +142,21 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
         </div>
 
         <div>
-          <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
-            Hạn báo cáo / Nghiệm thu
-          </label>
-          <input
-            type="date"
+          <StudyDateTimePicker
             value={dueDate}
-            onChange={(e) => setDueDate(e.target.value)}
-            className="snote-input"
+            onChange={setDueDate}
+            label="Hạn báo cáo / Nghiệm thu / Nộp bài"
+            placeholder="Chọn ngày hạn nộp đồ án..."
           />
         </div>
 
         <div>
           <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
-            Mô tả mục tiêu đề tài
+            Mô tả mục tiêu dự án
           </label>
           <textarea
             rows={3}
-            placeholder="Mô tả công nghệ sử dụng, phân công nhiệm vụ hoặc tài liệu đề tài..."
+            placeholder="Mô tả công nghệ sử dụng, phân công nhiệm vụ, tài liệu hoặc mục tiêu đề tài..."
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             className="snote-textarea"
@@ -179,7 +177,7 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
             className="btn btn-primary"
           >
             <Save size={15} />
-            <span>{loading ? 'Đang lưu...' : projectToEdit ? 'Lưu Thay Đổi' : 'Tạo Đồ Án'}</span>
+            <span>{loading ? 'Đang lưu...' : projectToEdit ? 'Lưu Thay Đổi' : 'Tạo Dự Án'}</span>
           </button>
         </div>
       </form>

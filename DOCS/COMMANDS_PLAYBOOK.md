@@ -124,8 +124,23 @@ $noteBody = @{
 } | ConvertTo-Json
 Invoke-RestMethod -Uri "http://localhost:4000/api/notes" -Method Post -Body $noteBody -Headers $headers -ContentType "application/json" | ConvertTo-Json
 
-# 7. Xuất dữ liệu sao lưu tài khoản (GET /api/backup/export)
+# 7. Xuất dữ liệu sao lưu tài khoản JSON (GET /api/backup/export)
 Invoke-RestMethod -Uri "http://localhost:4000/api/backup/export" -Method Get -Headers $headers | ConvertTo-Json
+
+# 8. Tìm kiếm nâng cao toàn cục (GET /api/search?q=...)
+Invoke-RestMethod -Uri "http://localhost:4000/api/search?q=Database" -Method Get -Headers $headers | ConvertTo-Json
+
+# 9. Chia sẻ tài liệu (POST /api/shares)
+$shareBody = @{
+  targetType = "NOTE"
+  targetId = $noteId
+  sharedWithEmail = "banhoc@snote.edu.vn"
+  accessLevel = "VIEW"
+} | ConvertTo-Json
+Invoke-RestMethod -Uri "http://localhost:4000/api/shares" -Method Post -Body $shareBody -Headers $headers -ContentType "application/json" | ConvertTo-Json
+
+# 10. Xuất ghi chú định dạng Markdown (GET /api/backup/export-markdown)
+Invoke-RestMethod -Uri "http://localhost:4000/api/backup/export-markdown" -Method Get -Headers $headers | ConvertTo-Json
 ```
 
 ### 5.2. Kiểm tra qua cURL / Linux / macOS:

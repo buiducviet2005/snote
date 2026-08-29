@@ -27,7 +27,9 @@ import {
   Sparkles,
   Tag,
   AlertCircle,
-  Lock
+  Lock,
+  ShieldCheck,
+  LogOut
 } from 'lucide-react';
 
 interface ProjectWorkspaceModalProps {
@@ -76,7 +78,7 @@ export const ProjectWorkspaceModal: React.FC<ProjectWorkspaceModalProps> = ({
       const res = await api.get<ApiResponse<any>>(`/projects/${projectId}/workspace`);
       setWorkspaceData(res.data);
     } catch (err: any) {
-      showToast(err.message || 'Không thể tải không gian làm việc đồ án', 'error');
+      showToast(err.message || 'Không thể tải không gian làm việc dự án', 'error');
     } finally {
       setLoading(false);
     }
@@ -101,6 +103,8 @@ export const ProjectWorkspaceModal: React.FC<ProjectWorkspaceModalProps> = ({
 
   const currentMember = members.find((m) => m.userId === currentUser?.id);
   const isOwner = currentMember?.role === ProjectMemberRole.OWNER || project.userId === currentUser?.id;
+  const isAdmin = currentMember?.role === ProjectMemberRole.ADMIN;
+  const canManageProject = isOwner || isAdmin;
 
   // Toggle Task Status directly with Authorization Check
   const handleToggleTaskStatus = async (task: any) => {
@@ -110,10 +114,10 @@ export const ProjectWorkspaceModal: React.FC<ProjectWorkspaceModalProps> = ({
 
     const isAssignee = assigneesList.some((u: any) => (u.id || u.userId) === currentUser?.id);
     const isCreator = task.userId === currentUser?.id;
-    const canComplete = isAssignee || isCreator || isOwner;
+    const canComplete = isAssignee || isCreator || isOwner || isAdmin;
 
     if (!canComplete) {
-      showToast('🔒 Chỉ thành viên được phân công hoặc Trưởng nhóm mới có quyền hoàn thành task này', 'warning');
+      showToast('🔒 Chỉ thành viên được phân công hoặc Trưởng nhóm/Quản trị viên mới có quyền hoàn thành task này', 'warning');
       return;
     }
 
@@ -142,7 +146,7 @@ export const ProjectWorkspaceModal: React.FC<ProjectWorkspaceModalProps> = ({
         status: TaskStatus.TODO,
         priority: TaskPriority.MEDIUM
       });
-      showToast('Đã thêm công việc vào đồ án thành công!', 'success');
+      showToast('Đã thêm công việc vào dự án thành công!', 'success');
       setQuickTaskTitle('');
       fetchWorkspace();
       onRefreshParent();
@@ -164,8 +168,9 @@ export const ProjectWorkspaceModal: React.FC<ProjectWorkspaceModalProps> = ({
         emailOrUserId: inviteInput.trim(),
         role: inviteRole
       });
-      showToast('Đã thêm thành viên vào đồ án thành công!', 'success');
+      showToast('Đã thêm thành viên vào dự án thành công!', 'success');
       setInviteInput('');
+      setInviteRole(ProjectMemberRole.MEMBER);
       fetchWorkspace();
       onRefreshParent();
     } catch (err: any) {
@@ -177,6 +182,10 @@ export const ProjectWorkspaceModal: React.FC<ProjectWorkspaceModalProps> = ({
 
   // Update Member Role
   const handleUpdateRole = async (targetUserId: string, newRole: ProjectMemberRole, name: string) => {
+    if (newRole === ProjectMemberRole.OWNER) {
+      if (!window.confirm(`Bạn có chắc muốn chuyển giao quyền Trưởng nhóm (OWNER) cho "${name}"?`)) return;
+    }
+
     try {
       await api.put(`/projects/${projectId}/members/${targetUserId}`, { role: newRole });
       showToast(`Đã cập nhật vai trò của "${name}" thành ${newRole}`, 'success');
@@ -187,14 +196,14 @@ export const ProjectWorkspaceModal: React.FC<ProjectWorkspaceModalProps> = ({
     }
   };
 
-  // Remove Member
+  // Remove / Kick Member or Leave Project
   const handleRemoveMember = async (targetUserId: string, name: string) => {
     const isSelf = targetUserId === currentUser?.id;
-    if (!window.confirm(isSelf ? 'Bạn có chắc muốn rời khỏi đồ án này?' : `Bạn có chắc muốn xóa "${name}" khỏi đồ án?`)) return;
+    if (!window.confirm(isSelf ? 'Bạn có chắc muốn rời khỏi dự án này?' : `Bạn có chắc muốn xóa (kick) thành viên "${name}" khỏi dự án?`)) return;
 
     try {
       await api.delete(`/projects/${projectId}/members/${targetUserId}`);
-      showToast(isSelf ? 'Bạn đã rời nhóm đồ án' : `Đã xóa thành viên "${name}"`, 'success');
+      showToast(isSelf ? 'Bạn đã rời nhóm dự án thành công' : `Đã xóa thành viên "${name}" khỏi dự án`, 'success');
       fetchWorkspace();
       onRefreshParent();
       if (isSelf) onClose();
@@ -224,7 +233,7 @@ export const ProjectWorkspaceModal: React.FC<ProjectWorkspaceModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={`Không Gian Làm Việc Đồ Án: ${project.name || '...'}`}
+      title={`Không Gian Làm Việc Dự Án: ${project.name || '...'}`}
       maxWidth="1100px"
       icon={<FolderKanban size={22} />}
     >
@@ -401,7 +410,7 @@ export const ProjectWorkspaceModal: React.FC<ProjectWorkspaceModalProps> = ({
               <input
                 type="text"
                 required
-                placeholder="+ Thêm nhanh nhiệm vụ cho đồ án (Ví dụ: Thiết kế giao diện Dashboard)..."
+                placeholder="+ Thêm nhanh nhiệm vụ cho dự án / bài tập lớn (Ví dụ: Thiết kế giao diện Dashboard)..."
                 value={quickTaskTitle}
                 onChange={(e) => setQuickTaskTitle(e.target.value)}
                 className="snote-input"
@@ -446,7 +455,7 @@ export const ProjectWorkspaceModal: React.FC<ProjectWorkspaceModalProps> = ({
             </form>
 
             {/* Task list */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '420px', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {tasks.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-muted)', background: 'var(--bg-primary)', borderRadius: 'var(--radius-lg)', border: '1px dashed var(--border-color)' }}>
                   <CheckSquare size={32} style={{ opacity: 0.4, marginBottom: '8px' }} />
@@ -571,7 +580,7 @@ export const ProjectWorkspaceModal: React.FC<ProjectWorkspaceModalProps> = ({
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
               <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)' }}>
-                TÀI LIỆU KỸ THUẬT & NHẬT KÝ ĐỒ ÁN
+                TÀI LIỆU KỸ THUẬT & NHẬT KÝ DỰ ÁN / BTL
               </div>
               <button
                 onClick={() => setIsNoteModalOpen(true)}
@@ -579,15 +588,15 @@ export const ProjectWorkspaceModal: React.FC<ProjectWorkspaceModalProps> = ({
                 style={{ fontWeight: 600 }}
               >
                 <Plus size={14} />
-                <span>Thêm Ghi Chú Đồ Án</span>
+                <span>Thêm Ghi Chú Dự Án</span>
               </button>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '14px', maxHeight: '380px', overflowY: 'auto' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '14px' }}>
               {notes.length === 0 ? (
                 <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '40px 20px', color: 'var(--text-muted)', background: 'var(--bg-primary)', borderRadius: 'var(--radius-lg)', border: '1px dashed var(--border-color)' }}>
                   <FileText size={32} style={{ opacity: 0.4, marginBottom: '8px' }} />
-                  <p style={{ margin: 0, fontSize: '13.5px' }}>Chưa có ghi chú nào trong đồ án. Bấm <b>"Thêm Ghi Chú Đồ Án"</b> để viết nhật ký hoặc tài liệu.</p>
+                  <p style={{ margin: 0, fontSize: '13.5px' }}>Chưa có ghi chú nào trong dự án. Bấm <b>"Thêm Ghi Chú Dự Án"</b> để viết nhật ký hoặc tài liệu.</p>
                 </div>
               ) : (
                 notes.map((note) => (
@@ -638,8 +647,8 @@ export const ProjectWorkspaceModal: React.FC<ProjectWorkspaceModalProps> = ({
         {/* TAB 3: MEMBERS */}
         {activeTab === 'MEMBERS' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            {/* Invite Form */}
-            {isOwner && (
+            {/* Invite Form (Owner & Admin) */}
+            {canManageProject && (
               <form onSubmit={handleAddMember} style={{ display: 'flex', gap: '10px', backgroundColor: 'var(--bg-primary)', padding: '12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
                 <input
                   type="text"
@@ -655,6 +664,7 @@ export const ProjectWorkspaceModal: React.FC<ProjectWorkspaceModalProps> = ({
                   className="snote-select"
                   style={{ flex: 1, fontSize: '13px' }}
                 >
+                  {isOwner && <option value={ProjectMemberRole.ADMIN}>Quản trị viên (Admin)</option>}
                   <option value={ProjectMemberRole.MEMBER}>Thành viên (Member)</option>
                   <option value={ProjectMemberRole.VIEWER}>Chỉ xem (Viewer)</option>
                 </select>
@@ -665,10 +675,21 @@ export const ProjectWorkspaceModal: React.FC<ProjectWorkspaceModalProps> = ({
             )}
 
             {/* Members List */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '300px', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {members.map((m: any) => {
-                const isMemberOwner = m.role === 'OWNER' || m.userId === project.userId;
+                const isMemberOwner = m.role === ProjectMemberRole.OWNER || m.userId === project.userId;
+                const isMemberAdmin = m.role === ProjectMemberRole.ADMIN;
                 const isMe = m.userId === currentUser?.id;
+
+                const canKickThisMember =
+                  !isMe &&
+                  ((isOwner && !isMemberOwner) ||
+                   (isAdmin && !isMemberOwner && !isMemberAdmin));
+
+                const canChangeThisRole =
+                  !isMe &&
+                  ((isOwner && !isMemberOwner) ||
+                   (isAdmin && !isMemberOwner && !isMemberAdmin));
 
                 return (
                   <div
@@ -690,8 +711,16 @@ export const ProjectWorkspaceModal: React.FC<ProjectWorkspaceModalProps> = ({
                           width: '32px',
                           height: '32px',
                           borderRadius: 'var(--radius-full)',
-                          backgroundColor: isMemberOwner ? 'var(--color-warning-subtle)' : 'var(--accent-subtle)',
-                          color: isMemberOwner ? 'var(--color-warning)' : 'var(--accent-primary)',
+                          backgroundColor: isMemberOwner
+                            ? 'var(--color-warning-subtle)'
+                            : isMemberAdmin
+                            ? 'rgba(168, 85, 247, 0.15)'
+                            : 'var(--accent-subtle)',
+                          color: isMemberOwner
+                            ? 'var(--color-warning)'
+                            : isMemberAdmin
+                            ? '#a855f7'
+                            : 'var(--accent-primary)',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
@@ -699,13 +728,14 @@ export const ProjectWorkspaceModal: React.FC<ProjectWorkspaceModalProps> = ({
                           fontWeight: 700
                         }}
                       >
-                        {isMemberOwner ? <Crown size={16} /> : (m.user?.fullName?.charAt(0) || <User size={15} />)}
+                        {isMemberOwner ? <Crown size={16} /> : isMemberAdmin ? <ShieldCheck size={16} /> : (m.user?.fullName?.charAt(0) || <User size={15} />)}
                       </div>
                       <div>
                         <div style={{ fontSize: '13.5px', fontWeight: 600, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <span>{m.user?.fullName || 'Thành viên'}</span>
                           {isMe && <span className="badge badge-blue" style={{ fontSize: '9.5px', padding: '1px 5px' }}>Bạn</span>}
                           {isMemberOwner && <span className="badge badge-amber" style={{ fontSize: '9.5px', padding: '1px 5px' }}>Trưởng nhóm</span>}
+                          {isMemberAdmin && !isMemberOwner && <span className="badge badge-purple" style={{ fontSize: '9.5px', padding: '1px 5px' }}>Quản trị viên</span>}
                         </div>
                         <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
                           {m.user?.email || m.userId}
@@ -714,32 +744,51 @@ export const ProjectWorkspaceModal: React.FC<ProjectWorkspaceModalProps> = ({
                     </div>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      {isOwner && !isMemberOwner ? (
+                      {canChangeThisRole ? (
                         <select
                           value={m.role}
                           onChange={(e) => handleUpdateRole(m.userId, e.target.value as ProjectMemberRole, m.user?.fullName || 'thành viên')}
                           className="snote-select"
                           style={{ fontSize: '12px', padding: '3px 8px', width: 'auto' }}
                         >
+                          {isOwner && <option value={ProjectMemberRole.OWNER}>Trưởng nhóm</option>}
+                          {isOwner && <option value={ProjectMemberRole.ADMIN}>Quản trị viên</option>}
                           <option value={ProjectMemberRole.MEMBER}>Thành viên</option>
                           <option value={ProjectMemberRole.VIEWER}>Chỉ xem</option>
-                          <option value={ProjectMemberRole.OWNER}>Trưởng nhóm</option>
                         </select>
                       ) : (
-                        <span className={`badge ${isMemberOwner ? 'badge-amber' : 'badge-green'}`} style={{ fontSize: '11px' }}>
-                          {m.role}
+                        <span
+                          className={`badge ${isMemberOwner ? 'badge-amber' : isMemberAdmin ? 'badge-purple' : m.role === ProjectMemberRole.VIEWER ? 'badge-neutral' : 'badge-green'}`}
+                          style={{ fontSize: '11px' }}
+                        >
+                          {isMemberOwner ? 'Trưởng nhóm' : isMemberAdmin ? 'Quản trị viên' : m.role === ProjectMemberRole.VIEWER ? 'Chỉ xem' : 'Thành viên'}
                         </span>
                       )}
 
-                      {isOwner && !isMemberOwner && (
+                      {/* Kick Member */}
+                      {canKickThisMember && (
                         <button
                           type="button"
                           onClick={() => handleRemoveMember(m.userId, m.user?.fullName || 'thành viên')}
                           className="btn btn-ghost btn-icon btn-sm"
                           style={{ color: 'var(--color-danger)', padding: '4px' }}
-                          title="Xóa thành viên"
+                          title="Xóa (kick) thành viên khỏi dự án"
                         >
                           <Trash2 size={14} />
+                        </button>
+                      )}
+
+                      {/* Leave Project for Self */}
+                      {isMe && !isMemberOwner && (
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveMember(m.userId, 'chính bạn')}
+                          className="btn btn-ghost btn-sm"
+                          style={{ color: 'var(--color-danger)', padding: '3px 6px', fontSize: '11.5px', display: 'flex', alignItems: 'center', gap: '3px' }}
+                          title="Rời khỏi nhóm dự án"
+                        >
+                          <LogOut size={12} />
+                          <span>Rời nhóm</span>
                         </button>
                       )}
                     </div>
@@ -755,8 +804,7 @@ export const ProjectWorkspaceModal: React.FC<ProjectWorkspaceModalProps> = ({
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             <div
               style={{
-                height: '260px',
-                overflowY: 'auto',
+                minHeight: '280px',
                 padding: '14px',
                 backgroundColor: 'var(--bg-primary)',
                 borderRadius: 'var(--radius-md)',
@@ -769,7 +817,7 @@ export const ProjectWorkspaceModal: React.FC<ProjectWorkspaceModalProps> = ({
               {discussions.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)', fontSize: '13px' }}>
                   <MessageSquare size={24} style={{ opacity: 0.4, marginBottom: '6px' }} />
-                  <p style={{ margin: 0 }}>Bảng thảo luận nội bộ đồ án. Gửi tin nhắn đầu tiên để cùng nhóm trao đổi!</p>
+                  <p style={{ margin: 0 }}>Bảng thảo luận nội bộ dự án. Gửi tin nhắn đầu tiên để cùng nhóm trao đổi!</p>
                 </div>
               ) : (
                 discussions.map((msg) => (
@@ -801,7 +849,7 @@ export const ProjectWorkspaceModal: React.FC<ProjectWorkspaceModalProps> = ({
             <form onSubmit={handleSendDiscussion} style={{ display: 'flex', gap: '8px' }}>
               <input
                 type="text"
-                placeholder="Nhập tin nhắn trao đổi với nhóm đồ án..."
+                placeholder="Nhập tin nhắn trao đổi với nhóm dự án..."
                 value={msgInput}
                 onChange={(e) => setMsgInput(e.target.value)}
                 className="snote-input"

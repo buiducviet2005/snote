@@ -11,6 +11,15 @@ export class AuthRepository {
     });
   }
 
+  async findUserByGoogleId(googleId: string): Promise<User | null> {
+    return prisma.user.findFirst({
+      where: {
+        googleId,
+        deletedAt: null
+      }
+    });
+  }
+
   async findUserById(id: string): Promise<User | null> {
     return prisma.user.findFirst({
       where: {
@@ -32,6 +41,37 @@ export class AuthRepository {
         passwordHash: data.passwordHash,
         fullName: data.fullName,
         timezone: data.timezone || 'Asia/Ho_Chi_Minh'
+      }
+    });
+  }
+
+  async createGoogleUser(data: {
+    email: string;
+    fullName: string;
+    avatarUrl?: string | null;
+    googleId: string;
+    timezone?: string;
+  }): Promise<User> {
+    return prisma.user.create({
+      data: {
+        email: data.email.toLowerCase().trim(),
+        fullName: data.fullName,
+        avatarUrl: data.avatarUrl,
+        googleId: data.googleId,
+        timezone: data.timezone || 'Asia/Ho_Chi_Minh'
+      }
+    });
+  }
+
+  async linkGoogleAccount(userId: string, data: {
+    googleId: string;
+    avatarUrl?: string | null;
+  }): Promise<User> {
+    return prisma.user.update({
+      where: { id: userId },
+      data: {
+        googleId: data.googleId,
+        ...(data.avatarUrl ? { avatarUrl: data.avatarUrl } : {})
       }
     });
   }

@@ -1,7 +1,7 @@
 import { NoteType } from '@prisma/client';
 
 export interface CreateNoteDto {
-  title: string;
+  title?: string;
   content: string;
   subjectId?: string | null;
   projectId?: string | null;

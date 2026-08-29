@@ -50,8 +50,20 @@ export class NotesRepository {
   }
 
   async findById(id: string, userId: string): Promise<any | null> {
+    const hasShare = await prisma.resourceShare.findFirst({
+      where: {
+        targetType: 'NOTE',
+        targetId: id,
+        OR: [{ sharedWithUserId: userId }, { isPublic: true }]
+      }
+    });
+
     return prisma.note.findFirst({
-      where: { id, userId, deletedAt: null },
+      where: {
+        id,
+        deletedAt: null,
+        ...(hasShare ? {} : { userId })
+      },
       include: {
         subject: {
           select: { id: true, name: true, code: true, color: true }
@@ -90,7 +102,7 @@ export class NotesRepository {
     return prisma.note.create({
       data: {
         userId,
-        title: data.title,
+        title: data.title || 'Ghi chú không tiêu đề',
         content: data.content,
         subjectId: data.subjectId || null,
         projectId: data.projectId || null,

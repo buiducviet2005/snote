@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAppFilter } from '../../contexts/AppFilterContext';
 import { useNavigate } from 'react-router-dom';
 import { QuickActionModal } from '../common/QuickActionModal';
+import { GlobalSearchModal } from '../common/GlobalSearchModal';
 import { NoteModal } from '../../features/notes/components/NoteModal';
 import { TaskModal } from '../../features/tasks/components/TaskModal';
 import { EventModal } from '../../features/schedule/components/EventModal';
@@ -12,7 +13,8 @@ import {
   Plus,
   Sparkles,
   ChevronDown,
-  Clock
+  Clock,
+  Search
 } from 'lucide-react';
 
 export const Topbar: React.FC = () => {
@@ -27,9 +29,22 @@ export const Topbar: React.FC = () => {
 
   const navigate = useNavigate();
   const [isQuickActionOpen, setIsQuickActionOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [isEventModalOpen, setIsEventModalOpen] = useState(false);
+
+  // Global shortcut Ctrl+K / Cmd+K
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setIsSearchOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const filteredSubjects = selectedSemesterId
     ? subjects.filter((s) => s.semesterId === selectedSemesterId)
@@ -132,8 +147,46 @@ export const Topbar: React.FC = () => {
           )}
         </div>
 
-        {/* Action Controls */}
+        {/* Action Controls & Search Trigger */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+          {/* Global Search Button */}
+          <button
+            onClick={() => setIsSearchOpen(true)}
+            className="snote-card"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '6px 14px',
+              borderRadius: 'var(--radius-lg)',
+              backgroundColor: 'var(--bg-secondary)',
+              border: '1px solid var(--border-color)',
+              color: 'var(--text-muted)',
+              fontSize: '12.5px',
+              cursor: 'pointer',
+              minWidth: '200px',
+              justifyContent: 'space-between'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Search size={14} style={{ color: 'var(--accent-primary)' }} />
+              <span>Tìm kiếm nhanh...</span>
+            </div>
+            <span
+              style={{
+                fontSize: '10.5px',
+                fontWeight: 700,
+                padding: '1.5px 6px',
+                borderRadius: '4px',
+                backgroundColor: 'var(--bg-tertiary)',
+                color: 'var(--text-secondary)',
+                border: '1px solid var(--border-subtle)'
+              }}
+            >
+              Ctrl+K
+            </span>
+          </button>
+
           {/* Quick Action Button */}
           <button
             onClick={() => setIsQuickActionOpen(true)}
@@ -150,6 +203,12 @@ export const Topbar: React.FC = () => {
           </button>
         </div>
       </header>
+
+      {/* Global Search Dialog Modal */}
+      <GlobalSearchModal
+        isOpen={isSearchOpen}
+        onClose={() => setIsSearchOpen(false)}
+      />
 
       {/* Global Quick Action Selector Modal */}
       <QuickActionModal

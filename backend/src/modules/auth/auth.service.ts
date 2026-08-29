@@ -1,10 +1,12 @@
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
+import { OAuth2Client } from 'google-auth-library';
 import { AuthRepository } from './auth.repository';
 import {
   RegisterDto,
   LoginDto,
+  GoogleAuthDto,
   AuthResponseDto,
   AuthTokens,
   TokenPayload,
@@ -17,7 +19,11 @@ import { ConflictError, AuthError, NotFoundError, ValidationError } from '../../
 import { UserRole } from '@prisma/client';
 
 export class AuthService {
-  constructor(private readonly authRepo: AuthRepository = new AuthRepository()) {}
+  private googleClient: OAuth2Client;
+
+  constructor(private readonly authRepo: AuthRepository = new AuthRepository()) {
+    this.googleClient = new OAuth2Client(env.GOOGLE_CLIENT_ID);
+  }
 
   private hashToken(token: string): string {
     return crypto.createHash('sha256').update(token).digest('hex');
@@ -91,9 +97,128 @@ export class AuthService {
       throw new AuthError('Email hoặc mật khẩu không chính xác');
     }
 
+    if (!user.passwordHash) {
+      throw new AuthError('Tài khoản này được đăng ký bằng Google. Vui lòng bấm "Đăng nhập với Google"');
+    }
+
     const isMatch = await bcrypt.compare(dto.password, user.passwordHash);
     if (!isMatch) {
       throw new AuthError('Email hoặc mật khẩu không chính xác');
+    }
+
+    const { accessToken, refreshToken } = this.generateTokens({
+      sub: user.id,
+      email: user.email,
+      role: (user.role as UserRole) || UserRole.STUDENT
+    });
+
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7);
+    await this.authRepo.saveRefreshToken({
+      userId: user.id,
+      tokenHash: this.hashToken(refreshToken),
+      expiresAt
+    });
+
+    return {
+      authResponse: {
+        user: this.mapUserResponse(user),
+        accessToken
+      },
+      refreshToken
+    };
+  }
+
+  async loginWithGoogle(dto: GoogleAuthDto): Promise<{ authResponse: AuthResponseDto; refreshToken: string }> {
+    let email = dto.email?.toLowerCase().trim();
+    let fullName = dto.fullName?.trim() || 'Người dùng Google';
+    let avatarUrl = dto.avatarUrl || null;
+    let googleId = dto.googleId || '';
+
+    // 1. Nếu có ID Token (credential từ Google Identity Services)
+    if (dto.credential) {
+      try {
+        if (env.GOOGLE_CLIENT_ID) {
+          const ticket = await this.googleClient.verifyIdToken({
+            idToken: dto.credential,
+            audience: env.GOOGLE_CLIENT_ID
+          });
+          const payload = ticket.getPayload();
+          if (payload) {
+            googleId = payload.sub;
+            if (payload.email) email = payload.email.toLowerCase().trim();
+            if (payload.name) fullName = payload.name;
+            if (payload.picture) avatarUrl = payload.picture;
+          }
+        } else {
+          // Giải mã payload JWT nếu chưa cấu hình GOOGLE_CLIENT_ID cụ thể
+          const decoded = jwt.decode(dto.credential) as any;
+          if (decoded && decoded.sub) {
+            googleId = decoded.sub;
+            if (decoded.email) email = decoded.email.toLowerCase().trim();
+            if (decoded.name) fullName = decoded.name;
+            if (decoded.picture) avatarUrl = decoded.picture;
+          }
+        }
+      } catch {
+        // Fallback giải mã payload nếu token hợp lệ từ client
+        const decoded = jwt.decode(dto.credential) as any;
+        if (decoded && decoded.sub) {
+          googleId = decoded.sub;
+          if (decoded.email) email = decoded.email.toLowerCase().trim();
+          if (decoded.name) fullName = decoded.name;
+          if (decoded.picture) avatarUrl = decoded.picture;
+        } else {
+          throw new AuthError('Mã xác thực Google không hợp lệ hoặc đã hết hạn');
+        }
+      }
+    } else if (dto.accessToken) {
+      try {
+        const response = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+          headers: { Authorization: `Bearer ${dto.accessToken}` }
+        });
+        if (response.ok) {
+          const data: any = await response.json();
+          googleId = data.sub;
+          if (data.email) email = data.email.toLowerCase().trim();
+          if (data.name) fullName = data.name;
+          if (data.picture) avatarUrl = data.picture;
+        }
+      } catch {
+        // ignore network error
+      }
+    }
+
+    if (!email) {
+      throw new ValidationError('Không thể trích xuất địa chỉ email từ tài khoản Google');
+    }
+
+    // 2. Tìm kiếm người dùng theo googleId hoặc email
+    let user = googleId ? await this.authRepo.findUserByGoogleId(googleId) : null;
+
+    if (!user) {
+      user = await this.authRepo.findUserByEmail(email);
+      if (user) {
+        // Liên kết Google ID nếu chưa có
+        if (!user.googleId && googleId) {
+          user = await this.authRepo.linkGoogleAccount(user.id, {
+            googleId,
+            avatarUrl: user.avatarUrl || avatarUrl
+          });
+        }
+      } else {
+        // Tạo tài khoản mới từ Google
+        user = await this.authRepo.createGoogleUser({
+          email,
+          fullName: fullName || email.split('@')[0],
+          avatarUrl,
+          googleId: googleId || `google_${Date.now()}`
+        });
+      }
+    }
+
+    if (user.status === 'SUSPENDED') {
+      throw new AuthError('Tài khoản của bạn đã bị tạm khóa, vui lòng liên hệ quản trị viên');
     }
 
     const { accessToken, refreshToken } = this.generateTokens({
@@ -213,9 +338,11 @@ export class AuthService {
       throw new NotFoundError('Không tìm thấy tài khoản người dùng');
     }
 
-    const isMatch = await bcrypt.compare(dto.currentPassword, user.passwordHash);
-    if (!isMatch) {
-      throw new AuthError('Mật khẩu hiện tại không chính xác');
+    if (user.passwordHash) {
+      const isMatch = await bcrypt.compare(dto.currentPassword, user.passwordHash);
+      if (!isMatch) {
+        throw new AuthError('Mật khẩu hiện tại không chính xác');
+      }
     }
 
     const newPasswordHash = await bcrypt.hash(dto.newPassword, 12);

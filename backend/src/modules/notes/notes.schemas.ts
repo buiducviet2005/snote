@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 export const createNoteSchema = z.object({
-  title: z.string().trim().min(1, 'Tiêu đề ghi chú không được để trống').max(255),
+  title: z.string().trim().max(255).optional().default(''),
   content: z.string().min(1, 'Nội dung ghi chú không được để trống'),
   subjectId: z.string().uuid('ID môn học không hợp lệ').nullable().optional(),
   projectId: z.string().uuid('ID đồ án không hợp lệ').nullable().optional(),
@@ -12,7 +12,7 @@ export const createNoteSchema = z.object({
 });
 
 export const updateNoteSchema = z.object({
-  title: z.string().trim().min(1).max(255).optional(),
+  title: z.string().trim().max(255).optional(),
   content: z.string().min(1).optional(),
   subjectId: z.string().uuid('ID môn học không hợp lệ').nullable().optional(),
   projectId: z.string().uuid('ID đồ án không hợp lệ').nullable().optional(),

@@ -47,6 +47,7 @@ export class ScheduleRepository {
     }));
 
     // 2. Fetch Tasks with due date in range
+    // 2. Fetch Tasks with due date in range or created in range
     if (startDate && endDate) {
       const tasks = await prisma.task.findMany({
         where: {
@@ -56,6 +57,16 @@ export class ScheduleRepository {
           subjectId: subjectId || undefined
         },
         include: {
+          user: {
+            select: { id: true, fullName: true, avatarUrl: true }
+          },
+          assignees: {
+            include: {
+              user: {
+                select: { id: true, fullName: true, avatarUrl: true }
+              }
+            }
+          },
           subject: {
             select: { id: true, name: true, code: true, color: true }
           },
@@ -67,18 +78,35 @@ export class ScheduleRepository {
 
       for (const t of tasks) {
         if (t.dueDate) {
+          const assigneesList = (t.assignees || []).map((ta: any) => ({
+            id: ta.user?.id || ta.userId,
+            name: ta.user?.fullName || 'Thành viên',
+            avatarUrl: ta.user?.avatarUrl
+          }));
+          if (assigneesList.length === 0 && t.user) {
+            assigneesList.push({
+              id: t.user.id,
+              name: t.user.fullName,
+              avatarUrl: t.user.avatarUrl
+            });
+          }
+
           unifiedList.push({
             id: t.id,
             itemType: 'TASK',
             title: t.title,
+            description: t.description,
             location: t.project ? `Đồ án: ${t.project.name}` : undefined,
             eventType: 'DEADLINE',
-            startTime: t.dueDate,
+            startTime: t.createdAt && t.createdAt < t.dueDate ? t.createdAt : t.dueDate,
             endTime: t.dueDate,
+            dueDate: t.dueDate,
+            createdAt: t.createdAt,
             status: t.status,
             priority: t.priority,
             subjectId: t.subjectId,
             projectId: t.projectId,
+            assignees: assigneesList,
             subject: t.subject,
             project: t.project
           });
@@ -109,10 +137,13 @@ export class ScheduleRepository {
             id: p.id,
             itemType: 'PROJECT',
             title: `[Hạn Đồ Án] ${p.name}`,
+            description: p.description,
             location: p.description ? p.description.slice(0, 50) : undefined,
             eventType: 'DEADLINE',
-            startTime: p.dueDate,
+            startTime: p.startDate || p.createdAt || p.dueDate,
             endTime: p.dueDate,
+            dueDate: p.dueDate,
+            createdAt: p.createdAt,
             status: p.status,
             subjectId: p.subjectId,
             projectId: p.id,

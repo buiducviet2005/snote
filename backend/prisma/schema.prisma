@@ -54,6 +54,7 @@ enum ProjectStatus {
 
 enum ProjectMemberRole {
   OWNER
+  ADMIN
   MEMBER
   VIEWER
 
@@ -107,6 +108,23 @@ enum ScheduleEventType {
   @@map("schedule_event_type")
 }
 
+enum ShareTargetType {
+  NOTE
+  TASK
+  PROJECT
+  COLLECTION
+
+  @@map("share_target_type")
+}
+
+enum ShareAccessLevel {
+  VIEW
+  EDIT
+  ADMIN
+
+  @@map("share_access_level")
+}
+
 // ----------------------------------------------------
 // MODELS
 // ----------------------------------------------------
@@ -114,7 +132,8 @@ enum ScheduleEventType {
 model User {
   id           String     @id @default(uuid()) @db.Uuid
   email        String     @unique @db.VarChar(255)
-  passwordHash String     @map("password_hash") @db.VarChar(255)
+  passwordHash String?    @map("password_hash") @db.VarChar(255)
+  googleId     String?    @unique @map("google_id") @db.VarChar(255)
   fullName     String     @map("full_name") @db.VarChar(100)
   avatarUrl    String?    @map("avatar_url")
   timezone     String     @default("Asia/Ho_Chi_Minh") @db.VarChar(50)
@@ -136,6 +155,8 @@ model User {
   tags               Tag[]
   scheduleEvents     ScheduleEvent[]
   backups            BackupRecord[]
+  createdShares      ResourceShare[] @relation("SharedResourcesOwner")
+  receivedShares     ResourceShare[] @relation("SharedResourcesRecipient")
 
   @@map("users")
 }
@@ -173,6 +194,8 @@ model Semester {
   scheduleEvents ScheduleEvent[]
 
   @@index([userId])
+  @@index([userId, deletedAt])
+  @@index([userId, isCurrent])
   @@map("semesters")
 }
 
@@ -199,6 +222,9 @@ model Subject {
 
   @@index([userId])
   @@index([semesterId])
+  @@index([userId, deletedAt])
+  @@index([userId, semesterId, deletedAt])
+  @@index([status, deletedAt])
   @@map("subjects")
 }
 
@@ -225,6 +251,9 @@ model Project {
 
   @@index([userId])
   @@index([subjectId])
+  @@index([userId, deletedAt])
+  @@index([userId, status, deletedAt])
+  @@index([userId, dueDate])
   @@map("projects")
 }
 
@@ -268,6 +297,10 @@ model Note {
   @@index([userId])
   @@index([subjectId])
   @@index([projectId])
+  @@index([userId, deletedAt])
+  @@index([userId, subjectId, deletedAt])
+  @@index([userId, isPinned, deletedAt])
+  @@index([userId, createdAt])
   @@map("notes")
 }
 
@@ -324,6 +357,10 @@ model Task {
   @@index([subjectId])
   @@index([projectId])
   @@index([status])
+  @@index([userId, deletedAt])
+  @@index([userId, status, deletedAt])
+  @@index([userId, priority, deletedAt])
+  @@index([userId, dueDate, deletedAt])
   @@map("tasks")
 }
 
@@ -386,7 +423,33 @@ model ScheduleEvent {
   @@index([userId])
   @@index([semesterId])
   @@index([startTime, endTime])
+  @@index([userId, deletedAt])
+  @@index([userId, startTime, endTime, deletedAt])
   @@map("schedule_events")
+}
+
+model ResourceShare {
+  id               String           @id @default(uuid()) @db.Uuid
+  ownerId          String           @map("owner_id") @db.Uuid
+  targetType       ShareTargetType  @map("target_type")
+  targetId         String           @map("target_id") @db.Uuid
+  sharedWithUserId String?          @map("shared_with_user_id") @db.Uuid
+  sharedWithEmail  String?          @map("shared_with_email") @db.VarChar(255)
+  accessLevel      ShareAccessLevel @default(VIEW) @map("access_level")
+  shareToken       String?          @unique @map("share_token") @db.VarChar(64)
+  isPublic         Boolean          @default(false) @map("is_public")
+  expiresAt        DateTime?        @map("expires_at") @db.Timestamptz(6)
+  createdAt        DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  owner          User  @relation("SharedResourcesOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  sharedWithUser User? @relation("SharedResourcesRecipient", fields: [sharedWithUserId], references: [id], onDelete: Cascade)
+
+  @@index([ownerId])
+  @@index([sharedWithUserId])
+  @@index([targetType, targetId])
+  @@index([shareToken])
+  @@map("resource_shares")
 }
 
 model BackupRecord {

@@ -10,6 +10,7 @@ const controller = new AuthController();
 // Public routes
 router.post('/register', loginRateLimiter, asyncBoundary(controller.register));
 router.post('/login', loginRateLimiter, asyncBoundary(controller.login));
+router.post('/google', loginRateLimiter, asyncBoundary(controller.googleLogin));
 router.post('/refresh', asyncBoundary(controller.refresh));
 router.post('/logout', asyncBoundary(controller.logout));
 

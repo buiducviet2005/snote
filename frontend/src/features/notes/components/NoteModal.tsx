@@ -1,32 +1,27 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Modal } from '../../../components/common/Modal';
 import { MarkdownViewer } from '../../../components/common/MarkdownViewer';
+import { ShareModal } from '../../../components/common/ShareModal';
 import { api, ApiResponse } from '../../../services/api';
 import { useToast } from '../../../contexts/ToastContext';
 import { useAppFilter } from '../../../contexts/AppFilterContext';
 import { NoteType } from '@snote/shared';
+import { autoFormatPlainTextToMarkdown, detectNoteType, extractNoteFeatures, toggleChecklistItem } from '../utils/smartNoteParser';
+import { handleSmartListKeyDown } from '../utils/smartKeyboard';
 import {
   BookOpen,
-  Bold,
-  Italic,
-  Heading2,
   List,
   CheckSquare,
-  Code,
-  Quote,
-  Table,
-  Eye,
   Edit3,
   Sparkles,
   Save,
   Tag,
-  Columns,
-  Clock,
-  Calendar,
-  FolderKanban
+  Link,
+  Trash2,
+  Share2
 } from 'lucide-react';
 
-export type NoteModalMode = 'WRITE' | 'PREVIEW' | 'SPLIT';
+export type NoteModalMode = 'VIEW' | 'EDIT' | 'WRITE' | 'PREVIEW' | 'SPLIT';
 
 interface NoteModalProps {
   isOpen: boolean;
@@ -36,6 +31,7 @@ interface NoteModalProps {
   initialMode?: NoteModalMode;
   defaultProjectId?: string;
   defaultSubjectId?: string;
+  onConvertToTask?: (note: any) => void;
 }
 
 export const NoteModal: React.FC<NoteModalProps> = ({
@@ -45,7 +41,8 @@ export const NoteModal: React.FC<NoteModalProps> = ({
   noteToEdit,
   initialMode,
   defaultProjectId,
-  defaultSubjectId
+  defaultSubjectId,
+  onConvertToTask
 }) => {
   const { subjects, selectedSubjectId } = useAppFilter();
   const [projects, setProjects] = useState<any[]>([]);
@@ -55,7 +52,8 @@ export const NoteModal: React.FC<NoteModalProps> = ({
   const [projectId, setProjectId] = useState<string>('');
   const [noteType, setNoteType] = useState<NoteType>(NoteType.GENERAL);
   const [tagsInput, setTagsInput] = useState('');
-  const [mode, setMode] = useState<NoteModalMode>('PREVIEW');
+  const [isEditing, setIsEditing] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { showToast } = useToast();
@@ -76,8 +74,7 @@ export const NoteModal: React.FC<NoteModalProps> = ({
       setProjectId(noteToEdit.projectId || '');
       setNoteType(noteToEdit.noteType || NoteType.GENERAL);
       setTagsInput((noteToEdit.tags || []).map((t: any) => t.name).join(', '));
-      // Mở ghi chú đã có: Mặc định vào chế độ PREVIEW
-      setMode(initialMode || 'PREVIEW');
+      setIsEditing(initialMode === 'WRITE' || initialMode === 'EDIT');
     } else {
       setTitle('');
       setContent('');
@@ -85,13 +82,12 @@ export const NoteModal: React.FC<NoteModalProps> = ({
       setProjectId(defaultProjectId || '');
       setNoteType(defaultProjectId ? NoteType.PROJECT_LOG : (selectedSubjectId ? NoteType.LECTURE : NoteType.GENERAL));
       setTagsInput('');
-      // Tạo ghi chú mới: Mặc định vào chế độ WRITE
-      setMode(initialMode || 'WRITE');
+      setIsEditing(true);
     }
   }, [noteToEdit, selectedSubjectId, subjects, isOpen, initialMode, defaultProjectId, defaultSubjectId]);
 
-  // Insert markdown helper at cursor position
-  const insertMarkdown = (prefix: string, suffix: string = '', defaultText: string = '') => {
+  // Insert natural plain text helper at cursor position
+  const insertPlainText = (prefix: string, suffix: string = '', defaultText: string = '') => {
     const textarea = textareaRef.current;
     if (!textarea) return;
 
@@ -115,21 +111,27 @@ export const NoteModal: React.FC<NoteModalProps> = ({
       .map((t) => t.trim())
       .filter(Boolean);
 
+    if (!content.trim()) {
+      showToast('Vui lòng nhập nội dung ghi chú', 'warning');
+      return;
+    }
+
     setLoading(true);
     try {
+      const finalTitle = title.trim() || undefined;
       if (noteToEdit) {
         await api.put(`/notes/${noteToEdit.id}`, {
-          title: title.trim(),
+          title: finalTitle,
           content,
           subjectId: subjectId || null,
           projectId: projectId || null,
           noteType,
           tagNames
         });
-        showToast('Cập nhật ghi chú thành công!', 'success');
+        showToast('Đã lưu ghi chú thành công!', 'success');
       } else {
         await api.post('/notes', {
-          title: title.trim(),
+          title: finalTitle,
           content,
           subjectId: subjectId || undefined,
           projectId: projectId || undefined,
@@ -149,379 +151,472 @@ export const NoteModal: React.FC<NoteModalProps> = ({
   };
 
   const words = (content || '').trim().split(/\s+/).filter(Boolean).length;
-  const readTimeMin = Math.max(1, Math.ceil(words / 200));
+  const features = useMemo(() => extractNoteFeatures(content), [content]);
+
+  const handleToggleTodoInModal = async (todoIndex: number) => {
+    const newContent = toggleChecklistItem(content, todoIndex);
+    setContent(newContent);
+    if (noteToEdit) {
+      noteToEdit.content = newContent;
+      try {
+        await api.put(`/notes/${noteToEdit.id}`, { content: newContent });
+        onSuccess();
+      } catch {
+        showToast('Lỗi cập nhật tiến độ công việc', 'error');
+      }
+    }
+  };
 
   return (
-    <Modal
-      isOpen={isOpen}
+    <>
+      <Modal
+        isOpen={isOpen}
       onClose={onClose}
       title={
         noteToEdit
-          ? mode === 'PREVIEW'
-            ? 'Xem Chi Tiết Bài Ghi (Preview)'
-            : 'Chỉnh Sửa Ghi Chú'
-          : 'Soạn Thảo Ghi Chú Mới'
+          ? isEditing
+            ? 'Chỉnh Sửa Ghi Chú'
+            : 'Chi Tiết Ghi Chú'
+          : 'Tạo Ghi Chú Mới'
       }
-      maxWidth={mode === 'SPLIT' ? '1200px' : '900px'}
+      maxWidth="850px"
       icon={<BookOpen size={20} />}
     >
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-        {/* Title Input */}
-        <div>
-          <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
-            Tiêu đề ghi chú *
-          </label>
-          <input
-            type="text"
-            required
-            placeholder="Ví dụ: Ý tưởng nghiên cứu Modular Monolith hoặc Ghi chép cá nhân..."
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            className="snote-input"
-            style={{ fontSize: '15px', fontWeight: 700 }}
-          />
-        </div>
-
-        {/* Subject & Project Selectors (Flexible / Free note support) */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+        {/* VIEW MODE: Direct clean note reader with metadata */}
+        {!isEditing ? (
           <div>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
-              Môn học liên quan (Tùy chọn)
-            </label>
-            <select
-              value={subjectId}
-              onChange={(e) => setSubjectId(e.target.value)}
-              className="snote-select"
+            <h2
+              style={{
+                margin: '0 0 8px 0',
+                fontSize: '20px',
+                fontWeight: 800,
+                color: 'var(--text-primary)',
+                letterSpacing: '-0.02em',
+                lineHeight: 1.35
+              }}
             >
-              <option value="">📝 Ghi chú tự do / Cá nhân (Không thuộc môn học)</option>
-              {subjects.map((sub) => (
-                <option key={sub.id} value={sub.id}>
-                  {sub.code ? `[${sub.code}] ` : ''}{sub.name} ({sub.credits} TC)
-                </option>
-              ))}
-            </select>
-          </div>
+              {title || 'Ghi chú chưa đặt tiêu đề'}
+            </h2>
 
-          <div>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
-              <FolderKanban size={13} style={{ color: 'var(--color-purple)' }} />
-              <span>Đồ án / Dự án liên kết (Tùy chọn)</span>
-            </label>
-            <select
-              value={projectId}
-              onChange={(e) => setProjectId(e.target.value)}
-              className="snote-select"
+            {/* Subtle Metadata String */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: '8px',
+                fontSize: '12px',
+                color: 'var(--text-muted)',
+                lineHeight: 1.6,
+                paddingBottom: '12px',
+                borderBottom: '1px solid var(--border-color)',
+                marginBottom: '14px'
+              }}
             >
-              <option value="">-- Không gắn đồ án --</option>
-              {projects.map((p) => (
-                <option key={p.id} value={p.id}>
-                  📁 {p.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        {/* Note Type & Tags */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
-          <div>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
-              Phân loại ghi chú
-            </label>
-            <select
-              value={noteType}
-              onChange={(e) => setNoteType(e.target.value as NoteType)}
-              className="snote-select"
-            >
-              <option value={NoteType.GENERAL}>📝 Ghi chú chung / Ý tưởng tự do (General)</option>
-              <option value={NoteType.LECTURE}>📖 Bài giảng lý thuyết (Lecture)</option>
-              <option value={NoteType.LAB_REPORT}>🧪 Báo cáo thực hành (Lab)</option>
-              <option value={NoteType.EXAM_PREP}>🎯 Ôn thi / Đề cương (Exam Prep)</option>
-              <option value={NoteType.PROJECT_LOG}>🛠️ Nhật ký đồ án (Project Log)</option>
-              <option value={NoteType.MEETING_MINUTES}>👥 Biên bản họp nhóm (Meeting)</option>
-            </select>
-          </div>
-
-          <div>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
-              Thẻ phân loại tags (Phân cách bằng dấu phẩy)
-            </label>
-            <div style={{ position: 'relative' }}>
-              <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', display: 'flex' }}>
-                <Tag size={15} />
+              <span>
+                📅 {noteToEdit?.createdAt ? new Date(noteToEdit.createdAt).toLocaleString('vi-VN', { dateStyle: 'medium', timeStyle: 'short' }) : 'Vừa tạo'}
               </span>
-              <input
-                type="text"
-                placeholder="Architecture, Ideas, Database, Research"
-                value={tagsInput}
-                onChange={(e) => setTagsInput(e.target.value)}
-                className="snote-input"
-                style={{ paddingLeft: '36px' }}
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Markdown Mode Switcher & Formatting Toolbar */}
-        <div>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              marginBottom: '10px',
-              flexWrap: 'wrap',
-              gap: '10px',
-              backgroundColor: 'var(--bg-primary)',
-              padding: '8px 12px',
-              borderRadius: 'var(--radius-lg)',
-              border: '1px solid var(--border-color)'
-            }}
-          >
-            {/* View Mode Segmented Control (WRITE / PREVIEW / SPLIT) */}
-            <div style={{ display: 'flex', background: 'var(--bg-input)', padding: '3px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
-              <button
-                type="button"
-                onClick={() => setMode('WRITE')}
-                className={`btn btn-sm ${mode === 'WRITE' ? 'btn-primary' : 'btn-ghost'}`}
-                style={{ fontSize: '12px', padding: '4px 10px', display: 'flex', alignItems: 'center', gap: '5px' }}
-                title="Chế độ soạn thảo toàn màn hình"
-              >
-                <Edit3 size={13} />
-                <span>Viết (Write)</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setMode('PREVIEW')}
-                className={`btn btn-sm ${mode === 'PREVIEW' ? 'btn-primary' : 'btn-ghost'}`}
-                style={{ fontSize: '12px', padding: '4px 10px', display: 'flex', alignItems: 'center', gap: '5px' }}
-                title="Chế độ xem trước Markdown đã render"
-              >
-                <Eye size={13} />
-                <span>Xem trước (Preview)</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setMode('SPLIT')}
-                className={`btn btn-sm ${mode === 'SPLIT' ? 'btn-primary' : 'btn-ghost'}`}
-                style={{ fontSize: '12px', padding: '4px 10px', display: 'flex', alignItems: 'center', gap: '5px' }}
-                title="Chế độ chia đôi: Vừa gõ vừa xem kết quả real-time"
-              >
-                <Columns size={13} />
-                <span>Chia đôi (Split)</span>
-              </button>
+              {noteToEdit?.updatedAt && noteToEdit.updatedAt !== noteToEdit.createdAt && (
+                <>
+                  <span>•</span>
+                  <span>✏️ Cập nhật: {new Date(noteToEdit.updatedAt).toLocaleDateString('vi-VN')}</span>
+                </>
+              )}
+              {subjectId && (
+                <>
+                  <span>•</span>
+                  <span style={{ color: subjects.find((s) => s.id === subjectId)?.color || 'var(--accent-primary)', fontWeight: 600 }}>
+                    📖 {subjects.find((s) => s.id === subjectId)?.code ? `[${subjects.find((s) => s.id === subjectId)?.code}] ` : ''}
+                    {subjects.find((s) => s.id === subjectId)?.name}
+                  </span>
+                </>
+              )}
+              {projectId && (
+                <>
+                  <span>•</span>
+                  <span style={{ color: 'var(--color-purple)', fontWeight: 600 }}>
+                    📁 {projects.find((p) => p.id === projectId)?.name}
+                  </span>
+                </>
+              )}
+              <span>•</span>
+              <span className="badge badge-neutral" style={{ fontSize: '10.5px' }}>
+                {noteType === NoteType.LECTURE ? 'Bài giảng' : noteType === NoteType.LAB_REPORT ? 'Thực hành' : noteType === NoteType.EXAM_PREP ? 'Ôn thi' : noteType === NoteType.PROJECT_LOG ? 'Dự án / BTL' : noteType === NoteType.MEETING_MINUTES ? 'Họp nhóm' : 'Ghi chú'}
+              </span>
+              <span>•</span>
+              <span>📝 {words} từ</span>
+              {tagsInput.trim() && (
+                <>
+                  <span>•</span>
+                  <span>🏷️ {tagsInput}</span>
+                </>
+              )}
             </div>
 
-            {/* Formatting Toolbar (Active in WRITE and SPLIT modes) */}
-            {mode !== 'PREVIEW' ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap' }}>
-                <button
-                  type="button"
-                  onClick={() => insertMarkdown('**', '**', 'chữ in đậm')}
-                  className="btn btn-secondary btn-sm btn-icon"
-                  title="In đậm (Bold)"
-                >
-                  <Bold size={13} />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => insertMarkdown('*', '*', 'chữ in nghiêng')}
-                  className="btn btn-secondary btn-sm btn-icon"
-                  title="In nghiêng (Italic)"
-                >
-                  <Italic size={13} />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => insertMarkdown('## ', '', 'Tiêu đề mục')}
-                  className="btn btn-secondary btn-sm btn-icon"
-                  title="Tiêu đề H2"
-                >
-                  <Heading2 size={13} />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => insertMarkdown('- ', '', 'Mục danh sách')}
-                  className="btn btn-secondary btn-sm btn-icon"
-                  title="Danh sách gạch đầu dòng"
-                >
-                  <List size={13} />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => insertMarkdown('- [ ] ', '', 'Công việc cần làm')}
-                  className="btn btn-secondary btn-sm btn-icon"
-                  title="Danh sách Checkbox"
-                >
-                  <CheckSquare size={13} />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => insertMarkdown('```ts\n', '\n```', '// Mã nguồn')}
-                  className="btn btn-secondary btn-sm btn-icon"
-                  title="Khối mã nguồn (Code block)"
-                >
-                  <Code size={13} />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => insertMarkdown('> ', '', 'Trích dẫn quan trọng')}
-                  className="btn btn-secondary btn-sm btn-icon"
-                  title="Trích dẫn (Quote)"
-                >
-                  <Quote size={13} />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => insertMarkdown('| Tiêu đề 1 | Tiêu đề 2 |\n| --- | --- |\n| Giá trị 1 | Giá trị 2 |', '', '')}
-                  className="btn btn-secondary btn-sm btn-icon"
-                  title="Bảng biểu (Table)"
-                >
-                  <Table size={13} />
-                </button>
-              </div>
-            ) : (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px', color: 'var(--text-muted)' }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <Clock size={12} /> {readTimeMin} phút đọc
+            {/* List Progress Bar (If note contains checklist items) */}
+            {features.checklist.active && (
+              <div className="note-progress-container" style={{ marginBottom: '12px' }}>
+                <CheckSquare size={13} style={{ color: 'var(--color-success)' }} />
+                <span style={{ fontSize: '11.5px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                  Tiến độ: {features.checklist.done}/{features.checklist.total} ({Math.round((features.checklist.done / features.checklist.total) * 100)}%)
                 </span>
-                <span>•</span>
-                <span>{words} từ</span>
+                <div className="note-progress-bar-bg">
+                  <div
+                    className="note-progress-bar-fill"
+                    style={{ width: `${(features.checklist.done / features.checklist.total) * 100}%` }}
+                  />
+                </div>
               </div>
             )}
-          </div>
 
-          {/* Content Area Rendering according to Mode */}
-          {mode === 'WRITE' && (
-            <textarea
-              ref={textareaRef}
-              rows={12}
-              placeholder="Nhập nội dung bài học, ý tưởng nghiên cứu, mã nguồn bằng cú pháp Markdown..."
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              className="snote-textarea"
-              style={{
-                lineHeight: '1.6',
-                fontFamily: 'inherit',
-                fontSize: '14px',
-                resize: 'vertical',
-                minHeight: '280px'
-              }}
-            />
-          )}
-
-          {mode === 'PREVIEW' && (
+            {/* Formatted Content Body with interactive checklist */}
             <div
               className="snote-card"
               style={{
-                minHeight: '280px',
-                maxHeight: '440px',
+                minHeight: '260px',
+                maxHeight: '480px',
                 overflowY: 'auto',
                 padding: '20px',
                 background: 'var(--bg-primary)',
-                border: '1px solid var(--border-color)'
+                border: '1px solid var(--border-color)',
+                borderRadius: 'var(--radius-lg)'
               }}
             >
               {content.trim() ? (
-                <MarkdownViewer content={content} />
+                <MarkdownViewer content={content} onToggleTodo={handleToggleTodoInModal} />
               ) : (
                 <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-muted)', fontSize: '13.5px' }}>
-                  <i>Chưa có nội dung ghi chú. Bấm vào <b>"Viết (Write)"</b> để bắt đầu soạn bài.</i>
+                  <i>Chưa có nội dung ghi chú. Nhấp <b>"Chỉnh sửa ghi chú"</b> để thêm nội dung.</i>
                 </div>
               )}
             </div>
-          )}
 
-          {mode === 'SPLIT' && (
+            {/* View Mode Footer */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px', paddingTop: '12px', borderTop: '1px solid var(--border-color)' }}>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  type="button"
+                  onClick={() => setIsEditing(true)}
+                  className="btn btn-primary"
+                  style={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}
+                >
+                  <Edit3 size={15} />
+                  <span>Chỉnh Sửa Ghi Chú</span>
+                </button>
+                {noteToEdit && (
+                  <button
+                    type="button"
+                    onClick={() => setIsShareModalOpen(true)}
+                    className="btn btn-secondary"
+                    style={{ fontWeight: 600, color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}
+                    title="Chia sẻ ghi chú này cho bạn học hoặc tạo link công khai"
+                  >
+                    <Share2 size={15} />
+                    <span>Chia sẻ</span>
+                  </button>
+                )}
+                {onConvertToTask && noteToEdit && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onClose();
+                      onConvertToTask(noteToEdit);
+                    }}
+                    className="btn btn-secondary"
+                    style={{ fontWeight: 600, color: 'var(--color-success)', display: 'flex', alignItems: 'center', gap: '6px' }}
+                    title="Chuyển ghi chú này thành một công việc (Task)"
+                  >
+                    <CheckSquare size={15} />
+                    <span>Chuyển thành Task</span>
+                  </button>
+                )}
+              </div>
+
+              <button
+                type="button"
+                onClick={onClose}
+                className="btn btn-secondary"
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        ) : (
+          /* EDIT / CREATE MODE: Natural Plaintext Note Editor */
+          <>
+            {/* Title Input (Optional - Google Keep / Apple Notes style) */}
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                  Tiêu đề ghi chú
+                </label>
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                  Tùy chọn (để trống sẽ tự lấy dòng đầu tiên)
+                </span>
+              </div>
+              <input
+                type="text"
+                placeholder="Nhập tiêu đề hoặc để trống và gõ trực tiếp nội dung bên dưới..."
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="snote-input"
+                style={{ fontSize: '14.5px', fontWeight: 600 }}
+              />
+            </div>
+
+            {/* Subject & Project Selectors */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
               <div>
-                <div style={{ fontSize: '11.5px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '6px' }}>
-                  MÃ NGUỒN MARKDOWN:
-                </div>
-                <textarea
-                  ref={textareaRef}
-                  rows={14}
-                  placeholder="Gõ mã Markdown tại đây..."
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                  className="snote-textarea"
-                  style={{
-                    lineHeight: '1.6',
-                    fontFamily: 'inherit',
-                    fontSize: '13.5px',
-                    minHeight: '320px',
-                    maxHeight: '440px'
-                  }}
-                />
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
+                  Môn học liên quan (Tùy chọn)
+                </label>
+                <select
+                  value={subjectId}
+                  onChange={(e) => setSubjectId(e.target.value)}
+                  className="snote-select"
+                >
+                  <option value="">📝 Ghi chú tự do / Cá nhân (Không thuộc môn học)</option>
+                  {subjects.map((sub) => (
+                    <option key={sub.id} value={sub.id}>
+                      {sub.code ? `[${sub.code}] ` : ''}{sub.name} ({sub.credits} TC)
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div>
-                <div style={{ fontSize: '11.5px', fontWeight: 700, color: 'var(--accent-primary)', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <Sparkles size={12} />
-                  <span>KẾT QUẢ HIỂN THỊ REAL-TIME:</span>
-                </div>
-                <div
-                  className="snote-card"
-                  style={{
-                    minHeight: '320px',
-                    maxHeight: '440px',
-                    overflowY: 'auto',
-                    padding: '16px',
-                    background: 'var(--bg-primary)',
-                    border: '1px solid var(--border-color)'
-                  }}
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
+                  Dự án / Đồ án liên kết (Tùy chọn)
+                </label>
+                <select
+                  value={projectId}
+                  onChange={(e) => setProjectId(e.target.value)}
+                  className="snote-select"
                 >
-                  {content.trim() ? (
-                    <MarkdownViewer content={content} />
-                  ) : (
-                    <div style={{ color: 'var(--text-muted)', fontSize: '13px' }}>
-                      <i>Kết quả render xem trước sẽ hiển thị trực tiếp tại đây khi bạn gõ...</i>
-                    </div>
-                  )}
+                  <option value="">-- Không gắn dự án --</option>
+                  {projects.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      📁 {p.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Note Type & Tags */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                  <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                    Phân loại ghi chú
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const detected = detectNoteType(title, content);
+                      setNoteType(detected);
+                      showToast(`Đã tự động nhận diện loại: ${detected}`, 'info');
+                    }}
+                    className="btn btn-ghost btn-sm"
+                    style={{ fontSize: '11px', padding: '1px 6px', color: 'var(--accent-primary)', fontWeight: 600 }}
+                    title="Tự động nhận diện loại ghi chú dựa trên tiêu đề & nội dung"
+                  >
+                    ✨ Tự nhận diện
+                  </button>
+                </div>
+                <select
+                  value={noteType}
+                  onChange={(e) => setNoteType(e.target.value as NoteType)}
+                  className="snote-select"
+                >
+                  <option value={NoteType.GENERAL}>📝 Ghi chú chung / Ý tưởng tự do (General)</option>
+                  <option value={NoteType.LECTURE}>📖 Bài giảng lý thuyết (Lecture)</option>
+                  <option value={NoteType.LAB_REPORT}>🧪 Báo cáo thực hành (Lab)</option>
+                  <option value={NoteType.EXAM_PREP}>🎯 Ôn thi / Đề cương (Exam Prep)</option>
+                  <option value={NoteType.PROJECT_LOG}>🛠️ Nhật ký dự án / BTL (Project Log)</option>
+                  <option value={NoteType.MEETING_MINUTES}>👥 Biên bản họp nhóm (Meeting)</option>
+                </select>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
+                  Thẻ phân loại tags (Phân cách bằng dấu phẩy)
+                </label>
+                <div style={{ position: 'relative' }}>
+                  <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', display: 'flex' }}>
+                    <Tag size={15} />
+                  </span>
+                  <input
+                    type="text"
+                    placeholder="Kế hoạch, Bài tập, Ôn tập, Tài liệu..."
+                    value={tagsInput}
+                    onChange={(e) => setTagsInput(e.target.value)}
+                    className="snote-input"
+                    style={{ paddingLeft: '36px' }}
+                  />
                 </div>
               </div>
             </div>
-          )}
-        </div>
 
-        {/* Modal Actions Footer */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px' }}>
-          <div>
-            {mode === 'PREVIEW' && (
-              <button
-                type="button"
-                onClick={() => setMode('WRITE')}
-                className="btn btn-secondary btn-sm"
-                style={{ fontWeight: 600 }}
+            {/* Plaintext Content Field with Natural Quick Actions */}
+            <div>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  marginBottom: '8px',
+                  backgroundColor: 'var(--bg-primary)',
+                  padding: '6px 12px',
+                  borderRadius: 'var(--radius-md)',
+                  border: '1px solid var(--border-color)',
+                  flexWrap: 'wrap',
+                  gap: '8px'
+                }}
               >
-                <Edit3 size={14} />
-                <span>Chuyển Sang Chế Độ Sửa</span>
-              </button>
-            )}
-          </div>
+                {/* Natural Plaintext Quick Action Buttons */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    onClick={() => insertPlainText('• ', '', 'Mục danh sách')}
+                    className="btn btn-secondary btn-sm"
+                    style={{ fontSize: '12px', padding: '3px 8px', display: 'flex', alignItems: 'center', gap: '4px' }}
+                    title="Chèn dấu chấm đầu dòng"
+                  >
+                    <List size={13} />
+                    <span>Danh sách</span>
+                  </button>
 
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <button
-              type="button"
-              onClick={onClose}
-              className="btn btn-secondary"
-            >
-              Đóng
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="btn btn-primary"
-              style={{ fontWeight: 700 }}
-            >
-              <Save size={15} />
-              <span>{loading ? 'Đang lưu trữ...' : noteToEdit ? 'Lưu Thay Đổi' : 'Tạo Ghi Chú'}</span>
-            </button>
-          </div>
-        </div>
+                  <button
+                    type="button"
+                    onClick={() => insertPlainText('1. ', '', 'Mục đầu tiên')}
+                    className="btn btn-secondary btn-sm"
+                    style={{ fontSize: '12px', padding: '3px 8px', display: 'flex', alignItems: 'center', gap: '4px' }}
+                    title="Chèn danh sách đánh số thứ tự"
+                  >
+                    <span style={{ fontWeight: 800, fontSize: '11px' }}>1.</span>
+                    <span>Thứ tự</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => insertPlainText('[ ] ', '', 'Công việc cần làm')}
+                    className="btn btn-secondary btn-sm"
+                    style={{ fontSize: '12px', padding: '3px 8px', display: 'flex', alignItems: 'center', gap: '4px' }}
+                    title="Chèn ô việc cần làm (Checkbox)"
+                  >
+                    <CheckSquare size={13} />
+                    <span>Việc cần làm</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => insertPlainText('https://', '', '')}
+                    className="btn btn-secondary btn-sm"
+                    style={{ fontSize: '12px', padding: '3px 8px', display: 'flex', alignItems: 'center', gap: '4px' }}
+                    title="Chèn đường link liên kết"
+                  >
+                    <Link size={13} />
+                    <span>Liên kết</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const formatted = autoFormatPlainTextToMarkdown(content);
+                      setContent(formatted);
+                      showToast('Đã tự động nhận diện danh sách, liên kết và phân cấp!', 'success');
+                    }}
+                    className="btn btn-secondary btn-sm"
+                    style={{
+                      fontSize: '12px',
+                      padding: '3px 10px',
+                      color: 'var(--accent-primary)',
+                      fontWeight: 600,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px'
+                    }}
+                    title="Tự động nhận diện thụt lề, danh sách, checklist, liên kết từ văn bản thuần túy"
+                  >
+                    <Sparkles size={12} />
+                    <span>Tự nhận diện</span>
+                  </button>
+                </div>
+
+                <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                  <span>📝 {words} từ</span>
+                </div>
+              </div>
+
+              {/* Natural Textarea with Smart List Keyboard Controller */}
+              <textarea
+                ref={textareaRef}
+                rows={12}
+                placeholder="Nhập nội dung ghi chú tự nhiên (bạn có thể gõ danh sách với dấu • hoặc 1., ô việc cần làm [ ], đường link web, các mục thụt lề... hệ thống sẽ tự động hiển thị đẹp mắt)..."
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                onKeyDown={(e) => handleSmartListKeyDown(e, content, setContent)}
+                className="snote-textarea"
+                style={{
+                  lineHeight: '1.65',
+                  fontFamily: 'inherit',
+                  fontSize: '14px',
+                  resize: 'vertical',
+                  minHeight: '260px'
+                }}
+              />
+            </div>
+
+            {/* Edit Mode Footer */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '12px', paddingTop: '12px', borderTop: '1px solid var(--border-color)' }}>
+              <div>
+                {noteToEdit && (
+                  <button
+                    type="button"
+                    onClick={() => setIsEditing(false)}
+                    className="btn btn-ghost btn-sm"
+                    style={{ fontWeight: 600, color: 'var(--text-secondary)' }}
+                  >
+                    ← Quay lại xem chi tiết
+                  </button>
+                )}
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="btn btn-secondary"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="btn btn-primary"
+                  style={{ fontWeight: 700 }}
+                >
+                  <Save size={15} />
+                  <span>{loading ? 'Đang lưu trữ...' : noteToEdit ? 'Lưu Thay Đổi' : 'Tạo Ghi Chú'}</span>
+                </button>
+              </div>
+            </div>
+          </>
+        )}
       </form>
     </Modal>
-  );
+
+    {noteToEdit && (
+      <ShareModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        targetType="NOTE"
+        targetId={noteToEdit.id}
+        targetTitle={noteToEdit.title || 'Ghi chú'}
+      />
+    )}
+  </>
+);
 };

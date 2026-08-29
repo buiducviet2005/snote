@@ -135,25 +135,27 @@ export const TaskCard: React.FC<TaskCardProps> = ({
             )}
           </button>
 
-          <div style={{ flex: 1 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
             <h4
-              onClick={() => {
-                if (canEdit) onEdit(task);
-              }}
+              onClick={() => onEdit(task)}
               style={{
                 margin: '0 0 4px 0',
                 fontSize: '14px',
                 fontWeight: 700,
                 color: isDone ? 'var(--text-muted)' : 'var(--text-primary)',
                 textDecoration: isDone ? 'line-through' : 'none',
-                cursor: canEdit ? 'pointer' : 'default',
-                lineHeight: 1.35
+                cursor: 'pointer',
+                lineHeight: 1.35,
+                wordBreak: 'break-word',
+                overflowWrap: 'anywhere'
               }}
+              title="Nhấp để xem chi tiết công việc"
             >
               {task.title}
             </h4>
             {task.description && (
               <p
+                onClick={() => onEdit(task)}
                 style={{
                   margin: 0,
                   fontSize: '12.5px',
@@ -162,8 +164,12 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                   display: '-webkit-box',
                   WebkitLineClamp: 2,
                   WebkitBoxOrient: 'vertical',
-                  overflow: 'hidden'
+                  overflow: 'hidden',
+                  wordBreak: 'break-word',
+                  overflowWrap: 'anywhere',
+                  cursor: 'pointer'
                 }}
+                title="Nhấp để xem chi tiết công việc"
               >
                 {task.description}
               </p>
@@ -230,7 +236,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                 padding: '2px 7px',
                 border: '1px solid rgba(168, 85, 247, 0.3)'
               }}
-              title={`Đồ án: ${task.project.name}`}
+              title={`Dự án / BTL: ${task.project.name}`}
             >
               📁 {task.project.name}
             </span>

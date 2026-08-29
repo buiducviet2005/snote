@@ -4,6 +4,7 @@ import { AppLayout } from '../components/layout/AppLayout';
 import { ProtectedRoute } from '../components/layout/ProtectedRoute';
 import { AdminRoute } from '../components/layout/AdminRoute';
 import { LoginPage, RegisterPage } from '../features/auth';
+import { PublicShareViewPage } from '../features/shares/pages/PublicShareViewPage';
 import { NotesListPage } from '../features/notes';
 import { TasksListPage } from '../features/tasks';
 import { ScheduleWeekPage } from '../features/schedule';
@@ -20,6 +21,7 @@ export const AppRouter: React.FC = () => {
       {/* Public Routes */}
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
+      <Route path="/share/:token" element={<PublicShareViewPage />} />
 
       {/* Protected Student Routes */}
       <Route element={<ProtectedRoute />}>

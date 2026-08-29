@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useTheme } from '../../../contexts/ThemeContext';
 import { useToast } from '../../../contexts/ToastContext';
-import { api } from '../../../services/api';
+import { useAppFilter } from '../../../contexts/AppFilterContext';
+import { api, ApiResponse } from '../../../services/api';
 import {
   Settings,
   User,
@@ -11,6 +12,7 @@ import {
   Sun,
   Moon,
   Download,
+  Upload,
   ShieldCheck,
   Database,
   Sparkles,
@@ -21,13 +23,19 @@ import {
   Lock,
   Save,
   KeyRound,
-  ShieldAlert
+  ShieldAlert,
+  FileText,
+  Layers,
+  BookOpen,
+  RefreshCw,
+  AlertCircle
 } from 'lucide-react';
 
 export const SettingsPage: React.FC = () => {
   const { user, updateProfile, changePassword, isAdmin } = useAuth();
   const { theme, setTheme } = useTheme();
   const { showToast } = useToast();
+  const { semesters, subjects } = useAppFilter();
 
   // Profile Form State
   const [fullName, setFullName] = useState(user?.fullName || '');
@@ -40,7 +48,19 @@ export const SettingsPage: React.FC = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [savingPassword, setSavingPassword] = useState(false);
 
-  const [downloading, setDownloading] = useState(false);
+  // Backup Granular State
+  const [exportSemesterId, setExportSemesterId] = useState('');
+  const [exportSubjectId, setExportSubjectId] = useState('');
+  const [downloadingJson, setDownloadingJson] = useState(false);
+  const [downloadingMarkdown, setDownloadingMarkdown] = useState(false);
+
+  // Restore State
+  const [restoreFile, setRestoreFile] = useState<File | null>(null);
+  const [restoreMode, setRestoreMode] = useState<'MERGE' | 'REPLACE'>('MERGE');
+  const [restoring, setRestoring] = useState(false);
+  const [restoreResult, setRestoreResult] = useState<any | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const [copiedId, setCopiedId] = useState(false);
 
   useEffect(() => {
@@ -105,15 +125,97 @@ export const SettingsPage: React.FC = () => {
     }
   };
 
-  const handleExportBackup = async () => {
-    setDownloading(true);
+  // 1. Export JSON (Full or Granular)
+  const handleExportJson = async () => {
+    setDownloadingJson(true);
     try {
-      await api.download('/backup/export', `snote_backup_${user?.id || 'data'}_${Date.now()}.json`);
-      showToast('Đã tải xuống file sao lưu JSON kèm SHA-256 Checksum thành công!', 'success');
+      const params = new URLSearchParams();
+      if (exportSemesterId) params.append('semesterId', exportSemesterId);
+      if (exportSubjectId) params.append('subjectId', exportSubjectId);
+
+      const queryStr = params.toString() ? `?${params.toString()}` : '';
+      await api.download(`/backup/export${queryStr}`, `snote_backup_${user?.id || 'data'}_${Date.now()}.json`);
+      showToast('Đã tải xuống file sao lưu JSON thành công!', 'success');
     } catch (err: any) {
-      showToast(err.message || 'Lỗi khi xuất dữ liệu sao lưu', 'error');
+      showToast(err.message || 'Lỗi khi xuất dữ liệu sao lưu JSON', 'error');
     } finally {
-      setDownloading(false);
+      setDownloadingJson(false);
+    }
+  };
+
+  // 2. Export Markdown Notes
+  const handleExportMarkdown = async () => {
+    setDownloadingMarkdown(true);
+    try {
+      const params = new URLSearchParams();
+      if (exportSemesterId) params.append('semesterId', exportSemesterId);
+      if (exportSubjectId) params.append('subjectId', exportSubjectId);
+
+      const res = await api.get<ApiResponse<any[]>>(`/backup/export-markdown?${params.toString()}`);
+      const notes = res.data || [];
+
+      if (notes.length === 0) {
+        showToast('Không có ghi chú nào phù hợp để xuất', 'info');
+        return;
+      }
+
+      // Download single md file or multiple formatted
+      if (notes.length === 1) {
+        const blob = new Blob([notes[0].content], { type: 'text/markdown;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = notes[0].fileName;
+        a.click();
+        URL.revokeObjectURL(url);
+      } else {
+        // Concatenated bundle or json of notes
+        const allNotesMarkdown = notes.map((n: any) => n.content).join('\n\n---\n\n');
+        const blob = new Blob([allNotesMarkdown], { type: 'text/markdown;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `snote_notes_bundle_${Date.now()}.md`;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+
+      showToast(`Đã xuất thành công ${notes.length} ghi chú Markdown!`, 'success');
+    } catch (err: any) {
+      showToast(err.message || 'Lỗi khi xuất ghi chú Markdown', 'error');
+    } finally {
+      setDownloadingMarkdown(false);
+    }
+  };
+
+  // 3. Restore JSON
+  const handleRestore = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!restoreFile) {
+      showToast('Vui lòng chọn tệp .json sao lưu để khôi phục', 'error');
+      return;
+    }
+
+    setRestoring(true);
+    setRestoreResult(null);
+
+    try {
+      const text = await restoreFile.text();
+      const payload = JSON.parse(text);
+
+      const res = await api.post<ApiResponse<any>>('/backup/restore', {
+        payload,
+        mode: restoreMode
+      });
+
+      setRestoreResult(res.data?.restoredCounts || {});
+      showToast('Khôi phục dữ liệu thành công!', 'success');
+      setRestoreFile(null);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    } catch (err: any) {
+      showToast(err.message || 'Lỗi khi khôi phục dữ liệu từ tệp', 'error');
+    } finally {
+      setRestoring(false);
     }
   };
 
@@ -139,7 +241,7 @@ export const SettingsPage: React.FC = () => {
           </span>
         </div>
         <p style={{ margin: '4px 0 0 0', fontSize: '13.5px', color: 'var(--text-secondary)' }}>
-          Quản lý thông tin tài khoản, đổi mật khẩu bảo mật và sao lưu toàn vẹn dữ liệu
+          Quản lý hồ sơ, đổi mật khẩu bảo mật, sao lưu đa cấp độ và phục hồi toàn vẹn dữ liệu
         </p>
       </div>
 
@@ -342,10 +444,6 @@ export const SettingsPage: React.FC = () => {
           </h2>
         </div>
 
-        <p style={{ margin: '0 0 16px 0', fontSize: '13.5px', color: 'var(--text-secondary)' }}>
-          Tùy chỉnh chế độ hiển thị phù hợp với điều kiện học tập ban ngày hoặc ban đêm
-        </p>
-
         <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap' }}>
           <button
             onClick={() => setTheme('dark')}
@@ -373,7 +471,7 @@ export const SettingsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Backup & Export Section */}
+      {/* Advanced Backup & Export Section */}
       <div
         className="snote-card animate-fade-in"
         style={{
@@ -385,23 +483,85 @@ export const SettingsPage: React.FC = () => {
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
           <Database size={20} style={{ color: 'var(--color-info)' }} />
           <h2 style={{ fontSize: '17px', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
-            Sao Lưu & Xuất Dữ Liệu Học Tập (1-Click JSON Backup)
+            Sao Lưu & Xuất Dữ Liệu Học Tập Đa Cấp Độ
           </h2>
         </div>
 
-        <p style={{ margin: '0 0 18px 0', fontSize: '13.5px', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-          Tải về toàn bộ học kỳ, môn học, ghi chú bài giảng Markdown, danh sách công việc và lịch thi của bạn dưới dạng file JSON chuẩn hóa. File sao lưu đính kèm chữ ký mã băm <b>SHA-256 Checksum</b> để đảm bảo tính toàn vẹn 100% khi cần khôi phục.
+        <p style={{ margin: '0 0 16px 0', fontSize: '13.5px', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+          Tải về toàn bộ học kỳ, môn học, ghi chú bài giảng Markdown, danh sách công việc và lịch thi của bạn dưới dạng file <b>JSON chuẩn hóa</b> hoặc <b>tệp Markdown (.md)</b> độc lập.
         </p>
+
+        {/* Granular Selection Filter */}
+        <div
+          style={{
+            padding: '14px',
+            backgroundColor: 'var(--bg-secondary)',
+            borderRadius: 'var(--radius-lg)',
+            border: '1px solid var(--border-color)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            flexWrap: 'wrap',
+            marginBottom: '16px'
+          }}
+        >
+          <div style={{ fontSize: '12.5px', fontWeight: 700, color: 'var(--text-primary)' }}>
+            Phạm vi sao lưu:
+          </div>
+
+          <select
+            value={exportSemesterId}
+            onChange={(e) => {
+              setExportSemesterId(e.target.value);
+              setExportSubjectId('');
+            }}
+            className="snote-select"
+            style={{ fontSize: '12.5px', width: '180px' }}
+          >
+            <option value="">Tất cả học kỳ</option>
+            {semesters.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={exportSubjectId}
+            onChange={(e) => setExportSubjectId(e.target.value)}
+            className="snote-select"
+            style={{ fontSize: '12.5px', width: '200px' }}
+          >
+            <option value="">Tất cả môn học</option>
+            {subjects
+              .filter((s) => !exportSemesterId || s.semesterId === exportSemesterId)
+              .map((s) => (
+                <option key={s.id} value={s.id}>
+                  [{s.code || 'MÔN'}] {s.name}
+                </option>
+              ))}
+          </select>
+        </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
           <button
-            onClick={handleExportBackup}
-            disabled={downloading}
+            onClick={handleExportJson}
+            disabled={downloadingJson}
             className="btn btn-primary"
-            style={{ padding: '11px 22px', fontWeight: 700 }}
+            style={{ padding: '10px 18px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}
           >
             <Download size={16} />
-            <span>{downloading ? 'Đang đóng gói dữ liệu...' : 'Tải Về File Sao Lưu (.JSON)'}</span>
+            <span>{downloadingJson ? 'Đang đóng gói...' : 'Xuất File Sao Lưu (.JSON)'}</span>
+          </button>
+
+          <button
+            onClick={handleExportMarkdown}
+            disabled={downloadingMarkdown}
+            className="btn btn-secondary"
+            style={{ padding: '10px 18px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}
+          >
+            <FileText size={16} style={{ color: 'var(--accent-primary)' }} />
+            <span>{downloadingMarkdown ? 'Đang tạo...' : 'Xuất Ghi Chú (.MD)'}</span>
           </button>
 
           <span className="badge badge-green" style={{ padding: '6px 12px' }}>
@@ -409,6 +569,88 @@ export const SettingsPage: React.FC = () => {
             <span>Đính kèm SHA-256 Checksum</span>
           </span>
         </div>
+      </div>
+
+      {/* Restore Data Section */}
+      <div
+        className="snote-card animate-fade-in"
+        style={{
+          borderRadius: 'var(--radius-xl)',
+          padding: '24px',
+          marginBottom: '24px'
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
+          <RefreshCw size={20} style={{ color: 'var(--color-success)' }} />
+          <h2 style={{ fontSize: '17px', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
+            Khôi Phục Dữ Liệu (Restore from JSON)
+          </h2>
+        </div>
+
+        <p style={{ margin: '0 0 16px 0', fontSize: '13.5px', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+          Nhập tệp sao lưu <code>.json</code> để khôi phục lại học kỳ, môn học, ghi chú và bài tập của bạn.
+        </p>
+
+        <form onSubmit={handleRestore} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".json"
+              onChange={(e) => setRestoreFile(e.target.files?.[0] || null)}
+              className="snote-input"
+              style={{ padding: '6px 12px', fontSize: '13px', width: 'auto', flex: 1, minWidth: '240px' }}
+            />
+
+            <select
+              value={restoreMode}
+              onChange={(e) => setRestoreMode(e.target.value as any)}
+              className="snote-select"
+              style={{ fontSize: '12.5px', width: '220px' }}
+            >
+              <option value="MERGE">➕ Chế độ Gộp (Merge - Giữ dữ liệu cũ)</option>
+              <option value="REPLACE">⚠️ Chế độ Ghi đè (Replace - Xóa cũ)</option>
+            </select>
+
+            <button
+              type="submit"
+              disabled={restoring || !restoreFile}
+              className="btn btn-primary"
+              style={{ padding: '9px 20px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}
+            >
+              <Upload size={16} />
+              <span>{restoring ? 'Đang khôi phục...' : 'Bắt Đầu Khôi Phục'}</span>
+            </button>
+          </div>
+        </form>
+
+        {/* Restore Result Card */}
+        {restoreResult && (
+          <div
+            style={{
+              marginTop: '16px',
+              padding: '14px 18px',
+              backgroundColor: 'rgba(16, 185, 129, 0.1)',
+              borderRadius: 'var(--radius-lg)',
+              border: '1px solid rgba(16, 185, 129, 0.3)',
+              fontSize: '13px',
+              color: 'var(--text-primary)'
+            }}
+          >
+            <div style={{ fontWeight: 700, color: 'var(--color-success)', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Check size={16} />
+              <span>Đã khôi phục thành công các mục sau:</span>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '8px', marginTop: '8px' }}>
+              <div>• Học kỳ: <b>{restoreResult.semesters || 0}</b></div>
+              <div>• Môn học: <b>{restoreResult.subjects || 0}</b></div>
+              <div>• Ghi chú: <b>{restoreResult.notes || 0}</b></div>
+              <div>• Công việc: <b>{restoreResult.tasks || 0}</b></div>
+              <div>• Đồ án: <b>{restoreResult.projects || 0}</b></div>
+              <div>• Lịch học/thi: <b>{restoreResult.scheduleEvents || 0}</b></div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Footer info */}

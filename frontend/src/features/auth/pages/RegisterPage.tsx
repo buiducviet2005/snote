@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
+import { GoogleSignInButton } from '../components/GoogleSignInButton';
 import { GraduationCap, User, Mail, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react';
 
 export const RegisterPage: React.FC = () => {
@@ -47,7 +48,7 @@ export const RegisterPage: React.FC = () => {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: 'radial-gradient(ellipse at top, rgba(99, 102, 241, 0.15), var(--bg-primary) 70%)',
+        background: 'transparent',
         padding: '24px'
       }}
     >
@@ -232,6 +233,18 @@ export const RegisterPage: React.FC = () => {
             {!loading && <ArrowRight size={16} />}
           </button>
         </form>
+
+        {/* Divider */}
+        <div style={{ display: 'flex', alignItems: 'center', margin: '20px 0 16px 0', gap: '12px' }}>
+          <div style={{ flex: 1, height: '1px', backgroundColor: 'var(--border-color)' }} />
+          <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+            Hoặc đăng ký nhanh với
+          </span>
+          <div style={{ flex: 1, height: '1px', backgroundColor: 'var(--border-color)' }} />
+        </div>
+
+        {/* Google Sign-In / Sign-Up */}
+        <GoogleSignInButton onSuccess={() => navigate('/notes')} text="Đăng ký nhanh bằng Google" />
 
         {/* Login Link */}
         <div style={{ marginTop: '24px', paddingTop: '18px', borderTop: '1px solid var(--border-color)', textAlign: 'center', fontSize: '13.5px', color: 'var(--text-secondary)' }}>

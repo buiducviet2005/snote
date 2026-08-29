@@ -125,4 +125,16 @@ Mỗi khi thực thi bất kỳ nhiệm vụ nào gồm nhiều bước (Multi-s
 
 ---
 
+## 🎯 ĐIỀU 11: NGHIÊN CỨU THÓI QUEN NGƯỜI DÙNG & CHỐNG Ý TƯỞNG THỪA THÃI (USER HABIT FIRST & ANTI-SLOP RULE)
+
+1. **Nghiên Cứu Thói Quen Trước Khi Hành Động (Prerequisite User Habit Research):**
+   - **BẮT BUỘC:** Trước khi thiết kế, lập trình hoặc tùy biến bất kỳ tính năng, giao diện, phím tắt, bộ lọc hay biểu đồ nào, AI Agent **phải luôn luôn phân tích và nghiên cứu sâu sắc thói quen sử dụng thực tế của người dùng** (sinh viên, người học tập, lập trình viên).
+2. **Ngăn Chặn Ý Tưởng Thừa Thãi & Sai Lệch (Anti-Slop & Waste Elimination):**
+   - Phân tích rạch ròi: *Cái gì thực sự mang lại giá trị và tăng tốc độ học tập?* vs *Cái gì là tính năng màu mè, cồng kềnh, gây phiền hà hoặc làm giảm diện tích hiển thị nội dung?*
+   - Tuyệt đối loại bỏ các ý tưởng thừa thãi, phi thực tế hoặc các chuẩn bắt ép người dùng phải thao tác nhiều bước phức tạp.
+3. **Thiết Kế Tự Nhiên & Tối Đa Hóa Không Gian (Natural Flow & Content-First):**
+   - Ưu tiên tối đa: Nhận diện văn bản tự nhiên, tốc độ gõ phím nhanh, phím tắt tiện lợi, diện tích hiển thị nội dung tối đa và trải nghiệm không ma sát (zero-friction).
+
+---
+
 *Tài liệu Quy tắc này có hiệu lực vĩnh viễn xuyên suốt vòng đời phát triển của dự án SNOTE.*

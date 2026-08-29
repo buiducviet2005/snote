@@ -3,7 +3,7 @@ import { Modal } from '../../../components/common/Modal';
 import { api } from '../../../services/api';
 import { useToast } from '../../../contexts/ToastContext';
 import { useAuth } from '../../../contexts/AuthContext';
-import { Users, UserPlus, Trash2, Crown, Shield, User, LogOut, Check } from 'lucide-react';
+import { Users, UserPlus, Trash2, Crown, Shield, User, LogOut, Eye, ShieldCheck } from 'lucide-react';
 import { ProjectMemberDto, ProjectMemberRole } from '@snote/shared';
 
 interface TeamMembersModalProps {
@@ -31,11 +31,13 @@ export const TeamMembersModal: React.FC<TeamMembersModalProps> = ({
   const members: ProjectMemberDto[] = project.members || [];
   const currentMemberRecord = members.find((m) => m.userId === currentUser?.id);
   const isOwner = currentMemberRecord?.role === ProjectMemberRole.OWNER || project.userId === currentUser?.id;
+  const isAdmin = currentMemberRecord?.role === ProjectMemberRole.ADMIN;
+  const canManageMembers = isOwner || isAdmin;
 
   const handleAddMember = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!emailOrUserId.trim()) {
-      showToast('Vui lòng nhập Email hoặc Mã tài khoản của bạn học', 'error');
+      showToast('Vui lòng nhập Email hoặc Mã tài khoản của thành viên', 'error');
       return;
     }
 
@@ -46,8 +48,9 @@ export const TeamMembersModal: React.FC<TeamMembersModalProps> = ({
         role: inviteRole
       });
 
-      showToast('Đã thêm thành viên vào đồ án thành công!', 'success');
+      showToast('Đã thêm thành viên vào dự án thành công!', 'success');
       setEmailOrUserId('');
+      setInviteRole(ProjectMemberRole.MEMBER);
       onSuccess();
     } catch (err: any) {
       showToast(err.message || 'Lỗi khi thêm thành viên', 'error');
@@ -58,7 +61,7 @@ export const TeamMembersModal: React.FC<TeamMembersModalProps> = ({
 
   const handleUpdateRole = async (targetUserId: string, newRole: ProjectMemberRole, memberName: string) => {
     if (newRole === ProjectMemberRole.OWNER) {
-      if (!window.confirm(`Bạn có chắc muốn cấp quyền Trưởng nhóm (OWNER) cho "${memberName}"?`)) return;
+      if (!window.confirm(`Bạn có chắc muốn chuyển giao quyền Trưởng nhóm (OWNER) cho "${memberName}"?`)) return;
     }
 
     setUpdatingUserId(targetUserId);
@@ -66,7 +69,7 @@ export const TeamMembersModal: React.FC<TeamMembersModalProps> = ({
       await api.put(`/projects/${project.id}/members/${targetUserId}`, {
         role: newRole
       });
-      showToast(`Đã cập nhật quyền của "${memberName}" thành ${newRole}`, 'success');
+      showToast(`Đã cập nhật vai trò của "${memberName}" thành ${getRoleLabel(newRole)}`, 'success');
       onSuccess();
     } catch (err: any) {
       showToast(err.message || 'Lỗi khi cập nhật vai trò', 'error');
@@ -78,14 +81,14 @@ export const TeamMembersModal: React.FC<TeamMembersModalProps> = ({
   const handleRemoveMember = async (targetUserId: string, memberName: string) => {
     const isSelf = targetUserId === currentUser?.id;
     const confirmMsg = isSelf
-      ? 'Bạn có chắc chắn muốn rời khỏi nhóm đồ án này?'
-      : `Bạn có chắc muốn xóa thành viên "${memberName}" khỏi đồ án?`;
+      ? 'Bạn có chắc chắn muốn rời khỏi nhóm dự án này?'
+      : `Bạn có chắc muốn xóa (kick) thành viên "${memberName}" khỏi dự án?`;
 
     if (!window.confirm(confirmMsg)) return;
 
     try {
       await api.delete(`/projects/${project.id}/members/${targetUserId}`);
-      showToast(isSelf ? 'Bạn đã rời khỏi nhóm đồ án' : `Đã xóa thành viên "${memberName}" khỏi đồ án`, 'success');
+      showToast(isSelf ? 'Bạn đã rời khỏi nhóm dự án thành công' : `Đã xóa thành viên "${memberName}" khỏi dự án`, 'success');
       onSuccess();
       if (isSelf) onClose();
     } catch (err: any) {
@@ -93,17 +96,43 @@ export const TeamMembersModal: React.FC<TeamMembersModalProps> = ({
     }
   };
 
+  const getRoleLabel = (role: ProjectMemberRole) => {
+    switch (role) {
+      case ProjectMemberRole.OWNER:
+        return 'Trưởng nhóm';
+      case ProjectMemberRole.ADMIN:
+        return 'Quản trị viên';
+      case ProjectMemberRole.VIEWER:
+        return 'Chỉ xem';
+      default:
+        return 'Thành viên';
+    }
+  };
+
+  const getRoleBadgeClass = (role: ProjectMemberRole) => {
+    switch (role) {
+      case ProjectMemberRole.OWNER:
+        return 'badge-amber';
+      case ProjectMemberRole.ADMIN:
+        return 'badge-purple';
+      case ProjectMemberRole.VIEWER:
+        return 'badge-neutral';
+      default:
+        return 'badge-green';
+    }
+  };
+
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={`Thành Viên Nhóm Đồ Án: ${project.name}`}
-      maxWidth="620px"
+      title={`Thành Viên Nhóm Dự Án: ${project.name}`}
+      maxWidth="660px"
       icon={<Users size={20} />}
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-        {/* Invite Member Form (Visible to Owner & Member) */}
-        {currentMemberRecord?.role !== ProjectMemberRole.VIEWER && (
+        {/* Invite Member Form (Visible to Owner & Admin) */}
+        {canManageMembers && (
           <form
             onSubmit={handleAddMember}
             style={{
@@ -118,10 +147,10 @@ export const TeamMembersModal: React.FC<TeamMembersModalProps> = ({
           >
             <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
               <UserPlus size={15} style={{ color: 'var(--accent-primary)' }} />
-              <span>Mời Bạn Học Cùng Làm Đồ Án</span>
+              <span>Mời Bạn Học Cùng Làm Dự Án / Bài Tập Lớn</span>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '10px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1.2fr', gap: '10px' }}>
               <input
                 type="text"
                 required
@@ -137,6 +166,7 @@ export const TeamMembersModal: React.FC<TeamMembersModalProps> = ({
                 className="snote-select"
                 style={{ fontSize: '13px' }}
               >
+                {isOwner && <option value={ProjectMemberRole.ADMIN}>Quản trị viên (Admin)</option>}
                 <option value={ProjectMemberRole.MEMBER}>Thành viên (Member)</option>
                 <option value={ProjectMemberRole.VIEWER}>Chỉ xem (Viewer)</option>
               </select>
@@ -149,7 +179,7 @@ export const TeamMembersModal: React.FC<TeamMembersModalProps> = ({
                 className="btn btn-primary btn-sm"
                 style={{ fontWeight: 600 }}
               >
-                <span>{loading ? 'Đang thêm...' : '+ Mời Vào Đồ Án'}</span>
+                <span>{loading ? 'Đang thêm...' : '+ Mời Vào Dự Án'}</span>
               </button>
             </div>
           </form>
@@ -160,20 +190,35 @@ export const TeamMembersModal: React.FC<TeamMembersModalProps> = ({
           <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span>DANH SÁCH THÀNH VIÊN ({members.length}):</span>
             <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-              Quyền của bạn: <b>{currentMemberRecord?.role || 'OWNER'}</b>
+              Vai trò của bạn: <b>{getRoleLabel(currentMemberRecord?.role || (isOwner ? ProjectMemberRole.OWNER : ProjectMemberRole.MEMBER))}</b>
             </span>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '280px', overflowY: 'auto' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {members.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '24px', color: 'var(--text-muted)', fontSize: '13px' }}>
-                Chưa có thành viên nào khác trong đồ án này
+                Chưa có thành viên nào khác trong dự án này
               </div>
             ) : (
               members.map((m) => {
                 const memberUser = m.user;
                 const isMemberOwner = m.role === ProjectMemberRole.OWNER || m.userId === project.userId;
+                const isMemberAdmin = m.role === ProjectMemberRole.ADMIN;
                 const isMe = m.userId === currentUser?.id;
+
+                // Kiểm tra quyền Kick:
+                // - Owner có thể kick tất cả người khác
+                // - Admin có thể kick Member và Viewer (không kick Owner hoặc Admin khác)
+                const canKickThisMember =
+                  !isMe &&
+                  ((isOwner && !isMemberOwner) ||
+                   (isAdmin && !isMemberOwner && !isMemberAdmin));
+
+                // Kiểm tra quyền đổi Role:
+                const canChangeThisRole =
+                  !isMe &&
+                  ((isOwner && !isMemberOwner) ||
+                   (isAdmin && !isMemberOwner && !isMemberAdmin));
 
                 return (
                   <div
@@ -198,8 +243,16 @@ export const TeamMembersModal: React.FC<TeamMembersModalProps> = ({
                           width: '36px',
                           height: '36px',
                           borderRadius: 'var(--radius-full)',
-                          backgroundColor: isMemberOwner ? 'var(--color-warning-subtle)' : 'var(--accent-subtle)',
-                          color: isMemberOwner ? 'var(--color-warning)' : 'var(--accent-primary)',
+                          backgroundColor: isMemberOwner
+                            ? 'var(--color-warning-subtle)'
+                            : isMemberAdmin
+                            ? 'rgba(168, 85, 247, 0.15)'
+                            : 'var(--accent-subtle)',
+                          color: isMemberOwner
+                            ? 'var(--color-warning)'
+                            : isMemberAdmin
+                            ? '#a855f7'
+                            : 'var(--accent-primary)',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
@@ -208,13 +261,22 @@ export const TeamMembersModal: React.FC<TeamMembersModalProps> = ({
                           flexShrink: 0
                         }}
                       >
-                        {isMemberOwner ? <Crown size={18} /> : (memberUser?.fullName ? memberUser.fullName.charAt(0).toUpperCase() : <User size={16} />)}
+                        {isMemberOwner ? (
+                          <Crown size={18} />
+                        ) : isMemberAdmin ? (
+                          <ShieldCheck size={18} />
+                        ) : memberUser?.fullName ? (
+                          memberUser.fullName.charAt(0).toUpperCase()
+                        ) : (
+                          <User size={16} />
+                        )}
                       </div>
                       <div>
                         <div style={{ fontSize: '13.5px', fontWeight: 600, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <span>{memberUser?.fullName || 'Thành viên'}</span>
                           {isMe && <span className="badge badge-blue" style={{ fontSize: '9.5px', padding: '1px 5px' }}>Bạn</span>}
                           {isMemberOwner && <span className="badge badge-amber" style={{ fontSize: '9.5px', padding: '1px 5px' }}>Trưởng nhóm</span>}
+                          {isMemberAdmin && !isMemberOwner && <span className="badge badge-purple" style={{ fontSize: '9.5px', padding: '1px 5px' }}>Quản trị viên</span>}
                         </div>
                         <div style={{ fontSize: '11.5px', color: 'var(--text-muted)' }}>
                           {memberUser?.email || m.userId}
@@ -224,7 +286,7 @@ export const TeamMembersModal: React.FC<TeamMembersModalProps> = ({
 
                     {/* Right: Role Selector & Actions */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      {isOwner && !isMemberOwner ? (
+                      {canChangeThisRole ? (
                         <select
                           disabled={updatingUserId === m.userId}
                           value={m.role}
@@ -233,40 +295,41 @@ export const TeamMembersModal: React.FC<TeamMembersModalProps> = ({
                           style={{ fontSize: '12px', padding: '4px 8px', width: 'auto' }}
                           title="Cấp lại vai trò cho thành viên"
                         >
+                          {isOwner && <option value={ProjectMemberRole.OWNER}>Trưởng nhóm (Owner)</option>}
+                          {isOwner && <option value={ProjectMemberRole.ADMIN}>Quản trị viên (Admin)</option>}
                           <option value={ProjectMemberRole.MEMBER}>Thành viên (Member)</option>
                           <option value={ProjectMemberRole.VIEWER}>Chỉ xem (Viewer)</option>
-                          <option value={ProjectMemberRole.OWNER}>Trưởng nhóm (Owner)</option>
                         </select>
                       ) : (
                         <span
-                          className={`badge ${isMemberOwner ? 'badge-amber' : m.role === ProjectMemberRole.VIEWER ? 'badge-neutral' : 'badge-green'}`}
+                          className={`badge ${getRoleBadgeClass(m.role)}`}
                           style={{ fontSize: '11px' }}
                         >
-                          {m.role === ProjectMemberRole.OWNER ? 'Trưởng nhóm' : m.role === ProjectMemberRole.VIEWER ? 'Chỉ xem' : 'Thành viên'}
+                          {getRoleLabel(m.role)}
                         </span>
                       )}
 
-                      {/* Remove Button (Owner kicking non-owner) */}
-                      {isOwner && !isMemberOwner && (
+                      {/* Kick Button (Owner or Admin kicking subordinate member) */}
+                      {canKickThisMember && (
                         <button
                           type="button"
                           onClick={() => handleRemoveMember(m.userId, memberUser?.fullName || 'thành viên')}
                           className="btn btn-ghost btn-icon btn-sm"
                           style={{ color: 'var(--color-danger)', padding: '5px' }}
-                          title="Xóa thành viên khỏi nhóm"
+                          title="Kick / Xóa thành viên khỏi dự án"
                         >
                           <Trash2 size={15} />
                         </button>
                       )}
 
-                      {/* Leave Project Button (Self non-owner leaving) */}
+                      {/* Out Group Button (Self leaving group for non-owners or single-member owner) */}
                       {isMe && !isMemberOwner && (
                         <button
                           type="button"
                           onClick={() => handleRemoveMember(m.userId, 'chính bạn')}
                           className="btn btn-ghost btn-sm"
-                          style={{ color: 'var(--color-danger)', padding: '4px 8px', fontSize: '12px' }}
-                          title="Rời khỏi nhóm đồ án"
+                          style={{ color: 'var(--color-danger)', padding: '4px 8px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}
+                          title="Rời khỏi nhóm dự án này"
                         >
                           <LogOut size={13} />
                           <span>Rời nhóm</span>
@@ -280,7 +343,20 @@ export const TeamMembersModal: React.FC<TeamMembersModalProps> = ({
           </div>
         </div>
 
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '10px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px' }}>
+          {/* Quick Leave Button for Current Member if not Owner */}
+          {currentMemberRecord && !isOwner ? (
+            <button
+              type="button"
+              onClick={() => handleRemoveMember(currentUser!.id, 'chính bạn')}
+              className="btn btn-ghost btn-sm"
+              style={{ color: 'var(--color-danger)', fontSize: '12.5px', display: 'flex', alignItems: 'center', gap: '6px' }}
+            >
+              <LogOut size={14} />
+              <span>Rời khỏi dự án này</span>
+            </button>
+          ) : <div />}
+
           <button type="button" onClick={onClose} className="btn btn-secondary">
             Đóng
           </button>
@@ -289,3 +365,4 @@ export const TeamMembersModal: React.FC<TeamMembersModalProps> = ({
     </Modal>
   );
 };
+

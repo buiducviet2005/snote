@@ -32,6 +32,7 @@ export enum ProjectStatus {
 
 export enum ProjectMemberRole {
   OWNER = 'OWNER',
+  ADMIN = 'ADMIN',
   MEMBER = 'MEMBER',
   VIEWER = 'VIEWER'
 }
@@ -72,3 +73,17 @@ export enum ScheduleEventType {
   GROUP_MEETING = 'GROUP_MEETING',
   PERSONAL = 'PERSONAL'
 }
+
+export enum ShareTargetType {
+  NOTE = 'NOTE',
+  TASK = 'TASK',
+  PROJECT = 'PROJECT',
+  COLLECTION = 'COLLECTION'
+}
+
+export enum ShareAccessLevel {
+  VIEW = 'VIEW',
+  EDIT = 'EDIT',
+  ADMIN = 'ADMIN'
+}
+

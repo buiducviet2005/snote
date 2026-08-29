@@ -19,6 +19,7 @@ interface AuthContextType {
   isAdmin: boolean;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
+  loginWithGoogle: (data: { credential?: string; accessToken?: string; email?: string; fullName?: string; avatarUrl?: string; googleId?: string }) => Promise<void>;
   register: (fullName: string, email: string, password: string, timezone?: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshProfile: () => Promise<void>;
@@ -63,6 +64,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       email,
       password
     });
+    const { user: userData, accessToken } = res.data;
+    setStoredToken(accessToken);
+    setToken(accessToken);
+    setUser(userData);
+  };
+
+  const loginWithGoogle = async (payload: { credential?: string; accessToken?: string; email?: string; fullName?: string; avatarUrl?: string; googleId?: string }) => {
+    const res = await api.post<ApiResponse<{ user: User; accessToken: string }>>('/auth/google', payload);
     const { user: userData, accessToken } = res.data;
     setStoredToken(accessToken);
     setToken(accessToken);
@@ -118,6 +127,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isAdmin: user?.role === UserRole.ADMIN,
         loading,
         login,
+        loginWithGoogle,
         register,
         logout,
         refreshProfile,

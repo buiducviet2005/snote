@@ -12,7 +12,7 @@ export class ProjectsController {
     const data = await this.service.getAllProjects(userId, semesterId, subjectId);
     res.status(200).json({
       success: true,
-      message: 'Lấy danh sách đồ án thành công',
+      message: 'Lấy danh sách dự án / bài tập lớn thành công',
       data
     });
   };
@@ -33,7 +33,7 @@ export class ProjectsController {
     const data = await this.service.getProjectWorkspace(id, userId);
     res.status(200).json({
       success: true,
-      message: 'Lấy không gian làm việc đồ án thành công',
+      message: 'Lấy không gian làm việc dự án thành công',
       data
     });
   };
@@ -44,7 +44,7 @@ export class ProjectsController {
     const data = await this.service.createProject(userId, validated);
     res.status(201).json({
       success: true,
-      message: 'Tạo đồ án mới thành công',
+      message: 'Tạo dự án / bài tập lớn mới thành công',
       data
     });
   };
@@ -56,7 +56,7 @@ export class ProjectsController {
     const data = await this.service.updateProject(id, userId, validated);
     res.status(200).json({
       success: true,
-      message: 'Cập nhật đồ án thành công',
+      message: 'Cập nhật dự án thành công',
       data
     });
   };
@@ -67,7 +67,7 @@ export class ProjectsController {
     await this.service.deleteProject(id, userId);
     res.status(200).json({
       success: true,
-      message: 'Xóa đồ án thành công'
+      message: 'Xóa dự án / bài tập lớn thành công'
     });
   };
 
@@ -77,7 +77,7 @@ export class ProjectsController {
     const data = await this.service.addMember(id, userId, req.body);
     res.status(200).json({
       success: true,
-      message: 'Thêm thành viên vào đồ án thành công',
+      message: 'Thêm thành viên vào dự án thành công',
       data
     });
   };
@@ -98,10 +98,11 @@ export class ProjectsController {
     const userId = req.user!.id;
     const id = req.params.id as string;
     const targetUserId = req.params.memberUserId as string;
+    const isSelf = userId === targetUserId;
     await this.service.removeMember(id, userId, targetUserId);
     res.status(200).json({
       success: true,
-      message: 'Xóa thành viên khỏi đồ án thành công'
+      message: isSelf ? 'Rời khỏi nhóm dự án thành công' : 'Xóa thành viên khỏi dự án thành công'
     });
   };
 
@@ -120,7 +121,7 @@ export class ProjectsController {
     await this.service.respondInvitation(id, userId, true);
     res.status(200).json({
       success: true,
-      message: 'Bạn đã chấp nhận tham gia đồ án thành công'
+      message: 'Bạn đã chấp nhận tham gia dự án thành công'
     });
   };
 
@@ -130,7 +131,7 @@ export class ProjectsController {
     await this.service.respondInvitation(id, userId, false);
     res.status(200).json({
       success: true,
-      message: 'Bạn đã từ chối tham gia đồ án'
+      message: 'Bạn đã từ chối tham gia dự án'
     });
   };
 }

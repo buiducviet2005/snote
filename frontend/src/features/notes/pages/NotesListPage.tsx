@@ -1,10 +1,13 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { api, ApiResponse } from '../../../services/api';
 import { useAppFilter } from '../../../contexts/AppFilterContext';
 import { useToast } from '../../../contexts/ToastContext';
 import { NoteCard } from '../components/NoteCard';
 import { NoteModal, NoteModalMode } from '../components/NoteModal';
+import { TaskModal } from '../../tasks/components/TaskModal';
+import { NotesGraphView } from '../components/NotesGraphView';
 import { MarkdownViewer } from '../../../components/common/MarkdownViewer';
+import { toggleChecklistItem, detectNoteType } from '../utils/smartNoteParser';
 import { NoteType } from '@snote/shared';
 import {
   BookOpen,
@@ -31,13 +34,15 @@ import {
   Bookmark,
   Copy,
   Check,
+  CheckSquare,
   ArrowUpDown,
   SlidersHorizontal,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Network
 } from 'lucide-react';
 
-export type NoteViewDensity = 'GRID' | 'COMPACT' | 'LIST' | 'SPLIT' | 'KANBAN';
+export type NoteViewDensity = 'GRID' | 'COMPACT' | 'LIST' | 'SPLIT' | 'GRAPH' | 'KANBAN';
 
 export const NotesListPage: React.FC = () => {
   const { selectedSubjectId, selectedSemesterId, subjects } = useAppFilter();
@@ -46,8 +51,15 @@ export const NotesListPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
 
-  // Collapsible Filter Drawer state (Mặc định thu gọn để tối ưu không gian)
-  const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
+  // Quick Capture State
+  const [quickText, setQuickText] = useState('');
+  const [isQuickExpanded, setIsQuickExpanded] = useState(false);
+  const [quickSubjectId, setQuickSubjectId] = useState<string>('');
+  const [quickProjectId, setQuickProjectId] = useState<string>('');
+  const [quickNoteType, setQuickNoteType] = useState<NoteType>(NoteType.GENERAL);
+  const [quickSaving, setQuickSaving] = useState(false);
+  const quickInputRef = useRef<HTMLInputElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Filter & Sort State
   const [selectedSourceFilter, setSelectedSourceFilter] = useState<string>('ALL'); // 'ALL' | 'FREE' | `sub_${id}` | `proj_${id}`
@@ -61,7 +73,32 @@ export const NotesListPage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [noteToEdit, setNoteToEdit] = useState<any | null>(null);
   const [modalMode, setModalMode] = useState<NoteModalMode>('PREVIEW');
+  const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
+  const [taskPrefillData, setTaskPrefillData] = useState<any | null>(null);
+  const [selectedNoteIds, setSelectedNoteIds] = useState<string[]>([]);
+  const [isSelectionMode, setIsSelectionMode] = useState<boolean>(false);
   const { showToast } = useToast();
+
+  // Keyboard shortcuts: '/' for Search, 'N' for Quick Capture
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      const isInput = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable;
+      if (isInput) return;
+
+      if (e.key === '/') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      } else if (e.key === 'n' || e.key === 'N') {
+        e.preventDefault();
+        quickInputRef.current?.focus();
+        setIsQuickExpanded(true);
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, []);
 
   useEffect(() => {
     api.get<ApiResponse<any[]>>('/projects')
@@ -138,12 +175,27 @@ export const NotesListPage: React.FC = () => {
     }
   };
 
-  const handleCopyMarkdown = (note: any) => {
+  const handleCopyContent = (note: any) => {
     if (!note?.content) return;
-    navigator.clipboard.writeText(`# ${note.title}\n\n${note.content}`);
+    navigator.clipboard.writeText(`${note.title}\n\n${note.content}`);
     setCopiedId(note.id);
-    showToast('Đã sao chép toàn bộ mã nguồn Markdown!', 'success');
+    showToast('Đã sao chép nội dung ghi chú!', 'success');
     setTimeout(() => setCopiedId(null), 2500);
+  };
+
+  const handleToggleNoteTodo = async (noteId: string, todoIndex: number, newContent: string) => {
+    // Optimistic UI state update
+    setNotes((prev) => prev.map((n) => (n.id === noteId ? { ...n, content: newContent } : n)));
+    if (selectedNoteForSplit && selectedNoteForSplit.id === noteId) {
+      setSelectedNoteForSplit((prev: any) => ({ ...prev, content: newContent }));
+    }
+
+    try {
+      await api.put(`/notes/${noteId}`, { content: newContent });
+    } catch {
+      showToast('Lỗi cập nhật trạng thái việc cần làm', 'error');
+      fetchNotes();
+    }
   };
 
   const handleOpenCreate = () => {
@@ -166,6 +218,150 @@ export const NotesListPage: React.FC = () => {
     setNoteToEdit(note);
     setModalMode('WRITE');
     setIsModalOpen(true);
+  };
+
+  const handleConvertToTask = (note: any) => {
+    if (!note) return;
+    setTaskPrefillData({
+      title: note.title,
+      description: note.content || '',
+      subjectId: note.subjectId || '',
+      projectId: note.projectId || '',
+      tags: note.tags || []
+    });
+    setIsTaskModalOpen(true);
+  };
+
+  const handleToggleSelectNote = (id: string, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setSelectedNoteIds((prev) => {
+      if (prev.includes(id)) {
+        const next = prev.filter((item) => item !== id);
+        if (next.length === 0) setIsSelectionMode(false);
+        return next;
+      } else {
+        return [...prev, id];
+      }
+    });
+  };
+
+  const handleSelectAll = () => {
+    if (selectedNoteIds.length === filteredNotes.length) {
+      setSelectedNoteIds([]);
+      setIsSelectionMode(false);
+    } else {
+      setSelectedNoteIds(filteredNotes.map((n) => n.id));
+      setIsSelectionMode(true);
+    }
+  };
+
+  const handleClearSelection = () => {
+    setSelectedNoteIds([]);
+    setIsSelectionMode(false);
+  };
+
+  const handleBatchDelete = async () => {
+    if (selectedNoteIds.length === 0) return;
+    if (!window.confirm(`Bạn có chắc muốn xóa ${selectedNoteIds.length} bài ghi đã chọn không?`)) return;
+
+    setLoading(true);
+    try {
+      await Promise.all(selectedNoteIds.map((id) => api.delete(`/notes/${id}`)));
+      showToast(`Đã xóa ${selectedNoteIds.length} bài ghi thành công!`, 'success');
+      setSelectedNoteIds([]);
+      setIsSelectionMode(false);
+      fetchNotes();
+    } catch (err: any) {
+      showToast(err.message || 'Lỗi khi xóa hàng loạt ghi chú', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBatchPin = async () => {
+    if (selectedNoteIds.length === 0) return;
+    setLoading(true);
+    try {
+      await Promise.all(selectedNoteIds.map((id) => api.patch(`/notes/${id}/pin`)));
+      showToast(`Đã ghim ${selectedNoteIds.length} bài ghi!`, 'success');
+      setSelectedNoteIds([]);
+      setIsSelectionMode(false);
+      fetchNotes();
+    } catch (err: any) {
+      showToast(err.message || 'Lỗi khi ghim hàng loạt', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBatchArchive = async () => {
+    if (selectedNoteIds.length === 0) return;
+    setLoading(true);
+    try {
+      await Promise.all(selectedNoteIds.map((id) => api.patch(`/notes/${id}/archive`)));
+      showToast(`Đã lưu trữ ${selectedNoteIds.length} bài ghi!`, 'success');
+      setSelectedNoteIds([]);
+      setIsSelectionMode(false);
+      fetchNotes();
+    } catch (err: any) {
+      showToast(err.message || 'Lỗi khi lưu trữ hàng loạt', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBatchConvertToTasks = async () => {
+    if (selectedNoteIds.length === 0) return;
+    const selectedNotes = notes.filter((n) => selectedNoteIds.includes(n.id));
+    setLoading(true);
+    try {
+      await Promise.all(
+        selectedNotes.map((note) =>
+          api.post('/tasks', {
+            title: note.title,
+            description: note.content || '',
+            subjectId: note.subjectId || undefined,
+            projectId: note.projectId || undefined,
+            status: 'TODO',
+            priority: 'MEDIUM'
+          })
+        )
+      );
+      showToast(`Đã tạo thành công ${selectedNotes.length} công việc từ các ghi chú đã chọn!`, 'success');
+      setSelectedNoteIds([]);
+      setIsSelectionMode(false);
+    } catch (err: any) {
+      showToast(err.message || 'Lỗi khi chuyển đổi hàng loạt sang công việc', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleQuickSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!quickText.trim() || quickSaving) return;
+
+    setQuickSaving(true);
+    try {
+      const autoType = detectNoteType(quickText);
+      const finalNoteType = quickNoteType !== NoteType.GENERAL ? quickNoteType : autoType;
+
+      await api.post<ApiResponse<any>>('/notes', {
+        content: quickText.trim(),
+        subjectId: quickSubjectId || (selectedSubjectId ? selectedSubjectId : undefined),
+        projectId: quickProjectId || undefined,
+        noteType: finalNoteType
+      });
+
+      showToast('Đã lưu ghi chú nhanh thành công!', 'success');
+      setQuickText('');
+      setIsQuickExpanded(false);
+      fetchNotes();
+    } catch (err: any) {
+      showToast(err.message || 'Lỗi khi lưu ghi chú nhanh', 'error');
+    } finally {
+      setQuickSaving(false);
+    }
   };
 
   // Filtered and Sorted Notes Calculation
@@ -210,6 +406,9 @@ export const NotesListPage: React.FC = () => {
       return 0;
     });
   }, [notes, selectedSourceFilter, selectedTypeFilter, sortBy]);
+
+  const pinnedNotes = useMemo(() => filteredNotes.filter((n) => n.isPinned), [filteredNotes]);
+  const otherNotes = useMemo(() => filteredNotes.filter((n) => !n.isPinned), [filteredNotes]);
 
   // Compute Active Filters Count
   const activeFiltersCount = useMemo(() => {
@@ -272,7 +471,7 @@ export const NotesListPage: React.FC = () => {
     { id: NoteType.LECTURE, label: '📖 Bài giảng' },
     { id: NoteType.LAB_REPORT, label: '🧪 Thực hành' },
     { id: NoteType.EXAM_PREP, label: '🎯 Ôn thi' },
-    { id: NoteType.PROJECT_LOG, label: '🛠️ Đồ án' },
+    { id: NoteType.PROJECT_LOG, label: '🛠️ Dự án & BTL' },
     { id: NoteType.MEETING_MINUTES, label: '👥 Họp nhóm' },
     { id: NoteType.GENERAL, label: '📝 Tự do' }
   ];
@@ -281,13 +480,13 @@ export const NotesListPage: React.FC = () => {
     { type: NoteType.LECTURE, title: '📖 Bài Giảng Lý Thuyết', color: 'var(--color-info)' },
     { type: NoteType.LAB_REPORT, title: '🧪 Báo Cáo Thực Hành', color: 'var(--color-success)' },
     { type: NoteType.EXAM_PREP, title: '🎯 Đề Cương Ôn Thi', color: 'var(--color-warning)' },
-    { type: NoteType.PROJECT_LOG, title: '🛠️ Nhật Ký Đồ Án', color: 'var(--color-purple)' },
+    { type: NoteType.PROJECT_LOG, title: '🛠️ Nhật Ký Dự Án / BTL', color: 'var(--color-purple)' },
     { type: NoteType.GENERAL, title: '📝 Ghi Chú Tự Do', color: 'var(--text-muted)' }
   ];
 
   return (
     <div style={{ maxWidth: '1440px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-      {/* 1. Ultra-Clean Minimalist Header (Dành trọn không gian cho Note) */}
+      {/* 1. Ultra-Clean Minimalist Header */}
       <div
         style={{
           display: 'flex',
@@ -295,29 +494,122 @@ export const NotesListPage: React.FC = () => {
           justifyContent: 'space-between',
           flexWrap: 'wrap',
           gap: '12px',
-          paddingBottom: '4px'
+          paddingBottom: '2px'
         }}
       >
-        {/* Title & Count */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <h1 style={{ fontSize: '20px', fontWeight: 800, margin: 0, letterSpacing: '-0.02em', color: 'var(--text-primary)' }}>
-            Ghi Chú
-          </h1>
-          <span className="badge badge-neutral" style={{ fontSize: '11px', padding: '2px 8px' }}>
-            {filteredNotes.length}{filteredNotes.length !== notes.length ? ` / ${notes.length}` : ''} bài ghi
-          </span>
+        {/* Left: Title + Count + View Mode Switcher */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <h1 style={{ fontSize: '20px', fontWeight: 800, margin: 0, letterSpacing: '-0.02em', color: 'var(--text-primary)' }}>
+              Ghi Chú
+            </h1>
+            <span className="badge badge-neutral" style={{ fontSize: '11px', padding: '2px 8px' }}>
+              {filteredNotes.length}{filteredNotes.length !== notes.length ? ` / ${notes.length}` : ''} bài ghi
+            </span>
+          </div>
+
+          {/* 3 Chế Độ Xem Ghi Chú */}
+          <div
+            style={{
+              display: 'flex',
+              background: 'var(--bg-secondary)',
+              padding: '3px',
+              borderRadius: 'var(--radius-md)',
+              border: '1px solid var(--border-color)',
+              alignItems: 'center',
+              gap: '2px'
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => setViewDensity('GRID')}
+              className={`btn btn-sm ${viewDensity === 'GRID' ? 'btn-primary' : 'btn-ghost'}`}
+              style={{
+                padding: '4px 10px',
+                fontSize: '12px',
+                fontWeight: viewDensity === 'GRID' ? 700 : 500,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px',
+                borderRadius: 'var(--radius-sm)'
+              }}
+              title="Chế độ xem Lưới thẻ (Bento Grid)"
+            >
+              <LayoutGrid size={13} />
+              <span>Lưới thẻ</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setViewDensity('SPLIT')}
+              className={`btn btn-sm ${viewDensity === 'SPLIT' ? 'btn-primary' : 'btn-ghost'}`}
+              style={{
+                padding: '4px 10px',
+                fontSize: '12px',
+                fontWeight: viewDensity === 'SPLIT' ? 700 : 500,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px',
+                borderRadius: 'var(--radius-sm)'
+              }}
+              title="Chế độ xem Chia đôi đọc sâu (Split Notebook)"
+            >
+              <Columns size={13} />
+              <span>Chia đôi (Đọc sâu)</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setViewDensity('LIST')}
+              className={`btn btn-sm ${viewDensity === 'LIST' ? 'btn-primary' : 'btn-ghost'}`}
+              style={{
+                padding: '4px 10px',
+                fontSize: '12px',
+                fontWeight: viewDensity === 'LIST' ? 700 : 500,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px',
+                borderRadius: 'var(--radius-sm)'
+              }}
+              title="Chế độ xem Bảng danh sách"
+            >
+              <List size={13} />
+              <span>Danh sách</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setViewDensity('GRAPH')}
+              className={`btn btn-sm ${viewDensity === 'GRAPH' ? 'btn-primary' : 'btn-ghost'}`}
+              style={{
+                padding: '4px 10px',
+                fontSize: '12px',
+                fontWeight: viewDensity === 'GRAPH' ? 700 : 500,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px',
+                borderRadius: 'var(--radius-sm)',
+                color: viewDensity === 'GRAPH' ? '#ffffff' : '#38bdf8'
+              }}
+              title="Chế độ xem Bản đồ Mạng lưới Tri Thức (Knowledge Graph)"
+            >
+              <Network size={13} />
+              <span>Mạng lưới</span>
+            </button>
+          </div>
         </div>
 
-        {/* Right Controls: Search + Filter Toggle + View Switcher + Create Button */}
+        {/* Right Controls: Search + Create Button */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-          {/* Quick Search Input */}
-          <div style={{ position: 'relative', width: '220px' }}>
+          {/* Quick Search Input with '/' Shortcut */}
+          <div style={{ position: 'relative', width: '230px' }}>
             <span style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', display: 'flex' }}>
               <Search size={14} />
             </span>
             <input
+              ref={searchInputRef}
               type="text"
-              placeholder="Tìm ghi chú..."
+              placeholder="Tìm ghi chú... (Phím /)"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="snote-input"
@@ -344,110 +636,6 @@ export const NotesListPage: React.FC = () => {
             )}
           </div>
 
-          {/* Toggle Advanced Filters Button */}
-          <button
-            onClick={() => setIsFilterPanelOpen((prev) => !prev)}
-            className={`btn btn-sm ${isFilterPanelOpen || activeFiltersCount > 0 ? 'btn-secondary' : 'btn-ghost'}`}
-            style={{
-              height: '34px',
-              padding: '0 12px',
-              fontSize: '12.5px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              borderColor: activeFiltersCount > 0 ? 'var(--accent-border)' : 'var(--border-color)',
-              color: activeFiltersCount > 0 ? 'var(--accent-primary)' : 'var(--text-primary)'
-            }}
-            title="Đóng / Mở bộ lọc nâng cao"
-          >
-            <SlidersHorizontal size={13} />
-            <span>Bộ lọc</span>
-            {activeFiltersCount > 0 && (
-              <span
-                style={{
-                  backgroundColor: 'var(--accent-primary)',
-                  color: '#ffffff',
-                  fontSize: '10px',
-                  fontWeight: 800,
-                  borderRadius: 'var(--radius-full)',
-                  padding: '1px 6px'
-                }}
-              >
-                {activeFiltersCount}
-              </span>
-            )}
-            {isFilterPanelOpen ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
-          </button>
-
-          {/* 5 View Modes Switcher */}
-          <div style={{ display: 'flex', background: 'var(--bg-secondary)', padding: '2px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', height: '34px', alignItems: 'center' }}>
-            <button
-              onClick={() => setViewDensity('GRID')}
-              className="btn btn-ghost btn-icon"
-              style={{
-                padding: '5px 7px',
-                color: viewDensity === 'GRID' ? 'var(--accent-primary)' : 'var(--text-muted)',
-                background: viewDensity === 'GRID' ? 'var(--accent-subtle)' : 'transparent',
-                borderRadius: 'var(--radius-sm)'
-              }}
-              title="Dạng Lưới (Grid)"
-            >
-              <LayoutGrid size={14} />
-            </button>
-            <button
-              onClick={() => setViewDensity('COMPACT')}
-              className="btn btn-ghost btn-icon"
-              style={{
-                padding: '5px 7px',
-                color: viewDensity === 'COMPACT' ? 'var(--accent-primary)' : 'var(--text-muted)',
-                background: viewDensity === 'COMPACT' ? 'var(--accent-subtle)' : 'transparent',
-                borderRadius: 'var(--radius-sm)'
-              }}
-              title="Dạng Bento Gọn (Compact)"
-            >
-              <Grid size={14} />
-            </button>
-            <button
-              onClick={() => setViewDensity('SPLIT')}
-              className="btn btn-ghost btn-icon"
-              style={{
-                padding: '5px 7px',
-                color: viewDensity === 'SPLIT' ? 'var(--accent-primary)' : 'var(--text-muted)',
-                background: viewDensity === 'SPLIT' ? 'var(--accent-subtle)' : 'transparent',
-                borderRadius: 'var(--radius-sm)'
-              }}
-              title="Dạng Chia Đôi Đọc Sâu (Split Reader)"
-            >
-              <Columns size={14} />
-            </button>
-            <button
-              onClick={() => setViewDensity('KANBAN')}
-              className="btn btn-ghost btn-icon"
-              style={{
-                padding: '5px 7px',
-                color: viewDensity === 'KANBAN' ? 'var(--accent-primary)' : 'var(--text-muted)',
-                background: viewDensity === 'KANBAN' ? 'var(--accent-subtle)' : 'transparent',
-                borderRadius: 'var(--radius-sm)'
-              }}
-              title="Dạng Phân Luồng (Kanban)"
-            >
-              <Kanban size={14} />
-            </button>
-            <button
-              onClick={() => setViewDensity('LIST')}
-              className="btn btn-ghost btn-icon"
-              style={{
-                padding: '5px 7px',
-                color: viewDensity === 'LIST' ? 'var(--accent-primary)' : 'var(--text-muted)',
-                background: viewDensity === 'LIST' ? 'var(--accent-subtle)' : 'transparent',
-                borderRadius: 'var(--radius-sm)'
-              }}
-              title="Dạng Bảng Danh Sách (List)"
-            >
-              <List size={14} />
-            </button>
-          </div>
-
           {/* Primary Action Button */}
           <button
             onClick={handleOpenCreate}
@@ -460,130 +648,228 @@ export const NotesListPage: React.FC = () => {
         </div>
       </div>
 
-      {/* 2. Collapsible Advanced Filters Drawer (Chỉ mở khi người dùng cần) */}
-      {isFilterPanelOpen && (
-        <div
-          className="snote-card animate-fade-in"
-          style={{
-            padding: '14px 18px',
-            borderRadius: 'var(--radius-lg)',
-            backgroundColor: 'var(--bg-secondary)',
-            border: '1px solid var(--border-color)',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '12px'
-          }}
-        >
-          {/* Row 1: Status Tabs + Sort Dropdown + Reset */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-              {/* Status Segmented Control */}
-              <div style={{ display: 'flex', background: 'var(--bg-primary)', padding: '2px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
-                <button
-                  onClick={() => setActiveTab('ALL')}
-                  className={`btn btn-sm ${activeTab === 'ALL' ? 'btn-primary' : 'btn-ghost'}`}
-                  style={{ fontSize: '11.5px', padding: '3px 10px' }}
-                >
-                  Tất cả ({notes.length})
-                </button>
-                <button
-                  onClick={() => setActiveTab('PINNED')}
-                  className={`btn btn-sm ${activeTab === 'PINNED' ? 'btn-primary' : 'btn-ghost'}`}
-                  style={{ fontSize: '11.5px', padding: '3px 10px' }}
-                >
-                  <Pin size={11} style={{ fill: activeTab === 'PINNED' ? 'currentColor' : 'none' }} />
-                  <span>Đã ghim</span>
-                </button>
-                <button
-                  onClick={() => setActiveTab('ARCHIVED')}
-                  className={`btn btn-sm ${activeTab === 'ARCHIVED' ? 'btn-primary' : 'btn-ghost'}`}
-                  style={{ fontSize: '11.5px', padding: '3px 10px' }}
-                >
-                  <Archive size={11} />
-                  <span>Lưu trữ</span>
-                </button>
-              </div>
-
-              {/* Sort selector */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <ArrowUpDown size={13} style={{ color: 'var(--text-muted)' }} />
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as any)}
-                  className="snote-select"
-                  style={{ fontSize: '12px', padding: '4px 8px', height: '28px' }}
-                >
-                  <option value="PINNED_FIRST">📌 Ghim lên đầu</option>
-                  <option value="NEWEST">🕒 Mới nhất</option>
-                  <option value="OLDEST">⏳ Cũ nhất</option>
-                  <option value="TITLE">🔤 Tiêu đề A-Z</option>
-                </select>
-              </div>
-            </div>
-
-            {activeFiltersCount > 0 && (
+      {/* 2. Quick Capture Bar (Google Keep / Apple Notes Style) */}
+      <div
+        className="snote-card"
+        style={{
+          padding: isQuickExpanded ? '14px 18px' : '10px 16px',
+          borderRadius: 'var(--radius-lg)',
+          backgroundColor: 'var(--bg-secondary)',
+          border: isQuickExpanded ? '1.5px solid var(--accent-primary)' : '1px solid var(--border-color)',
+          boxShadow: isQuickExpanded ? '0 8px 24px -4px rgba(99, 102, 241, 0.22)' : 'none',
+          transition: 'all var(--transition-normal)'
+        }}
+      >
+        <form onSubmit={handleQuickSubmit}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span style={{ color: 'var(--accent-primary)', display: 'flex', flexShrink: 0 }}>
+              <Sparkles size={16} />
+            </span>
+            <input
+              ref={quickInputRef}
+              type="text"
+              placeholder="Ghi nhanh ý tưởng, việc cần làm [ ], hoặc dán đường link... (Nhấn 'N' hoặc Enter để lưu)"
+              value={quickText}
+              onFocus={() => setIsQuickExpanded(true)}
+              onChange={(e) => setQuickText(e.target.value)}
+              style={{
+                width: '100%',
+                background: 'transparent',
+                border: 'none',
+                outline: 'none',
+                color: 'var(--text-primary)',
+                fontSize: '14px',
+                fontWeight: 500
+              }}
+            />
+            {quickText.trim() && !isQuickExpanded && (
               <button
-                onClick={() => {
-                  setSelectedSourceFilter('ALL');
-                  setSelectedTypeFilter('ALL');
-                  setActiveTab('ALL');
-                  setSortBy('PINNED_FIRST');
-                  setSearch('');
-                }}
-                className="btn btn-ghost btn-sm"
-                style={{ fontSize: '11.5px', padding: '2px 8px', color: 'var(--accent-primary)', fontWeight: 600 }}
+                type="submit"
+                disabled={quickSaving}
+                className="btn btn-primary btn-sm"
+                style={{ padding: '4px 12px', fontSize: '12px', flexShrink: 0 }}
               >
-                Xóa tất cả bộ lọc
+                {quickSaving ? 'Đang lưu...' : 'Lưu (Enter)'}
               </button>
             )}
           </div>
 
-          {/* Row 2: Source Folders Filter Chips */}
-          <div>
-            <div style={{ fontSize: '10.5px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '6px' }}>
-              Nguồn môn học / Đồ án:
+          {/* Quick Capture Expanded Toolbar */}
+          {isQuickExpanded && (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '10px',
+                marginTop: '12px',
+                paddingTop: '10px',
+                borderTop: '1px solid var(--border-subtle)'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                {/* Subject Selector */}
+                <select
+                  value={quickSubjectId}
+                  onChange={(e) => setQuickSubjectId(e.target.value)}
+                  className="snote-select"
+                  style={{ height: '30px', fontSize: '12px', padding: '2px 8px' }}
+                >
+                  <option value="">📖 Chọn môn học (Tùy chọn)</option>
+                  {subjects.map((sub) => (
+                    <option key={sub.id} value={sub.id}>
+                      {sub.code ? `[${sub.code}] ` : ''}{sub.name}
+                    </option>
+                  ))}
+                </select>
+
+                {/* Project Selector */}
+                <select
+                  value={quickProjectId}
+                  onChange={(e) => setQuickProjectId(e.target.value)}
+                  className="snote-select"
+                  style={{ height: '30px', fontSize: '12px', padding: '2px 8px' }}
+                >
+                  <option value="">📁 Đồ án / BTL (Tùy chọn)</option>
+                  {projects.map((proj) => (
+                    <option key={proj.id} value={proj.id}>
+                      {proj.name}
+                    </option>
+                  ))}
+                </select>
+
+                {/* Note Type Selector */}
+                <select
+                  value={quickNoteType}
+                  onChange={(e) => setQuickNoteType(e.target.value as any)}
+                  className="snote-select"
+                  style={{ height: '30px', fontSize: '12px', padding: '2px 8px' }}
+                >
+                  <option value={NoteType.GENERAL}>📝 Tự nhận diện loại</option>
+                  <option value={NoteType.LECTURE}>📖 Bài giảng</option>
+                  <option value={NoteType.LAB_REPORT}>🧪 Thực hành</option>
+                  <option value={NoteType.EXAM_PREP}>🎯 Ôn thi</option>
+                  <option value={NoteType.PROJECT_LOG}>🛠️ Dự án</option>
+                  <option value={NoteType.MEETING_MINUTES}>👥 Họp nhóm</option>
+                </select>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsQuickExpanded(false);
+                    if (!quickText.trim()) setQuickText('');
+                  }}
+                  className="btn btn-ghost btn-sm"
+                  style={{ fontSize: '12px', padding: '4px 10px' }}
+                >
+                  Đóng
+                </button>
+                <button
+                  type="submit"
+                  disabled={!quickText.trim() || quickSaving}
+                  className="btn btn-primary btn-sm"
+                  style={{ fontSize: '12px', padding: '4px 14px', fontWeight: 700 }}
+                >
+                  {quickSaving ? 'Đang lưu...' : 'Lưu ghi chú'}
+                </button>
+              </div>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-              {sourcePills.map((pill) => {
-                const isActive = selectedSourceFilter === pill.id;
-                return (
-                  <button
-                    key={pill.id}
-                    onClick={() => setSelectedSourceFilter(pill.id)}
-                    className={`filter-chip ${isActive ? 'active' : ''}`}
-                    style={{ fontSize: '11.5px', padding: '4px 10px' }}
-                  >
-                    <span>{pill.label}</span>
-                    <span style={{ opacity: 0.7, fontSize: '10px' }}>({pill.count})</span>
-                  </button>
-                );
-              })}
-            </div>
+          )}
+        </form>
+      </div>
+
+      {/* 3. Horizontal Scroll Tab Bar: Sources + Status Tabs + Sort Dropdown */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '12px',
+          overflowX: 'auto',
+          paddingBottom: '2px'
+        }}
+      >
+        {/* Scrollable Pills */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', overflowX: 'auto', flex: 1, padding: '2px 0' }}>
+          {sourcePills.map((pill) => {
+            const isActive = selectedSourceFilter === pill.id;
+            return (
+              <button
+                key={pill.id}
+                onClick={() => setSelectedSourceFilter(pill.id)}
+                className={`filter-chip ${isActive ? 'active' : ''}`}
+                style={{
+                  fontSize: '12px',
+                  padding: '5px 12px',
+                  whiteSpace: 'nowrap',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  flexShrink: 0
+                }}
+              >
+                <span>{pill.label}</span>
+                <span
+                  style={{
+                    fontSize: '10px',
+                    opacity: 0.75,
+                    backgroundColor: isActive ? 'rgba(255, 255, 255, 0.2)' : 'var(--bg-tertiary)',
+                    padding: '1px 5px',
+                    borderRadius: '999px'
+                  }}
+                >
+                  {pill.count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Right Status Tabs + Sort Dropdown */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+          {/* Status Tabs: Tất cả | Ghim | Lưu trữ */}
+          <div style={{ display: 'flex', background: 'var(--bg-secondary)', padding: '2px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
+            <button
+              onClick={() => setActiveTab('ALL')}
+              className={`btn btn-sm ${activeTab === 'ALL' ? 'btn-primary' : 'btn-ghost'}`}
+              style={{ fontSize: '11px', padding: '3px 8px' }}
+            >
+              Tất cả
+            </button>
+            <button
+              onClick={() => setActiveTab('PINNED')}
+              className={`btn btn-sm ${activeTab === 'PINNED' ? 'btn-primary' : 'btn-ghost'}`}
+              style={{ fontSize: '11px', padding: '3px 8px', display: 'flex', alignItems: 'center', gap: '3px' }}
+            >
+              <Pin size={11} style={{ fill: activeTab === 'PINNED' ? 'currentColor' : 'none' }} />
+              <span>Ghim</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('ARCHIVED')}
+              className={`btn btn-sm ${activeTab === 'ARCHIVED' ? 'btn-primary' : 'btn-ghost'}`}
+              style={{ fontSize: '11px', padding: '3px 8px', display: 'flex', alignItems: 'center', gap: '3px' }}
+            >
+              <Archive size={11} />
+              <span>Lưu trữ</span>
+            </button>
           </div>
 
-          {/* Row 3: Note Type Filter Chips */}
-          <div>
-            <div style={{ fontSize: '10.5px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '6px' }}>
-              Loại nội dung:
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-              {typePills.map((pill) => {
-                const isActive = selectedTypeFilter === pill.id;
-                return (
-                  <button
-                    key={pill.id}
-                    onClick={() => setSelectedTypeFilter(pill.id)}
-                    className={`filter-chip ${isActive ? 'active' : ''}`}
-                    style={{ fontSize: '11.5px', padding: '4px 10px' }}
-                  >
-                    <span>{pill.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as any)}
+            className="snote-select"
+            style={{ fontSize: '11.5px', padding: '4px 8px', height: '28px' }}
+          >
+            <option value="PINNED_FIRST">📌 Ghim lên đầu</option>
+            <option value="NEWEST">🕒 Mới nhất</option>
+            <option value="OLDEST">⏳ Cũ nhất</option>
+            <option value="TITLE">🔤 Tên A-Z</option>
+          </select>
         </div>
-      )}
+      </div>
 
       {/* 3. Main Notes Content Area (Tập trung toàn bộ không gian cho bài ghi) */}
       {loading ? (
@@ -635,6 +921,15 @@ export const NotesListPage: React.FC = () => {
             <span>Tạo Ghi Chú Mới</span>
           </button>
         </div>
+      ) : viewDensity === 'GRAPH' ? (
+        /* GRAPH VIEW: Interactive Knowledge Network Graph (Obsidian-Style) */
+        <NotesGraphView
+          notes={notes}
+          subjects={subjects}
+          projects={projects}
+          onSelectNote={handleOpenView}
+          onEditNote={handleOpenEdit}
+        />
       ) : viewDensity === 'SPLIT' ? (
         /* SPLIT VIEW: Dual-Pane IDE Notebook Reader */
         <div style={{ display: 'grid', gridTemplateColumns: '360px 1fr', gap: '16px', alignItems: 'start' }}>
@@ -710,29 +1005,47 @@ export const NotesListPage: React.FC = () => {
           >
             {selectedNoteForSplit ? (
               <div>
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '16px', borderBottom: '1px solid var(--border-color)', paddingBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
-                  <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px', flexWrap: 'wrap' }}>
-                      <span className="badge badge-purple">{selectedNoteForSplit.noteType}</span>
-                      {selectedNoteForSplit.subject && (
-                        <span className="badge badge-blue">
-                          [{selectedNoteForSplit.subject.code}] {selectedNoteForSplit.subject.name}
-                        </span>
-                      )}
-                      {selectedNoteForSplit.project && (
-                        <span className="badge badge-purple">📁 {selectedNoteForSplit.project.name}</span>
-                      )}
-                    </div>
-                    <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 800, color: 'var(--text-primary)' }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '14px', borderBottom: '1px solid var(--border-color)', paddingBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
+                  <div style={{ flex: 1 }}>
+                    <h2 style={{ margin: '0 0 6px 0', fontSize: '20px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
                       {selectedNoteForSplit.title}
                     </h2>
+                    {/* Subtle Metadata String */}
+                    <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px', fontSize: '11.5px', color: 'var(--text-muted)' }}>
+                      <span>📅 {new Date(selectedNoteForSplit.createdAt).toLocaleString('vi-VN', { dateStyle: 'medium', timeStyle: 'short' })}</span>
+                      {selectedNoteForSplit.subject && (
+                        <>
+                          <span>•</span>
+                          <span style={{ color: selectedNoteForSplit.subject.color || 'var(--accent-primary)', fontWeight: 600 }}>
+                            📖 [{selectedNoteForSplit.subject.code}] {selectedNoteForSplit.subject.name}
+                          </span>
+                        </>
+                      )}
+                      {selectedNoteForSplit.project && (
+                        <>
+                          <span>•</span>
+                          <span style={{ color: 'var(--color-purple)', fontWeight: 600 }}>📁 {selectedNoteForSplit.project.name}</span>
+                        </>
+                      )}
+                      <span>•</span>
+                      <span>🏷️ {selectedNoteForSplit.noteType}</span>
+                    </div>
                   </div>
 
                   <div style={{ display: 'flex', gap: '6px' }}>
                     <button
-                      onClick={() => handleCopyMarkdown(selectedNoteForSplit)}
+                      onClick={() => handleConvertToTask(selectedNoteForSplit)}
                       className="btn btn-secondary btn-sm"
-                      title="Sao chép Markdown"
+                      title="Chuyển ghi chú thành công việc (Task)"
+                      style={{ fontSize: '12px', padding: '4px 10px', color: 'var(--color-success)', fontWeight: 600 }}
+                    >
+                      <CheckSquare size={13} />
+                      <span>Tạo Task</span>
+                    </button>
+                    <button
+                      onClick={() => handleCopyContent(selectedNoteForSplit)}
+                      className="btn btn-secondary btn-sm"
+                      title="Sao chép nội dung bài ghi"
                       style={{ fontSize: '12px', padding: '4px 10px' }}
                     >
                       {copiedId === selectedNoteForSplit.id ? <Check size={13} style={{ color: 'var(--color-success)' }} /> : <Copy size={13} />}
@@ -758,7 +1071,13 @@ export const NotesListPage: React.FC = () => {
                 </div>
 
                 <div style={{ padding: '8px 0' }}>
-                  <MarkdownViewer content={selectedNoteForSplit.content} />
+                  <MarkdownViewer
+                    content={selectedNoteForSplit.content}
+                    onToggleTodo={(todoIndex) => {
+                      const newContent = toggleChecklistItem(selectedNoteForSplit.content || '', todoIndex);
+                      handleToggleNoteTodo(selectedNoteForSplit.id, todoIndex, newContent);
+                    }}
+                  />
                 </div>
               </div>
             ) : (
@@ -791,10 +1110,47 @@ export const NotesListPage: React.FC = () => {
             >
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
-                  <span className="badge badge-neutral" style={{ fontSize: '9.5px', padding: '1px 5px' }}>
-                    {note.noteType}
-                  </span>
-                  {note.isPinned && <Pin size={11} style={{ color: 'var(--accent-primary)', fill: 'currentColor' }} />}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <span className="badge badge-neutral" style={{ fontSize: '9.5px', padding: '1px 5px' }}>
+                      {note.noteType}
+                    </span>
+                    {note.subject ? (
+                      <span className="badge badge-blue" style={{ fontSize: '9px', padding: '1px 4px' }}>
+                        {note.subject.code || note.subject.name}
+                      </span>
+                    ) : note.project ? (
+                      <span className="badge badge-purple" style={{ fontSize: '9px', padding: '1px 4px' }}>
+                        📁 {note.project.name}
+                      </span>
+                    ) : null}
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }} onClick={(e) => e.stopPropagation()}>
+                    <button
+                      onClick={() => handleConvertToTask(note)}
+                      className="btn btn-ghost btn-icon btn-sm"
+                      style={{ padding: '2px', color: 'var(--color-success)' }}
+                      title="Chuyển thành Task"
+                    >
+                      <CheckSquare size={12} />
+                    </button>
+                    <button
+                      onClick={() => handleTogglePin(note.id)}
+                      className="btn btn-ghost btn-icon btn-sm"
+                      style={{ padding: '2px', color: note.isPinned ? 'var(--accent-primary)' : 'var(--text-muted)' }}
+                      title={note.isPinned ? 'Bỏ ghim' : 'Ghim'}
+                    >
+                      <Pin size={12} style={{ fill: note.isPinned ? 'currentColor' : 'none' }} />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(note.id, note.title)}
+                      className="btn btn-ghost btn-icon btn-sm"
+                      style={{ padding: '2px', color: 'var(--color-danger)' }}
+                      title="Xóa"
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  </div>
                 </div>
                 <h4 style={{ margin: '0 0 4px 0', fontSize: '13.5px', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.3, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                   {note.title}
@@ -806,13 +1162,6 @@ export const NotesListPage: React.FC = () => {
 
               <div style={{ fontSize: '10.5px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '6px', borderTop: '1px solid var(--border-subtle)' }}>
                 <span>{new Date(note.createdAt).toLocaleDateString('vi-VN')}</span>
-                {note.subject ? (
-                  <span style={{ color: note.subject.color || 'var(--accent-primary)', fontWeight: 600 }}>{note.subject.code || note.subject.name}</span>
-                ) : note.project ? (
-                  <span style={{ color: 'var(--color-purple)' }}>📁 {note.project.name}</span>
-                ) : (
-                  <span>📝 Tự do</span>
-                )}
               </div>
             </div>
           ))}
@@ -880,103 +1229,288 @@ export const NotesListPage: React.FC = () => {
           })}
         </div>
       ) : viewDensity === 'GRID' ? (
-        /* GRID VIEW: 2-3 Column Rich Cards with Live Markdown Preview */
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '16px' }}>
-          {filteredNotes.map((note: any) => (
-            <NoteCard
-              key={note.id}
-              note={note}
-              onView={handleOpenView}
-              onEdit={handleOpenEdit}
-              onDelete={handleDelete}
-              onTogglePin={handleTogglePin}
-              onToggleArchive={handleToggleArchive}
-            />
-          ))}
-        </div>
+        /* GRID VIEW: Responsive Dynamic Masonry Multi-Column Layout (Zero wasted space for small/large notes) */
+        activeTab === 'ALL' && !search.trim() && pinnedNotes.length > 0 && otherNotes.length > 0 ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
+            {/* Pinned Section */}
+            <div>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  fontSize: '11.5px',
+                  fontWeight: 700,
+                  color: 'var(--accent-primary)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  marginBottom: '10px'
+                }}
+              >
+                <Pin size={12} style={{ fill: 'currentColor' }} />
+                <span>Đã ghim ({pinnedNotes.length})</span>
+              </div>
+              <div className="notes-bento-grid">
+                {pinnedNotes.map((note: any) => (
+                  <div key={note.id} className="note-bento-item">
+                    <NoteCard
+                      note={note}
+                      onView={handleOpenView}
+                      onEdit={handleOpenEdit}
+                      onDelete={handleDelete}
+                      onTogglePin={handleTogglePin}
+                      onToggleArchive={handleToggleArchive}
+                      onConvertToTask={handleConvertToTask}
+                      isSelected={selectedNoteIds.includes(note.id)}
+                      onToggleSelect={handleToggleSelectNote}
+                      isSelectionMode={selectedNoteIds.length > 0 || isSelectionMode}
+                      onToggleTodo={handleToggleNoteTodo}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Other Notes Section */}
+            <div>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  fontSize: '11.5px',
+                  fontWeight: 700,
+                  color: 'var(--text-muted)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  marginBottom: '10px'
+                }}
+              >
+                <BookOpen size={12} />
+                <span>Ghi chú khác ({otherNotes.length})</span>
+              </div>
+              <div className="notes-bento-grid">
+                {otherNotes.map((note: any) => (
+                  <div key={note.id} className="note-bento-item">
+                    <NoteCard
+                      note={note}
+                      onView={handleOpenView}
+                      onEdit={handleOpenEdit}
+                      onDelete={handleDelete}
+                      onTogglePin={handleTogglePin}
+                      onToggleArchive={handleToggleArchive}
+                      onConvertToTask={handleConvertToTask}
+                      isSelected={selectedNoteIds.includes(note.id)}
+                      onToggleSelect={handleToggleSelectNote}
+                      isSelectionMode={selectedNoteIds.length > 0 || isSelectionMode}
+                      onToggleTodo={handleToggleNoteTodo}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="notes-bento-grid">
+            {filteredNotes.map((note: any) => (
+              <div key={note.id} className="note-bento-item">
+                <NoteCard
+                  note={note}
+                  onView={handleOpenView}
+                  onEdit={handleOpenEdit}
+                  onDelete={handleDelete}
+                  onTogglePin={handleTogglePin}
+                  onToggleArchive={handleToggleArchive}
+                  onConvertToTask={handleConvertToTask}
+                  isSelected={selectedNoteIds.includes(note.id)}
+                  onToggleSelect={handleToggleSelectNote}
+                  isSelectionMode={selectedNoteIds.length > 0 || isSelectionMode}
+                  onToggleTodo={handleToggleNoteTodo}
+                />
+              </div>
+            ))}
+          </div>
+        )
       ) : (
-        /* LIST VIEW: Full-width Table Rows */
+        /* LIST VIEW: Full-width Table Rows with Multi-select Checkboxes */
         <div className="snote-card" style={{ padding: '0', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border-color)', backgroundColor: 'var(--bg-input)' }}>
+                <th style={{ padding: '10px 14px', width: '40px' }}>
+                  <input
+                    type="checkbox"
+                    checked={selectedNoteIds.length > 0 && selectedNoteIds.length === filteredNotes.length}
+                    onChange={handleSelectAll}
+                    style={{ accentColor: 'var(--accent-primary)', cursor: 'pointer' }}
+                    title="Chọn tất cả"
+                  />
+                </th>
                 <th style={{ padding: '10px 14px', fontWeight: 700, color: 'var(--text-secondary)' }}>Tiêu đề ghi chú</th>
                 <th style={{ padding: '10px 14px', fontWeight: 700, color: 'var(--text-secondary)' }}>Phân loại</th>
-                <th style={{ padding: '10px 14px', fontWeight: 700, color: 'var(--text-secondary)' }}>Môn học / Đồ án</th>
+                <th style={{ padding: '10px 14px', fontWeight: 700, color: 'var(--text-secondary)' }}>Môn học / Dự án</th>
                 <th style={{ padding: '10px 14px', fontWeight: 700, color: 'var(--text-secondary)' }}>Ngày tạo</th>
                 <th style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 700, color: 'var(--text-secondary)' }}>Thao tác</th>
               </tr>
             </thead>
             <tbody>
-              {filteredNotes.map((note: any) => (
-                <tr
-                  key={note.id}
-                  style={{ borderBottom: '1px solid var(--border-subtle)', transition: 'var(--transition-fast)' }}
-                  className="table-row-hover"
-                >
-                  <td style={{ padding: '10px 14px', fontWeight: 600, color: 'var(--text-primary)', cursor: 'pointer' }} onClick={() => handleOpenView(note)}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      {note.isPinned && <Pin size={12} style={{ color: 'var(--accent-primary)', fill: 'currentColor' }} />}
-                      <span>{note.title}</span>
-                    </div>
-                  </td>
-                  <td style={{ padding: '10px 14px' }}>
-                    <span className="badge badge-neutral" style={{ fontSize: '10px' }}>{note.noteType}</span>
-                  </td>
-                  <td style={{ padding: '10px 14px' }}>
-                    {note.subject ? (
-                      <span className="badge badge-blue" style={{ fontSize: '10px' }}>
-                        {note.subject.code ? `[${note.subject.code}] ` : ''}{note.subject.name}
-                      </span>
-                    ) : note.project ? (
-                      <span className="badge badge-purple" style={{ fontSize: '10px' }}>📁 {note.project.name}</span>
-                    ) : (
-                      <span style={{ color: 'var(--text-muted)' }}>📝 Tự do</span>
-                    )}
-                  </td>
-                  <td style={{ padding: '10px 14px', color: 'var(--text-muted)' }}>
-                    {new Date(note.createdAt).toLocaleDateString('vi-VN')}
-                  </td>
-                  <td style={{ padding: '10px 14px', textAlign: 'right' }}>
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '4px' }}>
-                      <button
-                        onClick={() => handleTogglePin(note.id)}
-                        className="btn btn-ghost btn-icon btn-sm"
-                        title={note.isPinned ? 'Bỏ ghim' : 'Ghim bài ghi'}
-                        style={{ color: note.isPinned ? 'var(--accent-primary)' : 'var(--text-muted)' }}
-                      >
-                        <Pin size={13} style={{ fill: note.isPinned ? 'currentColor' : 'none' }} />
-                      </button>
-                      <button
-                        onClick={() => handleOpenView(note)}
-                        className="btn btn-ghost btn-icon btn-sm"
-                        title="Xem trước"
-                        style={{ color: 'var(--color-info)' }}
-                      >
-                        <Eye size={13} />
-                      </button>
-                      <button
-                        onClick={() => handleOpenEdit(note)}
-                        className="btn btn-ghost btn-icon btn-sm"
-                        title="Chỉnh sửa"
-                        style={{ color: 'var(--accent-primary)' }}
-                      >
-                        <Edit3 size={13} />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(note.id, note.title)}
-                        className="btn btn-ghost btn-icon btn-sm"
-                        title="Xóa"
-                        style={{ color: 'var(--color-danger)' }}
-                      >
-                        <Trash2 size={13} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+              {filteredNotes.map((note: any) => {
+                const isSelected = selectedNoteIds.includes(note.id);
+                return (
+                  <tr
+                    key={note.id}
+                    style={{
+                      borderBottom: '1px solid var(--border-subtle)',
+                      backgroundColor: isSelected ? 'var(--accent-subtle)' : 'transparent',
+                      transition: 'var(--transition-fast)'
+                    }}
+                    className="table-row-hover"
+                  >
+                    <td style={{ padding: '10px 14px' }}>
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={(e) => handleToggleSelectNote(note.id, e as any)}
+                        style={{ accentColor: 'var(--accent-primary)', cursor: 'pointer' }}
+                      />
+                    </td>
+                    <td style={{ padding: '10px 14px', fontWeight: 600, color: 'var(--text-primary)', cursor: 'pointer' }} onClick={() => handleOpenView(note)}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        {note.isPinned && <Pin size={12} style={{ color: 'var(--accent-primary)', fill: 'currentColor' }} />}
+                        <span>{note.title}</span>
+                      </div>
+                    </td>
+                    <td style={{ padding: '10px 14px' }}>
+                      <span className="badge badge-neutral" style={{ fontSize: '10px' }}>{note.noteType}</span>
+                    </td>
+                    <td style={{ padding: '10px 14px' }}>
+                      {note.subject ? (
+                        <span className="badge badge-blue" style={{ fontSize: '10px' }}>
+                          {note.subject.code ? `[${note.subject.code}] ` : ''}{note.subject.name}
+                        </span>
+                      ) : note.project ? (
+                        <span className="badge badge-purple" style={{ fontSize: '10px' }}>📁 {note.project.name}</span>
+                      ) : (
+                        <span style={{ color: 'var(--text-muted)' }}>📝 Tự do</span>
+                      )}
+                    </td>
+                    <td style={{ padding: '10px 14px', color: 'var(--text-muted)' }}>
+                      {new Date(note.createdAt).toLocaleDateString('vi-VN')}
+                    </td>
+                    <td style={{ padding: '10px 14px', textAlign: 'right' }}>
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '4px' }}>
+                        <button
+                          onClick={() => handleConvertToTask(note)}
+                          className="btn btn-ghost btn-icon btn-sm"
+                          title="Chuyển thành công việc (Task)"
+                          style={{ color: 'var(--color-success)' }}
+                        >
+                          <CheckSquare size={13} />
+                        </button>
+                        <button
+                          onClick={() => handleTogglePin(note.id)}
+                          className="btn btn-ghost btn-icon btn-sm"
+                          title={note.isPinned ? 'Bỏ ghim' : 'Ghim bài ghi'}
+                          style={{ color: note.isPinned ? 'var(--accent-primary)' : 'var(--text-muted)' }}
+                        >
+                          <Pin size={13} style={{ fill: note.isPinned ? 'currentColor' : 'none' }} />
+                        </button>
+                        <button
+                          onClick={() => handleOpenView(note)}
+                          className="btn btn-ghost btn-icon btn-sm"
+                          title="Xem trước"
+                          style={{ color: 'var(--color-info)' }}
+                        >
+                          <Eye size={13} />
+                        </button>
+                        <button
+                          onClick={() => handleOpenEdit(note)}
+                          className="btn btn-ghost btn-icon btn-sm"
+                          title="Chỉnh sửa"
+                          style={{ color: 'var(--accent-primary)' }}
+                        >
+                          <Edit3 size={13} />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(note.id, note.title)}
+                          className="btn btn-ghost btn-icon btn-sm"
+                          title="Xóa"
+                          style={{ color: 'var(--color-danger)' }}
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Floating Batch Action Bar (Xuất hiện khi chọn nhiều bài ghi) */}
+      {selectedNoteIds.length > 0 && (
+        <div className="floating-batch-bar">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingRight: '10px', borderRight: '1px solid rgba(255,255,255,0.12)' }}>
+            <span style={{ fontSize: '13px', fontWeight: 800, color: '#ffffff' }}>
+              Đã chọn {selectedNoteIds.length} bài ghi
+            </span>
+            <button
+              onClick={handleSelectAll}
+              className="btn btn-ghost btn-sm"
+              style={{ fontSize: '11px', padding: '2px 8px', color: 'var(--accent-primary)', fontWeight: 700 }}
+            >
+              {selectedNoteIds.length === filteredNotes.length ? 'Bỏ chọn hết' : 'Chọn tất cả'}
+            </button>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <button
+              onClick={handleBatchConvertToTasks}
+              className="btn btn-secondary btn-sm"
+              style={{ fontSize: '12px', padding: '5px 12px', color: 'var(--color-success)', fontWeight: 700 }}
+              title="Tạo công việc từ các ghi chú đã chọn"
+            >
+              <CheckSquare size={13} />
+              <span>Chuyển thành Task</span>
+            </button>
+            <button
+              onClick={handleBatchPin}
+              className="btn btn-secondary btn-sm"
+              style={{ fontSize: '12px', padding: '5px 12px', fontWeight: 600 }}
+              title="Ghim các ghi chú đã chọn"
+            >
+              <Pin size={13} />
+              <span>Ghim</span>
+            </button>
+            <button
+              onClick={handleBatchArchive}
+              className="btn btn-secondary btn-sm"
+              style={{ fontSize: '12px', padding: '5px 12px', fontWeight: 600 }}
+              title="Lưu trữ các ghi chú đã chọn"
+            >
+              <Archive size={13} />
+              <span>Lưu trữ</span>
+            </button>
+            <button
+              onClick={handleBatchDelete}
+              className="btn btn-secondary btn-sm"
+              style={{ fontSize: '12px', padding: '5px 12px', color: 'var(--color-danger)', fontWeight: 700 }}
+              title="Xóa các ghi chú đã chọn"
+            >
+              <Trash2 size={13} />
+              <span>Xóa ({selectedNoteIds.length})</span>
+            </button>
+            <button
+              onClick={handleClearSelection}
+              className="btn btn-ghost btn-icon btn-sm"
+              style={{ color: 'var(--text-muted)', marginLeft: '4px' }}
+              title="Đóng thanh thao tác"
+            >
+              <X size={14} />
+            </button>
+          </div>
         </div>
       )}
 
@@ -989,11 +1523,25 @@ export const NotesListPage: React.FC = () => {
         }}
         onSuccess={() => {
           fetchNotes();
-          setIsModalOpen(false);
-          setNoteToEdit(null);
         }}
         noteToEdit={noteToEdit}
         initialMode={modalMode}
+      />
+
+      {/* Convert Note to Task Modal */}
+      <TaskModal
+        isOpen={isTaskModalOpen}
+        onClose={() => {
+          setIsTaskModalOpen(false);
+          setTaskPrefillData(null);
+        }}
+        onSuccess={() => {
+          setIsTaskModalOpen(false);
+          setTaskPrefillData(null);
+          showToast('Đã tạo công việc từ ghi chú thành công!', 'success');
+        }}
+        taskToEdit={taskPrefillData}
+        initialMode="EDIT"
       />
     </div>
   );

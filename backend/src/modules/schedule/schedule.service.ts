@@ -48,8 +48,29 @@ export class ScheduleService {
   }
 
   async createEvent(userId: string, dto: CreateScheduleEventDto): Promise<ScheduleEventResponseDto> {
-    const event = await this.repo.create(userId, dto);
-    return this.mapDto(event);
+    const firstEvent = await this.repo.create(userId, dto);
+
+    // Nếu là sự kiện lặp lại nhiều tuần (cho cả học kỳ)
+    if (dto.isRecurring && dto.repeatWeeks && dto.repeatWeeks > 1) {
+      const maxWeeks = Math.min(dto.repeatWeeks, 20); // Tối đa 20 tuần học kỳ
+      const baseStart = new Date(dto.startTime);
+      const baseEnd = new Date(dto.endTime);
+
+      for (let week = 1; week < maxWeeks; week++) {
+        const nextStart = new Date(baseStart.getTime() + week * 7 * 24 * 60 * 60 * 1000);
+        const nextEnd = new Date(baseEnd.getTime() + week * 7 * 24 * 60 * 60 * 1000);
+
+        await this.repo.create(userId, {
+          ...dto,
+          startTime: nextStart.toISOString(),
+          endTime: nextEnd.toISOString(),
+          isRecurring: true,
+          recurrenceRule: `WEEKLY;COUNT=${maxWeeks};INDEX=${week + 1}`
+        });
+      }
+    }
+
+    return this.mapDto(firstEvent);
   }
 
   async updateEvent(id: string, userId: string, dto: UpdateScheduleEventDto): Promise<ScheduleEventResponseDto> {

@@ -1,9 +1,12 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { api, ApiResponse } from '../../../services/api';
 import { useAppFilter } from '../../../contexts/AppFilterContext';
 import { useToast } from '../../../contexts/ToastContext';
 import { TaskCard } from '../components/TaskCard';
 import { TaskModal } from '../components/TaskModal';
+import { QuickTaskBar } from '../components/QuickTaskBar';
+import { TasksListView } from '../components/TasksListView';
+import { TasksEisenhowerView } from '../components/TasksEisenhowerView';
 import { TaskStatus, TaskPriority } from '@snote/shared';
 import confetti from 'canvas-confetti';
 import {
@@ -17,11 +20,19 @@ import {
   CheckCircle2,
   X,
   Sparkles,
-  FolderKanban
+  FolderKanban,
+  Columns3,
+  ListFilter,
+  LayoutGrid,
+  AlertTriangle,
+  Clock
 } from 'lucide-react';
 
 export const TasksListPage: React.FC = () => {
   const { selectedSubjectId, selectedSemesterId, subjects } = useAppFilter();
+  const [viewMode, setViewMode] = useState<'KANBAN' | 'LIST' | 'EISENHOWER'>(() => {
+    return (localStorage.getItem('snote_tasks_view_mode') as any) || 'KANBAN';
+  });
   const [tasks, setTasks] = useState<any[]>([]);
   const [projects, setProjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -32,8 +43,12 @@ export const TasksListPage: React.FC = () => {
   const [taskToEdit, setTaskToEdit] = useState<any | null>(null);
   const { showToast } = useToast();
 
+  const handleSelectViewMode = (mode: 'KANBAN' | 'LIST' | 'EISENHOWER') => {
+    setViewMode(mode);
+    localStorage.setItem('snote_tasks_view_mode', mode);
+  };
+
   useEffect(() => {
-    // Fetch available projects for filter
     api.get<ApiResponse<any[]>>('/projects')
       .then((res) => setProjects(res.data || []))
       .catch(() => {});
@@ -128,6 +143,17 @@ export const TasksListPage: React.FC = () => {
   const inProgressTasks = tasks.filter((t) => t.status === TaskStatus.IN_PROGRESS);
   const doneTasks = tasks.filter((t) => t.status === TaskStatus.DONE);
 
+  // Count overdue tasks
+  const overdueCount = useMemo(() => {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    return tasks.filter((t) => {
+      if (t.status === TaskStatus.DONE || !t.dueDate) return false;
+      const dueDay = new Date(new Date(t.dueDate).getFullYear(), new Date(t.dueDate).getMonth(), new Date(t.dueDate).getDate()).getTime();
+      return dueDay < today;
+    }).length;
+  }, [tasks]);
+
   const totalTasks = tasks.length;
   const completedPercent = totalTasks > 0 ? Math.round((doneTasks.length / totalTasks) * 100) : 0;
   const currentSubjectObj = subjects.find((s) => s.id === selectedSubjectId);
@@ -163,45 +189,133 @@ export const TasksListPage: React.FC = () => {
   ];
 
   return (
-    <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
-      {/* Top Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <h1 style={{ fontSize: '24px', fontWeight: 800, margin: 0, letterSpacing: '-0.02em' }}>
-              Bảng Công Việc & Bài Tập (Kanban)
-            </h1>
-            <span className="badge badge-green">
-              {doneTasks.length}/{totalTasks} Hoàn thành ({completedPercent}%)
-            </span>
-          </div>
-          <p style={{ margin: '4px 0 0 0', fontSize: '13.5px', color: 'var(--text-secondary)' }}>
-            {currentSubjectObj
-              ? `Đang theo dõi bài tập môn: [${currentSubjectObj.code || 'CODE'}] ${currentSubjectObj.name}`
-              : 'Quản lý tiến độ hoàn thành bài tập, đồ án và các hạn chót theo môn học'}
-          </p>
+    <div style={{ maxWidth: '1380px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      {/* 1. Quick Task Capture Bar (1-Click Instant Add) */}
+      <QuickTaskBar
+        subjects={subjects}
+        defaultSubjectId={selectedSubjectId || undefined}
+        onTaskCreated={fetchTasks}
+      />
+
+      {/* 2. Top Header Toolbar: Metrics & View Switcher */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+        {/* Left: View Mode Switcher */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            background: 'var(--bg-secondary)',
+            border: '1px solid var(--border-color)',
+            borderRadius: 'var(--radius-md)',
+            padding: '3px',
+            gap: '3px'
+          }}
+        >
+          <button
+            onClick={() => handleSelectViewMode('KANBAN')}
+            className={`btn btn-sm ${viewMode === 'KANBAN' ? 'btn-primary' : 'btn-ghost'}`}
+            style={{
+              fontSize: '12.5px',
+              fontWeight: viewMode === 'KANBAN' ? 700 : 500,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '6px 14px',
+              borderRadius: '6px',
+              backgroundColor: viewMode === 'KANBAN' ? 'var(--accent-primary)' : 'transparent',
+              color: viewMode === 'KANBAN' ? '#ffffff' : 'var(--text-secondary)'
+            }}
+          >
+            <Columns3 size={15} />
+            <span>Bảng Kanban</span>
+          </button>
+
+          <button
+            onClick={() => handleSelectViewMode('LIST')}
+            className={`btn btn-sm ${viewMode === 'LIST' ? 'btn-primary' : 'btn-ghost'}`}
+            style={{
+              fontSize: '12.5px',
+              fontWeight: viewMode === 'LIST' ? 700 : 500,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '6px 14px',
+              borderRadius: '6px',
+              backgroundColor: viewMode === 'LIST' ? 'var(--accent-primary)' : 'transparent',
+              color: viewMode === 'LIST' ? '#ffffff' : 'var(--text-secondary)'
+            }}
+          >
+            <ListFilter size={15} />
+            <span>Danh sách Hạn chót</span>
+          </button>
+
+          <button
+            onClick={() => handleSelectViewMode('EISENHOWER')}
+            className={`btn btn-sm ${viewMode === 'EISENHOWER' ? 'btn-primary' : 'btn-ghost'}`}
+            style={{
+              fontSize: '12.5px',
+              fontWeight: viewMode === 'EISENHOWER' ? 700 : 500,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '6px 14px',
+              borderRadius: '6px',
+              backgroundColor: viewMode === 'EISENHOWER' ? 'var(--accent-primary)' : 'transparent',
+              color: viewMode === 'EISENHOWER' ? '#ffffff' : 'var(--text-secondary)'
+            }}
+          >
+            <LayoutGrid size={15} />
+            <span>Ma trận Eisenhower (2x2)</span>
+          </button>
         </div>
 
-        <button
-          onClick={handleOpenCreate}
-          className="btn btn-primary"
-          style={{ padding: '9px 18px', fontWeight: 700 }}
-        >
-          <Plus size={16} />
-          <span>Thêm Công Việc Mới</span>
-        </button>
+        {/* Right: Metrics & Add Button */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+          {overdueCount > 0 && (
+            <span
+              className="badge"
+              style={{
+                fontSize: '11.5px',
+                padding: '4px 9px',
+                backgroundColor: 'rgba(239, 68, 68, 0.15)',
+                color: '#ef4444',
+                border: '1px solid rgba(239, 68, 68, 0.3)',
+                fontWeight: 700,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}
+            >
+              <AlertTriangle size={13} />
+              {overdueCount} Quá hạn
+            </span>
+          )}
+
+          <span className="badge badge-green" style={{ fontSize: '11.5px', padding: '4px 9px', fontWeight: 700 }}>
+            {doneTasks.length}/{totalTasks} Hoàn thành ({completedPercent}%)
+          </span>
+
+          <button
+            onClick={handleOpenCreate}
+            className="btn btn-primary btn-sm"
+            style={{ padding: '7px 14px', fontWeight: 700, gap: '5px' }}
+          >
+            <Plus size={15} />
+            <span>Thêm Chi Tiết</span>
+          </button>
+        </div>
       </div>
 
-      {/* Filter & Search Bar */}
+      {/* 3. Search & Filter Bar */}
       <div
         className="snote-card"
         style={{
-          padding: '12px 16px',
-          marginBottom: '24px',
+          padding: '10px 14px',
           display: 'flex',
           alignItems: 'center',
-          gap: '14px',
-          flexWrap: 'wrap'
+          gap: '12px',
+          flexWrap: 'wrap',
+          borderRadius: 'var(--radius-lg)'
         }}
       >
         {/* Search */}
@@ -246,7 +360,7 @@ export const TasksListPage: React.FC = () => {
             className="snote-select"
             style={{ fontSize: '13px' }}
           >
-            <option value="ALL">Tất cả đồ án & việc</option>
+            <option value="ALL">Tất cả dự án & việc</option>
             {projects.map((p) => (
               <option key={p.id} value={p.id}>
                 📁 {p.name}
@@ -272,15 +386,33 @@ export const TasksListPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Kanban Board Grid */}
+      {/* 4. Main Tasks Area: Conditional Rendering based on ViewMode */}
       {loading ? (
         <div style={{ textAlign: 'center', padding: '80px 0', color: 'var(--text-muted)' }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', fontSize: '14px' }}>
             <Sparkles size={18} className="pulse-urgent" style={{ color: 'var(--accent-primary)' }} />
-            <span>Đang tải bảng công việc Kanban...</span>
+            <span>Đang đồng bộ danh sách công việc...</span>
           </div>
         </div>
+      ) : viewMode === 'LIST' ? (
+        <TasksListView
+          tasks={tasks}
+          onEdit={handleOpenEdit}
+          onDelete={handleDelete}
+          onToggleStatus={handleToggleStatus}
+          onMoveStatus={handleMoveStatus}
+        />
+      ) : viewMode === 'EISENHOWER' ? (
+        <TasksEisenhowerView
+          tasks={tasks}
+          onEdit={handleOpenEdit}
+          onDelete={handleDelete}
+          onToggleStatus={handleToggleStatus}
+          onMoveStatus={handleMoveStatus}
+          onOpenCreate={handleOpenCreate}
+        />
       ) : (
+        /* Kanban Board Grid */
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px', alignItems: 'start' }}>
           {columns.map((col) => {
             const Icon = col.icon;
@@ -366,3 +498,4 @@ export const TasksListPage: React.FC = () => {
     </div>
   );
 };
+

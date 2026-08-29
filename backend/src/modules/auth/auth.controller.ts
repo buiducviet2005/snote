@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { AuthService } from './auth.service';
-import { registerSchema, loginSchema } from './auth.schemas';
+import { registerSchema, loginSchema, googleAuthSchema } from './auth.schemas';
 import { env } from '../../config/env';
 import { AuthError } from '../../shared/errors/appErrors';
 
@@ -35,6 +35,18 @@ export class AuthController {
     res.status(200).json({
       success: true,
       message: 'Đăng nhập thành công',
+      data: authResponse
+    });
+  };
+
+  googleLogin = async (req: Request, res: Response): Promise<void> => {
+    const validated = googleAuthSchema.parse(req.body);
+    const { authResponse, refreshToken } = await this.authService.loginWithGoogle(validated);
+
+    res.cookie(REFRESH_COOKIE_NAME, refreshToken, REFRESH_COOKIE_OPTIONS);
+    res.status(200).json({
+      success: true,
+      message: 'Đăng nhập với Google thành công',
       data: authResponse
     });
   };

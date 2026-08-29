@@ -28,6 +28,12 @@ export class ValidationError extends AppError {
   }
 }
 
+export class BadRequestError extends AppError {
+  constructor(message: string, context: Record<string, unknown> = {}) {
+    super(message, 400, 'BAD_REQUEST', context, true);
+  }
+}
+
 export class AuthError extends AppError {
   constructor(message = 'Unauthorized: Truy cập yêu cầu xác thực', context: Record<string, unknown> = {}) {
     super(message, 401, 'UNAUTHORIZED', context, true);

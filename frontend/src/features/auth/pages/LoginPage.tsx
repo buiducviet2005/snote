@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
+import { GoogleSignInButton } from '../components/GoogleSignInButton';
 import { GraduationCap, Mail, Lock, Eye, EyeOff, ArrowRight, Sparkles, ShieldCheck } from 'lucide-react';
 
 export const LoginPage: React.FC = () => {
@@ -46,7 +47,7 @@ export const LoginPage: React.FC = () => {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: 'radial-gradient(ellipse at top, rgba(99, 102, 241, 0.15), var(--bg-primary) 70%)',
+        background: 'transparent',
         padding: '24px'
       }}
     >
@@ -189,6 +190,18 @@ export const LoginPage: React.FC = () => {
             {!loading && <ArrowRight size={16} />}
           </button>
         </form>
+
+        {/* Divider */}
+        <div style={{ display: 'flex', alignItems: 'center', margin: '20px 0 16px 0', gap: '12px' }}>
+          <div style={{ flex: 1, height: '1px', backgroundColor: 'var(--border-color)' }} />
+          <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+            Hoặc tiếp tục với
+          </span>
+          <div style={{ flex: 1, height: '1px', backgroundColor: 'var(--border-color)' }} />
+        </div>
+
+        {/* Google Sign-In */}
+        <GoogleSignInButton onSuccess={() => navigate('/notes')} text="Đăng nhập bằng Google" />
 
         {/* Demo Quick Fills */}
         <div style={{ marginTop: '22px', display: 'flex', flexDirection: 'column', gap: '8px' }}>

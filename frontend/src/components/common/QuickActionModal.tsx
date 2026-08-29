@@ -17,7 +17,7 @@ export const QuickActionModal: React.FC<QuickActionModalProps> = ({
     {
       id: 'NOTE' as const,
       title: 'Ghi Chú Bài Giảng Mới',
-      desc: 'Tạo ghi chú mới gắn với môn học, hỗ trợ soạn thảo Markdown.',
+      desc: 'Tạo ghi chú mới gắn với môn học, tự động định dạng thông minh.',
       icon: BookOpen,
       color: 'var(--color-info)',
       bg: 'var(--color-info-subtle)'

@@ -5,6 +5,17 @@ import { NotFoundError } from '../../shared/errors/appErrors';
 export class NotesService {
   constructor(private readonly repository: NotesRepository = new NotesRepository()) {}
 
+  private extractFallbackTitle(title?: string, content?: string): string {
+    if (title && title.trim()) return title.trim();
+    if (!content || !content.trim()) return 'Ghi chú không tiêu đề';
+
+    // Trích xuất dòng đầu tiên có nội dung làm tiêu đề tóm tắt
+    const firstLine = content.split('\n').map((l) => l.trim()).find((l) => l.length > 0) || '';
+    const cleanLine = firstLine.replace(/^[#*•\-_+>\[\]\(\)\d\.\/ ]+/, '').trim();
+    if (!cleanLine) return 'Ghi chú không tiêu đề';
+    return cleanLine.length > 80 ? cleanLine.substring(0, 77) + '...' : cleanLine;
+  }
+
   private mapDto(note: any): NoteResponseDto {
     return {
       id: note.id,
@@ -45,13 +56,21 @@ export class NotesService {
   }
 
   async createNote(userId: string, dto: CreateNoteDto): Promise<NoteResponseDto> {
-    const note = await this.repository.create(userId, dto);
+    const finalTitle = this.extractFallbackTitle(dto.title, dto.content);
+    const note = await this.repository.create(userId, { ...dto, title: finalTitle });
     return this.mapDto(note);
   }
 
   async updateNote(id: string, userId: string, dto: UpdateNoteDto): Promise<NoteResponseDto> {
     await this.getNoteById(id, userId);
-    const updated = await this.repository.update(id, userId, dto);
+    let finalTitle = dto.title;
+    if (dto.title !== undefined) {
+      finalTitle = this.extractFallbackTitle(dto.title, dto.content);
+    }
+    const updated = await this.repository.update(id, userId, {
+      ...dto,
+      ...(finalTitle !== undefined ? { title: finalTitle } : {})
+    });
     return this.mapDto(updated);
   }
 

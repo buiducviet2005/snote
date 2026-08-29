@@ -9,5 +9,7 @@ const controller = new BackupController();
 router.use(authGuard);
 
 router.get('/export', asyncBoundary(controller.exportData));
+router.get('/export-markdown', asyncBoundary(controller.exportMarkdown));
+router.post('/restore', asyncBoundary(controller.restoreData));
 
 export const backupRouter = router;

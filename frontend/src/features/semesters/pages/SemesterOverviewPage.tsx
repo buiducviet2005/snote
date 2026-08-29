@@ -59,38 +59,30 @@ export const SemesterOverviewPage: React.FC = () => {
   const currentSemesterObj = semesters.find((s) => s.id === selectedSemesterId);
 
   return (
-    <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
-      {/* Top Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <h1 style={{ fontSize: '24px', fontWeight: 800, margin: 0, letterSpacing: '-0.02em' }}>
-              Quản Lý Học Kỳ & Môn Học
-            </h1>
-            <span className="badge badge-purple">
-              {subjects.length} Môn ({totalCredits} Tín chỉ)
-            </span>
-          </div>
-          <p style={{ margin: '4px 0 0 0', fontSize: '13.5px', color: 'var(--text-secondary)' }}>
-            Trục kiến trúc gắn kết tri thức và bài tập cho sinh viên (Anti-Junk Context)
-          </p>
+    <div style={{ maxWidth: '1280px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '18px' }}>
+      {/* Top Action Bar */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <span className="badge badge-purple" style={{ fontSize: '11px', padding: '3px 8px' }}>
+            {subjects.length} Môn học ({totalCredits} Tín chỉ)
+          </span>
         </div>
 
-        <div style={{ display: 'flex', gap: '10px' }}>
+        <div style={{ display: 'flex', gap: '8px' }}>
           <button
             onClick={() => setIsSemesterModalOpen(true)}
-            className="btn btn-secondary"
-            style={{ fontWeight: 600 }}
+            className="btn btn-secondary btn-sm"
+            style={{ fontWeight: 600, padding: '7px 12px' }}
           >
-            <Plus size={15} />
+            <Plus size={14} />
             <span>Thêm Học Kỳ</span>
           </button>
           <button
             onClick={() => setIsSubjectModalOpen(true)}
-            className="btn btn-primary"
-            style={{ fontWeight: 700 }}
+            className="btn btn-primary btn-sm"
+            style={{ fontWeight: 700, padding: '7px 14px' }}
           >
-            <Plus size={15} />
+            <Plus size={14} />
             <span>Thêm Môn Học</span>
           </button>
         </div>
