@@ -55,10 +55,10 @@ export class SharesService {
 
     const share = await prisma.resourceShare.create({
       data: {
-        ownerId: userId,
+        owner: { connect: { id: userId } },
+        ...(sharedWithUserId ? { sharedWithUser: { connect: { id: sharedWithUserId } } } : {}),
         targetType: dto.targetType,
         targetId: dto.targetId,
-        sharedWithUserId,
         sharedWithEmail: dto.sharedWithEmail ? dto.sharedWithEmail.trim().toLowerCase() : null,
         accessLevel: dto.accessLevel || ShareAccessLevel.VIEW,
         shareToken,

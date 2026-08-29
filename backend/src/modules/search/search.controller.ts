@@ -6,7 +6,7 @@ export class SearchController {
 
   search = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const userId = (req as any).user.userId;
+      const userId = req.user!.id;
       const query = {
         q: req.query.q as string,
         subjectId: req.query.subjectId as string,

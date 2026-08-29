@@ -6,7 +6,7 @@ export class BackupController {
 
   exportData = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const userId = (req as any).user.userId || (req as any).user.id;
+      const userId = req.user!.id;
       const { semesterId, subjectId } = req.query;
 
       const { data, checksum } = await this.backupService.exportUserData(userId, {
@@ -31,7 +31,7 @@ export class BackupController {
 
   exportMarkdown = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const userId = (req as any).user.userId || (req as any).user.id;
+      const userId = req.user!.id;
       const { semesterId, subjectId } = req.query;
 
       const items = await this.backupService.exportMarkdownNotes(userId, {
@@ -51,7 +51,7 @@ export class BackupController {
 
   restoreData = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const userId = (req as any).user.userId || (req as any).user.id;
+      const userId = req.user!.id;
       const { payload, mode } = req.body;
 
       const result = await this.backupService.restoreUserData(userId, payload, mode);

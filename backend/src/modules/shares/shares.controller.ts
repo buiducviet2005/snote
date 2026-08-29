@@ -7,7 +7,7 @@ export class SharesController {
 
   createShare = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const userId = (req as any).user.userId;
+      const userId = req.user!.id;
       const dto: CreateShareDto = req.body;
       const share = await this.service.createShare(userId, dto);
       res.status(201).json({
@@ -22,7 +22,7 @@ export class SharesController {
 
   getSharedByMe = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const userId = (req as any).user.userId;
+      const userId = req.user!.id;
       const shares = await this.service.getSharedByMe(userId);
       res.json({
         success: true,
@@ -35,7 +35,7 @@ export class SharesController {
 
   getSharedWithMe = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const userId = (req as any).user.userId;
+      const userId = req.user!.id;
       const items = await this.service.getSharedWithMe(userId);
       res.json({
         success: true,
@@ -61,7 +61,7 @@ export class SharesController {
 
   revokeShare = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const userId = (req as any).user.userId;
+      const userId = req.user!.id;
       const shareId = req.params.id as string;
       await this.service.revokeShare(userId, shareId);
       res.json({
