@@ -24,7 +24,13 @@ Trước khi bắt đầu, hãy đảm bảo máy tính của bạn đã cài đ
 
 ## ⚡ CÁCH 1: KHỞI TẠO TỰ ĐỘNG BẰNG SCRIPT 1-CLICK (KHUYÊN DÙNG)
 
-Nếu bạn muốn tiết kiệm thời gian, dự án đã chuẩn bị sẵn file script tự động hóa 100% các bước từ cài đặt thư viện, tạo file cấu hình đến đồng bộ CSDL:
+Dự án đã chuẩn bị sẵn file script **tự động kiểm tra toàn diện phần mềm tiền đề (Git, Node.js $\ge$ v18, npm, Docker & PostgreSQL)** và tự động hóa 100% các bước từ cài đặt thư viện, tạo file cấu hình đến đồng bộ CSDL:
+
+* 🔍 **Tự động quét & kiểm tra:**
+  - `[OK] / [WARN]` **Git:** Kiểm tra sự hiện diện của Git trong PATH.
+  - `[OK] / [FAIL]` **Node.js:** Kiểm tra và chặn lại nếu phiên bản nhỏ hơn `v18.0.0` (yêu cầu Node.js LTS).
+  - `[OK] / [FAIL]` **npm:** Kiểm tra trình quản lý gói npm.
+  - `[OK] / [WARN]` **Docker & PostgreSQL:** Kiểm tra Docker CLI và kiểm tra Docker Daemon có đang chạy hay không để tự khởi động container PostgreSQL.
 
 ### 🔹 Trên Windows:
 Nhấp đúp chuột vào file **`setup.bat`** (hoặc mở Command Prompt / PowerShell tại thư mục dự án và gõ):
