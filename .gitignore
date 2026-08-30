@@ -43,3 +43,8 @@ Thumbs.db
 *.njsproj
 *.sln
 *.sw?
+
+# AI Chat Internal Logs & Docs (Excluded from Git)
+DOCS/ai_chat_docs/
+DOCS/temp/
+
