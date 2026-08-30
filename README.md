@@ -76,6 +76,8 @@ npm run dev
 
 ## 📚 TÀI LIỆU DỰ ÁN ([DOCS/](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS))
 
+* [SETUP.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/SETUP.md): Hướng dẫn thiết lập và khởi chạy trên máy mới từ A đến Z.
+* [DEPLOYMENT.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DEPLOYMENT.md): Hướng dẫn triển khai Production, chi phí vận hành & di chuyển VPS.
 * [DOCS/RULES.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/RULES.md): Toàn bộ quy tắc và luật phát triển bắt buộc của SNOTE.
 * [DOCS/PROJECT_STRUCTURE_AND_MAP.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/PROJECT_STRUCTURE_AND_MAP.md): Từ điển cấu trúc, danh mục file và công nghệ sử dụng.
 * [DOCS/step_1.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/step_1.md): Bước 1 – Định nghĩa sản phẩm & Phạm vi.
