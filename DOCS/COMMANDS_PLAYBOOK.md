@@ -19,6 +19,21 @@ Tài liệu này là **Sổ tay tra cứu tập trung toàn bộ câu lệnh CLI
 
 ---
 
+## 0. Lệnh Cài đặt & Thiết lập Máy mới (Setup & Auto-Installation)
+
+Thực thi tại **thư mục gốc của dự án (`SNOTE/`)**:
+
+| Thao tác mong muốn | Câu lệnh thực thi (Tại Root) | Chi tiết hoạt động |
+| :--- | :--- | :--- |
+| **Tự động thiết lập 1-Click (Windows)** | `.\setup.bat` | Tự động tạo `.env`, cài đặt toàn bộ dependencies, khởi động Docker, migrate CSDL và nạp dữ liệu mẫu. |
+| **Tự động thiết lập 1-Click (macOS/Linux)** | `./setup.sh` | Script bash tự động hóa toàn diện từ A đến Z trên Unix. |
+| **Cài đặt toàn bộ dependencies Monorepo** | `npm run install:all` | Cài đặt `root`, `packages/shared` (kèm build), `backend` và `frontend`. |
+| **Khởi tạo & Đồng bộ CSDL trọn gói** | `npm run db:setup` | Chạy `prisma:generate` -> `prisma:migrate` -> `prisma:seed` trong 1 lệnh. |
+| **Thiết lập toàn bộ (Dependencies + DB)** | `npm run setup` | Kết hợp `npm run install:all` và `npm run db:setup`. |
+| **Mở giao diện Web Prisma Studio** | `npm run db:studio` | Mở trực tiếp Web GUI quản lý dữ liệu CSDL tại `http://localhost:5555`. |
+
+---
+
 ## 1. Lệnh Khởi chạy & Phát triển (Dev Orchestration)
 
 Tất cả các lệnh này có thể thực thi trực tiếp tại **thư mục gốc của dự án (`SNOTE/`)**:

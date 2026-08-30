@@ -110,10 +110,13 @@ Tài liệu này đóng vai trò là **Nguồn Chân lý Duy nhất (Single Sour
 SNOTE/
 ├── .gitignore                                # Khai báo bỏ qua node_modules, .env, dist, logs khỏi Git
 ├── docker-compose.yml                        # Khởi chạy PostgreSQL 16 Alpine local container
-├── package.json                              # Root orchestrator scripts (dev, build, type-check, prisma)
+├── package.json                              # Root orchestrator scripts (dev, build, type-check, prisma, setup)
 ├── package-lock.json                         # Khóa phiên bản toàn bộ dependencies của root và workspaces
 ├── README.md                                 # Hướng dẫn tổng quan & cài đặt hệ thống SNOTE
 ├── RULES.md                                  # BẢNG QUY TẮC & LUẬT BẤT BIẾN CỦA DỰ ÁN (Nguồn luật số 1)
+├── SETUP.md                                  # HƯỚNG DẪN THIẾT LẬP & CHẠY DỰ ÁN TRÊN MÁY MỚI TỪ A ĐẾN Z
+├── setup.bat                                 # Script tự động hóa 1-Click cài đặt & chạy trên Windows
+├── setup.sh                                  # Script tự động hóa 1-Click cài đặt & chạy trên macOS/Linux
 ├── .agents/                                  # Cấu hình Agent & Workspace Skills
 │   └── skills/
 │       └── autonomous-task-execution/

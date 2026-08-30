@@ -17,6 +17,11 @@ Hệ thống SNOTE được xây dựng theo mô hình **Modular Monolith** phâ
 
 ## 🚀 HƯỚNG DẪN KHỞI CHẠY NHANH (QUICK START)
 
+> 📖 **Xem hướng dẫn chi tiết từ A đến Z cho máy mới tại:** 👉 [SETUP.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/SETUP.md)  
+> ⚡ **Khởi tạo tự động 1-Click:**  
+> - **Windows:** Chạy file `setup.bat`  
+> - **macOS / Linux:** Chạy `./setup.sh`
+
 ### 1. Yêu cầu Tiền đề (Prerequisites)
 * **Node.js:** $\ge$ `v18.0.0` (Khuyên dùng `v24.x LTS`).
 * **Docker Desktop / PostgreSQL 16:** Đã bật và sẵn sàng.
