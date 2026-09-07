@@ -211,6 +211,7 @@ Thao tác tại thư mục **`web_script/`**:
 | **Chạy kiểm thử 10,000 Kịch bản & Cải tiến Bảo mật/Vận hành** | `python scratch/verify_10000_and_improvements.py` | Xác minh 10 tập (10,000 kịch bản), kiểm tra PIN Rate-limiting, Self-healing schema, Exponential Backoff và URL Sanitizer. |
 | **Chạy kiểm thử 10,000 Câu hỏi Bắt lỗi & Tái Cấu trúc SNOTE** | `python scratch/verify_faults_and_refactor.py` | Xác minh 10 tập (10,000 câu hỏi bắt lỗi), ma trận giải pháp, SNOTE Modular Namespace, EventBus, Store, Checklists và Gantt clamping. |
 | **Chạy kiểm thử 10,000 Lỗi Thực Chiến & Phân Lập Dự Án (Notes, Roadmap, Bento)** | `python scratch/verify_real_faults_and_isolation.py` | Kiểm tra 10,000 câu hỏi mã nguồn thực chiến, phân lập Notes theo projectId, reset active note, deleteNote, scope filters, phân lập Roadmap, và runner test_local.html. |
+| **Chạy kiểm thử 10,000 Lỗi Vận Hành & 1,000 Cải Tiến Giao Diện Tinh Gọn** | `python scratch/verify_system_ops_and_ui_1000.py` | Xác minh 10,000 lỗi vận hành/kiến trúc, 1,000 cải tiến UI Content-First, cú pháp V8 Code.gs 50k cell protection, Index.html không văn bản thừa, và 26px compact test runner. |
 | **Triển khai lên Google Sheets (3 phút)** | 1. Mở Google Drive ➔ Tạo Google Sheets mới.<br>2. Tiện ích mở rộng ➔ Apps Script.<br>3. Dán `web_script/Code.gs` và tạo file HTML `web_script/Index.html`.<br>4. Bấm Triển khai ➔ Bản triển khai mới (Web app, Execute as Me, Access Anyone). | Xem chi tiết quy trình tại [`web_script/README.md`](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/web_script/README.md). |
 
 

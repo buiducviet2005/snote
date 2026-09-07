@@ -861,7 +861,7 @@ function deleteTask(authContextJson, taskId, projectId) {
 function getColumnIndicesNotes(headers) {
   const indices = {
     noteId: 0, projectId: 1, authorEmail: 2, title: 3, noteType: 4,
-    tags: 5, contentMd: 6, isPinned: 7, createdAt: 8
+    tags: 5, contentMd: 6, isPinned: 7, createdAt: 8, scope: 9
   };
   headers.forEach((h, idx) => {
     const clean = String(h || '').toLowerCase().trim().replace(/[_-]/g, '');
@@ -874,6 +874,7 @@ function getColumnIndicesNotes(headers) {
     else if (clean === 'contentmd' || clean === 'content' || clean === 'noidung') indices.contentMd = idx;
     else if (clean === 'ispinned' || clean === 'pinned' || clean === 'ghim') indices.isPinned = idx;
     else if (clean === 'createdat' || clean === 'ngaytao') indices.createdAt = idx;
+    else if (clean === 'scope' || clean === 'phamvi') indices.scope = idx;
   });
   return indices;
 }
@@ -883,15 +884,15 @@ function ensureNotesSheetExists(ss) {
   let sheet = ss.getSheetByName(SHEET_NOTES);
   if (!sheet) {
     sheet = ss.insertSheet(SHEET_NOTES);
-    const headers = ['note_id', 'project_id', 'author_email', 'title', 'note_type', 'tags', 'content_md', 'is_pinned', 'created_at'];
+    const headers = ['note_id', 'project_id', 'author_email', 'title', 'note_type', 'tags', 'content_md', 'is_pinned', 'created_at', 'scope'];
     sheet.appendRow(headers);
     sheet.getRange(1, 1, 1, headers.length).setFontWeight('bold').setBackground('#1e293b').setFontColor('#ffffff');
 
     const sampleNotes = [
-      ['NOTE-101', 'PRJ-101', 'admin@gmail.com', 'Đề cương chi tiết môn Kiến trúc máy tính', 'LECTURE', '#chuong1 #pipeline', '## 1. Nguyên lý cơ bản\n- Tập lệnh RISC-V 32-bit\n- Kỹ thuật phân đường ống Pipeline 5 tầng:\n  - IF: Nạp lệnh\n  - ID: Giải mã lệnh\n  - EX: Thực thi\n  - MEM: Truy xuất bộ nhớ\n  - WB: Ghi kết quả\n\n### Checklist ôn thi:\n- [x] Đọc chương 1 slide bài giảng\n- [ ] Làm bài tập tính chu kỳ xung clock', 'TRUE', new Date().toISOString()],
-      ['NOTE-102', 'PRJ-101', 'admin@gmail.com', 'Ý tưởng tối ưu hóa kiến trúc SNOTE', 'IDEA', '#kientruc #snote', '### Kỹ thuật áp dụng:\n1. 1-URL Single Web App Portal\n2. Pure HTML Static Output (Zero-Scriptlet)\n3. Optimistic UI cho Kanban Drag & Drop\n4. Cửa sổ trượt 21 ngày cho Gantt Timeline', 'FALSE', new Date().toISOString()]
+      ['NOTE-101', 'PRJ-101', 'admin@gmail.com', 'Đề cương chi tiết môn Kiến trúc máy tính', 'LECTURE', '#chuong1 #pipeline', '## 1. Pipeline 5 tầng\n- IF: Fetch\n- ID: Decode\n- EX: Execute\n- MEM: Memory\n- WB: Write Back\n\n### Checklist ôn thi:\n- [x] Đọc slide bài giảng\n- [ ] Làm bài tập tính xung clock', 'TRUE', new Date().toISOString(), 'TEAM'],
+      ['NOTE-102', 'PRJ-101', 'admin@gmail.com', 'Ý tưởng tối ưu hóa kiến trúc SNOTE', 'IDEA', '#kientruc #snote', '### Các điểm sáng:\n1. Zero-Scriptlet 100% Pure HTML\n2. Optimistic UI độ trễ 0ms\n3. Safe Storage Proxy chống lỗi iframe', 'FALSE', new Date().toISOString(), 'PRIVATE']
     ];
-    sampleNotes.forEach(row => sheet.appendRow(row));
+    sampleNotes.forEach(r => sheet.appendRow(r));
   }
 }
 
@@ -903,11 +904,12 @@ function getNotesByProjectInternal(ss, projectId) {
 
   const idx = getColumnIndicesNotes(data[0]);
   const notes = [];
+  const cleanPid = String(projectId || '').trim();
 
   for (let r = 1; r < data.length; r++) {
     const row = data[r];
     const rowPid = String(row[idx.projectId] || '').trim();
-    if (rowPid === projectId) {
+    if (rowPid === cleanPid) {
       notes.push({
         noteId: String(row[idx.noteId] || ''),
         projectId: rowPid,
@@ -917,7 +919,8 @@ function getNotesByProjectInternal(ss, projectId) {
         tags: String(row[idx.tags] || ''),
         contentMd: String(row[idx.contentMd] || ''),
         isPinned: String(row[idx.isPinned] || '').toUpperCase() === 'TRUE',
-        createdAt: formatDateString(row[idx.createdAt])
+        createdAt: formatDateString(row[idx.createdAt]),
+        scope: (idx.scope !== undefined && row[idx.scope]) ? String(row[idx.scope]).toUpperCase() : 'TEAM'
       });
     }
   }
@@ -937,6 +940,15 @@ function saveNote(authContextJson, noteDataJson) {
 
     const targetId = n.noteId ? String(n.noteId).trim() : 'NOTE-' + (100 + data.length);
     const isPinnedStr = (n.isPinned === true || String(n.isPinned).toUpperCase() === 'TRUE') ? 'TRUE' : 'FALSE';
+    const scopeStr = String(n.scope || 'TEAM').toUpperCase();
+
+    // Bảo vệ phòng thủ trần 50,000 ký tự của ô tính Google Sheets & Formula Injection
+    let safeContent = String(n.contentMd || '');
+    if (safeContent.length > 49500) {
+      safeContent = safeContent.substring(0, 49500) + '\n\n[...Nội dung vượt quá 50,000 ký tự đã được cắt xén an toàn để bảo vệ Google Sheets...]';
+    }
+    safeContent = sanitizeSheetCell(safeContent);
+    const safeTitle = sanitizeSheetCell(String(n.title || '').trim());
 
     let foundRow = -1;
     for (let r = 1; r < data.length; r++) {
@@ -947,22 +959,28 @@ function saveNote(authContextJson, noteDataJson) {
     }
 
     if (foundRow > 0) {
-      sheet.getRange(foundRow, idx.title + 1).setValue(n.title);
+      sheet.getRange(foundRow, idx.title + 1).setValue(safeTitle);
       sheet.getRange(foundRow, idx.noteType + 1).setValue(n.noteType || 'LECTURE');
       sheet.getRange(foundRow, idx.tags + 1).setValue(n.tags || '');
-      sheet.getRange(foundRow, idx.contentMd + 1).setValue(n.contentMd || '');
+      sheet.getRange(foundRow, idx.contentMd + 1).setValue(safeContent);
       sheet.getRange(foundRow, idx.isPinned + 1).setValue(isPinnedStr);
+      if (idx.scope !== undefined) {
+        sheet.getRange(foundRow, idx.scope + 1).setValue(scopeStr);
+      }
     } else {
       const newRow = [];
       newRow[idx.noteId] = targetId;
       newRow[idx.projectId] = cleanPid;
       newRow[idx.authorEmail] = n.authorEmail || 'member';
-      newRow[idx.title] = n.title;
+      newRow[idx.title] = safeTitle;
       newRow[idx.noteType] = n.noteType || 'LECTURE';
       newRow[idx.tags] = n.tags || '';
-      newRow[idx.contentMd] = n.contentMd || '';
+      newRow[idx.contentMd] = safeContent;
       newRow[idx.isPinned] = isPinnedStr;
       newRow[idx.createdAt] = new Date().toISOString();
+      if (idx.scope !== undefined) {
+        newRow[idx.scope] = scopeStr;
+      }
       sheet.appendRow(newRow);
     }
 
@@ -972,11 +990,12 @@ function saveNote(authContextJson, noteDataJson) {
       note: {
         noteId: targetId,
         projectId: cleanPid,
-        title: n.title,
+        title: safeTitle,
         noteType: n.noteType || 'LECTURE',
         tags: n.tags || '',
-        contentMd: n.contentMd || '',
+        contentMd: safeContent,
         isPinned: isPinnedStr === 'TRUE',
+        scope: scopeStr,
         createdAt: formatDateString(new Date())
       }
     };

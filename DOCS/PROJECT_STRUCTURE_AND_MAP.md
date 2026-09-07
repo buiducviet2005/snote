@@ -789,3 +789,37 @@ Hệ thống frontend đã được tái cấu trúc toàn diện theo mô hình
 - **Sửa Số liệu Bento Overview:** Thẻ đếm số lượng ghi chú trên bảng điều khiển Bento đếm chính xác theo `getFilteredNotes().length` thay vì đếm toàn bộ mảng `STATE.notes`.
 - **Đồng bộ Ngữ cảnh Đồ án khi Tìm kiếm Toàn cục (`jumpToSearchResult`):** Khi nhấp vào công việc hoặc ghi chú tìm thấy trong hộp tìm kiếm, hệ thống tự động nhận diện `projectId` của mục tiêu và kích hoạt chuyển đổi đồ án trước khi điều hướng tới giao diện chi tiết.
 - **Đồng bộ Bộ Chạy Thử Cục bộ (`web_script/test_local.html`):** Nâng cấp bộ giả lập với đầy đủ phương thức mock (`deleteNote`, `deleteTask`, `deleteRoadmap`, `executeBatchSync`), cơ sở dữ liệu mẫu đa dự án phân lập (`PRJ-101`, `PRJ-102`), hỗ trợ kiểm thử trực tiếp trên mọi trình duyệt ngoại tuyến 100% không lỗi.
+
+### 10,000 LỖI VẬN HÀNH & THIẾT KẾ HỆ THỐNG (DOCS/ai_chat_docs/system_ops_10000/)
+- `vol_01_session_concurrency.md`: 1,000 Lỗi Quản Trị Phiên, Phân Quyền & Bế Tắc Đa Luồng (`OPS-SESS`).
+- `vol_02_acid_boundaries.md`: 1,000 Lỗi Thiết Kế Ranh Giới ACID & Transaction Rollback (`OPS-ACID`).
+- `vol_03_gas_quota_latency.md`: 1,000 Lỗi Quota Google Apps Script, Trễ Mạng & Timeout 6 Phút (`OPS-QUOTA`).
+- `vol_04_sheets_cell_overflow.md`: 1,000 Lỗi Giới Hạn Ô Tính 50,000 Ký Tự & Cắt Xén Dữ Liệu (`OPS-CELL`).
+- `vol_05_kanban_statemachine.md`: 1,000 Lỗi Máy Trạng Thái Kanban, DnD Mutation & Sai Lệch Thứ Tự (`OPS-KBN`).
+- `vol_06_gantt_geometry_clamping.md`: 1,000 Lỗi Động Cơ Hình Học Gantt 21 Ngày, Date Drift & SVG Clamping (`OPS-GNT`).
+- `vol_07_dfa_parser_cascading.md`: 1,000 Lỗi Lộ Trình DFA Parser, Đệ Quy Vòng Tròn & Tràn Ngày (`OPS-DFA`).
+- `vol_08_safe_storage_offline.md`: 1,000 Lỗi Safe Storage Proxy 3 Tầng, QuotaExceeded & Iframe Crash (`OPS-STOR`).
+- `vol_09_fifo_queue_splitbrain.md`: 1,000 Lỗi Hàng Đợi FIFO Offline, Exponential Backoff & Split-Brain (`OPS-SYNC`).
+- `vol_10_disaster_recovery.md`: 1,000 Lỗi Phục Hồi Thảm Họa, Hỏng Sheet & Lỗi Toàn Vẹn CSDL (`OPS-RECOV`).
+- `master_ops_architecture_matrix.md`: Ma trận tổng hợp 10 cụm lỗi vận hành & đối sách kiến trúc chuẩn hóa.
+
+### 1,000 CẢI TIẾN GIAO DIỆN & BỐ CỤC TINH GỌN (DOCS/ai_chat_docs/ui_layout_1000_improvements.md)
+- 1,000 Đề xuất tinh gọn giao diện, phân bổ theo 10 phân miền theo Điều 11 RULES.md (User Habit First & Anti-Slop):
+  1. Triệt tiêu toàn bộ văn bản hướng dẫn rườm rà, banner giải thích thừa thãi (`D1_TUTORIAL_ELIMINATION`).
+  2. Mở rộng khung nhìn làm việc (Canvas) đạt 100% viewport (`D2_CONTENT_FIRST_CANVAS`).
+  3. Tinh gọn Topbar (48px) và Sidebar điều hướng (`D3_TOPBAR_SIDEBAR_STREAMLINING`).
+  4. Bảng Kanban siêu gọn gàng, thẻ việc phẳng mỏng không viền dày (`D4_KANBAN_BOARD_COMPACTNESS`).
+  5. Sơ đồ Gantt thanh lịch, lưới ngày thanh mảnh 1px (`D5_GANTT_TIMELINE_ELEGANCE`).
+  6. Bảng chỉ số Bento phẳng, loại bỏ text giải nghĩa lê thê (`D6_BENTO_METRICS_PURITY`).
+  7. Form và Modal không ma sát, auto-focus, phím tắt `Ctrl+Enter` (`D7_MODAL_FORM_FRICTIONLESS`).
+  8. Hệ thống phông chữ Swiss Typography và Icon vector đơn sắc (`D8_TYPOGRAPHY_AND_ICONS`).
+  9. Tối ưu hóa layout trên Laptop nhỏ & thiết bị di động (`D9_RESPONSIVE_MOBILE_CLEANUP`).
+  10. Bảng màu tối giản dịu mắt, vi tương tác mượt mà không chói lóa (`D10_COLOR_THEME_MICROINTERACTIONS`).
+
+### CẢI TIẾN TRỰC TIẾP MÃ NGUỒN SNOTE:
+- **Xóa bỏ văn bản hướng dẫn thừa thãi:** Loại bỏ các đoạn văn giải thích rườm rà trên `view-landing`, `view-projects`, `view-roadmaps`, `view-tasks` trong `web_script/Index.html`.
+- **Mở rộng khung soạn thảo Note:** Mở rộng chiều cao khung Notes Split View đạt `calc(100vh - 175px)` toàn màn hình, thanh Toolbar 1 dòng siêu gọn.
+- **Tối ưu hóa Lộ trình DFA:** Rút gọn cú pháp mẫu thành badge mini 1 dòng, mở rộng tối đa vùng soạn thảo văn bản lộ trình.
+- **Phòng vệ Backend 50,000 ký tự:** Tích hợp cơ chế tự động bảo vệ trần 50,000 ký tự/ô tính của Google Sheets kèm thông báo an toàn trong `Code.gs`.
+- **Tinh gọn Local Test Runner:** Giảm kích thước banner `#local-mock-banner` trong `web_script/test_local.html` từ 35px xuống 26px siêu mỏng, loại bỏ chữ dài lê thê.
+
