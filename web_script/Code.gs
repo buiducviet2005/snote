@@ -350,7 +350,7 @@ function getPublicProjectsList() {
           projectName: pName,
           description: String(row[idx.description] || ''),
           subjectId: String(row[idx.subjectId] || ''),
-          pinCode: String(row[idx.pin] || ''),
+          pinCode: '****', // Bảo mật tuyệt đối: không để lộ mã PIN ra API công khai
           deadline: idx.deadline !== undefined ? String(row[idx.deadline] || '') : '',
           instructor: idx.instructor !== undefined ? String(row[idx.instructor] || '') : '',
           members: idx.members !== undefined ? String(row[idx.members] || '') : '',
@@ -375,7 +375,7 @@ function accessProjectPortal(projectId, pinCode) {
     const pIdx = getColumnIndicesProjects(pData[0]);
 
     let projectFound = null;
-    const cleanPid = String(projectId || '').trim();
+    const cleanPid = String(projectId || '').trim().toUpperCase();
     const cleanPin = String(pinCode || '').trim();
 
     // PHÒNG THỦ BRUTE-FORCE BẰNG CACHE SERVICE RATE LIMITING (5 LẦN THỬ / 15 PHÚT)
@@ -396,7 +396,7 @@ function accessProjectPortal(projectId, pinCode) {
       const rowId = String(row[pIdx.id] || '').trim();
       const rowPin = String(row[pIdx.pin] || '').trim();
 
-      if (rowId === cleanPid) {
+      if (rowId.toUpperCase() === cleanPid) {
         if (rowPin !== cleanPin) {
           const newFails = failCount + 1;
           cache.put(rateLimitKey, String(newFails), 900); // Khóa 15 phút
@@ -428,20 +428,14 @@ function accessProjectPortal(projectId, pinCode) {
     }
 
     // Nạp toàn bộ Tasks, Notes, Roadmaps thuộc đồ án
-    const tasks = getTasksByProjectInternal(ss, cleanPid);
-    const notes = getNotesByProjectInternal(ss, cleanPid);
-    const roadmaps = getRoadmapsByProjectInternal(ss, cleanPid);
-
-    // Nạp toàn bộ danh sách đồ án cho switcher
-    const allProjectsRes = getPublicProjectsList();
-    const allProjects = (allProjectsRes && allProjectsRes.success && allProjectsRes.projects.length > 0)
-      ? allProjectsRes.projects
-      : [projectFound];
+    const tasks = getTasksByProjectInternal(ss, projectFound.projectId);
+    const notes = getNotesByProjectInternal(ss, projectFound.projectId);
+    const roadmaps = getRoadmapsByProjectInternal(ss, projectFound.projectId);
 
     return {
       success: true,
       project: projectFound,
-      projects: allProjects,
+      projects: [projectFound],
       tasks: tasks,
       notes: notes,
       roadmaps: roadmaps

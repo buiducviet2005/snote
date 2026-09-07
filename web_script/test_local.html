@@ -149,23 +149,32 @@
               return this;
             },
             getPublicProjectsList: function() {
-              const res = { success: true, projects: mockDatabase.projects };
+              const safeProjects = mockDatabase.projects.map(p => ({
+                projectId: p.projectId,
+                projectName: p.projectName,
+                subjectId: p.subjectId,
+                pinCode: '****',
+                status: p.status
+              }));
+              const res = { success: true, projects: safeProjects };
               setTimeout(() => { if (this._success) this._success(res); }, 80);
             },
             accessProjectPortal: function(pId, pin) {
-              const p = mockDatabase.projects.find(x => x.projectId === pId);
+              const cleanPid = String(pId || '').trim().toUpperCase();
+              const cleanPin = String(pin || '').trim();
+              const p = mockDatabase.projects.find(x => String(x.projectId || '').trim().toUpperCase() === cleanPid);
               if (!p) {
-                setTimeout(() => { if (this._success) this._success({ success: false, message: 'Không tìm thấy đồ án!' }); }, 80);
+                setTimeout(() => { if (this._success) this._success({ success: false, message: 'Không tìm thấy đồ án với mã: ' + cleanPid }); }, 80);
                 return;
               }
-              if (p.pinCode !== pin) {
-                setTimeout(() => { if (this._success) this._success({ success: false, message: 'Mã PIN đồ án không đúng!' }); }, 80);
+              if (String(p.pinCode || '').trim() !== cleanPin) {
+                setTimeout(() => { if (this._success) this._success({ success: false, message: 'Mã PIN 4 số của đồ án không đúng!' }); }, 80);
                 return;
               }
-              const tasks = mockDatabase.tasks.filter(t => t.projectId === pId);
-              const notes = mockDatabase.notes.filter(n => n.projectId === pId);
-              const roadmaps = mockDatabase.roadmaps.filter(r => r.projectId === pId);
-              const res = { success: true, project: p, projects: mockDatabase.projects, tasks: tasks, notes: notes, roadmaps: roadmaps };
+              const tasks = mockDatabase.tasks.filter(t => String(t.projectId || '').toUpperCase() === cleanPid);
+              const notes = mockDatabase.notes.filter(n => String(n.projectId || '').toUpperCase() === cleanPid);
+              const roadmaps = mockDatabase.roadmaps.filter(r => String(r.projectId || '').toUpperCase() === cleanPid);
+              const res = { success: true, project: p, projects: [p], tasks: tasks, notes: notes, roadmaps: roadmaps };
               setTimeout(() => { if (this._success) this._success(res); }, 80);
             },
             handleAdminLogin: function(email, pass) {

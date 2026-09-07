@@ -362,6 +362,21 @@ input:focus, select:focus, textarea:focus {
   transform: translateY(-2px);
 }
 
+.pin-digit-box.is-invalid {
+  border-color: var(--danger-color, #ef4444) !important;
+  background: rgba(239, 68, 68, 0.08) !important;
+}
+
+@keyframes snote-shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-6px); }
+  40%, 80% { transform: translateX(6px); }
+}
+
+.shake-error {
+  animation: snote-shake 0.4s ease-in-out;
+}
+
 .btn-eye-toggle {
   background: transparent;
   border: none;
@@ -1476,8 +1491,8 @@ table.snote-table tr:hover td {
         </div>
       </div>
 
-      <!-- BÊN PHẢI: FORM CHỌN ĐỒ ÁN & NHẬP MÃ PIN -->
-      <div class="project-access-card">
+      <!-- BÊN PHẢI: FORM NHẬP MÃ ĐỒ ÁN & NHẬP MÃ PIN -->
+      <div class="project-access-card" id="project-access-card">
         <div>
           <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
             <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(99, 102, 241, 0.15); color: var(--accent-primary); display: flex; align-items: center; justify-content: center;">
@@ -1488,44 +1503,47 @@ table.snote-table tr:hover td {
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 14px;">
-          <!-- Chọn Đồ Án -->
+          <!-- Nhập Mã Đồ Án Trực Tiếp (Thay Thế Hoàn Toàn Dropdown) -->
           <div class="form-field">
-            <label for="landing-project-select">Đồ Án Của Nhóm Bạn:</label>
-            <select id="landing-project-select" style="padding: 11px 14px; font-size: 13.5px;">
-              <option value="">-- Đang nạp danh mục đồ án... --</option>
-            </select>
+            <label for="landing-project-code">Mã Đồ Án / Dự Án (*):</label>
+            <input type="text" id="landing-project-code" placeholder="Nhập mã đồ án (VD: PRJ-101)" autocomplete="off" style="padding: 11px 14px; font-size: 14px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;" oninput="this.value = this.value.toUpperCase(); clearLandingError();" onkeydown="if(event.key === 'Enter') focusFirstPinDigit();">
+            <!-- Danh Sách Đồ Án Truy Cập Gần Đây -->
+            <div id="landing-recent-projects-wrap" style="display: none; margin-top: 6px;">
+              <div style="font-size: 11px; color: var(--text-dim); margin-bottom: 4px;">Đã truy cập gần đây:</div>
+              <div id="landing-recent-chips" style="display: flex; flex-wrap: wrap; gap: 6px;"></div>
+            </div>
           </div>
 
-          <!-- Nhập Mã PIN 4 Số (OTP Boxes) -->
+          <!-- Nhập Mã PIN 4 Số (OTP Boxes Tự Động Nhảy Số) -->
           <div class="form-field">
             <div style="display: flex; justify-content: space-between; align-items: center;">
               <label>Mã PIN Bảo Mật (4 Số):</label>
-              <button class="btn-eye-toggle" onclick="togglePinVisibility()" type="button" title="Bật/tắt ẩn hiện mã PIN">
-                <svg id="eye-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              <button class="btn-eye-toggle" id="btn-toggle-landing-pin" onclick="toggleLandingPinVisibility()" type="button" title="Bật/tắt ẩn hiện mã PIN">
+                <svg id="eye-icon-landing" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
               </button>
             </div>
             
-            <div class="pin-otp-container" onpaste="handlePinPaste(event)">
-              <input class="pin-digit-box" id="pin-digit-0" type="password" maxlength="1" inputmode="numeric" autocomplete="one-time-code" oninput="handlePinDigitInput(event, 0)" onkeydown="handlePinDigitKeydown(event, 0)">
-              <input class="pin-digit-box" id="pin-digit-1" type="password" maxlength="1" inputmode="numeric" oninput="handlePinDigitInput(event, 1)" onkeydown="handlePinDigitKeydown(event, 1)">
-              <input class="pin-digit-box" id="pin-digit-2" type="password" maxlength="1" inputmode="numeric" oninput="handlePinDigitInput(event, 2)" onkeydown="handlePinDigitKeydown(event, 2)">
-              <input class="pin-digit-box" id="pin-digit-3" type="password" maxlength="1" inputmode="numeric" oninput="handlePinDigitInput(event, 3)" onkeydown="handlePinDigitKeydown(event, 3)">
+            <div class="pin-otp-container" id="landing-pin-container" onpaste="handlePinPaste(event)">
+              <input class="pin-digit-box" id="pin-digit-0" type="password" maxlength="1" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code" oninput="handlePinDigitInput(event, 0)" onkeydown="handlePinDigitKeydown(event, 0)" onfocus="this.select()">
+              <input class="pin-digit-box" id="pin-digit-1" type="password" maxlength="1" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code" oninput="handlePinDigitInput(event, 1)" onkeydown="handlePinDigitKeydown(event, 1)" onfocus="this.select()">
+              <input class="pin-digit-box" id="pin-digit-2" type="password" maxlength="1" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code" oninput="handlePinDigitInput(event, 2)" onkeydown="handlePinDigitKeydown(event, 2)" onfocus="this.select()">
+              <input class="pin-digit-box" id="pin-digit-3" type="password" maxlength="1" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code" oninput="handlePinDigitInput(event, 3)" onkeydown="handlePinDigitKeydown(event, 3)" onfocus="this.select()">
             </div>
             <input type="hidden" id="landing-pin-code">
           </div>
 
-          <div class="entry-error-text" id="landing-member-error" style="font-size: 12.5px; text-align: center;"></div>
+          <div class="entry-error-text" id="landing-member-error" style="font-size: 12.5px; text-align: center; min-height: 18px;"></div>
 
           <!-- Nút hành động chính -->
-          <button class="btn btn-primary" style="width: 100%; padding: 12px; font-size: 14px;" onclick="submitMemberLogin()">
+          <button class="btn btn-primary" id="btn-submit-member-login" style="width: 100%; padding: 12px; font-size: 14px;" onclick="submitMemberLogin()">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
             <span>Vào Không Gian Đồ Án</span>
           </button>
 
-          <!-- Nút thử nghiệm nhanh Đồ Án 1 (KHÔNG CÓ NÚT DEMO ADMIN) -->
+          <!-- Nút thử nghiệm nhanh Đồ Án 1 -->
           <div style="border-top: 1px solid var(--border-subtle); padding-top: 12px; text-align: center;">
             <button class="btn btn-secondary btn-sm" style="width: 100%; padding: 8px; border-color: rgba(99, 102, 241, 0.3);" onclick="fillDemoProject('PRJ-101', '1234')">
-              ⚡ Thử Nghiệm Nhanh Đồ Án 1 (Mã PIN: 1234)
+              ⚡ Thử Nghiệm Nhanh Đồ Án 1 (Mã: PRJ-101 | PIN: 1234)
             </button>
           </div>
         </div>
@@ -2405,20 +2423,35 @@ table.snote-table tr:hover td {
         <button class="btn btn-secondary btn-sm" onclick="closeModal('modal-project')">✕</button>
       </div>
       <div class="modal-body">
-        <input type="hidden" id="proj-id-field">
-        
-        <div class="form-field">
-          <label>Tên Đồ Án / Bài Tập Lớn (*):</label>
-          <input type="text" id="proj-name-field" placeholder="Ví dụ: Đồ Án Web App SNOTE - Nhóm 1">
+        <!-- Bắt buộc tạo mã hoặc sinh mã khi tạo đồ án -->
+        <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 12px; margin-bottom: 12px;">
+          <div class="form-field">
+            <label for="proj-id-field" style="display: flex; justify-content: space-between;">
+              <span>Mã Đồ Án / Dự Án (*):</span>
+              <span id="proj-id-badge" style="font-size: 11px; color: var(--accent-primary); font-weight: 600;">Dùng để đăng nhập</span>
+            </label>
+            <div style="display: flex; gap: 6px;">
+              <input type="text" id="proj-id-field" placeholder="VD: PRJ-101" style="font-weight: 700; letter-spacing: 1px; text-transform: uppercase;" oninput="this.value = this.value.toUpperCase();">
+              <button type="button" class="btn btn-secondary btn-sm" id="btn-generate-proj-id" onclick="generateRandomProjectId()" title="Tự động sinh mã đồ án ngẫu nhiên không trùng lặp" style="white-space: nowrap;">🎲 Sinh Mã</button>
+            </div>
+          </div>
+
+          <div class="form-field">
+            <label for="proj-pin-field" style="display: flex; justify-content: space-between;">
+              <span>Mã PIN Bảo Mật (4 Số) (*):</span>
+              <span style="font-size: 11px; color: var(--text-dim);">Chỉ 4 chữ số</span>
+            </label>
+            <div style="display: flex; gap: 6px;">
+              <input type="text" id="proj-pin-field" maxlength="4" placeholder="1234" pattern="[0-9]{4}" inputmode="numeric" style="font-weight: 700; letter-spacing: 2px; text-align: center;" oninput="this.value = this.value.replace(/\D/g, '').slice(0, 4);">
+              <button type="button" class="btn btn-secondary btn-sm" onclick="generateRandomPin()" title="Tạo ngẫu nhiên 4 chữ số" style="white-space: nowrap;">🎲 Sinh PIN</button>
+            </div>
+          </div>
         </div>
 
-        <div style="display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 12px;">
+        <div style="display: grid; grid-template-columns: 1.3fr 0.9fr; gap: 12px;">
           <div class="form-field">
-            <label>Mã PIN Bảo Mật (4 Số) (*):</label>
-            <div style="display: flex; gap: 6px;">
-              <input type="text" id="proj-pin-field" maxlength="6" placeholder="1234" style="font-weight: 700; letter-spacing: 2px;">
-              <button type="button" class="btn btn-secondary btn-sm" onclick="generateRandomPin()" title="Tạo mã ngẫu nhiên">🎲 Sinh Mã</button>
-            </div>
+            <label>Tên Đồ Án / Bài Tập Lớn (*):</label>
+            <input type="text" id="proj-name-field" placeholder="Ví dụ: Đồ Án Web App SNOTE - Nhóm 1">
           </div>
 
           <div class="form-field">
@@ -2462,6 +2495,31 @@ table.snote-table tr:hover td {
       <div class="modal-footer">
         <button class="btn btn-secondary" onclick="closeModal('modal-project')">Hủy</button>
         <button class="btn btn-primary" onclick="submitProjectModalForm()">Lưu Đồ Án</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: TRUY CẬP ĐỒ ÁN KHÁC (BẰNG MÃ & PIN) -->
+  <div class="modal-overlay" id="modal-join-project">
+    <div class="modal-dialog" style="max-width: 440px;">
+      <div class="modal-header">
+        <span class="modal-title">Truy Cập Đồ Án Bằng Mã & PIN</span>
+        <button class="btn btn-secondary btn-sm" onclick="closeModal('modal-join-project')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-field">
+          <label for="join-project-code">Mã Đồ Án / Dự Án (*):</label>
+          <input type="text" id="join-project-code" placeholder="Nhập mã đồ án (VD: PRJ-102)" style="font-weight: 700; letter-spacing: 1px; text-transform: uppercase;" oninput="this.value = this.value.toUpperCase();">
+        </div>
+        <div class="form-field">
+          <label for="join-project-pin">Mã PIN Bảo Mật (4 Số) (*):</label>
+          <input type="password" id="join-project-pin" maxlength="4" placeholder="••••" pattern="[0-9]{4}" inputmode="numeric" style="font-weight: 700; letter-spacing: 2px; text-align: center;" oninput="this.value = this.value.replace(/\D/g, '').slice(0, 4);" onkeydown="if(event.key === 'Enter') submitJoinOtherProject();">
+        </div>
+        <div class="entry-error-text" id="join-project-error" style="font-size: 12.5px; text-align: center; min-height: 18px;"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('modal-join-project')">Hủy</button>
+        <button class="btn btn-primary" onclick="submitJoinOtherProject()">Xác Thực & Mở Đồ Án</button>
       </div>
     </div>
   </div>
@@ -2877,13 +2935,8 @@ table.snote-table tr:hover td {
     const savedTheme = storage.getItem('snote_theme');
     if (savedTheme === 'light') document.body.classList.add('light-theme');
 
-    // Nạp danh sách đồ án công khai cho Landing Gateway
-    callGasBackend('getPublicProjectsList', [], function(res) {
-      if (res && res.success) {
-        STATE.projects = res.projects || [];
-        populateLandingProjectSelect();
-      }
-    });
+    // Nạp chip đồ án đã truy cập gần đây cho Cổng Đồ Án
+    renderRecentLandingProjects();
 
     // Kiểm tra phiên đăng nhập đã lưu
     const savedToken = storage.getItem('snote_session_token');
@@ -2911,6 +2964,7 @@ table.snote-table tr:hover td {
       callGasBackend('accessProjectPortal', [savedPid, savedPin], function(res) {
         hideLoadingOverlay();
         if (res && res.success) {
+          saveAccessibleProject(res.project, savedPin);
           enterMemberPortal(res);
         } else {
           storage.removeItem('snote_project_id');
@@ -2929,85 +2983,363 @@ table.snote-table tr:hover td {
   function showLandingPage() {
     document.getElementById('view-landing').style.display = 'flex';
     document.getElementById('view-workspace').classList.remove('active');
+    renderRecentLandingProjects();
+    clearLandingError();
+    const codeEl = document.getElementById('landing-project-code');
+    if (codeEl) {
+      codeEl.value = '';
+      setTimeout(() => codeEl.focus(), 100);
+    }
+    for (let i = 0; i < 4; i++) {
+      const box = document.getElementById('pin-digit-' + i);
+      if (box) box.value = '';
+    }
+    const hidden = document.getElementById('landing-pin-code');
+    if (hidden) hidden.value = '';
   }
 
-  function populateLandingProjectSelect() {
-    const sel = document.getElementById('landing-project-select');
-    if (!sel) return;
-    sel.innerHTML = '<option value="">-- Chọn đồ án đang mở --</option>';
-    STATE.projects.forEach(p => {
-      const opt = document.createElement('option');
-      opt.value = p.projectId;
-      opt.textContent = `[${p.projectId}] ${p.projectName}`;
-      sel.appendChild(opt);
-    });
+  // --- QUẢN LÝ ĐỒ ÁN TRUY CẬP TRÊN THIẾT BỊ (ACCESSIBLE PROJECTS STORAGE) ---
+  function getAccessibleProjects() {
+    try {
+      const raw = storage.getItem('snote_accessible_projects');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch (e) {}
+    return [];
   }
 
-  // --- MEMBER LOGIN (MÃ PIN 4 SỐ) ---
-  function submitMemberLogin() {
-    const pId = document.getElementById('landing-project-select').value;
-    const pin = (typeof getCombinedPin === 'function' ? getCombinedPin() : document.getElementById('landing-pin-code').value).trim();
+  function saveAccessibleProject(project, pin) {
+    if (!project || !project.projectId) return;
+    const list = getAccessibleProjects();
+    const cleanId = String(project.projectId).trim().toUpperCase();
+    const existingIdx = list.findIndex(p => String(p.projectId || '').trim().toUpperCase() === cleanId);
+    const entry = {
+      projectId: cleanId,
+      projectName: project.projectName || cleanId,
+      subjectId: project.subjectId || '',
+      pinCode: pin || project.pinCode || '',
+      lastAccessed: new Date().toISOString()
+    };
+    if (existingIdx >= 0) {
+      list[existingIdx] = Object.assign({}, list[existingIdx], entry);
+    } else {
+      list.unshift(entry);
+    }
+    if (list.length > 15) list.length = 15;
+    storage.setItem('snote_accessible_projects', JSON.stringify(list));
+  }
+
+  function renderRecentLandingProjects() {
+    const wrap = document.getElementById('landing-recent-projects-wrap');
+    const chipsEl = document.getElementById('landing-recent-chips');
+    if (!wrap || !chipsEl) return;
+    const list = getAccessibleProjects();
+    if (!list || list.length === 0) {
+      wrap.style.display = 'none';
+      return;
+    }
+    wrap.style.display = 'block';
+    chipsEl.innerHTML = list.slice(0, 4).map(p => `
+      <button type="button" class="btn btn-secondary btn-sm" style="font-size: 11px; padding: 3px 8px; border-radius: 12px; display: inline-flex; align-items: center; gap: 4px;" onclick="selectRecentProject('${escapeHtml(p.projectId)}', '${escapeHtml(p.pinCode || '')}')" title="Chọn nhanh đồ án này">
+        <span style="font-weight: 700; color: var(--accent-primary); font-family: monospace;">[${escapeHtml(p.projectId)}]</span>
+        <span style="max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-muted);">${escapeHtml(p.projectName)}</span>
+      </button>
+    `).join('');
+  }
+
+  function selectRecentProject(pId, pin) {
+    const codeEl = document.getElementById('landing-project-code');
+    if (codeEl) codeEl.value = pId;
+    clearLandingError();
+    if (pin && pin.length === 4) {
+      for (let i = 0; i < 4; i++) {
+        const box = document.getElementById('pin-digit-' + i);
+        if (box) box.value = pin[i];
+      }
+      getCombinedPin();
+      submitMemberLogin();
+    } else {
+      focusFirstPinDigit();
+    }
+  }
+
+  function focusFirstPinDigit() {
+    for (let i = 0; i < 4; i++) {
+      const box = document.getElementById('pin-digit-' + i);
+      if (box && !box.value) {
+        box.focus();
+        return;
+      }
+    }
+    const box0 = document.getElementById('pin-digit-0');
+    if (box0) box0.focus();
+  }
+
+  // --- TƯƠNG TÁC MÃ PIN 4 SỐ (AUTO-ADVANCE, BACKSPACE, PASTE, TOGGLE) ---
+  let isLandingPinVisible = false;
+
+  function toggleLandingPinVisibility() {
+    isLandingPinVisible = !isLandingPinVisible;
+    const type = isLandingPinVisible ? 'text' : 'password';
+    for (let i = 0; i < 4; i++) {
+      const box = document.getElementById('pin-digit-' + i);
+      if (box) box.type = type;
+    }
+    const eye = document.getElementById('eye-icon-landing');
+    if (eye) {
+      if (isLandingPinVisible) {
+        eye.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>';
+      } else {
+        eye.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+      }
+    }
+  }
+
+  function handlePinDigitInput(e, idx) {
+    const input = e.target;
+    let val = input.value.replace(/\D/g, '');
+    if (val.length > 1) {
+      val = val.slice(-1);
+    }
+    input.value = val;
+    clearLandingError();
+
+    if (val) {
+      if (idx < 3) {
+        const nextBox = document.getElementById('pin-digit-' + (idx + 1));
+        if (nextBox) {
+          nextBox.focus();
+          nextBox.select();
+        }
+      } else if (idx === 3) {
+        const pin = getCombinedPin();
+        if (pin.length === 4) {
+          const pCode = (document.getElementById('landing-project-code') || {}).value || '';
+          if (pCode.trim()) {
+            submitMemberLogin();
+          }
+        }
+      }
+    }
+    getCombinedPin();
+  }
+
+  function handlePinDigitKeydown(e, idx) {
+    if (e.key === 'Backspace') {
+      const input = e.target;
+      if (!input.value && idx > 0) {
+        const prevBox = document.getElementById('pin-digit-' + (idx - 1));
+        if (prevBox) {
+          prevBox.focus();
+          prevBox.value = '';
+          getCombinedPin();
+          e.preventDefault();
+        }
+      } else {
+        setTimeout(getCombinedPin, 10);
+      }
+    } else if (e.key === 'ArrowLeft' && idx > 0) {
+      const prevBox = document.getElementById('pin-digit-' + (idx - 1));
+      if (prevBox) { prevBox.focus(); prevBox.select(); e.preventDefault(); }
+    } else if (e.key === 'ArrowRight' && idx < 3) {
+      const nextBox = document.getElementById('pin-digit-' + (idx + 1));
+      if (nextBox) { nextBox.focus(); nextBox.select(); e.preventDefault(); }
+    } else if (e.key === 'Enter') {
+      submitMemberLogin();
+    }
+  }
+
+  function handlePinPaste(e) {
+    e.preventDefault();
+    const paste = (e.clipboardData || window.clipboardData).getData('text');
+    if (!paste) return;
+    const digits = paste.replace(/\D/g, '').slice(0, 4);
+    if (digits.length === 0) return;
+
+    for (let i = 0; i < 4; i++) {
+      const box = document.getElementById('pin-digit-' + i);
+      if (box) box.value = digits[i] || '';
+    }
+    getCombinedPin();
+    clearLandingError();
+
+    if (digits.length === 4) {
+      const pCode = (document.getElementById('landing-project-code') || {}).value || '';
+      if (pCode.trim()) {
+        submitMemberLogin();
+      } else {
+        const pCodeEl = document.getElementById('landing-project-code');
+        if (pCodeEl) pCodeEl.focus();
+      }
+    } else {
+      const nextEmpty = document.getElementById('pin-digit-' + digits.length);
+      if (nextEmpty) nextEmpty.focus();
+    }
+  }
+
+  function getCombinedPin() {
+    let pin = '';
+    for (let i = 0; i < 4; i++) {
+      const box = document.getElementById('pin-digit-' + i);
+      pin += (box ? box.value : '');
+    }
+    const hidden = document.getElementById('landing-pin-code');
+    if (hidden) hidden.value = pin;
+    return pin;
+  }
+
+  function clearLandingError() {
     const errEl = document.getElementById('landing-member-error');
-    errEl.innerText = '';
+    if (errEl) errEl.innerText = '';
+    const container = document.getElementById('landing-pin-container');
+    if (container) container.classList.remove('shake-error');
+    for (let i = 0; i < 4; i++) {
+      const box = document.getElementById('pin-digit-' + i);
+      if (box) box.classList.remove('is-invalid');
+    }
+  }
 
-    if (!pId) { errEl.innerText = 'Vui lòng chọn đồ án của nhóm!'; return; }
-    if (!pin) { errEl.innerText = 'Vui lòng nhập mã PIN bảo mật!'; return; }
+  function showLandingError(msg) {
+    const errEl = document.getElementById('landing-member-error');
+    if (errEl) {
+      errEl.innerHTML = `<span style="color: var(--danger-color, #ef4444); font-weight: 600;">⚠️ ${escapeHtml(msg)}</span>`;
+    }
+    const container = document.getElementById('landing-pin-container');
+    if (container) {
+      container.classList.remove('shake-error');
+      void container.offsetWidth; // Force DOM reflow
+      container.classList.add('shake-error');
+    }
+    for (let i = 0; i < 4; i++) {
+      const box = document.getElementById('pin-digit-' + i);
+      if (box) box.classList.add('is-invalid');
+    }
+    showToast(msg, 'error');
+  }
+
+  function fillDemoProject(pId, pin) {
+    const codeEl = document.getElementById('landing-project-code');
+    if (codeEl) codeEl.value = pId;
+    const pinStr = String(pin || '');
+    for (let i = 0; i < 4; i++) {
+      const box = document.getElementById('pin-digit-' + i);
+      if (box) box.value = pinStr[i] || '';
+    }
+    getCombinedPin();
+    clearLandingError();
+    submitMemberLogin();
+  }
+
+  // --- MEMBER LOGIN (MÃ ĐỒ ÁN & MÃ PIN 4 SỐ) ---
+  function submitMemberLogin() {
+    const codeEl = document.getElementById('landing-project-code');
+    const pId = (codeEl ? codeEl.value : '').trim().toUpperCase();
+    const pin = getCombinedPin().trim();
+    clearLandingError();
+
+    if (!pId) {
+      showLandingError('Vui lòng nhập Mã Đồ Án của nhóm bạn!');
+      if (codeEl) codeEl.focus();
+      return;
+    }
+    if (pin.length !== 4) {
+      showLandingError('Vui lòng nhập đủ 4 chữ số mã PIN bảo mật!');
+      focusFirstPinDigit();
+      return;
+    }
 
     showLoadingOverlay('Đang xác thực mã PIN đồ án...');
     callGasBackend('accessProjectPortal', [pId, pin], function(res) {
       hideLoadingOverlay();
       if (res && res.success) {
-        storage.setItem('snote_project_id', pId);
+        storage.setItem('snote_project_id', res.project.projectId);
         storage.setItem('snote_pin_code', pin);
+        saveAccessibleProject(res.project, pin);
         enterMemberPortal(res);
-        showToast('Truy cập đồ án thành công!', 'success');
+        showToast(`Đăng nhập thành công: ${res.project.projectName}`, 'success');
       } else {
-        errEl.innerText = res.message || 'Mã PIN không chính xác!';
+        const msg = (res && res.message) ? res.message : 'Mã PIN hoặc Mã Đồ Án không chính xác!';
+        showLandingError(msg);
       }
     }, function(err) {
       hideLoadingOverlay();
-      errEl.innerText = 'Lỗi kết nối máy chủ.';
+      showLandingError('Lỗi kết nối máy chủ khi xác thực đồ án.');
     });
   }
 
-  // --- ADMIN LOGIN (EMAIL & PASSWORD) ---
-  function submitAdminLogin() {
-    const email = document.getElementById('landing-admin-email').value.trim();
-    const pass = document.getElementById('landing-admin-password').value.trim();
-    const errEl = document.getElementById('landing-admin-error');
-    errEl.innerText = '';
+  // --- TRUY CẬP ĐỒ ÁN KHÁC (SWITCHER MODAL) ---
+  function openJoinOtherProjectModal() {
+    closeProjectDropdown();
+    const codeEl = document.getElementById('join-project-code');
+    const pinEl = document.getElementById('join-project-pin');
+    const errEl = document.getElementById('join-project-error');
+    if (codeEl) codeEl.value = '';
+    if (pinEl) pinEl.value = '';
+    if (errEl) errEl.innerText = '';
+    openModal('modal-join-project');
+    setTimeout(() => { if (codeEl) codeEl.focus(); }, 150);
+  }
 
-    if (!email || !pass) { errEl.innerText = 'Vui lòng nhập đầy đủ email và mật khẩu!'; return; }
+  function submitJoinOtherProject() {
+    const pId = (document.getElementById('join-project-code').value || '').trim().toUpperCase();
+    const pin = (document.getElementById('join-project-pin').value || '').trim();
+    const errEl = document.getElementById('join-project-error');
+    if (errEl) errEl.innerText = '';
 
-    showLoadingOverlay('Đang xác thực quyền Quản Trị Viên...');
-    callGasBackend('handleAdminLogin', [email, pass], function(res) {
-      if (res && res.success) {
-        storage.setItem('snote_session_token', res.sessionToken);
-        callGasBackend('getAdminDashboardData', [res.sessionToken], function(dashRes) {
-          hideLoadingOverlay();
-          if (dashRes && dashRes.success) {
-            closeModal('modal-admin-login');
-            enterAdminSuite(dashRes);
-            showToast('Đăng nhập Quản Trị thành công!', 'success');
-          } else {
-            errEl.innerText = 'Không thể nạp dữ liệu quản trị.';
-          }
-        });
-      } else {
-        hideLoadingOverlay();
-        errEl.innerText = res.message || 'Sai thông tin đăng nhập!';
-      }
-    }, function() {
+    if (!pId) { if (errEl) errEl.innerText = 'Vui lòng nhập Mã Đồ Án!'; return; }
+    if (pin.length !== 4) { if (errEl) errEl.innerText = 'Vui lòng nhập đúng 4 chữ số mã PIN!'; return; }
+
+    showLoadingOverlay('Đang xác thực đồ án...');
+    callGasBackend('accessProjectPortal', [pId, pin], function(res) {
       hideLoadingOverlay();
-      errEl.innerText = 'Lỗi xác thực máy chủ.';
+      if (res && res.success) {
+        storage.setItem('snote_project_id', res.project.projectId);
+        storage.setItem('snote_pin_code', pin);
+        saveAccessibleProject(res.project, pin);
+        closeModal('modal-join-project');
+        enterMemberPortal(res);
+        showToast(`Đã chuyển sang: ${res.project.projectName}`, 'success');
+      } else {
+        if (errEl) errEl.innerText = res.message || 'Mã PIN hoặc Mã Đồ Án không chính xác!';
+        showToast(res.message || 'Mã PIN không chính xác!', 'error');
+      }
+    }, function(err) {
+      hideLoadingOverlay();
+      if (errEl) errEl.innerText = 'Lỗi kết nối máy chủ.';
     });
+  }
+
+  function updateTopbarProjectUI(p) {
+    if (!p) return;
+    if (document.getElementById('topbar-current-project-title')) {
+      document.getElementById('topbar-current-project-title').innerText = p.projectName || p.projectId;
+    }
+    if (document.getElementById('topbar-current-project-pin')) {
+      document.getElementById('topbar-current-project-pin').innerText = 'PIN: ' + (p.pinCode || '****');
+    }
+    if (document.getElementById('topbar-project-name')) {
+      document.getElementById('topbar-project-name').innerText = p.projectName || p.projectId;
+    }
+    if (document.getElementById('topbar-pin-badge')) {
+      document.getElementById('topbar-pin-badge').innerText = 'PIN: ' + (p.pinCode || '****');
+      document.getElementById('topbar-pin-badge').style.display = 'inline-block';
+    }
+    if (document.getElementById('sidebar-user-name')) {
+      document.getElementById('sidebar-user-name').innerText = p.projectName || p.projectId;
+    }
   }
 
   // --- ENTER MEMBER PORTAL ---
   function enterMemberPortal(data) {
     STATE.currentUser = { role: 'MEMBER', fullName: 'Sinh Viên SNOTE', email: '' };
     STATE.currentProject = data.project;
-    STATE.projects = data.projects || (data.project ? [data.project] : []);
+    
+    // Nạp danh sách đồ án thực tế đã truy cập trên thiết bị
+    const accessible = getAccessibleProjects();
+    STATE.projects = accessible.length > 0 ? accessible : (data.project ? [data.project] : []);
+    
     STATE.tasks = data.tasks || [];
     STATE.notes = data.notes || [];
     STATE.roadmaps = data.roadmaps || [];
@@ -3015,20 +3347,7 @@ table.snote-table tr:hover td {
     document.getElementById('view-landing').style.display = 'none';
     document.getElementById('view-workspace').classList.add('active');
 
-    // Cập nhật Topbar Project Switcher
-    if (document.getElementById('topbar-current-project-title')) {
-      document.getElementById('topbar-current-project-title').innerText = data.project.projectName;
-    }
-    if (document.getElementById('topbar-current-project-pin')) {
-      document.getElementById('topbar-current-project-pin').innerText = 'PIN: ' + (data.project.pinCode || '****');
-    }
-    if (document.getElementById('topbar-project-name')) {
-      document.getElementById('topbar-project-name').innerText = data.project.projectName;
-    }
-    if (document.getElementById('topbar-pin-badge')) {
-      document.getElementById('topbar-pin-badge').innerText = 'PIN: ' + (data.project.pinCode || '****');
-      document.getElementById('topbar-pin-badge').style.display = 'inline-block';
-    }
+    updateTopbarProjectUI(data.project);
 
     // Hiển thị Quản Lý Đồ Án cho thành viên
     const navProj = document.getElementById('nav-item-projects');
@@ -3037,18 +3356,6 @@ table.snote-table tr:hover td {
     if (navStatus) navStatus.style.display = 'none';
 
     document.getElementById('sidebar-role-badge').innerText = 'CỔNG ĐỒ ÁN';
-    document.getElementById('sidebar-user-name').innerText = data.project.projectName;
-
-    // Tự động tải thêm danh sách toàn bộ đồ án nếu chưa đủ
-    if (!data.projects || data.projects.length <= 1) {
-      callGasBackend('getPublicProjectsList', [], function(res) {
-        if (res && res.success && res.projects && res.projects.length > 0) {
-          STATE.projects = res.projects;
-          renderProjectDropdownList();
-          renderProjectsGrid();
-        }
-      });
-    }
 
     navigateTo('tasks');
     refreshAllViews();
@@ -4402,49 +4709,68 @@ table.snote-table tr:hover td {
     const listWrap = document.getElementById('project-dropdown-list');
     if (!listWrap) return;
     const curPid = STATE.currentProject ? STATE.currentProject.projectId : '';
-    const projects = STATE.projects || [];
+    
+    // Nếu là thành viên, hiển thị danh sách đồ án thực tế đã truy cập
+    let projects = STATE.projects || [];
+    if (STATE.currentUser && STATE.currentUser.role === 'MEMBER') {
+      const accessible = getAccessibleProjects();
+      if (accessible && accessible.length > 0) {
+        projects = accessible;
+        STATE.projects = accessible;
+      }
+    }
+
     const countEl = document.getElementById('project-dropdown-count');
-    if (countEl) countEl.innerText = `${projects.length} môn`;
+    if (countEl) countEl.innerText = `${projects.length} đồ án`;
 
     if (projects.length === 0) {
       listWrap.innerHTML = '<div style="padding: 16px; text-align: center; color: var(--text-dim); font-size: 12px;">Chưa có đồ án nào</div>';
       return;
     }
 
-    listWrap.innerHTML = projects.map(p => {
+    let html = projects.map(p => {
       const isActive = (p.projectId === curPid);
       return `
-        <div class="project-dropdown-item ${isActive ? 'is-active' : ''}" onclick="switchProjectDirectly('${p.projectId}')">
+        <div class="project-dropdown-item ${isActive ? 'is-active' : ''}" onclick="switchProjectDirectly('${escapeHtml(p.projectId)}')">
           <div style="display: flex; flex-direction: column; gap: 2px; overflow: hidden; padding-right: 8px;">
-            <strong style="font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-primary);">${escapeHtml(p.projectName)}</strong>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="font-size: 11px; font-weight: 700; color: var(--accent-primary); font-family: monospace;">[${escapeHtml(p.projectId)}]</span>
+              <strong style="font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-primary);">${escapeHtml(p.projectName)}</strong>
+            </div>
             <span style="font-size: 11px; color: var(--text-dim);">${escapeHtml(p.subjectId || 'Môn Chung')}</span>
           </div>
           <div style="display: flex; align-items: center; gap: 6px;">
-            <span class="pin-chip" style="font-size: 10px;">PIN: ${p.pinCode}</span>
             ${isActive ? '<span style="color: var(--accent-primary); font-weight: 800;">✓</span>' : ''}
           </div>
         </div>
       `;
     }).join('');
+
+    if (STATE.currentUser && STATE.currentUser.role === 'MEMBER') {
+      html += `
+        <div style="padding: 8px; border-top: 1px solid var(--border-subtle);">
+          <button type="button" class="btn btn-secondary btn-sm" style="width: 100%; font-size: 11.5px; padding: 6px; display: flex; align-items: center; justify-content: center; gap: 4px;" onclick="openJoinOtherProjectModal()">
+            <span>+ Truy Cập Đồ Án Khác (Mã & PIN)</span>
+          </button>
+        </div>
+      `;
+    }
+
+    listWrap.innerHTML = html;
   }
 
   function switchProjectDirectly(projectId) {
-    const found = (STATE.projects || []).find(x => x.projectId === projectId);
+    let found = (STATE.projects || []).find(x => String(x.projectId || '').toUpperCase() === String(projectId || '').toUpperCase());
+    if (!found && STATE.currentUser && STATE.currentUser.role === 'MEMBER') {
+      const accessible = getAccessibleProjects();
+      found = accessible.find(x => String(x.projectId || '').toUpperCase() === String(projectId || '').toUpperCase());
+    }
     if (!found) return;
     STATE.currentProject = found;
 
-    // Cập nhật Topbar
-    const titleEl = document.getElementById('topbar-current-project-title');
-    if (titleEl) titleEl.innerText = found.projectName;
-    const pinEl = document.getElementById('topbar-current-project-pin');
-    if (pinEl) pinEl.innerText = 'PIN: ' + (found.pinCode || '****');
-    const legacyName = document.getElementById('topbar-project-name');
-    if (legacyName) legacyName.innerText = found.projectName;
-    const legacyPin = document.getElementById('topbar-pin-badge');
-    if (legacyPin) legacyPin.innerText = 'PIN: ' + (found.pinCode || '****');
-
+    updateTopbarProjectUI(found);
     storage.setItem('snote_project_id', found.projectId);
-    storage.setItem('snote_pin_code', found.pinCode);
+    if (found.pinCode) storage.setItem('snote_pin_code', found.pinCode);
 
     closeProjectDropdown();
     showToast(`Đã chuyển sang: ${found.projectName}`, 'success');
@@ -4731,17 +5057,46 @@ table.snote-table tr:hover td {
     }
   }
 
+  function generateRandomProjectId() {
+    const existing = (STATE.projects || []).map(p => String(p.projectId || '').toUpperCase());
+    let code = '';
+    for (let i = 0; i < 100; i++) {
+      const rand = Math.floor(100 + Math.random() * 900);
+      const candidate = 'PRJ-' + rand;
+      if (!existing.includes(candidate)) {
+        code = candidate;
+        break;
+      }
+    }
+    if (!code) code = 'PRJ-' + Date.now().toString().slice(-4);
+    const el = document.getElementById('proj-id-field');
+    if (el) el.value = code;
+    return code;
+  }
+
   function generateRandomPin() {
     const pin = Math.floor(1000 + Math.random() * 9000).toString();
     const pinField = document.getElementById('proj-pin-field');
     if (pinField) pinField.value = pin;
+    return pin;
   }
 
   function openCreateProjectModal() {
     document.getElementById('modal-project-title-text').innerText = 'Thêm Mới Đồ Án';
-    document.getElementById('proj-id-field').value = '';
+    const idEl = document.getElementById('proj-id-field');
+    if (idEl) {
+      idEl.readOnly = false;
+      idEl.style.opacity = '1';
+      idEl.style.cursor = 'text';
+    }
+    const btnGen = document.getElementById('btn-generate-proj-id');
+    if (btnGen) btnGen.style.display = 'inline-flex';
+    const badge = document.getElementById('proj-id-badge');
+    if (badge) badge.innerText = 'Dùng để đăng nhập';
+
+    generateRandomProjectId();
     document.getElementById('proj-name-field').value = '';
-    document.getElementById('proj-pin-field').value = Math.floor(1000 + Math.random() * 9000);
+    generateRandomPin();
     document.getElementById('proj-status-field').value = 'ACTIVE';
     document.getElementById('proj-subject-field').value = '';
     document.getElementById('proj-deadline-field').value = '';
@@ -4755,7 +5110,18 @@ table.snote-table tr:hover td {
     const p = (STATE.projects || []).find(x => x.projectId === pId);
     if (!p) return;
     document.getElementById('modal-project-title-text').innerText = 'Chỉnh Sửa Đồ Án';
-    document.getElementById('proj-id-field').value = p.projectId;
+    const idEl = document.getElementById('proj-id-field');
+    if (idEl) {
+      idEl.value = p.projectId;
+      idEl.readOnly = true;
+      idEl.style.opacity = '0.7';
+      idEl.style.cursor = 'not-allowed';
+    }
+    const btnGen = document.getElementById('btn-generate-proj-id');
+    if (btnGen) btnGen.style.display = 'none';
+    const badge = document.getElementById('proj-id-badge');
+    if (badge) badge.innerText = 'Mã cố định';
+
     document.getElementById('proj-name-field').value = p.projectName || '';
     document.getElementById('proj-pin-field').value = p.pinCode || '';
     document.getElementById('proj-status-field').value = p.status || 'ACTIVE';
@@ -4768,12 +5134,36 @@ table.snote-table tr:hover td {
   }
 
   function submitProjectModalForm() {
+    const idEl = document.getElementById('proj-id-field');
+    const targetId = (idEl ? idEl.value : '').trim().toUpperCase();
     const name = document.getElementById('proj-name-field').value.trim();
     const pin = document.getElementById('proj-pin-field').value.trim();
-    if (!name || !pin) { showToast('Vui lòng nhập tên đồ án và mã PIN!', 'error'); return; }
 
-    const pId = document.getElementById('proj-id-field').value;
-    const targetId = pId || ('PRJ-' + (100 + (STATE.projects || []).length + 1));
+    if (!targetId) {
+      showToast('Vui lòng nhập Mã Đồ Án hoặc bấm "🎲 Sinh Mã"!', 'error');
+      if (idEl) idEl.focus();
+      return;
+    }
+    if (!name) {
+      showToast('Vui lòng nhập Tên Đồ Án!', 'error');
+      document.getElementById('proj-name-field').focus();
+      return;
+    }
+    if (!pin || pin.length !== 4 || !/^\d{4}$/.test(pin)) {
+      showToast('Mã PIN bắt buộc phải gồm đúng 4 chữ số (VD: 1234)!', 'error');
+      document.getElementById('proj-pin-field').focus();
+      return;
+    }
+
+    const isEdit = idEl && idEl.readOnly;
+    if (!isEdit) {
+      const conflict = (STATE.projects || []).some(p => String(p.projectId || '').toUpperCase() === targetId);
+      if (conflict) {
+        showToast(`Mã đồ án "${targetId}" đã tồn tại! Vui lòng chọn mã khác hoặc bấm "🎲 Sinh Mã".`, 'error');
+        if (idEl) idEl.focus();
+        return;
+      }
+    }
 
     const projObj = {
       projectId: targetId,
@@ -4785,23 +5175,22 @@ table.snote-table tr:hover td {
       instructor: document.getElementById('proj-instructor-field').value.trim(),
       members: document.getElementById('proj-members-field').value.trim(),
       description: document.getElementById('proj-desc-field').value.trim(),
-      createdAt: pId ? ((STATE.projects.find(x => x.projectId === pId) || {}).createdAt || new Date().toISOString()) : new Date().toISOString()
+      createdAt: isEdit ? ((STATE.projects.find(x => x.projectId === targetId) || {}).createdAt || new Date().toISOString()) : new Date().toISOString()
     };
 
-    const idx = (STATE.projects || []).findIndex(x => x.projectId === targetId);
+    const idx = (STATE.projects || []).findIndex(x => String(x.projectId || '').toUpperCase() === targetId);
     if (idx >= 0) STATE.projects[idx] = projObj;
     else STATE.projects.push(projObj);
 
-    if (STATE.currentProject && STATE.currentProject.projectId === targetId) {
+    if (STATE.currentProject && String(STATE.currentProject.projectId || '').toUpperCase() === targetId) {
       STATE.currentProject = projObj;
-      document.getElementById('topbar-current-project-title').innerText = projObj.projectName;
-      document.getElementById('topbar-current-project-pin').innerText = 'PIN: ' + (projObj.pinCode || '****');
+      updateTopbarProjectUI(projObj);
     }
 
     closeModal('modal-project');
     renderProjectsGrid();
     renderProjectDropdownList();
-    showToast('Đã lưu đồ án thành công!', 'success');
+    showToast(`Đã lưu đồ án: [${projObj.projectId}] ${projObj.projectName}`, 'success');
 
     const token = storage.getItem('snote_session_token');
     callGasBackend('saveProject', [token, JSON.stringify(projObj)]);
@@ -5110,7 +5499,10 @@ table.snote-table tr:hover td {
     delete: deleteProjectHandler,
     togglePinVisibility: togglePinVisibility,
     copyPin: copyPinToClipboard,
-    generateRandomPin: generateRandomPin
+    generateRandomPin: generateRandomPin,
+    generateRandomProjectId: generateRandomProjectId,
+    openJoinOtherModal: openJoinOtherProjectModal,
+    submitJoinOther: submitJoinOtherProject
   };
   SNOTE.Admin = {
     renderStatus: renderAdminStatus,
@@ -5139,7 +5531,15 @@ table.snote-table tr:hover td {
     closeModal: closeModal,
     showToast: showToast,
     showLoadingOverlay: showLoadingOverlay,
-    hideLoadingOverlay: hideLoadingOverlay
+    hideLoadingOverlay: hideLoadingOverlay,
+    handlePinDigitInput: handlePinDigitInput,
+    handlePinDigitKeydown: handlePinDigitKeydown,
+    handlePinPaste: handlePinPaste,
+    toggleLandingPinVisibility: toggleLandingPinVisibility,
+    fillDemoProject: fillDemoProject,
+    getCombinedPin: getCombinedPin,
+    getAccessibleProjects: getAccessibleProjects,
+    saveAccessibleProject: saveAccessibleProject
   };
 </script>
 
