@@ -16,6 +16,7 @@ Tài liệu này là **Sổ tay tra cứu tập trung toàn bộ câu lệnh CLI
 5. [Lệnh Kiểm thử & Nghiệm thu Endpoints (Testing & Verification)](#5-lệnh-kiểm-thử--nghiệm-thu-endpoints-testing--verification)
 6. [Lệnh Quản lý Mã nguồn Git (Version Control)](#6-lệnh-quản-lý-mã-nguồn-git-version-control)
 7. [Lệnh Dọn dẹp & Khởi tạo Lại (Clean & Reset)](#7-lệnh-dọn-dẹp--khởi-tạo-lại-clean--reset)
+8. [Lệnh & Hướng Dẫn Phân Hệ SNOTE Web Script (Google Apps Script)](#8-lệnh--hướng-dẫn-phân-hệ-snote-web-script-google-apps-script)
 
 ---
 
@@ -195,3 +196,21 @@ Thực thi tại **thư mục gốc `SNOTE/`**:
 | :--- | :--- | :--- |
 | **Cài đặt lại toàn bộ dependencies** | `npm install`<br>`cd backend && npm install`<br>`cd ../frontend && npm install`<br>`cd ..` | Cài đặt lại các gói thư viện sau khi clone project từ Git. |
 | **Xóa toàn bộ thư mục Build (`dist/`)** | `Remove-Item -Recurse -Force backend/dist, frontend/dist, packages/shared/dist` *(PowerShell)* | Xóa các file build cũ để build sạch từ đầu. |
+
+---
+
+## 8. Lệnh & Hướng Dẫn Phân Hệ SNOTE Web Script (Google Apps Script)
+
+Thao tác tại thư mục **`web_script/`**:
+
+| Thao tác | Hướng dẫn thực hiện | Ghi chú |
+| :--- | :--- | :--- |
+| **Mở kiểm thử cục bộ trên trình duyệt (Local Runner)** | Mở trực tiếp `web_script/test_local.html` bằng trình duyệt hoặc chạy:<br>`Start-Process "web_script/test_local.html"` *(PowerShell)* | Chạy giả lập toàn bộ UI Kanban, Gantt, Table 11 cột, Notes, Roadmap DFA mà không cần tài khoản Google. |
+| **Chạy kiểm thử tự động toàn bộ phân hệ Web Script** | `python scratch/verify_all_modules.py` | Kiểm tra cú pháp V8 Code.gs, Index.html, Formula Injection defense, SafeStorageProxy, và thuật toán Cascading Deadlines. |
+| **Kiểm tra cú pháp JavaScript với Node.js** | `node -c web_script/Code.gs` *(sau khi copy sang .js tạm)* | Đảm bảo 100% không có lỗi cú pháp JavaScript trước khi deploy. |
+| **Chạy kiểm thử 10,000 Kịch bản & Cải tiến Bảo mật/Vận hành** | `python scratch/verify_10000_and_improvements.py` | Xác minh 10 tập (10,000 kịch bản), kiểm tra PIN Rate-limiting, Self-healing schema, Exponential Backoff và URL Sanitizer. |
+| **Chạy kiểm thử 10,000 Câu hỏi Bắt lỗi & Tái Cấu trúc SNOTE** | `python scratch/verify_faults_and_refactor.py` | Xác minh 10 tập (10,000 câu hỏi bắt lỗi), ma trận giải pháp, SNOTE Modular Namespace, EventBus, Store, Checklists và Gantt clamping. |
+| **Chạy kiểm thử 10,000 Lỗi Thực Chiến & Phân Lập Dự Án (Notes, Roadmap, Bento)** | `python scratch/verify_real_faults_and_isolation.py` | Kiểm tra 10,000 câu hỏi mã nguồn thực chiến, phân lập Notes theo projectId, reset active note, deleteNote, scope filters, phân lập Roadmap, và runner test_local.html. |
+| **Triển khai lên Google Sheets (3 phút)** | 1. Mở Google Drive ➔ Tạo Google Sheets mới.<br>2. Tiện ích mở rộng ➔ Apps Script.<br>3. Dán `web_script/Code.gs` và tạo file HTML `web_script/Index.html`.<br>4. Bấm Triển khai ➔ Bản triển khai mới (Web app, Execute as Me, Access Anyone). | Xem chi tiết quy trình tại [`web_script/README.md`](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/web_script/README.md). |
+
+

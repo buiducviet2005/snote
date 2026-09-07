@@ -353,6 +353,12 @@ SNOTE/
                 ├── pages/
                 │   └── SettingsPage.tsx      # Hồ sơ sinh viên & 1-click Download JSON Backup
                 └── index.ts                  # Public API của feature settings
+├── web_script/                               # PHÂN HỆ SNOTE WEB SCRIPT (GOOGLE APPS SCRIPT & GOOGLE SHEETS)
+│   ├── appsscript.json                       # Apps Script Manifest (Runtime V8, timezone Asia/Ho_Chi_Minh)
+│   ├── Code.gs                               # Backend Google Apps Script (Auto-repair 7 Sheet, Auth, CRUD, DFA Parser)
+│   ├── Index.html                            # Frontend SPA hoàn chỉnh (Kanban, Gantt, Table 11 cột, Notes, Roadmaps)
+│   ├── test_local.html                       # Local Browser Runner kiểm thử giao diện trực tiếp trên máy tính
+│   └── README.md                             # Hướng dẫn triển khai 3 phút & checklist nghiệm thu
 ```
 
 ---
@@ -515,6 +521,18 @@ SNOTE/
 
 ---
 
+### 3.7. Phân hệ SNOTE Web Script Edition (`web_script/`)
+
+| Đường dẫn tệp | Vai trò & Chức năng chi tiết | Công nghệ sử dụng |
+| :--- | :--- | :--- |
+| [web_script/appsscript.json](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/web_script/appsscript.json) | File Manifest cấu hình Google Apps Script runtime V8, timezone `Asia/Ho_Chi_Minh` và phân quyền Web App. | `Apps Script Manifest` |
+| [web_script/Code.gs](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/web_script/Code.gs) | Backend Controller & Database Access Layer: Quản lý 7 sheet Google Sheets, xác thực PIN/Admin, Task CRUD, tự động đánh giá đúng hạn, Notes Ghi Chú Đề Cương, Roadmap DFA Parser, JSON Backup. | `Google Apps Script`, `V8 Engine` |
+| [web_script/Index.html](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/web_script/Index.html) | Giao diện Single Page Application (SPA) độc lập: Bảng Kanban kéo thả Optimistic UI, Sơ đồ Gantt 21 ngày + vạch hôm nay, Bảng chi tiết 11 cột, Ma trận Eisenhower, Notes Markdown, Bộ phân tích DFA, Safe Storage Proxy. | `HTML5`, `CSS3`, `Vanilla JS` |
+| [web_script/test_local.html](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/web_script/test_local.html) | Môi trường kiểm thử trực tiếp trên trình duyệt máy tính với mock backend tích hợp sẵn mà không cần upload lên Google Drive. | `HTML5`, `Mock RPC` |
+| [web_script/README.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/web_script/README.md) | Hồ sơ hướng dẫn triển khai 3 phút từ con số 0, đặc tả 7 sheet Google Sheets và checklist 10 tiêu chí nghiệm thu. | `Markdown` |
+
+---
+
 ## 4. QUY TRÌNH BẢO TRÌ VÀ CẬP NHẬT TÀI LIỆU BẮT BUỘC (THEO ĐIỀU 4)
 
 Mỗi khi phát triển hoặc sửa đổi tính năng trong dự án:
@@ -524,3 +542,250 @@ Mỗi khi phát triển hoặc sửa đổi tính năng trong dự án:
    - Cập nhật ngay vào **Mục 2 (Directory Tree)**: Bổ sung nhánh cây thư mục tương ứng.
    - Cập nhật ngay vào **Mục 3 (File Dictionary)**: Thêm dòng tra cứu chi tiết gồm Đường dẫn tệp, Vai trò/Chức năng chi tiết và Công nghệ sử dụng trong file đó.
 3. **Tuân thủ Tuyệt đối:** Không để xảy ra tình trạng code đã thay đổi nhưng tài liệu bản đồ không được cập nhật.
+
+
+## CẬP NHẬT KIẾN TRÚC WEB SCRIPT EDITION (MASTER IMPLEMENTATION)
+- `web_script/Code.gs`: Backend Google Apps Script V8 Engine. Quản lý 8 sheets (`Users`, `Semesters`, `Subjects`, `Projects`, `Tasks`, `Notes`, `Roadmaps`, `AuditLogs`). Tích hợp `fetchAllInitialData()` (nạp 1 round-trip), `executeBatchSync()` (Transaction Batch Sync đa bảng có LockService), phòng vệ Formula Injection (`sanitizeSheetCell`) và tự động đánh giá Đúng hạn/Trễ hạn.
+- `web_script/Index.html`: Frontend Web App Single-Page Application (Zero-dependency Vanilla JS & Pure CSS3). Tích hợp Safe Storage Proxy 3 tầng (LocalStorage -> SessionStorage -> RAM), Transaction Batch Sync Engine (debounce 800ms + offline FIFO queue), Bảng Kanban 4 cột HTML5 Native DnD (0ms Optimistic UI), Bảng 11 cột (sort/filter/pagination), Ma trận Eisenhower (kéo thả đổi ưu tiên), Biểu đồ Gantt 21 ngày (Today marker, inner progress fill, 2-way sync), Trình soạn thảo Ghi chú Split View (Markdown thuần, LaTeX KaTeX, 1-Click Note -> Task trích xuất checklist), Bộ phân giải Lộ trình DFA (thuật toán Cascading Deadlines gối đầu), và hệ thống phím tắt toàn cục (`Ctrl+K`, `Ctrl+N`, `Shift+G`).
+
+
+#### 10,000 KỊCH BẢN BẢO MẬT & VẬN HÀNH (DOCS/ai_chat_docs/10000_scenarios/)
+- vol_01_app_security.md: 1,000 Kịch bản Bảo mật Ứng dụng, XSS DOM, Formula Injection, CSP, ReDoS, Prototype Pollution.
+- vol_02_auth_session.md: 1,000 Kịch bản Xác thực, PIN Brute-force, Session Hijacking, IDOR, RBAC.
+- vol_03_sync_concurrency.md: 1,000 Kịch bản Đồng bộ Dữ liệu, Version Collision, Deadlock 2 chiều, Split-brain.
+- vol_04_offline_cache.md: 1,000 Kịch bản Chịu lỗi Ngoại tuyến, SafeStorage Quota 5MB, Hàng đợi FIFO, Flapping Network.
+- vol_05_gas_limits.md: 1,000 Kịch bản Giới hạn Google Apps Script 6 phút, Quota 30 concurrent, Ô 50k ký tự.
+- vol_06_frontend_perf.md: 1,000 Kịch bản Hiệu năng Frontend 60fps, 1000+ Kanban Cards, Gantt Coordinate Math, Memory Leaks.
+- vol_07_data_integrity.md: 1,000 Kịch bản Toàn vẹn Dữ liệu, Orphan Records, Cascade Rules, Note Backlinks.
+- vol_08_dfa_parser.md: 1,000 Kịch bản Trình phân giải DFA, Infinite Loops, Cascading Deadline Overflows.
+- vol_09_devops_backup.md: 1,000 Kịch bản DevOps, Khôi phục Sheet bị xóa, Repair Hàng hỏng, Timezones.
+- vol_10_ux_edge_cases.md: 1,000 Kịch bản Trải nghiệm Người dùng, Spam Clicking, Touch DnD, Unicode, Extreme Zoom.
+- master_risk_and_remediation_matrix.md: Bản đồ tổng hợp 10 Điểm nghẽn Chí mạng và giải pháp kỹ thuật cốt lõi.
+
+### 10,000 CÂU HỎI BẮT LỖI NGUYÊN LÝ HOẠT ĐỘNG (DOCS/ai_chat_docs/fault_finding_10000/)
+- vol_01_auth_session_faults.md: 1,000 Câu hỏi bắt lỗi Cổng Xác thực, Mã PIN, Quản lý Phiên, Timing attacks, IDOR Project bounds.
+- vol_02_project_isolation_faults.md: 1,000 Câu hỏi bắt lỗi Không gian Dự án, Phân lập Multi-tenant, Xóa tầng Cascade, Orphaned tasks.
+- vol_03_tasks_state_faults.md: 1,000 Câu hỏi bắt lỗi Động cơ Công việc, Kanban DnD position mutations, Eisenhower sorting, Pagination drifts.
+- vol_04_checklist_hierarchy_faults.md: 1,000 Câu hỏi bắt lỗi Cấu trúc Danh sách con, Checklist lồng, NaN% tiến độ, Concurrent toggling.
+- vol_05_gantt_coordinate_faults.md: 1,000 Câu hỏi bắt lỗi Hình học Tọa độ Gantt, Date clamping, Timezone UTC+7 drift, SVG layout wrap.
+- vol_06_notes_markdown_faults.md: 1,000 Câu hỏi bắt lỗi Trình soạn thảo Note, ReDoS regex, MathJax/KaTeX conflicts, Checkbox sync.
+- vol_07_dfa_statemachine_faults.md: 1,000 Câu hỏi bắt lỗi Máy trạng thái DFA, Roadmap lexer, Cyclic dependency deadlocks, Cascading date math.
+| [.gitignore](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/.gitignore) | Khai báo loại bỏ `node_modules/`, `.env`, `dist/`, `coverage/`, logs và dữ liệu database local khỏi Git. | `Git` |
+
+---
+
+### 3.2. Thư mục Tài liệu Kỹ thuật Dự án (`DOCS/`)
+
+| Đường dẫn tệp | Vai trò & Chức năng chi tiết | Phân đoạn lộ trình |
+| :--- | :--- | :--- |
+| [DOCS/step_1.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/step_1.md) | Định nghĩa chân dung sinh viên mục tiêu, giải quyết bài toán phân mảnh ghi chú, phạm vi tính năng MVP và định hướng AI. | Bước 1 |
+| [DOCS/step_2.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/step_2.md) | Thiết kế mô hình dữ liệu quan hệ, ERD, 8 Enums, DDL 10+ bảng, ràng buộc CHECK chống note rác, B-Tree & GIN Indexes. | Bước 2 |
+| [DOCS/step_3.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/step_3.md) | Thiết kế kiến trúc hệ thống tổng thể (Modular Monolith), phân rã 10 Bounded Contexts, quy chuẩn config, logger, error, security. | Bước 3 |
+| [DOCS/step_3_setup.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/step_3_setup.md) | Tài liệu kỹ thuật chi tiết của Bước nhỏ 3.3 (Setup backend skeleton từ số 0). | Bước 3.3 |
+| [DOCS/step_3_frontend.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/step_3_frontend.md) | Tài liệu kỹ thuật chi tiết của Bước nhỏ 3.4 (Setup Frontend SPA Feature-based). | Bước 3.4 |
+| [DOCS/step_3_repo_structure.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/step_3_repo_structure.md) | Tài liệu kỹ thuật chi tiết của Bước nhỏ 3.5 (Cấu trúc Repo & Monorepo shared packages). | Bước 3.5 |
+| [DOCS/step_3_observability_security.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/step_3_observability_security.md) | Tài liệu kỹ thuật chi tiết của Bước nhỏ 3.6 (Observability, AppError hierarchy, asyncBoundary, Pino redaction, security). | Bước 3.6 |
+| [DOCS/step_3_architecture.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/step_3_architecture.md) | Tài liệu kỹ thuật tổng hợp toàn diện Bước 3 lớn (Đặc tả kiến trúc, 10 modules, stacks, repo, security, health probes). | Bước 3.7 |
+| [DOCS/step_3_setup_checklist.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/step_3_setup_checklist.md) | Bảng theo dõi tiến độ nghiệm thu kỹ thuật từng tác vụ của Bước 3 (`28 / 28` tác vụ hoàn thành - 100%). | Bước 3 Checklist |
+| [DOCS/step_3_integration_checklist.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/step_3_integration_checklist.md) | Bảng theo dõi kiểm thử kết nối mạng, CORS và data flow giữa Frontend SPA và Backend API (`7 / 7` đạt). | Bước 3 Checklist |
+| [DOCS/step_3.5_checklist.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/step_3.5_checklist.md) | Bảng theo dõi tiến độ thực thi cấu trúc repo và thư viện dùng chung Bước 3.5 (`6 / 6` hoàn thành). | Bước 3.5 Checklist |
+| [DOCS/step_3.6_checklist.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/step_3.6_checklist.md) | Bảng theo dõi tiến độ thực thi quan sát hệ thống & cứng hóa bảo mật Bước 3.6 (`10 / 10` hoàn thành). | Bước 3.6 Checklist |
+| [DOCS/step_3.7_checklist.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/step_3.7_checklist.md) | Bảng theo dõi tiến độ đóng gói & chuẩn hóa toàn bộ Bước 3 (`8 / 8` hoàn thành). | Bước 3.7 Checklist |
+| [DOCS/step_4_plan.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/step_4_plan.md) | Kế hoạch kỹ thuật chi tiết của Bước 4 (Triển khai Backend Core, Prisma schema, Auth, Semesters, Subjects, Projects, Notes, Tasks, Schedule, Backup). | Bước 4 Plan |
+| [DOCS/step_4_checklist.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/step_4_checklist.md) | Bảng theo dõi tiến độ thực thi Bước 4 (`10 / 10` hoàn thành - 100%). | Bước 4 Checklist |
+| [DOCS/step_5_plan.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/step_5_plan.md) | Kế hoạch kỹ thuật chi tiết của Bước 5 (Triển khai Frontend V1 & UX hoàn chỉnh cho sinh viên). | Bước 5 Plan |
+| [DOCS/step_5_checklist.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/step_5_checklist.md) | Bảng theo dõi tiến độ thực thi Bước 5 (`11 / 11` hoàn thành - 100%). | Bước 5 Checklist |
+| [DOCS/step_5_frontend_enhancement_checklist.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/step_5_frontend_enhancement_checklist.md) | Bảng theo dõi tiến độ nâng cấp toàn diện Frontend & UX V2 (`10 / 10` hoàn thành - 100%). | Frontend UX Checklist |
+| [DOCS/step_6_extended_features_checklist.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/step_6_extended_features_checklist.md) | Bảng theo dõi tiến độ mở rộng RBAC Admin, Profile/Password, AI Copilot và Team Collaboration (`12 / 12` hoàn thành - 100%). | Bước 6 Checklist |
+| [DOCS/COMMANDS_PLAYBOOK.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/COMMANDS_PLAYBOOK.md) | Sổ tay tập trung toàn bộ câu lệnh CLI: Khởi chạy, Docker, Prisma, Build, Test PowerShell/cURL, Git và Clean dự án. | Sổ tay Vận hành |
+| [DOCS/PROJECT_STRUCTURE_AND_MAP.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/PROJECT_STRUCTURE_AND_MAP.md) | Tài liệu tra cứu cấu trúc dự án, ma trận công nghệ, từ điển tệp tin và vị trí áp dụng (File này). | Bản đồ Dự án |
+
+---
+
+### 3.3. Thư mục Tri thức Chat AI (`DOCS/ai_chat_docs/`)
+
+| Đường dẫn tệp | Vai trò & Chức năng chi tiết | Nguyên tắc quản lý |
+| :--- | :--- | :--- |
+| [DOCS/ai_chat_docs/README.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/ai_chat_docs/README.md) | Bản đồ tri thức và nguyên tắc mở rộng bất biến (Append-Only) cho AI Agent. | Chỉ mục |
+| [DOCS/ai_chat_docs/01_PROJECT_ACHIEVEMENTS.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/ai_chat_docs/01_PROJECT_ACHIEVEMENTS.md) | Tổng kết toàn bộ các thành tựu, quyết định kiến trúc và kết quả kỹ thuật đã hoàn thành 100%. | Bất biến (Append-Only) |
+| [DOCS/ai_chat_docs/02_PENDING_TASKS_AND_ROADMAP.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/ai_chat_docs/02_PENDING_TASKS_AND_ROADMAP.md) | Danh mục chi tiết các công việc cần làm tiếp theo từ Bước 4 đến Bước 8. | Bất biến (Append-Only) |
+| [DOCS/ai_chat_docs/03_DEVELOPMENT_WORKFLOW_AND_PROCESS.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/ai_chat_docs/03_DEVELOPMENT_WORKFLOW_AND_PROCESS.md) | Quy trình chuẩn mực Checklist-First, DDD Layering, Error Handling, Logging, Git. | Bất biến (Append-Only) |
+| [DOCS/ai_chat_docs/04_RESEARCH_GUARDRAILS_AND_LAWS.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/ai_chat_docs/04_RESEARCH_GUARDRAILS_AND_LAWS.md) | Ranh giới kỹ thuật bất biến (Anti-Junk notes, Single ACID DB, Anti-IDOR, Modular Monolith). | Bất biến (Append-Only) |
+| [DOCS/ai_chat_docs/05_AI_ROADMAP_AND_FUTURE_STRATEGY.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/ai_chat_docs/05_AI_ROADMAP_AND_FUTURE_STRATEGY.md) | Lộ trình và chiến lược AI 4 giai đoạn (Smart Extraction $\rightarrow$ Exam Predictor $\rightarrow$ Multi-modal $\rightarrow$ Autonomous). | Bất biến (Append-Only) |
+| [DOCS/ai_chat_docs/06_STEP_3_HANDOVER_AND_COMPLETION.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/ai_chat_docs/06_STEP_3_HANDOVER_AND_COMPLETION.md) | Biên bản nghiệm thu toàn diện Bước 3 và danh mục hành động bàn giao sang Bước 4. | Bất biến (Append-Only) |
+| [DOCS/ai_chat_docs/07_STEP_4_EXECUTION_PLAN.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/ai_chat_docs/07_STEP_4_EXECUTION_PLAN.md) | Kế hoạch chi tiết và chiến lược kỹ thuật triển khai Bước 4 Backend Core & Database. | Bất biến (Append-Only) |
+| [DOCS/ai_chat_docs/08_STEP_5_EXECUTION_PLAN.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/ai_chat_docs/08_STEP_5_EXECUTION_PLAN.md) | Kế hoạch chi tiết và chiến lược kỹ thuật triển khai Bước 5 Frontend V1 & UX. | Bất biến (Append-Only) |
+| [DOCS/ai_chat_docs/09_FRONTEND_UX_ENHANCEMENT.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/ai_chat_docs/09_FRONTEND_UX_ENHANCEMENT.md) | Đặc tả Design System, chuẩn Typography, Iconography, Theme Tokens và UX Micro-interactions. | Bất biến (Append-Only) |
+| [DOCS/ai_chat_docs/10_EXTENDED_FEATURES_ARCHITECTURE.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/ai_chat_docs/10_EXTENDED_FEATURES_ARCHITECTURE.md) | Đặc tả Kiến trúc Phân quyền RBAC Admin, Profile/Password, AI Floating Copilot và Team Collaboration. | Bất biến (Append-Only) |
+
+---
+
+### 3.4. Thư mục Thư viện Dùng chung (`packages/shared/`)
+
+| Đường dẫn tệp | Vai trò & Chức năng chi tiết | Công nghệ sử dụng |
+| :--- | :--- | :--- |
+| [packages/shared/package.json](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/packages/shared/package.json) | Khai báo package `@snote/shared` xuất bản types và contracts dùng chung cho cả backend và frontend. | `npm package` |
+| [packages/shared/tsconfig.json](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/packages/shared/tsconfig.json) | Cấu hình TypeScript compiler xuất file định nghĩa `.d.ts` vào thư mục `dist/`. | `TypeScript` |
+| [packages/shared/src/enums.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/packages/shared/src/enums.ts) | Định nghĩa 8 Enums chuẩn: `UserStatus`, `SemesterStatus`, `SubjectStatus`, `ProjectStatus`, `NoteType`, `TaskStatus`, `TaskPriority`, `ScheduleEventType`. | `TypeScript Enums` |
+| [packages/shared/src/contracts/api.contract.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/packages/shared/src/contracts/api.contract.ts) | Định nghĩa wrapper chuẩn `ApiResponse<T>`, `ApiErrorResponse` và `PaginationQuery`. | `TypeScript Interfaces` |
+| [packages/shared/src/contracts/auth.contract.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/packages/shared/src/contracts/auth.contract.ts) | Định nghĩa DTOs `RegisterDto`, `LoginDto`, `UserResponseDto`, `AuthResponseDto`. | `TypeScript Interfaces` |
+| [packages/shared/src/contracts/semesters.contract.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/packages/shared/src/contracts/semesters.contract.ts) | Định nghĩa DTOs `CreateSemesterDto`, `UpdateSemesterDto`, `SemesterResponseDto`. | `TypeScript Interfaces` |
+| [packages/shared/src/contracts/subjects.contract.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/packages/shared/src/contracts/subjects.contract.ts) | Định nghĩa DTOs `CreateSubjectDto`, `UpdateSubjectDto`, `SubjectResponseDto`. | `TypeScript Interfaces` |
+| [packages/shared/src/contracts/projects.contract.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/packages/shared/src/contracts/projects.contract.ts) | Định nghĩa DTOs `CreateProjectDto`, `UpdateProjectDto`, `ProjectResponseDto`. | `TypeScript Interfaces` |
+| [packages/shared/src/contracts/notes.contract.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/packages/shared/src/contracts/notes.contract.ts) | Định nghĩa interfaces `CreateNoteDto`, `UpdateNoteDto`, `NoteResponseDto`, `TagDto`. | `TypeScript Interfaces` |
+| [packages/shared/src/contracts/tasks.contract.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/packages/shared/src/contracts/tasks.contract.ts) | Định nghĩa interfaces `CreateTaskDto`, `UpdateTaskDto`, `TaskResponseDto`, `TaskFilter`. | `TypeScript Interfaces` |
+| [packages/shared/src/contracts/schedule.contract.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/packages/shared/src/contracts/schedule.contract.ts) | Định nghĩa DTOs `CreateScheduleEventDto`, `UpdateScheduleEventDto`, `ScheduleEventResponseDto`. | `TypeScript Interfaces` |
+| [packages/shared/src/contracts/backup.contract.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/packages/shared/src/contracts/backup.contract.ts) | Định nghĩa interface `UserBackupPayload`. | `TypeScript Interfaces` |
+| [packages/shared/src/index.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/packages/shared/src/index.ts) | Public API duy nhất xuất bản 100% contracts và enums của `@snote/shared`. | `TypeScript Exports` |
+
+---
+
+### 3.5. Mã nguồn Backend API (`backend/`)
+
+| Đường dẫn tệp | Vai trò & Chức năng chi tiết | Công nghệ sử dụng |
+| :--- | :--- | :--- |
+| [backend/package.json](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/package.json) | Khai báo dependencies backend (Express, Prisma, Zod, Pino, Helmet, Bcrypt, JWT...) và build scripts. | `npm package` |
+| [backend/tsconfig.json](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/tsconfig.json) | Cấu hình TypeScript Strict Mode, target `ES2022`, module `CommonJS`, rootDir `./src`, outDir `./dist`. | `TypeScript` |
+| [backend/prisma.config.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/prisma.config.ts) | Cấu hình datasource URL từ biến môi trường cho Prisma CLI v7. | `Prisma Config` |
+| [backend/prisma/schema.prisma](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/prisma/schema.prisma) | Khai báo 10+ Models (`User`, `RefreshToken`, `Semester`, `Subject`, `Project`, `Note`, `Task`, `Tag`, `ScheduleEvent`, `BackupRecord`) và 8 Enums. | `Prisma Schema` |
+| [backend/prisma/seed.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/prisma/seed.ts) | Script nạp dữ liệu mẫu sinh viên thực tế (user, 1 học kỳ, 3 môn học, 1 đồ án, 3 tags, 2 notes, 3 tasks, 2 sự kiện lịch). | `TypeScript`, `PrismaClient` |
+| [backend/src/server.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/src/server.ts) | Entry point chính của backend: Cấu hình Helmet, CORS, CookieParser, Pino HTTP, RateLimit, wire-up 8 domain routers và ErrorHandler. | `Express 5`, `Pino`, `Helmet`, `CORS` |
+| [backend/src/types/express.d.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/src/types/express.d.ts) | Định nghĩa TypeScript declaration mở rộng `Express.Request` chứa thông tin `req.user` và `req.id`. | `TypeScript Declaration` |
+| [backend/src/config/env-schema.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/src/config/env-schema.ts) | Định nghĩa schema Zod để kiểm tra chặt chẽ kiểu dữ liệu của biến môi trường (`PORT`, `NODE_ENV`, `DATABASE_URL`, `JWT_SECRET`...). | `Zod` |
+| [backend/src/config/env.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/src/config/env.ts) | Thực thi parse `process.env`. Nếu thiếu hoặc sai cấu hình, dừng server ngay lập tức (**Fail-Fast**). | `Zod`, `dotenv` |
+| [backend/src/shared/db/prismaClient.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/src/shared/db/prismaClient.ts) | Khởi tạo Singleton instance `prisma` kết nối qua `PrismaPg` adapter và pool `pg`. | `PrismaClient`, `@prisma/adapter-pg`, `pg` |
+| [backend/src/shared/utils/logger.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/src/shared/utils/logger.ts) | Cấu hình Pino Structured Logger kèm tính năng `redact` che giấu tokens và passwords. | `Pino` |
+| [backend/src/shared/errors/appErrors.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/src/shared/errors/appErrors.ts) | Cây phân cấp Custom Errors (`AppError`, `ValidationError`, `AuthError`, `ForbiddenError`, `NotFoundError`, `ConflictError`). | `TypeScript Classes` |
+| [backend/src/shared/middleware/asyncBoundary.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/src/shared/middleware/asyncBoundary.ts) | Middleware wrapper bọc các route handler bất đồng bộ, tự động chuyển lỗi qua `next(err)`. | `Express Middleware` |
+| [backend/src/shared/middleware/authGuard.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/src/shared/middleware/authGuard.ts) | Middleware xác thực JWT Bearer Token và gán `req.user` bảo vệ chống tấn công IDOR. | `jsonwebtoken`, `Express` |
+| [backend/src/shared/middleware/adminGuard.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/src/shared/middleware/adminGuard.ts) | Middleware RBAC: Kiểm tra vai trò `ADMIN`, chặn tài khoản sinh viên thường (`403 Forbidden`). | `Express Middleware` |
+| [backend/src/shared/middleware/rateLimit.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/src/shared/middleware/rateLimit.ts) | Cấu hình Rate Limiters (`loginRateLimiter` 10 req/15m, `apiRateLimiter` 100 req/1m). | `express-rate-limit` |
+| [backend/src/shared/middleware/errorHandler.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/src/shared/middleware/errorHandler.ts) | Middleware bắt lỗi tập trung: Tự động map `ZodError` và `AppError` sang HTTP response chuẩn có mã code và context. | `Express Error Middleware`, `ZodError` |
+| [backend/src/modules/health/health.routes.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/src/modules/health/health.routes.ts) | Endpoints kiểm tra sức khỏe hệ thống: `/health`, `/health/live`, `/health/ready` (query DB). | `Express Router`, `PrismaPg` |
+| [backend/src/modules/health/index.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/src/modules/health/index.ts) | Public API của module health. | `TypeScript Exports` |
+| [backend/src/modules/auth/](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/src/modules/auth) | Phân hệ Xác thực: Đăng ký, Đăng nhập, Token Rotation, Cookie httpOnly, Cập nhật Profile, Đổi mật khẩu, Bcrypt cost 12. | `bcryptjs`, `jsonwebtoken`, `cookie-parser`, `Prisma` |
+| [backend/src/modules/semesters/](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/src/modules/semesters) | Phân hệ Học kỳ: CRUD học kỳ, đánh dấu học kỳ hiện tại (`isCurrent`), soft delete. | `PrismaClient`, `Zod`, `Express` |
+| [backend/src/modules/subjects/](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/src/modules/subjects) | Phân hệ Môn học: CRUD môn học, số tín chỉ, giảng viên, mã màu, relation counters. | `PrismaClient`, `Zod`, `Express` |
+| [backend/src/modules/projects/](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/src/modules/projects) | Phân hệ Đồ án & Làm việc nhóm: CRUD đồ án, quản lý thành viên nhóm (`ProjectMember`), phân quyền vai trò. | `PrismaClient`, `Zod`, `Express` |
+| [backend/src/modules/notes/](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/src/modules/notes) | Phân hệ Ghi chú bài giảng: CRUD, ghim, lưu trữ, tags, chống note rác (`subjectId \|\| projectId`). | `PrismaClient`, `Zod`, `Express` |
+| [backend/src/modules/tasks/](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/src/modules/tasks) | Phân hệ Công việc sinh viên: CRUD, trạng thái Kanban, độ ưu tiên, deadline, tags. | `PrismaClient`, `Zod`, `Express` |
+| [backend/src/modules/schedule/](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/src/modules/schedule) | Phân hệ Lịch trình & Lịch thi: Quản lý sự kiện lịch theo tuần/tháng, lặp lại sự kiện. | `PrismaClient`, `Zod`, `Express` |
+| [backend/src/modules/backup/](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/src/modules/backup) | Phân hệ Sao lưu dữ liệu: Export toàn bộ dữ liệu tài khoản ra JSON kèm SHA-256 checksum. | `Node Crypto`, `PrismaClient`, `Express` |
+| [backend/src/modules/ai/](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/backend/src/modules/ai) | Phân hệ Trợ lý AI Học thuật: Rút trích Todo, Dự đoán đề thi, Soạn đề cương 1 trang, Giải thích khái niệm chuyên sâu. | `TypeScript`, `PrismaClient`, `Express` |
+
+---
+
+### 3.6. Mã nguồn Frontend SPA (`frontend/`)
+
+| Đường dẫn tệp | Vai trò & Chức năng chi tiết | Công nghệ sử dụng |
+| :--- | :--- | :--- |
+| [frontend/package.json](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/frontend/package.json) | Khai báo dependencies frontend (React 19, React Router DOM v7, Vite, TypeScript) và build scripts. | `npm package` |
+| [frontend/tsconfig.json](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/frontend/tsconfig.json) | Cấu hình TypeScript compiler cho React Client kèm alias `@snote/shared`. | `TypeScript` |
+| [frontend/vite.config.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/frontend/vite.config.ts) | Cấu hình plugin React cho Vite, resolve alias `@snote/shared` và dev server cổng `5173`. | `Vite`, `@vitejs/plugin-react` |
+| [frontend/index.html](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/frontend/index.html) | File HTML gốc chứa thẻ `<div id="root">` và nhúng `/src/main.tsx`. | `HTML5` |
+| [frontend/src/assets/styles/global.css](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/frontend/src/assets/styles/global.css) | Toàn bộ CSS toàn cục: CSS variables màu sắc, dark theme, reset style, typography, scrollbars, spin animation. | `CSS3 Custom Properties` |
+| [frontend/src/services/api.ts](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/frontend/src/services/api.ts) | Wrapper HTTP API Client đóng gói fetch, tự động chèn `Authorization: Bearer <token>`, gửi credentials và hỗ trợ tải blob. | `Fetch API`, `TypeScript` |
+| [frontend/src/contexts/ThemeContext.tsx](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/frontend/src/contexts/ThemeContext.tsx) | React Context quản lý Dark/Light theme, tự động lưu trữ và đồng bộ với `localStorage`. | `React Context` |
+| [frontend/src/contexts/AuthContext.tsx](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/frontend/src/contexts/AuthContext.tsx) | React Context quản lý phiên đăng nhập JWT, user profile, role `ADMIN/STUDENT`, updateProfile, changePassword. | `React Context` |
+| [frontend/src/contexts/AppFilterContext.tsx](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/frontend/src/contexts/AppFilterContext.tsx) | React Context quản lý bộ lọc ngữ cảnh toàn cục (Học kỳ active, Môn học active). | `React Context` |
+| [frontend/src/contexts/ToastContext.tsx](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/frontend/src/contexts/ToastContext.tsx) | React Context hiển thị các thông báo phản hồi thao tác nổi với Lucide Icons (Success / Error / Info). | `React Context`, `Lucide Icons` |
+| [frontend/src/components/common/Modal.tsx](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/frontend/src/components/common/Modal.tsx) | Modal Dialog tái sử dụng cho các form tạo/sửa dữ liệu kèm animation `scaleIn`. | `React 19`, `Lucide Icons` |
+| [frontend/src/components/common/MarkdownViewer.tsx](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/frontend/src/components/common/MarkdownViewer.tsx) | Component render Markdown chuẩn GitHub (`react-markdown` + `remark-gfm`) cho bài giảng. | `react-markdown`, `remark-gfm` |
+| [frontend/src/components/common/QuickActionModal.tsx](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/frontend/src/components/common/QuickActionModal.tsx) | Modal Tạo Nhanh toàn cục (Quick Action) cho phép tạo ngay Note, Task hoặc Lịch học từ bất kỳ đâu. | `React 19`, `Lucide Icons` |
+| [frontend/src/components/layout/Sidebar.tsx](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/frontend/src/components/layout/Sidebar.tsx) | Thanh điều hướng trái chứa Logo SNOTE, 8 menu sinh viên + 1 menu AI Copilot, ẩn/hiện Trạng thái hệ thống theo quyền Admin. | `React 19`, `react-router-dom`, `Lucide` |
+| [frontend/src/components/common/GlobalSearchModal.tsx](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/frontend/src/components/common/GlobalSearchModal.tsx) | Modal tìm kiếm toàn cục đa tiêu chí (`Ctrl+K`), lọc theo text + môn + tag + status + priority + thời gian. | `React 19`, `Lucide` |
+| [frontend/src/components/common/ShareModal.tsx](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/frontend/src/components/common/ShareModal.tsx) | Modal chia sẻ tài liệu (Ghi chú, Công việc, Đồ án) qua email bạn học hoặc tạo Public Link với quyền VIEW/EDIT. | `React 19`, `Lucide` |
+| [frontend/src/components/layout/Topbar.tsx](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/frontend/src/components/layout/Topbar.tsx) | Header chứa bộ chọn học kỳ & môn học toàn cục, thanh tìm kiếm nhanh `Ctrl+K` và nút Tạo Nhanh (+). | `React 19`, `Lucide` |
+| [frontend/src/components/layout/AppLayout.tsx](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/frontend/src/components/layout/AppLayout.tsx) | Khung bố cục chính (Master Layout) lồng Sidebar, Topbar, FloatingAiChatbot và React Router `<Outlet />`. | `React 19`, `react-router-dom` |
+| [frontend/src/components/layout/ProtectedRoute.tsx](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/frontend/src/components/layout/ProtectedRoute.tsx) | Guard kiểm tra xác thực, tự động chuyển hướng về `/login` nếu chưa đăng nhập. | `React 19`, `react-router-dom` |
+| [frontend/src/components/layout/AdminRoute.tsx](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/frontend/src/components/layout/AdminRoute.tsx) | Guard phân quyền RBAC: Chặn truy cập nếu không phải `ADMIN`, hiển thị màn hình 403 Access Denied. | `React 19`, `Lucide` |
+| [frontend/src/features/auth/](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/frontend/src/features/auth) | Phân hệ Xác thực: `LoginPage.tsx` (1-click fill Student/Admin), `RegisterPage.tsx` (đăng ký). | `React 19`, `Lucide` |
+| [frontend/src/features/notes/](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/frontend/src/features/notes) | Phân hệ Ghi chú: `NotesListPage.tsx` (chế độ Lưới/Danh sách), `NoteCard.tsx` (ước tính thời gian đọc), `NoteModal.tsx` (thanh công cụ Markdown, Chia sẻ). | `React 19`, `react-markdown` |
+| [frontend/src/features/tasks/](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/frontend/src/features/tasks) | Phân hệ Công việc & Nhiệm vụ: `TasksListPage.tsx` (View Switcher 3 chế độ: Kanban, Danh sách Hạn chót, Ma trận Eisenhower), `QuickTaskBar.tsx` (Tạo việc nhanh 1-Click), `TasksListView.tsx`, `TasksEisenhowerView.tsx`, `TaskCard.tsx`, `TaskModal.tsx`. | `React 19`, `canvas-confetti`, `Lucide` |
+| [frontend/src/features/schedule/](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/frontend/src/features/schedule) | Phân hệ Lịch trình & Thời khóa biểu: `ScheduleWeekPage.tsx` (Trang quản lý Lịch biểu chuyên dụng), `GanttTimelineView.tsx` (Sơ đồ Gantt Timeline 31 ngày, vạch Hôm nay, Floating Tooltip, Status Tabs, 1-Click Date Cell Add), `EventModal.tsx` (4 Chế độ, Preset Ca học 1-5, Tạo lặp lại học kỳ $N$ tuần). | `React 19`, `Lucide` |
+| [frontend/src/features/semesters/](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/frontend/src/features/semesters) | Phân hệ Học kỳ & Môn học: `SemesterOverviewPage.tsx`, `SemesterModal.tsx`, `SubjectModal.tsx` (bảng chọn màu). | `React 19`, `Lucide` |
+| [frontend/src/features/projects/](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/frontend/src/features/projects) | Phân hệ Đồ án & Làm việc nhóm: `ProjectsListPage.tsx`, `ProjectModal.tsx`, `TeamMembersModal.tsx` (mời bạn học, phân công). | `React 19`, `Lucide` |
+| [frontend/src/features/shares/](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/frontend/src/features/shares) | Phân hệ Chia sẻ tài liệu: `PublicShareViewPage.tsx` (trang xem tài liệu công khai qua link `http://.../share/:token`). | `React 19`, `Lucide` |
+| [frontend/src/features/ai/](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/frontend/src/features/ai) | Phân hệ Trợ lý AI SNOTE: `FloatingAiChatbot.tsx` (nút nổi thu nhỏ `Ctrl+J`), `AiChatPage.tsx` (không gian chat toàn màn hình). | `React 19`, `Lucide`, `react-markdown` |
+| [frontend/src/features/progress/](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/frontend/src/features/progress) | Phân hệ Tiến độ học tập: `ProgressDashboardPage.tsx` (Bento metrics, phân tích % theo môn). | `React 19`, `Lucide` |
+| [frontend/src/features/settings/](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/frontend/src/features/settings) | Phân hệ Cài đặt & Sao lưu: `SettingsPage.tsx` (chỉnh sửa hồ sơ sinh viên, đổi mật khẩu, đổi theme, xuất JSON granular, xuất Markdown, khôi phục Restore JSON). | `React 19`, `Lucide` |
+| [frontend/src/features/status/](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/frontend/src/features/status) | Phân hệ Giám sát sức khỏe Admin: `StatusPage.tsx` (kiểm tra `/health/live` và `/health/ready` real-time, khóa RBAC). | `React 19`, `Lucide` |
+| [frontend/src/router/index.tsx](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/frontend/src/router/index.tsx) | Cấu hình React Router DOM điều hướng toàn bộ 8 phân hệ học tập + trang Public Share lồng trong `ProtectedRoute` & `AppLayout`. | `react-router-dom` |
+| [frontend/src/App.tsx](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/frontend/src/App.tsx) | Root Component bọc `ThemeProvider`, `AuthProvider`, `ToastProvider` và `AppFilterProvider`. | `React 19` |
+| [frontend/src/main.tsx](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/frontend/src/main.tsx) | Điểm khởi đầu của ứng dụng React, gắn vào thẻ `#root` trong DOM. | `React DOM 19` |
+
+---
+
+### 3.7. Phân hệ SNOTE Web Script Edition (`web_script/`)
+
+| Đường dẫn tệp | Vai trò & Chức năng chi tiết | Công nghệ sử dụng |
+| :--- | :--- | :--- |
+| [web_script/appsscript.json](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/web_script/appsscript.json) | File Manifest cấu hình Google Apps Script runtime V8, timezone `Asia/Ho_Chi_Minh` và phân quyền Web App. | `Apps Script Manifest` |
+| [web_script/Code.gs](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/web_script/Code.gs) | Backend Controller & Database Access Layer: Quản lý 7 sheet Google Sheets, xác thực PIN/Admin, Task CRUD, tự động đánh giá đúng hạn, Notes Ghi Chú Đề Cương, Roadmap DFA Parser, JSON Backup. | `Google Apps Script`, `V8 Engine` |
+| [web_script/Index.html](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/web_script/Index.html) | Giao diện Single Page Application (SPA) độc lập: Bảng Kanban kéo thả Optimistic UI, Sơ đồ Gantt 21 ngày + vạch hôm nay, Bảng chi tiết 11 cột, Ma trận Eisenhower, Notes Markdown, Bộ phân tích DFA, Safe Storage Proxy. | `HTML5`, `CSS3`, `Vanilla JS` |
+| [web_script/test_local.html](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/web_script/test_local.html) | Môi trường kiểm thử trực tiếp trên trình duyệt máy tính với mock backend tích hợp sẵn mà không cần upload lên Google Drive. | `HTML5`, `Mock RPC` |
+| [web_script/README.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/web_script/README.md) | Hồ sơ hướng dẫn triển khai 3 phút từ con số 0, đặc tả 7 sheet Google Sheets và checklist 10 tiêu chí nghiệm thu. | `Markdown` |
+
+---
+
+## 4. QUY TRÌNH BẢO TRÌ VÀ CẬP NHẬT TÀI LIỆU BẮT BUỘC (THEO ĐIỀU 4)
+
+Mỗi khi phát triển hoặc sửa đổi tính năng trong dự án:
+1. **Thêm / Đổi Thư viện hoặc Công nghệ:**
+   - Cập nhật ngay vào **Mục 1 (Tech Stack Matrix)**: Ghi rõ Tên, Phiên bản, Vị trí áp dụng, Nhiệm vụ cốt lục, Chức năng chi tiết và Lý do lựa chọn.
+2. **Thêm / Đổi File hoặc Thư mục:**
+   - Cập nhật ngay vào **Mục 2 (Directory Tree)**: Bổ sung nhánh cây thư mục tương ứng.
+   - Cập nhật ngay vào **Mục 3 (File Dictionary)**: Thêm dòng tra cứu chi tiết gồm Đường dẫn tệp, Vai trò/Chức năng chi tiết và Công nghệ sử dụng trong file đó.
+3. **Tuân thủ Tuyệt đối:** Không để xảy ra tình trạng code đã thay đổi nhưng tài liệu bản đồ không được cập nhật.
+
+
+## CẬP NHẬT KIẾN TRÚC WEB SCRIPT EDITION (MASTER IMPLEMENTATION)
+- `web_script/Code.gs`: Backend Google Apps Script V8 Engine. Quản lý 8 sheets (`Users`, `Semesters`, `Subjects`, `Projects`, `Tasks`, `Notes`, `Roadmaps`, `AuditLogs`). Tích hợp `fetchAllInitialData()` (nạp 1 round-trip), `executeBatchSync()` (Transaction Batch Sync đa bảng có LockService), phòng vệ Formula Injection (`sanitizeSheetCell`) và tự động đánh giá Đúng hạn/Trễ hạn.
+- `web_script/Index.html`: Frontend Web App Single-Page Application (Zero-dependency Vanilla JS & Pure CSS3). Tích hợp Safe Storage Proxy 3 tầng (LocalStorage -> SessionStorage -> RAM), Transaction Batch Sync Engine (debounce 800ms + offline FIFO queue), Bảng Kanban 4 cột HTML5 Native DnD (0ms Optimistic UI), Bảng 11 cột (sort/filter/pagination), Ma trận Eisenhower (kéo thả đổi ưu tiên), Biểu đồ Gantt 21 ngày (Today marker, inner progress fill, 2-way sync), Trình soạn thảo Ghi chú Split View (Markdown thuần, LaTeX KaTeX, 1-Click Note -> Task trích xuất checklist), Bộ phân giải Lộ trình DFA (thuật toán Cascading Deadlines gối đầu), và hệ thống phím tắt toàn cục (`Ctrl+K`, `Ctrl+N`, `Shift+G`).
+
+
+#### 10,000 KỊCH BẢN BẢO MẬT & VẬN HÀNH (DOCS/ai_chat_docs/10000_scenarios/)
+- vol_01_app_security.md: 1,000 Kịch bản Bảo mật Ứng dụng, XSS DOM, Formula Injection, CSP, ReDoS, Prototype Pollution.
+- vol_02_auth_session.md: 1,000 Kịch bản Xác thực, PIN Brute-force, Session Hijacking, IDOR, RBAC.
+- vol_03_sync_concurrency.md: 1,000 Kịch bản Đồng bộ Dữ liệu, Version Collision, Deadlock 2 chiều, Split-brain.
+- vol_04_offline_cache.md: 1,000 Kịch bản Chịu lỗi Ngoại tuyến, SafeStorage Quota 5MB, Hàng đợi FIFO, Flapping Network.
+- vol_05_gas_limits.md: 1,000 Kịch bản Giới hạn Google Apps Script 6 phút, Quota 30 concurrent, Ô 50k ký tự.
+- vol_06_frontend_perf.md: 1,000 Kịch bản Hiệu năng Frontend 60fps, 1000+ Kanban Cards, Gantt Coordinate Math, Memory Leaks.
+- vol_07_data_integrity.md: 1,000 Kịch bản Toàn vẹn Dữ liệu, Orphan Records, Cascade Rules, Note Backlinks.
+- vol_08_dfa_parser.md: 1,000 Kịch bản Trình phân giải DFA, Infinite Loops, Cascading Deadline Overflows.
+- vol_09_devops_backup.md: 1,000 Kịch bản DevOps, Khôi phục Sheet bị xóa, Repair Hàng hỏng, Timezones.
+- vol_10_ux_edge_cases.md: 1,000 Kịch bản Trải nghiệm Người dùng, Spam Clicking, Touch DnD, Unicode, Extreme Zoom.
+- master_risk_and_remediation_matrix.md: Bản đồ tổng hợp 10 Điểm nghẽn Chí mạng và giải pháp kỹ thuật cốt lõi.
+
+### 10,000 CÂU HỎI BẮT LỖI NGUYÊN LÝ HOẠT ĐỘNG (DOCS/ai_chat_docs/fault_finding_10000/)
+- vol_01_auth_session_faults.md: 1,000 Câu hỏi bắt lỗi Cổng Xác thực, Mã PIN, Quản lý Phiên, Timing attacks, IDOR Project bounds.
+- vol_02_project_isolation_faults.md: 1,000 Câu hỏi bắt lỗi Không gian Dự án, Phân lập Multi-tenant, Xóa tầng Cascade, Orphaned tasks.
+- vol_03_tasks_state_faults.md: 1,000 Câu hỏi bắt lỗi Động cơ Công việc, Kanban DnD position mutations, Eisenhower sorting, Pagination drifts.
+- vol_04_checklist_hierarchy_faults.md: 1,000 Câu hỏi bắt lỗi Cấu trúc Danh sách con, Checklist lồng, NaN% tiến độ, Concurrent toggling.
+- vol_05_gantt_coordinate_faults.md: 1,000 Câu hỏi bắt lỗi Hình học Tọa độ Gantt, Date clamping, Timezone UTC+7 drift, SVG layout wrap.
+- vol_06_notes_markdown_faults.md: 1,000 Câu hỏi bắt lỗi Trình soạn thảo Note, ReDoS regex, MathJax/KaTeX conflicts, Checkbox sync.
+- vol_07_dfa_statemachine_faults.md: 1,000 Câu hỏi bắt lỗi Máy trạng thái DFA, Roadmap lexer, Cyclic dependency deadlocks, Cascading date math.
+- vol_08_sync_offline_faults.md: 1,000 Câu hỏi bắt lỗi Bộ đồng bộ hóa, Hàng đợi giao dịch, QuotaExceededError, Exponential backoff jitter.
+- vol_09_dom_memory_lifecycle_faults.md: 1,000 Câu hỏi bắt lỗi Cấu trúc DOM, Detached nodes memory leaks, Event bubbling collisions, Focus trapping.
+- vol_10_gas_quota_recovery_faults.md: 1,000 Câu hỏi bắt lỗi Quota Google Apps Script, 50k cell ceiling, Full backup integrity, Auto-recovery.
+- master_fault_remediation_matrix.md: Ma trận tổng hợp 10 cụm lỗi nguyên lý và đối sách kiến trúc chuẩn hóa.
+
+### KIẾN TRÚC MỚI: MODULAR NAMESPACE & REACTIVE EVENT BUS (`window.SNOTE`)
+Hệ thống frontend đã được tái cấu trúc toàn diện theo mô hình Module hóa có phân tầng rõ rệt:
+- `SNOTE.Store`: Central Reactive State Store cung cấp `getState()`, `setState()` và đăng ký `subscribe()` phản ứng tự động.
+- `SNOTE.EventBus`: Pub/Sub Event Bus (`on`, `off`, `emit`) giúp phân tách triệt để sự kiện UI khỏi logic nghiệp vụ.
+- `SNOTE.Checklists`: Chuẩn hóa lược đồ checklist `[{ id, text, completed }]` và thuật toán tính tiến độ an toàn chống `NaN`.
+- `SNOTE.Gantt`: Động cơ hình học tọa độ có Date Clamping (`clampCoordinate`) ngăn ngừa tọa độ âm và tràn pixel.
+- `SNOTE.Security`: Phòng thủ XSS, sanitization URL và kiểm soát tần suất PIN.
+- `SNOTE.Sync`: Quản lý hàng đợi đồng bộ Batch Sync, Exponential Backoff + Jitter và lưu vết ngoại tuyến.
+- `SNOTE.Tasks`, `SNOTE.Notes`, `SNOTE.Roadmaps`, `SNOTE.Projects`, `SNOTE.Admin`, `SNOTE.UI`: Đóng gói chức năng mạch lạc, giữ trọn vẹn 100% khả năng tương thích ngược với các hàm `onclick` trên HTML.
+
+### KHẮC PHỤC TRIỆT ĐỂ LỖI NGUYÊN LÝ & PHÂN LẬP DỰ ÁN (REAL CODE ISOLATION):
+- **Phân lập Kho Ghi chú theo Đồ án (`getFilteredNotes`):** Ghi chú được lọc nghiêm ngặt theo `currentProject.projectId`. Triệt tiêu hoàn toàn hiện tượng dùng chung ghi chú giữa các đồ án khác nhau.
+- **Tự động Reset & Chọn Note (`switchProjectDirectly`):** Khi chuyển đồ án, hệ thống xóa vết ghi chú cũ (`activeNoteId = null`), tự động chọn ghi chú đầu tiên của đồ án mới hoặc làm sạch giao diện soạn thảo nếu đồ án chưa có ghi chú; tự động tải dữ liệu từ backend nếu chưa có trong bộ nhớ đối với Thành viên.
+- **Tính năng Xóa Ghi chú Hoàn chỉnh (`deleteNoteHandler`):** Bổ sung nút 🗑️ Xóa Ghi chú trực quan trên thanh công cụ soạn thảo, kết nối với `queueBatchOperation('NOTES', 'DELETE')` và hàm `deleteNote` trên Google Apps Script / mock local.
+- **Phân quyền Riêng tư Ghi chú (`scope: 'TEAM' / 'PRIVATE'`):** Bổ sung trường `scope` cho phép sinh viên phân biệt ghi chú dùng chung cho nhóm đồ án (`TEAM`) và ghi chú cá nhân học tập (`PRIVATE`), tích hợp thanh tabs lọc nhanh (`[ 📋 Tất cả ]`, `[ 🔒 Của tôi ]`, `[ 🌐 Nhóm đồ án ]`, `[ 📌 Đã ghim ]`).
+- **Phân lập Lộ trình Roadmap DFA:** Sửa hàm `renderRoadmapPreview()` để truy vấn đúng roadmap theo `r.projectId === currentProject.projectId`, xóa bỏ mã cứng `roadmaps[0]` gây rò rỉ dữ liệu đồ án thứ nhất sang mọi đồ án khác.
+- **Sửa Số liệu Bento Overview:** Thẻ đếm số lượng ghi chú trên bảng điều khiển Bento đếm chính xác theo `getFilteredNotes().length` thay vì đếm toàn bộ mảng `STATE.notes`.
+- **Đồng bộ Ngữ cảnh Đồ án khi Tìm kiếm Toàn cục (`jumpToSearchResult`):** Khi nhấp vào công việc hoặc ghi chú tìm thấy trong hộp tìm kiếm, hệ thống tự động nhận diện `projectId` của mục tiêu và kích hoạt chuyển đổi đồ án trước khi điều hướng tới giao diện chi tiết.
+- **Đồng bộ Bộ Chạy Thử Cục bộ (`web_script/test_local.html`):** Nâng cấp bộ giả lập với đầy đủ phương thức mock (`deleteNote`, `deleteTask`, `deleteRoadmap`, `executeBatchSync`), cơ sở dữ liệu mẫu đa dự án phân lập (`PRJ-101`, `PRJ-102`), hỗ trợ kiểm thử trực tiếp trên mọi trình duyệt ngoại tuyến 100% không lỗi.
