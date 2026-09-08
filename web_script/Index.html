@@ -1161,6 +1161,93 @@ main.snote-workspace {
   border-color: var(--success);
 }
 
+/* Cảnh báo công việc quá hạn thời gian thực */
+.kanban-card.is-overdue {
+  border-left: 3.5px solid var(--danger);
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.06) 0%, var(--bg-card) 60%);
+}
+.badge-overdue-pulse {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  font-weight: 800;
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.16);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  padding: 1px 5px;
+  border-radius: 4px;
+  animation: pulseOverdueAnim 2s infinite ease-in-out;
+}
+@keyframes pulseOverdueAnim {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.75; transform: scale(0.98); }
+}
+
+/* Nút công cụ Markdown nhanh */
+.btn-md-tool {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-muted);
+  border-radius: 4px;
+  padding: 3px 7px;
+  font-size: 11.5px;
+  font-family: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 24px;
+}
+.btn-md-tool:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border-color: var(--border-color);
+}
+.btn-md-tool:active {
+  transform: scale(0.95);
+}
+
+/* Nút sao chép mã đồ án Topbar */
+.btn-topbar-copy {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  display: inline-flex;
+  align-items: center;
+  transition: all 0.15s ease;
+  margin-left: 2px;
+}
+.btn-topbar-copy:hover {
+  background: rgba(99, 102, 241, 0.18);
+  color: var(--accent-primary);
+  border-color: rgba(99, 102, 241, 0.4);
+}
+
+/* Chế độ xem linh hoạt của Khung soạn thảo Ghi chú */
+.note-editor-pane.mode-write #active-note-preview {
+  display: none !important;
+}
+.note-editor-pane.mode-write #active-note-editor-col {
+  width: 100% !important;
+  max-width: 100% !important;
+  border-right: none !important;
+}
+.note-editor-pane.mode-preview #active-note-editor-col {
+  display: none !important;
+}
+.note-editor-pane.mode-preview #active-note-preview {
+  width: 100% !important;
+  max-width: 100% !important;
+  display: block !important;
+}
+
 /* Classic 11-column Table */
 .tab-status-row {
   display: flex;
@@ -1540,11 +1627,17 @@ table.snote-table tr:hover td {
             <span>Vào Không Gian Đồ Án</span>
           </button>
 
-          <!-- Nút thử nghiệm nhanh Đồ Án 1 -->
-          <div style="border-top: 1px solid var(--border-subtle); padding-top: 12px; text-align: center;">
-            <button class="btn btn-secondary btn-sm" style="width: 100%; padding: 8px; border-color: rgba(99, 102, 241, 0.3);" onclick="fillDemoProject('PRJ-101', '1234')">
-              ⚡ Thử Nghiệm Nhanh Đồ Án 1 (Mã: PRJ-101 | PIN: 1234)
-            </button>
+          <!-- Nút thử nghiệm nhanh Đồ Án 1 & 2 -->
+          <div style="border-top: 1px solid var(--border-subtle); padding-top: 10px;">
+            <div style="font-size: 11px; color: var(--text-dim); margin-bottom: 6px; text-align: center;">⚡ Thử nghiệm nhanh tài khoản mẫu:</div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+              <button class="btn btn-secondary btn-sm" style="padding: 7px 8px; font-size: 11px; justify-content: center; border-color: rgba(99, 102, 241, 0.35);" onclick="fillDemoProject('PRJ-101', '1234')" title="Đồ án Web • Mã PRJ-101 • PIN 1234">
+                <strong>PRJ-101</strong> (1234)
+              </button>
+              <button class="btn btn-secondary btn-sm" style="padding: 7px 8px; font-size: 11px; justify-content: center; border-color: rgba(16, 185, 129, 0.35);" onclick="fillDemoProject('PRJ-102', '5678')" title="Đồ án Mobile • Mã PRJ-102 • PIN 5678">
+                <strong>PRJ-102</strong> (5678)
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -1691,6 +1784,7 @@ table.snote-table tr:hover td {
               <span class="pin-chip" id="topbar-current-project-pin" style="font-size: 11px; padding: 1px 6px;">PIN: ****</span>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>
             </button>
+            <button class="btn-topbar-copy" onclick="copyCurrentProjectCode(event)" title="Sao chép mã đồ án để gửi bạn bè / nhóm">📋 Sao chép mã</button>
 
             <div class="project-dropdown-menu" id="project-dropdown-menu">
               <div class="project-dropdown-head">
@@ -1751,9 +1845,9 @@ table.snote-table tr:hover td {
           </button>
 
           <!-- Logout Button -->
-          <button class="btn btn-secondary btn-sm" onclick="logout()" title="Đăng xuất khỏi không gian">
+          <button class="btn btn-secondary btn-sm" onclick="logout()" title="Đăng xuất khỏi tài khoản / đổi đồ án">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-            <span>Đổi Đồ Án</span>
+            <span>Đăng Xuất</span>
           </button>
         </div>
       </header>
@@ -2079,20 +2173,49 @@ table.snote-table tr:hover td {
               <div id="notes-list-wrap" style="display: flex; flex-direction: column; gap: 8px;"></div>
             </div>
 
-            <!-- Right: Split Markdown Editor & Live Preview -->
-            <div class="glass-panel" style="border-radius: var(--radius-md); display: flex; flex-direction: column; height: 100%; overflow: hidden;">
-              <div style="padding: 10px 14px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; gap: 10px;">
-                <input type="text" id="active-note-title" placeholder="Tiêu đề bài ghi chú..." style="font-size: 15px; font-weight: 700; background: transparent; border: none; outline: none; width: 60%; color: var(--text-primary);">
+            <!-- Right: Split / Write / Preview Markdown Editor -->
+            <div class="glass-panel note-editor-pane mode-split" id="note-editor-pane" style="border-radius: var(--radius-md); display: flex; flex-direction: column; height: 100%; overflow: hidden;">
+              <!-- Header: Title, Segmented View Mode Switcher, Actions -->
+              <div style="padding: 10px 14px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;">
+                <input type="text" id="active-note-title" placeholder="Tiêu đề bài ghi chú..." style="font-size: 15px; font-weight: 700; background: transparent; border: none; outline: none; flex: 1; min-width: 180px; color: var(--text-primary);">
+                
+                <!-- View Mode Segmented Control -->
+                <div class="segmented-control" style="padding: 2px;">
+                  <button class="segmented-btn active" id="btn-note-mode-split" type="button" onclick="setNoteEditorMode('SPLIT')" title="Xem song song Soạn thảo và Bản đẹp">◫ Chia Đôi</button>
+                  <button class="segmented-btn" id="btn-note-mode-write" type="button" onclick="setNoteEditorMode('WRITE')" title="Chỉ soạn thảo (Toàn màn hình gõ chữ)">✎ Soạn Thảo</button>
+                  <button class="segmented-btn" id="btn-note-mode-preview" type="button" onclick="setNoteEditorMode('PREVIEW')" title="Chỉ xem trước (Đọc bản đẹp ôn thi)">👁️ Đọc Bản Đẹp</button>
+                </div>
+
                 <div style="display: flex; gap: 6px;">
                   <button class="btn btn-secondary btn-sm" onclick="togglePinActiveNote()" id="btn-pin-note">📌 Ghim</button>
                   <button class="btn btn-primary btn-sm" onclick="convertActiveNoteToTask()">⚡ Tạo Task</button>
-                  <button class="btn btn-secondary btn-sm" onclick="saveActiveNote()">Lưu Note</button>
+                  <button class="btn btn-secondary btn-sm" onclick="saveActiveNote()" title="Lưu ghi chú (Ctrl+S)">💾 Lưu Note</button>
                   <button class="btn btn-secondary btn-sm" onclick="deleteNoteHandler()" style="color: var(--danger); border-color: rgba(239, 68, 68, 0.3);" title="Xóa bài ghi chú này">🗑️ Xóa</button>
                 </div>
               </div>
-              <div style="display: grid; grid-template-columns: 1fr 1fr; flex: 1; height: calc(100% - 50px); overflow: hidden;">
-                <textarea id="active-note-editor" style="background: transparent; border: none; border-right: 1px solid var(--border-color); padding: 14px; font-family: monospace; font-size: 13px; line-height: 1.6; resize: none; outline: none; color: var(--text-primary); height: 100%; box-sizing: border-box;" placeholder="Soạn thảo Markdown tại đây...&#10;## Đề cương ôn tập&#10;- [x] Đọc giáo trình&#10;- [ ] Làm bài tập tính xung clock" oninput="renderMarkdownPreview()"></textarea>
-                <div id="active-note-preview" style="padding: 14px; overflow-y: auto; font-size: 13.5px; line-height: 1.6; height: 100%; box-sizing: border-box;"></div>
+
+              <!-- Quick Markdown Toolbar -->
+              <div class="note-markdown-toolbar" style="padding: 5px 14px; border-bottom: 1px solid var(--border-subtle); display: flex; align-items: center; gap: 4px; background: rgba(0,0,0,0.12); flex-wrap: wrap;">
+                <button class="btn-md-tool" type="button" onclick="insertMarkdownSyntax('**', '**')" title="In đậm (Bold)"><strong>B</strong></button>
+                <button class="btn-md-tool" type="button" onclick="insertMarkdownSyntax('*', '*')" title="In nghiêng (Italic)"><em>I</em></button>
+                <button class="btn-md-tool" type="button" onclick="insertMarkdownSyntax('## ', '')" title="Tiêu đề 2 (H2)">H2</button>
+                <button class="btn-md-tool" type="button" onclick="insertMarkdownSyntax('### ', '')" title="Tiêu đề 3 (H3)">H3</button>
+                <span style="color: var(--border-color); margin: 0 3px;">|</span>
+                <button class="btn-md-tool" type="button" onclick="insertMarkdownSyntax('- ', '')" title="Gạch đầu dòng">• List</button>
+                <button class="btn-md-tool" type="button" onclick="insertMarkdownSyntax('- [ ] ', '')" title="Mục kiểm tra (Task)">☑ Task</button>
+                <button class="btn-md-tool" type="button" onclick="insertMarkdownSyntax('> ', '')" title="Trích dẫn (Quote)">❝ Quote</button>
+                <button class="btn-md-tool" type="button" onclick="insertMarkdownSyntax('`', '`')" title="Đoạn mã (Code)">`Code`</button>
+                <button class="btn-md-tool" type="button" onclick="insertMarkdownSyntax('```\n', '\n```')" title="Khối mã nguồn (Code block)">```Block```</button>
+                <span style="flex: 1;"></span>
+                <span id="note-word-count-badge" style="font-size: 11px; color: var(--text-dim);">0 từ • 0 ký tự</span>
+              </div>
+
+              <!-- Content Area: Textarea & Preview -->
+              <div id="note-body-split-wrap" style="display: flex; flex: 1; height: calc(100% - 85px); overflow: hidden;">
+                <div id="active-note-editor-col" style="flex: 1; height: 100%; border-right: 1px solid var(--border-color); display: flex; flex-direction: column;">
+                  <textarea id="active-note-editor" style="background: transparent; border: none; padding: 14px; font-family: monospace; font-size: 13px; line-height: 1.6; resize: none; outline: none; color: var(--text-primary); width: 100%; height: 100%; box-sizing: border-box;" placeholder="Soạn thảo Markdown tại đây...&#10;## Đề cương ôn tập&#10;- [x] Đọc giáo trình&#10;- [ ] Làm bài tập tính xung clock" oninput="renderMarkdownPreview()"></textarea>
+                </div>
+                <div id="active-note-preview" style="flex: 1; padding: 14px; overflow-y: auto; font-size: 13.5px; line-height: 1.6; height: 100%; box-sizing: border-box;"></div>
               </div>
             </div>
           </div>
@@ -3655,32 +3778,61 @@ table.snote-table tr:hover td {
     const chks = Array.isArray(t.checklists) ? t.checklists : [];
     const doneChk = chks.filter(c => c.completed).length;
     const isAllDone = chks.length > 0 && doneChk === chks.length;
-    const isLate = t.evaluation === 'Trễ hạn';
+    const todayStr = new Date().toISOString().substring(0, 10);
+    const isOverdue = (t.status !== 'DONE' && t.dueDate && t.dueDate < todayStr);
+    const isLate = (t.evaluation === 'Trễ hạn') || isOverdue;
+
+    // Tính trạng thái tiếp theo cho nút chuyển nhanh 1-click
+    const nextStatusMap = { 'TODO': 'IN_PROGRESS', 'IN_PROGRESS': 'DONE', 'REVIEW': 'DONE' };
+    const nextSt = nextStatusMap[t.status];
+    const nextLabel = t.status === 'TODO' ? 'Bắt đầu' : (t.status === 'IN_PROGRESS' ? 'Xong' : 'Hoàn thành');
 
     return `
-      <div class="kanban-card" draggable="true" ondragstart="handleDragStart(event, '${t.taskId}')" data-task-id="${t.taskId}">
+      <div class="kanban-card ${isOverdue ? 'is-overdue' : ''}" draggable="true" ondragstart="handleDragStart(event, '${t.taskId}')" data-task-id="${t.taskId}">
         <div class="task-header-row">
           <span class="task-card-title">${escapeHtml(t.title)}</span>
-          <span class="badge-priority p-${t.priority || 'MEDIUM'}">${t.priority || 'MED'}</span>
+          <div style="display: flex; gap: 4px; align-items: center;">
+            ${isOverdue ? '<span class="badge-overdue-pulse" title="Công việc đã vượt quá hạn chót!">⚠️ Quá hạn</span>' : ''}
+            <span class="badge-priority p-${t.priority || 'MEDIUM'}">${t.priority || 'MED'}</span>
+          </div>
         </div>
 
         <div style="font-size: 11.5px; color: var(--text-dim);">
           ${t.dueDate ? `📅 ${t.dueDate}` : 'Chưa có hạn'}
           ${t.assignee ? ` • 👤 ${escapeHtml(t.assignee)}` : ''}
-          ${t.evaluation ? `<span style="color: ${isLate ? 'var(--danger)' : 'var(--success)'}; font-weight: 700; margin-left: 6px;">[${t.evaluation}]</span>` : ''}
+          ${t.evaluation ? `<span style="color: ${t.evaluation === 'Trễ hạn' ? 'var(--danger)' : 'var(--success)'}; font-weight: 700; margin-left: 6px;">[${t.evaluation}]</span>` : ''}
         </div>
 
         <div class="task-footer-row">
           <span class="badge-chk ${isAllDone ? 'all-done' : ''}" onclick="openChecklistModal('${t.taskId}')">
             ≡ ${doneChk}/${chks.length} việc con
           </span>
-          <div style="display: flex; gap: 4px;">
-            <button class="btn btn-secondary btn-sm" style="padding: 2px 6px;" onclick="editTask('${t.taskId}')">✏️</button>
-            <button class="btn btn-secondary btn-sm" style="padding: 2px 6px; color: var(--danger);" onclick="deleteTaskHandler('${t.taskId}')">🗑️</button>
+          <div style="display: flex; gap: 4px; align-items: center;">
+            ${nextSt ? `<button class="btn btn-primary btn-sm" style="padding: 2px 7px; font-size: 10.5px; font-weight: 700;" onclick="advanceTaskStatus('${t.taskId}', '${nextSt}')" title="Chuyển nhanh sang ${nextLabel}">▶ ${nextLabel}</button>` : ''}
+            <button class="btn btn-secondary btn-sm" style="padding: 2px 6px;" onclick="editTask('${t.taskId}')" title="Chỉnh sửa">✏️</button>
+            <button class="btn btn-secondary btn-sm" style="padding: 2px 6px; color: var(--danger);" onclick="deleteTaskHandler('${t.taskId}')" title="Xóa">🗑️</button>
           </div>
         </div>
       </div>
     `;
+  }
+
+  function advanceTaskStatus(taskId, targetStatus) {
+    const t = STATE.tasks.find(x => x.taskId === taskId);
+    if (!t) return;
+    t.status = targetStatus;
+    if (targetStatus === 'DONE') {
+      t.completedAt = new Date().toISOString().substring(0, 16).replace('T', ' ');
+      const todayStr = new Date().toISOString().substring(0, 10);
+      t.evaluation = (!t.dueDate || todayStr <= t.dueDate) ? 'Đúng hạn' : 'Trễ hạn';
+    } else {
+      t.completedAt = '';
+      t.evaluation = '';
+    }
+    renderTasksByCurrentMode();
+    renderGanttChart();
+    showToast(`Đã chuyển việc sang: ${targetStatus}`, 'success');
+    queueBatchOperation('TASKS', 'STATUS', { taskId: t.taskId, status: targetStatus }, { taskId: t.taskId, status: targetStatus });
   }
 
   // --- HTML5 DRAG & DROP WITH OPTIMISTIC UI ---
@@ -4469,6 +4621,63 @@ table.snote-table tr:hover td {
       .replace(/\n/gim, '<br>');
 
     preview.innerHTML = html || '<span style="color: var(--text-dim);">Bản xem trước trực tiếp Markdown & LaTeX sẽ xuất hiện tại đây...</span>';
+    updateNoteStats();
+  }
+
+  // --- CẢI TIẾN TRẢI NGHIỆM GHI CHÚ & SOẠN THẢO MARKDOWN ---
+  function updateNoteStats() {
+    const editor = document.getElementById('active-note-editor');
+    const badge = document.getElementById('note-word-count-badge');
+    if (!editor || !badge) return;
+    const text = editor.value.trim();
+    const chars = text.length;
+    const words = text ? text.split(/\s+/).filter(Boolean).length : 0;
+    badge.innerText = `${words} từ • ${chars} ký tự`;
+  }
+
+  function setNoteEditorMode(mode) {
+    const pane = document.getElementById('note-editor-pane');
+    if (!pane) return;
+    ['split', 'write', 'preview'].forEach(m => {
+      const btn = document.getElementById('btn-note-mode-' + m);
+      if (btn) btn.classList.toggle('active', m === mode.toLowerCase());
+      pane.classList.remove('mode-' + m);
+    });
+    pane.classList.add('mode-' + mode.toLowerCase());
+    if (mode === 'PREVIEW') {
+      renderMarkdownPreview();
+    }
+  }
+
+  function insertMarkdownSyntax(prefix, suffix) {
+    const editor = document.getElementById('active-note-editor');
+    if (!editor) return;
+    editor.focus();
+    const start = editor.selectionStart;
+    const end = editor.selectionEnd;
+    const selected = editor.value.substring(start, end);
+    const replacement = prefix + (selected || '') + (suffix || '');
+    editor.setRangeText(replacement, start, end, 'end');
+    renderMarkdownPreview();
+    updateNoteStats();
+  }
+
+  function copyCurrentProjectCode(e) {
+    if (e) e.stopPropagation();
+    const pid = (STATE.currentProject && STATE.currentProject.projectId) ? STATE.currentProject.projectId : '';
+    if (!pid) {
+      showToast('Chưa chọn đồ án nào để sao chép.', 'warning');
+      return;
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(pid).then(() => {
+        showToast(`Đã sao chép mã đồ án: ${pid}`, 'success');
+      }).catch(() => {
+        prompt('Sao chép mã đồ án:', pid);
+      });
+    } else {
+      prompt('Sao chép mã đồ án:', pid);
+    }
   }
 
   function togglePinActiveNote() {
@@ -5442,7 +5651,7 @@ table.snote-table tr:hover td {
     `;
   }
 
-  // 14. GLOBAL KEYBOARD SHORTCUTS (CTRL+K, CTRL+N, SHIFT+G)
+  // 14. GLOBAL KEYBOARD SHORTCUTS (CTRL+K, CTRL+N, CTRL+S, ESC, SHIFT+G)
   window.addEventListener('keydown', function(e) {
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
       e.preventDefault();
@@ -5450,6 +5659,18 @@ table.snote-table tr:hover td {
     } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'n') {
       e.preventDefault();
       openCreateTaskModal();
+    } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+      const activeEl = document.activeElement;
+      const isEditor = activeEl && (activeEl.id === 'active-note-editor' || activeEl.id === 'active-note-title');
+      if (isEditor || STATE.activeView === 'notes') {
+        e.preventDefault();
+        saveActiveNote();
+      }
+    } else if (e.key === 'Escape') {
+      document.querySelectorAll('.modal-overlay.active').forEach(m => m.classList.remove('active'));
+      closeProjectDropdown();
+      const pop = document.getElementById('bell-popover');
+      if (pop) pop.classList.remove('active');
     } else if (e.shiftKey && e.key.toLowerCase() === 'g') {
       e.preventDefault();
       if (STATE.activeView === 'schedule') navigateTo('roadmaps');
@@ -5579,7 +5800,8 @@ table.snote-table tr:hover td {
     filterTableByStatus: filterTableByStatus,
     handleTableSearch: handleTableSearch,
     prevTablePage: prevTablePage,
-    nextTablePage: nextTablePage
+    nextTablePage: nextTablePage,
+    advanceStatus: advanceTaskStatus
   };
   SNOTE.Notes = {
     getFiltered: getFilteredNotes,
@@ -5593,7 +5815,10 @@ table.snote-table tr:hover td {
     save: saveActiveNote,
     openCreateModal: openCreateNoteModal,
     submitModalForm: submitNoteModalForm,
-    toggleCheckbox: toggleNoteMarkdownCheckbox
+    toggleCheckbox: toggleNoteMarkdownCheckbox,
+    setMode: setNoteEditorMode,
+    insertSyntax: insertMarkdownSyntax,
+    updateStats: updateNoteStats
   };
   SNOTE.Roadmaps = {
     fillSample: fillDfaSample,
@@ -5618,6 +5843,7 @@ table.snote-table tr:hover td {
     delete: deleteProjectHandler,
     togglePinVisibility: togglePinVisibility,
     copyPin: copyPinToClipboard,
+    copyCode: copyCurrentProjectCode,
     generateRandomPin: generateRandomPin,
     generateRandomProjectId: generateRandomProjectId,
     openJoinOtherModal: openJoinOtherProjectModal,
