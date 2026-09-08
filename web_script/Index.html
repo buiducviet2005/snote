@@ -2789,8 +2789,24 @@ table.snote-table tr:hover td {
     }
   };
 
+  // --- CENTRALIZED AUTH CONTEXT GENERATOR ---
+  function getAuthContext() {
+    const adminToken = storage.getItem('snote_session_token');
+    if (adminToken) {
+      return JSON.stringify({ role: 'ADMIN', sessionToken: adminToken });
+    }
+    const curPid = storage.getItem('snote_project_id') || (STATE.currentProject ? STATE.currentProject.projectId : '');
+    const curPin = storage.getItem('snote_pin_code') || (STATE.currentProject ? STATE.currentProject.pinCode : '');
+    return JSON.stringify({ role: 'MEMBER', projectId: curPid, pinCode: curPin });
+  }
+
   // 3. BACKEND RPC BRIDGE
   function callGasBackend(funcName, args, onSuccess, onFail) {
+    // Tự động gắn Auth Context vào tham số đầu tiên nếu tham số đầu tiên là null hoặc undefined
+    if (Array.isArray(args) && args.length > 0 && (args[0] === null || args[0] === undefined)) {
+      args[0] = getAuthContext();
+    }
+
     syncStatusIndicator('syncing');
     const runner = (window.google && window.google.script && window.google.script.run)
       ? window.google.script.run
@@ -2883,7 +2899,7 @@ table.snote-table tr:hover td {
     pendingBatchOps = [];
 
     const payload = {
-      authContext: STATE.currentUser || {},
+      authContext: safeJsonParse(getAuthContext(), {}),
       clientSessionId: 'sess_' + Date.now(),
       operations: opsToSync
     };
@@ -2908,7 +2924,7 @@ table.snote-table tr:hover td {
     syncStatusIndicator('syncing');
 
     const payload = {
-      authContext: STATE.currentUser || {},
+      authContext: safeJsonParse(getAuthContext(), {}),
       clientSessionId: 'offline_flush_' + Date.now(),
       operations: offlineOps
     };
@@ -4835,17 +4851,47 @@ table.snote-table tr:hover td {
   }
 
   function switchProjectDirectly(projectId) {
-    let found = (STATE.projects || []).find(x => String(x.projectId || '').toUpperCase() === String(projectId || '').toUpperCase());
-    if (!found && STATE.currentUser && STATE.currentUser.role === 'MEMBER') {
-      const accessible = getAccessibleProjects();
-      found = accessible.find(x => String(x.projectId || '').toUpperCase() === String(projectId || '').toUpperCase());
+    const cleanPid = String(projectId || '').trim().toUpperCase();
+    if (!cleanPid) return;
+
+    // Phân quyền bảo mật: Nếu là MEMBER, kiểm tra xem thiết bị đã xác thực mã PIN cho đồ án này chưa
+    const isMember = (STATE.currentUser && STATE.currentUser.role === 'MEMBER');
+    const accessible = getAccessibleProjects();
+    const accessibleEntry = accessible.find(x => String(x.projectId || '').trim().toUpperCase() === cleanPid && x.pinCode && x.pinCode !== '****');
+
+    let found = (STATE.projects || []).find(x => String(x.projectId || '').toUpperCase() === cleanPid);
+    if (!found && accessibleEntry) {
+      found = accessibleEntry;
     }
+
+    if (isMember && !accessibleEntry) {
+      // Chặn IDOR / Broken Access Control: Thành viên chưa xác thực mã PIN cho đồ án này
+      closeProjectDropdown();
+      openJoinOtherProjectModal();
+      const codeEl = document.getElementById('join-project-code');
+      if (codeEl) codeEl.value = cleanPid;
+      const pinEl = document.getElementById('join-project-pin');
+      if (pinEl) {
+        pinEl.value = '';
+        setTimeout(() => pinEl.focus(), 150);
+      }
+      showToast('Vui lòng nhập mã PIN xác thực để truy cập đồ án này.', 'warning');
+      return;
+    }
+
     if (!found) return;
+
+    if (accessibleEntry && accessibleEntry.pinCode) {
+      found = Object.assign({}, found, { pinCode: accessibleEntry.pinCode });
+    }
+
     STATE.currentProject = found;
 
     updateTopbarProjectUI(found);
     storage.setItem('snote_project_id', found.projectId);
-    if (found.pinCode) storage.setItem('snote_pin_code', found.pinCode);
+    if (found.pinCode && found.pinCode !== '****') {
+      storage.setItem('snote_pin_code', found.pinCode);
+    }
 
     closeProjectDropdown();
     showToast(`Đã chuyển sang: ${found.projectName}`, 'success');
@@ -4853,12 +4899,8 @@ table.snote-table tr:hover td {
     // Reset activeNoteId để không lưu vết ghi chú của đồ án cũ
     STATE.activeNoteId = null;
 
-    // Tự động nạp dữ liệu từ Backend nếu Đồ án mới chưa có trong bộ nhớ (đối với Thành viên)
-    const hasTasks = (STATE.tasks || []).some(t => t.projectId === found.projectId);
-    const hasNotes = (STATE.notes || []).some(n => n.projectId === found.projectId);
-    const hasRoadmaps = (STATE.roadmaps || []).some(r => r.projectId === found.projectId);
-
-    if (STATE.currentUser && STATE.currentUser.role !== 'ADMIN' && (!hasTasks && !hasNotes && !hasRoadmaps) && found.pinCode) {
+    // Nạp dữ liệu từ Backend nếu là Member và có pinCode hợp lệ
+    if (isMember && found.pinCode && found.pinCode !== '****') {
       callGasBackend('accessProjectPortal', [found.projectId, found.pinCode], function(res) {
         if (res && res.success) {
           const otherTasks = (STATE.tasks || []).filter(t => t.projectId !== found.projectId);
@@ -4868,6 +4910,8 @@ table.snote-table tr:hover td {
           STATE.notes = otherNotes.concat(res.notes || []);
           STATE.roadmaps = otherRoadmaps.concat(res.roadmaps || []);
           refreshAllViews();
+        } else if (res && !res.success) {
+          showToast(res.message || 'Mã PIN không còn hợp lệ hoặc đồ án đã thay đổi.', 'error');
         }
       });
     }
@@ -5267,7 +5311,7 @@ table.snote-table tr:hover td {
     renderProjectDropdownList();
     showToast(`Đã lưu đồ án: [${projObj.projectId}] ${projObj.projectName}`, 'success');
 
-    const token = storage.getItem('snote_session_token');
+    const token = getAuthContext();
     callGasBackend('saveProject', [token, JSON.stringify(projObj)]);
   }
 
@@ -5279,7 +5323,7 @@ table.snote-table tr:hover td {
     showToast(isArchived ? `Đã khôi phục: ${p.projectName}` : `Đã lưu trữ: ${p.projectName}`, 'success');
     renderProjectsGrid();
     renderProjectDropdownList();
-    const token = storage.getItem('snote_session_token');
+    const token = getAuthContext();
     callGasBackend('saveProject', [token, JSON.stringify(p)]);
   }
 
@@ -5300,7 +5344,7 @@ table.snote-table tr:hover td {
     showToast(`Đã nhân bản đồ án mới: ${newProject.projectName}`, 'success');
     renderProjectsGrid();
     renderProjectDropdownList();
-    const token = storage.getItem('snote_session_token');
+    const token = getAuthContext();
     callGasBackend('saveProject', [token, JSON.stringify(newProject)]);
   }
 
@@ -5345,7 +5389,7 @@ table.snote-table tr:hover td {
     refreshAllViews();
     showToast('Đã xóa vĩnh viễn đồ án và toàn bộ dữ liệu liên quan.', 'success');
 
-    const token = storage.getItem('snote_session_token');
+    const token = getAuthContext();
     callGasBackend('deleteProject', [token, pId]);
     deletingProjectId = null;
   }
@@ -5379,7 +5423,7 @@ table.snote-table tr:hover td {
     refreshAllViews();
     showToast('Đã dọn sạch cơ sở dữ liệu mẫu.');
 
-    const token = storage.getItem('snote_session_token');
+    const token = getAuthContext();
     callGasBackend('cleanSampleDatabase', [token]);
   }
 

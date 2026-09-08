@@ -208,6 +208,102 @@ function verifySessionToken(token) {
   }
 }
 
+/**
+ * ==============================================================================
+ * 2.1. HỆ THỐNG XÁC THỰC QUYỀN HẠN TRUNG TÂM (CENTRALIZED AUTHORIZATION ENGINE)
+ * Triệt tiêu hoàn toàn các lỗ hổng IDOR, BOLA, Horizontal & Vertical Escalation
+ * ==============================================================================
+ */
+function verifyAuthContext(authContextJson, targetProjectId, requiredRole) {
+  try {
+    let auth = {};
+    if (typeof authContextJson === 'string') {
+      const trimmed = authContextJson.trim();
+      if (trimmed.startsWith('{')) {
+        auth = safeJsonParse(trimmed, {});
+      } else if (trimmed) {
+        auth = { token: trimmed };
+      }
+    } else if (typeof authContextJson === 'object' && authContextJson !== null) {
+      auth = authContextJson;
+    }
+
+    const cleanTargetPid = String(targetProjectId || '').trim().toUpperCase();
+
+    // 1. Kiểm tra quyền Quản trị viên (Admin)
+    const token = auth.sessionToken || auth.token;
+    if (token) {
+      const vStr = verifySessionToken(token);
+      const v = safeJsonParse(vStr, { valid: false });
+      if (v && v.valid) {
+        return {
+          authorized: true,
+          role: 'ADMIN',
+          email: v.email,
+          fullName: v.fullName,
+          projectId: cleanTargetPid
+        };
+      }
+    }
+
+    // Nếu thao tác bắt buộc quyền ADMIN mà token không hợp lệ -> Chặn ngay
+    if (requiredRole === 'ADMIN') {
+      return { authorized: false, message: 'Yêu cầu quyền Quản Trị Viên để thực hiện thao tác này.' };
+    }
+
+    // 2. Kiểm tra quyền Thành viên Đồ án (Member Project Auth)
+    const reqPid = String(auth.projectId || '').trim().toUpperCase();
+    const reqPin = String(auth.pinCode || auth.pin || '').trim();
+
+    if (!reqPid || !reqPin) {
+      return { authorized: false, message: 'Từ chối: Thiếu thông tin xác thực đồ án (Mã đồ án hoặc PIN).' };
+    }
+
+    // Chống IDOR: Nếu có targetProjectId, đồ án trong authContext phải khớp chính xác
+    if (cleanTargetPid && reqPid !== cleanTargetPid) {
+      return { authorized: false, message: `Từ chối IDOR: Bạn không có quyền thao tác trên đồ án ${cleanTargetPid}!` };
+    }
+
+    // Đối chiếu mã PIN thật của đồ án trong Google Sheets (CacheService 1 giờ để tăng tốc)
+    const cache = CacheService.getScriptCache();
+    const cacheKey = 'snote_proj_pin_' + reqPid;
+    let validPin = cache.get(cacheKey);
+
+    if (!validPin) {
+      const ss = SpreadsheetApp.getActiveSpreadsheet();
+      const pSheet = ss.getSheetByName(SHEET_PROJECTS);
+      if (!pSheet) return { authorized: false, message: 'Sheet Projects không tồn tại.' };
+      const pData = pSheet.getDataRange().getValues();
+      const pIdx = getColumnIndicesProjects(pData[0]);
+
+      for (let r = 1; r < pData.length; r++) {
+        const rowId = String(pData[r][pIdx.id] || '').trim().toUpperCase();
+        if (rowId === reqPid) {
+          validPin = String(pData[r][pIdx.pin] || '').trim();
+          cache.put(cacheKey, validPin, 3600);
+          break;
+        }
+      }
+    }
+
+    if (!validPin) {
+      return { authorized: false, message: `Không tìm thấy đồ án với mã: ${reqPid}` };
+    }
+
+    if (validPin !== reqPin) {
+      return { authorized: false, message: 'Mã PIN bảo mật của đồ án không chính xác.' };
+    }
+
+    return {
+      authorized: true,
+      role: 'MEMBER',
+      projectId: reqPid
+    };
+  } catch (err) {
+    return { authorized: false, message: 'Lỗi kiểm tra quyền hạn: ' + err.message };
+  }
+}
+
 // ==============================================================================
 // 3. QUẢN LÝ SHEET SEMESTERS & SUBJECTS (Học Kỳ & Môn Học)
 // ==============================================================================
@@ -456,15 +552,21 @@ function saveProject(authContextJson, projectDataJson) {
     const data = sheet.getDataRange().getValues();
     const idx = getColumnIndicesProjects(data[0]);
 
-    const targetId = p.projectId ? String(p.projectId).trim() : 'PRJ-' + (100 + data.length);
+    const targetId = p.projectId ? String(p.projectId).trim().toUpperCase() : ('PRJ-' + (100 + data.length));
     const pin = p.pinCode ? String(p.pinCode).trim() : '1234';
 
     let foundRow = -1;
     for (let r = 1; r < data.length; r++) {
-      if (String(data[r][idx.id] || '').trim() === targetId) {
+      if (String(data[r][idx.id] || '').trim().toUpperCase() === targetId) {
         foundRow = r + 1;
         break;
       }
+    }
+
+    // BẢO VỆ CHỐNG IDOR / BOLA / PHÂN QUYỀN KHI LƯU / TẠO ĐỒ ÁN: Bắt buộc quyền Quản trị viên
+    const authCheck = verifyAuthContext(authContextJson, targetId, 'ADMIN');
+    if (!authCheck.authorized) {
+      return { success: false, message: authCheck.message || 'Từ chối: Thao tác lưu đồ án yêu cầu quyền Quản Trị Viên!' };
     }
 
     if (foundRow > 0) {
@@ -476,6 +578,8 @@ function saveProject(authContextJson, projectDataJson) {
       if (idx.instructor !== undefined) sheet.getRange(foundRow, idx.instructor + 1).setValue(p.instructor || '');
       if (idx.members !== undefined) sheet.getRange(foundRow, idx.members + 1).setValue(p.members || '');
       if (idx.status !== undefined) sheet.getRange(foundRow, idx.status + 1).setValue(p.status || 'ACTIVE');
+
+      CacheService.getScriptCache().remove('snote_proj_pin_' + targetId);
     } else {
       const newRow = [];
       newRow[idx.id] = targetId;
@@ -489,6 +593,8 @@ function saveProject(authContextJson, projectDataJson) {
       if (idx.members !== undefined) newRow[idx.members] = p.members || '';
       if (idx.status !== undefined) newRow[idx.status] = p.status || 'ACTIVE';
       sheet.appendRow(newRow);
+
+      CacheService.getScriptCache().remove('snote_proj_pin_' + targetId);
     }
 
     return { 
@@ -514,8 +620,14 @@ function saveProject(authContextJson, projectDataJson) {
 
 function deleteProject(authContextJson, projectId) {
   try {
-    const cleanPid = String(projectId || '').trim();
+    const cleanPid = String(projectId || '').trim().toUpperCase();
     if (!cleanPid) return { success: false, message: 'Mã đồ án không hợp lệ.' };
+
+    // BẢO VỆ CHỐNG IDOR / PHÁ HOẠI: Xóa đồ án bắt buộc phải xác thực quyền Admin
+    const authCheck = verifyAuthContext(authContextJson, cleanPid, 'ADMIN');
+    if (!authCheck.authorized) {
+      return { success: false, message: authCheck.message || 'Từ chối: Thao tác xóa đồ án yêu cầu quyền Quản Trị Viên!' };
+    }
 
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const pSheet = ss.getSheetByName(SHEET_PROJECTS);
@@ -525,7 +637,7 @@ function deleteProject(authContextJson, projectId) {
     const idx = getColumnIndicesProjects(data[0]);
 
     for (let r = 1; r < data.length; r++) {
-      if (String(data[r][idx.id] || '').trim() === cleanPid) {
+      if (String(data[r][idx.id] || '').trim().toUpperCase() === cleanPid) {
         pSheet.deleteRow(r + 1);
         break;
       }
@@ -535,6 +647,8 @@ function deleteProject(authContextJson, projectId) {
     deleteCascadeByProject(ss, SHEET_TASKS, cleanPid);
     deleteCascadeByProject(ss, SHEET_NOTES, cleanPid);
     deleteCascadeByProject(ss, SHEET_ROADMAPS, cleanPid);
+
+    CacheService.getScriptCache().remove('snote_proj_pin_' + cleanPid);
 
     return { success: true, message: 'Đã xóa đồ án và toàn bộ dữ liệu liên quan.' };
   } catch (err) {
@@ -647,21 +761,9 @@ function getTasksByProjectInternal(ss, projectId) {
  */
 function updateTaskStatus(projectIdOrAuth, taskId, newStatus) {
   try {
-    let cleanPid = '';
-    let cleanTid = String(taskId || '').trim();
-    let cleanStatus = String(newStatus || '').trim().toUpperCase();
-
-    if (typeof projectIdOrAuth === 'object' && projectIdOrAuth !== null) {
-      cleanPid = String(projectIdOrAuth.projectId || '').trim();
-    } else if (typeof projectIdOrAuth === 'string') {
-      const trimmed = projectIdOrAuth.trim();
-      if (trimmed.startsWith('{')) {
-        const parsed = safeJsonParse(trimmed, {});
-        cleanPid = String(parsed.projectId || '').trim();
-      } else {
-        cleanPid = trimmed;
-      }
-    }
+    const cleanTid = String(taskId || '').trim();
+    const cleanStatus = String(newStatus || '').trim().toUpperCase();
+    if (!cleanTid) return { success: false, message: 'Mã công việc không hợp lệ.' };
 
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const sheet = ss.getSheetByName(SHEET_TASKS);
@@ -670,47 +772,63 @@ function updateTaskStatus(projectIdOrAuth, taskId, newStatus) {
     const data = sheet.getDataRange().getValues();
     const idx = getColumnIndicesTasks(data[0]);
 
+    let foundRow = -1;
+    let taskPid = '';
+
     for (let r = 1; r < data.length; r++) {
       const row = data[r];
       const rowTid = String(row[idx.taskId] || '').trim();
-      const rowPid = String(row[idx.projectId] || '').trim();
-      if (rowTid === cleanTid && (!cleanPid || rowPid === cleanPid)) {
-        const rowNum = r + 1;
-        sheet.getRange(rowNum, idx.status + 1).setValue(cleanStatus);
-
-        let completedAtStr = '';
-        let evalStr = '';
-
-        if (cleanStatus === 'DONE') {
-          const now = new Date();
-          completedAtStr = formatDateTimeString(now);
-          sheet.getRange(rowNum, idx.completedAt + 1).setValue(completedAtStr);
-
-          const rawDue = row[idx.dueDate];
-          const dueStr = formatDateString(rawDue);
-          if (!dueStr) {
-            evalStr = 'Đúng hạn';
-          } else {
-            const todayStr = formatDateString(now);
-            evalStr = (todayStr <= dueStr) ? 'Đúng hạn' : 'Trễ hạn';
-          }
-          sheet.getRange(rowNum, idx.evaluation + 1).setValue(evalStr);
-        } else {
-          // Nếu chuyển ngược lại trạng thái chưa hoàn thành
-          sheet.getRange(rowNum, idx.completedAt + 1).setValue('');
-          sheet.getRange(rowNum, idx.evaluation + 1).setValue('');
-        }
-
-        return {
-          success: true,
-          taskId: cleanTid,
-          status: cleanStatus,
-          completedAt: completedAtStr,
-          evaluation: evalStr
-        };
+      if (rowTid === cleanTid) {
+        foundRow = r + 1;
+        taskPid = String(row[idx.projectId] || '').trim().toUpperCase();
+        break;
       }
     }
-    return { success: false, message: 'Không tìm thấy công việc ' + cleanTid };
+
+    if (foundRow <= 0) {
+      return { success: false, message: 'Không tìm thấy công việc ' + cleanTid };
+    }
+
+    // BẢO VỆ CHỐNG IDOR: Xác thực quyền đối với đồ án chứa task này
+    const authCheck = verifyAuthContext(projectIdOrAuth, taskPid);
+    if (!authCheck.authorized) {
+      return { success: false, message: authCheck.message || 'Từ chối IDOR: Bạn không có quyền cập nhật trạng thái công việc này!' };
+    }
+
+    const rowNum = foundRow;
+    const row = data[foundRow - 1];
+    sheet.getRange(rowNum, idx.status + 1).setValue(cleanStatus);
+
+    let completedAtStr = '';
+    let evalStr = '';
+
+    if (cleanStatus === 'DONE') {
+      const now = new Date();
+      completedAtStr = formatDateTimeString(now);
+      sheet.getRange(rowNum, idx.completedAt + 1).setValue(completedAtStr);
+
+      const rawDue = row[idx.dueDate];
+      const dueStr = formatDateString(rawDue);
+      if (!dueStr) {
+        evalStr = 'Đúng hạn';
+      } else {
+        const todayStr = formatDateString(now);
+        evalStr = (todayStr <= dueStr) ? 'Đúng hạn' : 'Trễ hạn';
+      }
+      sheet.getRange(rowNum, idx.evaluation + 1).setValue(evalStr);
+    } else {
+      // Nếu chuyển ngược lại trạng thái chưa hoàn thành
+      sheet.getRange(rowNum, idx.completedAt + 1).setValue('');
+      sheet.getRange(rowNum, idx.evaluation + 1).setValue('');
+    }
+
+    return {
+      success: true,
+      taskId: cleanTid,
+      status: cleanStatus,
+      completedAt: completedAtStr,
+      evaluation: evalStr
+    };
   } catch (err) {
     return { success: false, message: 'Lỗi cập nhật trạng thái: ' + err.message };
   }
@@ -719,20 +837,39 @@ function updateTaskStatus(projectIdOrAuth, taskId, newStatus) {
 function updateTaskChecklist(authContextJson, taskId, checklistsJson) {
   try {
     const cleanTid = String(taskId || '').trim();
+    if (!cleanTid) return { success: false, message: 'Mã công việc không hợp lệ.' };
+
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const sheet = ss.getSheetByName(SHEET_TASKS);
+    if (!sheet) return { success: false, message: 'Sheet Tasks không tồn tại.' };
+
     const data = sheet.getDataRange().getValues();
     const idx = getColumnIndicesTasks(data[0]);
 
-    const chksStr = typeof checklistsJson === 'string' ? checklistsJson : JSON.stringify(checklistsJson);
+    let foundRow = -1;
+    let taskPid = '';
 
     for (let r = 1; r < data.length; r++) {
       if (String(data[r][idx.taskId] || '').trim() === cleanTid) {
-        sheet.getRange(r + 1, idx.checklists + 1).setValue(chksStr);
-        return { success: true, taskId: cleanTid, checklists: safeJsonParse(chksStr, []) };
+        foundRow = r + 1;
+        taskPid = String(data[r][idx.projectId] || '').trim().toUpperCase();
+        break;
       }
     }
-    return { success: false, message: 'Không tìm thấy công việc ' + cleanTid };
+
+    if (foundRow <= 0) {
+      return { success: false, message: 'Không tìm thấy công việc ' + cleanTid };
+    }
+
+    // BẢO VỆ CHỐNG IDOR
+    const authCheck = verifyAuthContext(authContextJson, taskPid);
+    if (!authCheck.authorized) {
+      return { success: false, message: authCheck.message || 'Từ chối IDOR: Bạn không có quyền cập nhật việc con này!' };
+    }
+
+    const chksStr = typeof checklistsJson === 'string' ? checklistsJson : JSON.stringify(checklistsJson || []);
+    sheet.getRange(foundRow, idx.checklists + 1).setValue(chksStr);
+    return { success: true, taskId: cleanTid, checklists: safeJsonParse(chksStr, []) };
   } catch (err) {
     return { success: false, message: 'Lỗi cập nhật checklist: ' + err.message };
   }
@@ -743,7 +880,15 @@ function saveTask(authContextJson, taskDataJson) {
     const t = safeJsonParse(taskDataJson, null);
     if (!t || !t.title) return { success: false, message: 'Tiêu đề công việc không được để trống.' };
 
-    const cleanPid = String(t.projectId || '').trim();
+    const cleanPid = String(t.projectId || '').trim().toUpperCase();
+    if (!cleanPid) return { success: false, message: 'Mã đồ án không được để trống.' };
+
+    // BẢO VỆ CHỐNG IDOR / BOLA: Xác thực quyền đối với cleanPid
+    const authCheck = verifyAuthContext(authContextJson, cleanPid);
+    if (!authCheck.authorized) {
+      return { success: false, message: authCheck.message || 'Từ chối quyền lưu công việc cho đồ án này.' };
+    }
+
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const sheet = ss.getSheetByName(SHEET_TASKS);
     const data = sheet.getDataRange().getValues();
@@ -767,38 +912,48 @@ function saveTask(authContextJson, taskDataJson) {
     let foundRow = -1;
     for (let r = 1; r < data.length; r++) {
       if (String(data[r][idx.taskId] || '').trim() === targetId) {
+        // BẢO VỆ CHỐNG GHI ĐÈ IDOR SANG ĐỒ ÁN KHÁC
+        const existingPid = String(data[r][idx.projectId] || '').trim().toUpperCase();
+        if (existingPid !== cleanPid && authCheck.role !== 'ADMIN') {
+          return { success: false, message: 'Từ chối IDOR: Không thể ghi đè công việc của đồ án khác!' };
+        }
         foundRow = r + 1;
         break;
       }
     }
 
+    const safeTitle = sanitizeSheetCell(t.title);
+    const safeAssignee = sanitizeSheetCell(t.assignee || '');
+    const safeReporter = sanitizeSheetCell(t.reporter || '');
+    const safeCategory = sanitizeSheetCell(t.categoryField || 'Chung');
+
     if (foundRow > 0) {
-      sheet.getRange(foundRow, idx.title + 1).setValue(t.title);
+      sheet.getRange(foundRow, idx.title + 1).setValue(safeTitle);
       sheet.getRange(foundRow, idx.priority + 1).setValue(t.priority || 'MEDIUM');
       sheet.getRange(foundRow, idx.status + 1).setValue(cleanStatus);
       sheet.getRange(foundRow, idx.dueDate + 1).setValue(formatDateString(t.dueDate));
-      sheet.getRange(foundRow, idx.assignee + 1).setValue(t.assignee || '');
+      sheet.getRange(foundRow, idx.assignee + 1).setValue(safeAssignee);
       sheet.getRange(foundRow, idx.checklists + 1).setValue(chksStr);
       sheet.getRange(foundRow, idx.frequency + 1).setValue(t.frequency || 'Một lần');
       sheet.getRange(foundRow, idx.completedAt + 1).setValue(completedAt);
       sheet.getRange(foundRow, idx.evaluation + 1).setValue(evaluation);
-      sheet.getRange(foundRow, idx.categoryField + 1).setValue(t.categoryField || 'Chung');
-      sheet.getRange(foundRow, idx.reporter + 1).setValue(t.reporter || '');
+      sheet.getRange(foundRow, idx.categoryField + 1).setValue(safeCategory);
+      sheet.getRange(foundRow, idx.reporter + 1).setValue(safeReporter);
     } else {
       const newRow = [];
       newRow[idx.taskId] = targetId;
       newRow[idx.projectId] = cleanPid;
-      newRow[idx.title] = t.title;
+      newRow[idx.title] = safeTitle;
       newRow[idx.priority] = t.priority || 'MEDIUM';
       newRow[idx.status] = cleanStatus;
       newRow[idx.dueDate] = formatDateString(t.dueDate);
-      newRow[idx.assignee] = t.assignee || '';
+      newRow[idx.assignee] = safeAssignee;
       newRow[idx.checklists] = chksStr;
       newRow[idx.frequency] = t.frequency || 'Một lần';
       newRow[idx.completedAt] = completedAt;
       newRow[idx.evaluation] = evaluation;
-      newRow[idx.categoryField] = t.categoryField || 'Chung';
-      newRow[idx.reporter] = t.reporter || '';
+      newRow[idx.categoryField] = safeCategory;
+      newRow[idx.reporter] = safeReporter;
       sheet.appendRow(newRow);
     }
 
@@ -808,17 +963,17 @@ function saveTask(authContextJson, taskDataJson) {
       task: {
         taskId: targetId,
         projectId: cleanPid,
-        title: t.title,
+        title: safeTitle,
         priority: t.priority || 'MEDIUM',
         status: cleanStatus,
         dueDate: formatDateString(t.dueDate),
-        assignee: t.assignee || '',
+        assignee: safeAssignee,
         checklists: safeJsonParse(chksStr, []),
         frequency: t.frequency || 'Một lần',
         completedAt: completedAt,
         evaluation: evaluation,
-        categoryField: t.categoryField || 'Chung',
-        reporter: t.reporter || ''
+        categoryField: safeCategory,
+        reporter: safeReporter
       }
     };
   } catch (err) {
@@ -829,20 +984,36 @@ function saveTask(authContextJson, taskDataJson) {
 function deleteTask(authContextJson, taskId, projectId) {
   try {
     const cleanTid = String(taskId || '').trim();
-    const cleanPid = String(projectId || '').trim();
+    if (!cleanTid) return { success: false, message: 'Mã công việc không hợp lệ.' };
 
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const sheet = ss.getSheetByName(SHEET_TASKS);
     const data = sheet.getDataRange().getValues();
     const idx = getColumnIndicesTasks(data[0]);
 
+    let targetRow = -1;
+    let taskPid = '';
+
     for (let r = 1; r < data.length; r++) {
       if (String(data[r][idx.taskId] || '').trim() === cleanTid) {
-        sheet.deleteRow(r + 1);
-        return { success: true, taskId: cleanTid, message: 'Đã xóa công việc.' };
+        targetRow = r + 1;
+        taskPid = String(data[r][idx.projectId] || '').trim().toUpperCase();
+        break;
       }
     }
-    return { success: false, message: 'Không tìm thấy công việc ' + cleanTid };
+
+    if (targetRow <= 0) {
+      return { success: false, message: 'Không tìm thấy công việc ' + cleanTid };
+    }
+
+    // BẢO VỆ CHỐNG IDOR: Kiểm tra quyền sở hữu với taskPid
+    const authCheck = verifyAuthContext(authContextJson, taskPid);
+    if (!authCheck.authorized) {
+      return { success: false, message: authCheck.message || 'Từ chối IDOR: Bạn không có quyền xóa công việc này!' };
+    }
+
+    sheet.deleteRow(targetRow);
+    return { success: true, taskId: cleanTid, message: 'Đã xóa công việc.' };
   } catch (err) {
     return { success: false, message: 'Lỗi xóa công việc: ' + err.message };
   }
@@ -926,7 +1097,15 @@ function saveNote(authContextJson, noteDataJson) {
     const n = safeJsonParse(noteDataJson, null);
     if (!n || !n.title) return { success: false, message: 'Tiêu đề ghi chú không được để trống.' };
 
-    const cleanPid = String(n.projectId || '').trim();
+    const cleanPid = String(n.projectId || '').trim().toUpperCase();
+    if (!cleanPid) return { success: false, message: 'Mã đồ án không được để trống.' };
+
+    // BẢO VỆ CHỐNG IDOR / BOLA
+    const authCheck = verifyAuthContext(authContextJson, cleanPid);
+    if (!authCheck.authorized) {
+      return { success: false, message: authCheck.message || 'Từ chối quyền lưu ghi chú cho đồ án này.' };
+    }
+
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const sheet = ss.getSheetByName(SHEET_NOTES);
     const data = sheet.getDataRange().getValues();
@@ -947,6 +1126,11 @@ function saveNote(authContextJson, noteDataJson) {
     let foundRow = -1;
     for (let r = 1; r < data.length; r++) {
       if (String(data[r][idx.noteId] || '').trim() === targetId) {
+        // BẢO VỆ CHỐNG IDOR: Kiểm tra ghi chú cũ có đúng thuộc cleanPid không
+        const existingPid = String(data[r][idx.projectId] || '').trim().toUpperCase();
+        if (existingPid !== cleanPid && authCheck.role !== 'ADMIN') {
+          return { success: false, message: 'Từ chối IDOR: Không thể ghi đè ghi chú của đồ án khác!' };
+        }
         foundRow = r + 1;
         break;
       }
@@ -1001,20 +1185,36 @@ function saveNote(authContextJson, noteDataJson) {
 function togglePinNote(authContextJson, noteId) {
   try {
     const cleanNid = String(noteId || '').trim();
+    if (!cleanNid) return { success: false, message: 'Mã ghi chú không hợp lệ.' };
+
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const sheet = ss.getSheetByName(SHEET_NOTES);
     const data = sheet.getDataRange().getValues();
     const idx = getColumnIndicesNotes(data[0]);
 
+    let foundRow = -1;
+    let notePid = '';
+
     for (let r = 1; r < data.length; r++) {
       if (String(data[r][idx.noteId] || '').trim() === cleanNid) {
-        const current = String(data[r][idx.isPinned] || '').toUpperCase() === 'TRUE';
-        const updated = !current;
-        sheet.getRange(r + 1, idx.isPinned + 1).setValue(updated ? 'TRUE' : 'FALSE');
-        return { success: true, noteId: cleanNid, isPinned: updated };
+        foundRow = r + 1;
+        notePid = String(data[r][idx.projectId] || '').trim().toUpperCase();
+        break;
       }
     }
-    return { success: false, message: 'Không tìm thấy ghi chú ' + cleanNid };
+
+    if (foundRow <= 0) return { success: false, message: 'Không tìm thấy ghi chú ' + cleanNid };
+
+    // BẢO VỆ CHỐNG IDOR
+    const authCheck = verifyAuthContext(authContextJson, notePid);
+    if (!authCheck.authorized) {
+      return { success: false, message: authCheck.message || 'Từ chối IDOR: Bạn không có quyền ghim ghi chú này!' };
+    }
+
+    const current = String(data[foundRow - 1][idx.isPinned] || '').toUpperCase() === 'TRUE';
+    const updated = !current;
+    sheet.getRange(foundRow, idx.isPinned + 1).setValue(updated ? 'TRUE' : 'FALSE');
+    return { success: true, noteId: cleanNid, isPinned: updated };
   } catch (err) {
     return { success: false, message: 'Lỗi ghim ghi chú: ' + err.message };
   }
@@ -1023,18 +1223,34 @@ function togglePinNote(authContextJson, noteId) {
 function deleteNote(authContextJson, noteId) {
   try {
     const cleanNid = String(noteId || '').trim();
+    if (!cleanNid) return { success: false, message: 'Mã ghi chú không hợp lệ.' };
+
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const sheet = ss.getSheetByName(SHEET_NOTES);
     const data = sheet.getDataRange().getValues();
     const idx = getColumnIndicesNotes(data[0]);
 
+    let foundRow = -1;
+    let notePid = '';
+
     for (let r = 1; r < data.length; r++) {
       if (String(data[r][idx.noteId] || '').trim() === cleanNid) {
-        sheet.deleteRow(r + 1);
-        return { success: true, noteId: cleanNid };
+        foundRow = r + 1;
+        notePid = String(data[r][idx.projectId] || '').trim().toUpperCase();
+        break;
       }
     }
-    return { success: false, message: 'Không tìm thấy ghi chú ' + cleanNid };
+
+    if (foundRow <= 0) return { success: false, message: 'Không tìm thấy ghi chú ' + cleanNid };
+
+    // BẢO VỆ CHỐNG IDOR
+    const authCheck = verifyAuthContext(authContextJson, notePid);
+    if (!authCheck.authorized) {
+      return { success: false, message: authCheck.message || 'Từ chối IDOR: Bạn không có quyền xóa ghi chú này!' };
+    }
+
+    sheet.deleteRow(foundRow);
+    return { success: true, noteId: cleanNid, message: 'Đã xóa ghi chú.' };
   } catch (err) {
     return { success: false, message: 'Lỗi xóa ghi chú: ' + err.message };
   }
@@ -1052,10 +1268,12 @@ function convertNoteToTask(authContextJson, noteId) {
     const nIdx = getColumnIndicesNotes(nData[0]);
 
     let foundNote = null;
+    let notePid = '';
     for (let r = 1; r < nData.length; r++) {
       if (String(nData[r][nIdx.noteId] || '').trim() === cleanNid) {
+        notePid = String(nData[r][nIdx.projectId] || '').trim().toUpperCase();
         foundNote = {
-          projectId: String(nData[r][nIdx.projectId] || ''),
+          projectId: notePid,
           title: String(nData[r][nIdx.title] || ''),
           contentMd: String(nData[r][nIdx.contentMd] || '')
         };
@@ -1064,6 +1282,12 @@ function convertNoteToTask(authContextJson, noteId) {
     }
 
     if (!foundNote) return { success: false, message: 'Không tìm thấy ghi chú.' };
+
+    // BẢO VỆ CHỐNG IDOR
+    const authCheck = verifyAuthContext(authContextJson, notePid);
+    if (!authCheck.authorized) {
+      return { success: false, message: authCheck.message || 'Từ chối IDOR: Bạn không có quyền chuyển đổi ghi chú này!' };
+    }
 
     // Trích xuất checklist từ nội dung Markdown (- [ ] hoặc - [x])
     const checklists = [];
@@ -1180,7 +1404,15 @@ function saveRoadmap(authContextJson, roadmapDataJson) {
     const r = safeJsonParse(roadmapDataJson, null);
     if (!r || !r.title) return { success: false, message: 'Tiêu đề lộ trình không được để trống.' };
 
-    const cleanPid = String(r.projectId || '').trim();
+    const cleanPid = String(r.projectId || '').trim().toUpperCase();
+    if (!cleanPid) return { success: false, message: 'Mã đồ án không được để trống.' };
+
+    // BẢO VỆ CHỐNG IDOR / BOLA
+    const authCheck = verifyAuthContext(authContextJson, cleanPid);
+    if (!authCheck.authorized) {
+      return { success: false, message: authCheck.message || 'Từ chối quyền lưu lộ trình cho đồ án này.' };
+    }
+
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const sheet = ss.getSheetByName(SHEET_ROADMAPS);
     const data = sheet.getDataRange().getValues();
@@ -1192,6 +1424,11 @@ function saveRoadmap(authContextJson, roadmapDataJson) {
     let foundRow = -1;
     for (let row = 1; row < data.length; row++) {
       if (String(data[row][idx.roadmapId] || '').trim() === targetId) {
+        // BẢO VỆ CHỐNG IDOR
+        const existingPid = String(data[row][idx.projectId] || '').trim().toUpperCase();
+        if (existingPid !== cleanPid && authCheck.role !== 'ADMIN') {
+          return { success: false, message: 'Từ chối IDOR: Không thể ghi đè lộ trình của đồ án khác!' };
+        }
         foundRow = row + 1;
         break;
       }
@@ -1232,18 +1469,34 @@ function saveRoadmap(authContextJson, roadmapDataJson) {
 function deleteRoadmap(authContextJson, roadmapId) {
   try {
     const cleanRid = String(roadmapId || '').trim();
+    if (!cleanRid) return { success: false, message: 'Mã lộ trình không hợp lệ.' };
+
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const sheet = ss.getSheetByName(SHEET_ROADMAPS);
     const data = sheet.getDataRange().getValues();
     const idx = getColumnIndicesRoadmaps(data[0]);
 
+    let foundRow = -1;
+    let roadmapPid = '';
+
     for (let r = 1; r < data.length; r++) {
       if (String(data[r][idx.roadmapId] || '').trim() === cleanRid) {
-        sheet.deleteRow(r + 1);
-        return { success: true, roadmapId: cleanRid };
+        foundRow = r + 1;
+        roadmapPid = String(data[r][idx.projectId] || '').trim().toUpperCase();
+        break;
       }
     }
-    return { success: false, message: 'Không tìm thấy lộ trình ' + cleanRid };
+
+    if (foundRow <= 0) return { success: false, message: 'Không tìm thấy lộ trình ' + cleanRid };
+
+    // BẢO VỆ CHỐNG IDOR
+    const authCheck = verifyAuthContext(authContextJson, roadmapPid);
+    if (!authCheck.authorized) {
+      return { success: false, message: authCheck.message || 'Từ chối IDOR: Bạn không có quyền xóa lộ trình này!' };
+    }
+
+    sheet.deleteRow(foundRow);
+    return { success: true, roadmapId: cleanRid, message: 'Đã xóa lộ trình.' };
   } catch (err) {
     return { success: false, message: 'Lỗi xóa lộ trình: ' + err.message };
   }
@@ -1254,8 +1507,14 @@ function deleteRoadmap(authContextJson, roadmapId) {
  */
 function convertBatchRoadmapToTasks(authContextJson, projectId, roadmapId) {
   try {
-    const cleanPid = String(projectId || '').trim();
+    const cleanPid = String(projectId || '').trim().toUpperCase();
     const cleanRid = String(roadmapId || '').trim();
+
+    // BẢO VỆ CHỐNG IDOR
+    const authCheck = verifyAuthContext(authContextJson, cleanPid);
+    if (!authCheck.authorized) {
+      return { success: false, message: authCheck.message || 'Từ chối IDOR: Bạn không có quyền chuyển đổi lộ trình cho đồ án này!' };
+    }
 
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const rSheet = ss.getSheetByName(SHEET_ROADMAPS);
@@ -1528,9 +1787,11 @@ function fetchAllInitialData(authContextJson) {
   try {
     ensureAllSheetsInitialized();
     const auth = safeJsonParse(authContextJson, {});
+    const targetPid = auth.projectId ? String(auth.projectId).trim().toUpperCase() : '';
+    const authCheck = verifyAuthContext(authContextJson, targetPid);
     const ss = SpreadsheetApp.getActiveSpreadsheet();
 
-    // 1. Projects
+    // 1. Projects (LUÔN CHE GIẤU MÃ PIN - MASKED PIN '****' ĐỂ CHỐNG RÒ RỈ)
     const pSheet = ss.getSheetByName(SHEET_PROJECTS);
     const pData = pSheet ? pSheet.getDataRange().getValues() : [];
     const pIdx = pData.length > 0 ? getColumnIndicesProjects(pData[0]) : {};
@@ -1539,7 +1800,7 @@ function fetchAllInitialData(authContextJson) {
       projects.push({
         projectId: String(pData[r][pIdx.id] || ''),
         projectName: String(pData[r][pIdx.name] || ''),
-        pinCode: String(pData[r][pIdx.pin] || ''),
+        pinCode: '****',
         description: String(pData[r][pIdx.description] || ''),
         subjectId: String(pData[r][pIdx.subjectId] || ''),
         createdAt: formatDateString(pData[r][pIdx.createdAt])
@@ -1556,7 +1817,8 @@ function fetchAllInitialData(authContextJson) {
         semesterId: String(sData[r][sIdx.id] || ''),
         semesterName: String(sData[r][sIdx.name] || ''),
         startDate: formatDateString(sData[r][sIdx.startDate]),
-        endDate: formatDateString(sData[r][sIdx.endDate])
+        endDate: formatDateString(sData[r][sIdx.endDate]),
+        isActive: String(sData[r][sIdx.isActive] || '').toUpperCase() === 'TRUE'
       });
     }
 
@@ -1567,94 +1829,98 @@ function fetchAllInitialData(authContextJson) {
     for (let r = 1; r < subData.length; r++) {
       subjects.push({
         subjectId: String(subData[r][subIdx.id] || ''),
+        semesterId: String(subData[r][subIdx.semesterId] || ''),
         subjectName: String(subData[r][subIdx.name] || ''),
         subjectCode: String(subData[r][subIdx.code] || ''),
-        semesterId: String(subData[r][subIdx.semesterId] || '')
+        credits: parseInt(subData[r][subIdx.credits] || '3', 10),
+        color: String(subData[r][subIdx.color] || '#3b82f6')
       });
     }
 
-    // 3. Tasks
-    const tSheet = ss.getSheetByName(SHEET_TASKS);
-    const tData = tSheet ? tSheet.getDataRange().getValues() : [];
-    const tIdx = tData.length > 0 ? getColumnIndicesTasks(tData[0]) : {};
+    // 3. Tasks - CHỈ TRẢ VỀ DỮ LIỆU KHI ĐÃ ĐƯỢC XÁC THỰC QUYỀN
     const tasks = [];
-    for (let r = 1; r < tData.length; r++) {
-      const pid = String(tData[r][tIdx.projectId] || '').trim();
-      if (!auth.projectId || auth.role === 'ADMIN' || pid === auth.projectId) {
-        tasks.push({
-          taskId: String(tData[r][tIdx.taskId] || ''),
-          projectId: pid,
-          title: String(tData[r][tIdx.title] || ''),
-          priority: String(tData[r][tIdx.priority] || 'MEDIUM'),
-          status: String(tData[r][tIdx.status] || 'TODO'),
-          dueDate: formatDateString(tData[r][tIdx.dueDate]),
-          startDate: formatDateString(tData[r][tIdx.startDate]),
-          completedAt: formatDateTimeString(tData[r][tIdx.completedAt]),
-          evaluation: String(tData[r][tIdx.evaluation] || ''),
-          category: String(tData[r][tIdx.category] || ''),
-          assignee: String(tData[r][tIdx.assignee] || ''),
-          description: String(tData[r][tIdx.description] || ''),
-          checklists: safeJsonParse(tData[r][tIdx.checklists], [])
-        });
+    if (authCheck.authorized) {
+      const tSheet = ss.getSheetByName(SHEET_TASKS);
+      const tData = tSheet ? tSheet.getDataRange().getValues() : [];
+      const tIdx = tData.length > 0 ? getColumnIndicesTasks(tData[0]) : {};
+      for (let r = 1; r < tData.length; r++) {
+        const pid = String(tData[r][tIdx.projectId] || '').trim().toUpperCase();
+        if (authCheck.role === 'ADMIN' || pid === authCheck.projectId) {
+          tasks.push({
+            taskId: String(tData[r][tIdx.taskId] || ''),
+            projectId: pid,
+            title: String(tData[r][tIdx.title] || ''),
+            priority: String(tData[r][tIdx.priority] || 'MEDIUM'),
+            status: String(tData[r][tIdx.status] || 'TODO'),
+            dueDate: formatDateString(tData[r][tIdx.dueDate]),
+            assignee: String(tData[r][tIdx.assignee] || ''),
+            checklists: safeJsonParse(tData[r][tIdx.checklists], []),
+            frequency: String(tData[r][tIdx.frequency] || 'Một lần'),
+            completedAt: formatDateTimeString(tData[r][tIdx.completedAt]),
+            evaluation: String(tData[r][tIdx.evaluation] || ''),
+            categoryField: String(tData[r][tIdx.categoryField] || 'Chung'),
+            reporter: String(tData[r][tIdx.reporter] || '')
+          });
+        }
       }
     }
 
-    // 4. Notes
-    const nSheet = ss.getSheetByName(SHEET_NOTES);
-    const nData = nSheet ? nSheet.getDataRange().getValues() : [];
-    const nIdx = nData.length > 0 ? getColumnIndicesNotes(nData[0]) : {};
+    // 4. Notes - CHỈ TRẢ VỀ DỮ LIỆU KHI ĐÃ ĐƯỢC XÁC THỰC QUYỀN
     const notes = [];
-    for (let r = 1; r < nData.length; r++) {
-      const pid = String(nData[r][nIdx.projectId] || '').trim();
-      if (!auth.projectId || auth.role === 'ADMIN' || pid === auth.projectId) {
-        notes.push({
-          noteId: String(nData[r][nIdx.noteId] || ''),
-          projectId: pid,
-          title: String(nData[r][nIdx.title] || ''),
-          content: String(nData[r][nIdx.content] || ''),
-          noteType: String(nData[r][nIdx.noteType] || 'LECTURE'),
-          tags: safeJsonParse(nData[r][nIdx.tags], []),
-          isPinned: String(nData[r][nIdx.isPinned] || '').toUpperCase() === 'TRUE',
-          createdAt: formatDateTimeString(nData[r][nIdx.createdAt]),
-          updatedAt: formatDateTimeString(nData[r][nIdx.updatedAt])
-        });
+    if (authCheck.authorized) {
+      const nSheet = ss.getSheetByName(SHEET_NOTES);
+      const nData = nSheet ? nSheet.getDataRange().getValues() : [];
+      const nIdx = nData.length > 0 ? getColumnIndicesNotes(nData[0]) : {};
+      for (let r = 1; r < nData.length; r++) {
+        const pid = String(nData[r][nIdx.projectId] || '').trim().toUpperCase();
+        if (authCheck.role === 'ADMIN' || pid === authCheck.projectId) {
+          notes.push({
+            noteId: String(nData[r][nIdx.noteId] || ''),
+            projectId: pid,
+            title: String(nData[r][nIdx.title] || ''),
+            contentMd: String(nData[r][nIdx.contentMd] || ''),
+            noteType: String(nData[r][nIdx.noteType] || 'LECTURE'),
+            tags: String(nData[r][nIdx.tags] || ''),
+            isPinned: String(nData[r][nIdx.isPinned] || '').toUpperCase() === 'TRUE',
+            createdAt: formatDateString(nData[r][nIdx.createdAt]),
+            scope: (nIdx.scope !== undefined && nData[r][nIdx.scope]) ? String(nData[r][nIdx.scope]).toUpperCase() : 'TEAM'
+          });
+        }
       }
     }
 
-    // 5. Roadmaps
-    const rSheet = ss.getSheetByName(SHEET_ROADMAPS);
-    const rData = rSheet ? rSheet.getDataRange().getValues() : [];
-    const rIdx = rData.length > 0 ? getColumnIndicesRoadmaps(rData[0]) : {};
+    // 5. Roadmaps - CHỈ TRẢ VỀ DỮ LIỆU KHI ĐÃ ĐƯỢC XÁC THỰC QUYỀN
     const roadmaps = [];
-    for (let r = 1; r < rData.length; r++) {
-      const pid = String(rData[r][rIdx.projectId] || '').trim();
-      if (!auth.projectId || auth.role === 'ADMIN' || pid === auth.projectId) {
-        roadmaps.push({
-          roadmapId: String(rData[r][rIdx.roadmapId] || ''),
-          projectId: pid,
-          title: String(rData[r][rIdx.title] || ''),
-          description: String(rData[r][rIdx.description] || ''),
-          rawText: String(rData[r][rIdx.rawText] || ''),
-          milestones: safeJsonParse(rData[r][rIdx.milestones], []),
-          updatedAt: formatDateTimeString(rData[r][rIdx.updatedAt])
-        });
+    if (authCheck.authorized) {
+      const rSheet = ss.getSheetByName(SHEET_ROADMAPS);
+      const rData = rSheet ? rSheet.getDataRange().getValues() : [];
+      const rIdx = rData.length > 0 ? getColumnIndicesRoadmaps(rData[0]) : {};
+      for (let r = 1; r < rData.length; r++) {
+        const pid = String(rData[r][rIdx.projectId] || '').trim().toUpperCase();
+        if (authCheck.role === 'ADMIN' || pid === authCheck.projectId) {
+          roadmaps.push({
+            roadmapId: String(rData[r][rIdx.roadmapId] || ''),
+            projectId: pid,
+            title: String(rData[r][rIdx.title] || ''),
+            rawText: String(rData[r][rIdx.rawText] || ''),
+            milestones: safeJsonParse(rData[r][rIdx.milestones], []),
+            createdAt: formatDateString(rData[r][rIdx.createdAt])
+          });
+        }
       }
     }
 
     return {
       success: true,
-      data: {
-        projects: projects,
-        tasks: tasks,
-        notes: notes,
-        roadmaps: roadmaps,
-        semesters: semesters,
-        subjects: subjects,
-        timestamp: new Date().toISOString()
-      }
+      projects: projects,
+      semesters: semesters,
+      subjects: subjects,
+      tasks: tasks,
+      notes: notes,
+      roadmaps: roadmaps
     };
   } catch (err) {
-    return { success: false, message: 'Lỗi tải dữ liệu khởi tạo: ' + err.message };
+    return { success: false, message: 'Lỗi nạp dữ liệu ban đầu: ' + err.message };
   }
 }
 
