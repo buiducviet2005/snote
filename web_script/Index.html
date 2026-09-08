@@ -1553,7 +1553,7 @@ table.snote-table tr:hover td {
 
     <!-- CHÂN TRANG: LIÊN KẾT NHỎ TINH TẾ DÀNH CHO QUẢN TRỊ VIÊN -->
     <div class="landing-footer-bar">
-      <a href="#" class="admin-discreet-link" onclick="openModal('modal-admin-login'); return false;">
+      <a href="#" class="admin-discreet-link" onclick="openAdminLoginModal(); return false;">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
         <span>Dành cho Quản trị viên hệ thống</span>
       </a>
@@ -2225,7 +2225,7 @@ table.snote-table tr:hover td {
        3. MODALS (POPUPS CHỨC NĂNG CỐT LÕI)
        ============================================================================== -->
 
-    <!-- MODAL: ADMIN LOGIN (DISCREET - NO DEMO AUTO-FILL) -->
+    <!-- MODAL: ADMIN LOGIN -->
   <div class="modal-overlay" id="modal-admin-login">
     <div class="modal-dialog" style="max-width: 420px;">
       <div class="modal-header">
@@ -2243,10 +2243,15 @@ table.snote-table tr:hover td {
           <input type="password" id="landing-admin-password" placeholder="Nhập mật khẩu..." onkeyup="if(event.key==='Enter') submitAdminLogin()">
         </div>
         <div class="entry-error-text" id="landing-admin-error"></div>
+        <div style="margin-top: 10px; display: flex; justify-content: flex-end;">
+          <button type="button" class="btn btn-secondary btn-sm" style="font-size: 11.5px; padding: 4px 8px; opacity: 0.85;" onclick="fillAdminDemo()">
+            ⚡ Thử Nghiệm Nhanh (admin@gmail.com / 123456)
+          </button>
+        </div>
       </div>
       <div class="modal-footer">
         <button class="btn btn-secondary" onclick="closeModal('modal-admin-login')">Hủy</button>
-        <button class="btn btn-primary" onclick="submitAdminLogin()">Đăng Nhập</button>
+        <button class="btn btn-primary" id="btn-submit-admin-login" onclick="submitAdminLogin()">Đăng Nhập</button>
       </div>
     </div>
   </div>
@@ -3359,6 +3364,76 @@ table.snote-table tr:hover td {
 
     navigateTo('tasks');
     refreshAllViews();
+  }
+
+  // --- ADMIN LOGIN & AUTHENTICATION ---
+  function fillAdminDemo() {
+    const emailEl = document.getElementById('landing-admin-email');
+    const passEl = document.getElementById('landing-admin-password');
+    const errEl = document.getElementById('landing-admin-error');
+    if (emailEl) emailEl.value = 'admin@gmail.com';
+    if (passEl) passEl.value = '123456';
+    if (errEl) errEl.innerText = '';
+  }
+
+  function openAdminLoginModal() {
+    const errEl = document.getElementById('landing-admin-error');
+    if (errEl) errEl.innerText = '';
+    openModal('modal-admin-login');
+    const emailEl = document.getElementById('landing-admin-email');
+    setTimeout(() => { if (emailEl) emailEl.focus(); }, 120);
+  }
+
+  function submitAdminLogin() {
+    const emailEl = document.getElementById('landing-admin-email');
+    const passEl = document.getElementById('landing-admin-password');
+    const email = (emailEl ? emailEl.value : '').trim();
+    const pass = (passEl ? passEl.value : '').trim();
+    const errEl = document.getElementById('landing-admin-error');
+    if (errEl) errEl.innerText = '';
+
+    if (!email || !pass) {
+      const msg = 'Vui lòng nhập đầy đủ email và mật khẩu!';
+      if (errEl) errEl.innerText = msg;
+      showToast(msg, 'error');
+      if (!email && emailEl) emailEl.focus();
+      else if (!pass && passEl) passEl.focus();
+      return;
+    }
+
+    showLoadingOverlay('Đang xác thực quyền Quản Trị Viên...');
+    callGasBackend('handleAdminLogin', [email, pass], function(res) {
+      if (res && res.success) {
+        storage.setItem('snote_session_token', res.sessionToken);
+        callGasBackend('getAdminDashboardData', [res.sessionToken], function(dashRes) {
+          hideLoadingOverlay();
+          if (dashRes && dashRes.success) {
+            closeModal('modal-admin-login');
+            enterAdminSuite(dashRes);
+            showToast('Đăng nhập Quản Trị thành công!', 'success');
+          } else {
+            const msg = (dashRes && dashRes.message) ? dashRes.message : 'Không thể nạp dữ liệu quản trị.';
+            if (errEl) errEl.innerText = msg;
+            showToast(msg, 'error');
+          }
+        }, function(dashErr) {
+          hideLoadingOverlay();
+          const msg = 'Lỗi kết nối khi nạp dữ liệu quản trị.';
+          if (errEl) errEl.innerText = msg;
+          showToast(msg, 'error');
+        });
+      } else {
+        hideLoadingOverlay();
+        const msg = (res && res.message) ? res.message : 'Sai email hoặc mật khẩu quản trị!';
+        if (errEl) errEl.innerText = msg;
+        showToast(msg, 'error');
+      }
+    }, function(err) {
+      hideLoadingOverlay();
+      const msg = 'Lỗi kết nối máy chủ khi xác thực quản trị.';
+      if (errEl) errEl.innerText = msg;
+      showToast(msg, 'error');
+    });
   }
 
   // --- ENTER ADMIN SUITE ---
@@ -5514,6 +5589,8 @@ table.snote-table tr:hover td {
     showLandingPage: showLandingPage,
     submitMemberLogin: submitMemberLogin,
     submitAdminLogin: submitAdminLogin,
+    openAdminLoginModal: openAdminLoginModal,
+    fillAdminDemo: fillAdminDemo,
     enterMemberPortal: enterMemberPortal,
     enterAdminSuite: enterAdminSuite,
     logout: logout,
