@@ -32,10 +32,15 @@ if %errorlevel% equ 0 (
     for /f "tokens=*" %%v in ('node -v') do set NODE_VERSION=%%v
     echo  [OK]   Node.js:             !NODE_VERSION!
     
-    :: Kiểm tra version >= 18
+    :: Prisma 7 hỗ trợ Node 20.19+, 22.12+ hoặc 24+
     for /f "tokens=1 delims=." %%a in ("!NODE_VERSION:~1!") do set NODE_MAJOR=%%a
-    if !NODE_MAJOR! lss 18 (
-        echo  [FAIL] Phiên bản Node.js hiện tại (!NODE_VERSION!) quá cũ ^(Yêu cầu tối thiểu ^>= v18.0.0^).
+    for /f "tokens=2 delims=." %%a in ("!NODE_VERSION:~1!") do set NODE_MINOR=%%a
+    set NODE_SUPPORTED=0
+    if !NODE_MAJOR! equ 20 if !NODE_MINOR! geq 19 set NODE_SUPPORTED=1
+    if !NODE_MAJOR! equ 22 if !NODE_MINOR! geq 12 set NODE_SUPPORTED=1
+    if !NODE_MAJOR! geq 24 set NODE_SUPPORTED=1
+    if !NODE_SUPPORTED! equ 0 (
+        echo  [FAIL] Node.js !NODE_VERSION! không tương thích ^(cần 20.19+, 22.12+ hoặc 24+^).
         echo         👉 Vui lòng nâng cấp Node.js LTS tại: https://nodejs.org/
         set PREREQ_FAIL=1
     )

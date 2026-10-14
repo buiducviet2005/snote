@@ -1,6 +1,7 @@
 import { prisma } from '../../shared/db/prismaClient';
 import { GlobalSearchQueryDto, GlobalSearchResultDto, SearchResultItem } from './search.types';
 import { TaskStatus, TaskPriority, ProjectStatus, ScheduleEventType } from '@prisma/client';
+import { visibleTasks } from '../../shared/security/studyAccess';
 
 export class SearchService {
   async search(userId: string, query: GlobalSearchQueryDto): Promise<GlobalSearchResultDto> {
@@ -40,10 +41,10 @@ export class SearchService {
               ],
               ...(q
                 ? {
-                    OR: [
+                    AND: [{ OR: [
                       { title: { contains: q, mode: 'insensitive' } },
                       { content: { contains: q, mode: 'insensitive' } }
-                    ]
+                    ] }]
                   }
                 : {}),
               ...(query.subjectId ? { subjectId: query.subjectId } : {}),
@@ -65,7 +66,7 @@ export class SearchService {
       searchTasks
         ? prisma.task.findMany({
             where: {
-              userId,
+              AND: [visibleTasks(userId)],
               deletedAt: null,
               ...(q
                 ? {
@@ -95,14 +96,19 @@ export class SearchService {
       searchProjects
         ? prisma.project.findMany({
             where: {
-              OR: [{ userId }, { members: { some: { userId } } }],
+              OR: [
+                { userId },
+                { members: { some: { userId, status: 'ACCEPTED' } } },
+                { courseClass: { teacherId: userId, deletedAt: null } },
+                { courseClass: { members: { some: { userId, role: 'CLASS_ADMIN' } }, deletedAt: null } }
+              ],
               deletedAt: null,
               ...(q
                 ? {
-                    OR: [
+                    AND: [{ OR: [
                       { name: { contains: q, mode: 'insensitive' } },
                       { description: { contains: q, mode: 'insensitive' } }
-                    ]
+                    ] }]
                   }
                 : {}),
               ...(query.subjectId ? { subjectId: query.subjectId } : {}),

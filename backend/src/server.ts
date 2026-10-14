@@ -22,6 +22,7 @@ import { backupRouter } from './modules/backup';
 import { aiRouter } from './modules/ai';
 import { searchRouter } from './modules/search';
 import { sharesRouter } from './modules/shares';
+import { classesRouter } from './modules/classes';
 
 // 1. Khởi tạo Express Application
 const app = express();
@@ -76,6 +77,7 @@ app.use('/api/backup', backupRouter);
 app.use('/api/ai', aiRouter);
 app.use('/api/search', searchRouter);
 app.use('/api/shares', sharesRouter);
+app.use('/api/classes', classesRouter);
 
 // 9. Centralized Error Handling Middleware (Bắt buộc đặt cuối cùng)
 app.use(errorHandler);

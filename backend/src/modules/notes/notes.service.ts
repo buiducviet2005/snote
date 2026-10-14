@@ -1,6 +1,7 @@
 import { NotesRepository } from './notes.repository';
 import { CreateNoteDto, UpdateNoteDto, NoteFilter, NoteResponseDto } from './notes.types';
 import { NotFoundError } from '../../shared/errors/appErrors';
+import { allowedSubject, writableProject } from '../../shared/security/studyAccess';
 
 export class NotesService {
   constructor(private readonly repository: NotesRepository = new NotesRepository()) {}
@@ -56,13 +57,19 @@ export class NotesService {
   }
 
   async createNote(userId: string, dto: CreateNoteDto): Promise<NoteResponseDto> {
+    const project = dto.projectId ? await writableProject(dto.projectId, userId) : null;
+    if (dto.subjectId) await allowedSubject(dto.subjectId, userId, project?.subjectId);
     const finalTitle = this.extractFallbackTitle(dto.title, dto.content);
     const note = await this.repository.create(userId, { ...dto, title: finalTitle });
     return this.mapDto(note);
   }
 
   async updateNote(id: string, userId: string, dto: UpdateNoteDto): Promise<NoteResponseDto> {
-    await this.getNoteById(id, userId);
+    const owned = await this.repository.findOwnedById(id, userId);
+    if (!owned) throw new NotFoundError('Không tìm thấy ghi chú thuộc tài khoản của bạn');
+    const projectId = dto.projectId === undefined ? owned.projectId : dto.projectId;
+    const project = projectId ? await writableProject(projectId, userId) : null;
+    if (dto.subjectId) await allowedSubject(dto.subjectId, userId, project?.subjectId);
     let finalTitle = dto.title;
     if (dto.title !== undefined) {
       finalTitle = this.extractFallbackTitle(dto.title, dto.content);
@@ -80,13 +87,15 @@ export class NotesService {
   }
 
   async togglePin(id: string, userId: string): Promise<NoteResponseDto> {
-    const note = await this.getNoteById(id, userId);
+    const note = await this.repository.findOwnedById(id, userId);
+    if (!note) throw new NotFoundError('Không tìm thấy ghi chú thuộc tài khoản của bạn');
     const updated = await this.repository.update(id, userId, { isPinned: !note.isPinned });
     return this.mapDto(updated);
   }
 
   async toggleArchive(id: string, userId: string): Promise<NoteResponseDto> {
-    const note = await this.getNoteById(id, userId);
+    const note = await this.repository.findOwnedById(id, userId);
+    if (!note) throw new NotFoundError('Không tìm thấy ghi chú thuộc tài khoản của bạn');
     const updated = await this.repository.update(id, userId, { isArchived: !note.isArchived });
     return this.mapDto(updated);
   }

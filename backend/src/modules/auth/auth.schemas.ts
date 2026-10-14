@@ -28,12 +28,8 @@ export const loginSchema = z.object({
 export const googleAuthSchema = z
   .object({
     credential: z.string().optional(),
-    accessToken: z.string().optional(),
-    email: z.string().email('Email không đúng định dạng').optional(),
-    fullName: z.string().optional(),
-    avatarUrl: z.string().optional(),
-    googleId: z.string().optional()
+    accessToken: z.string().optional()
   })
-  .refine((data) => data.credential || data.accessToken || data.email, {
-    message: 'Vui lòng cung cấp thông tin xác thực từ Google (credential, accessToken hoặc email)'
+  .refine((data) => data.credential || data.accessToken, {
+    message: 'Vui lòng cung cấp mã xác thực từ Google'
   });

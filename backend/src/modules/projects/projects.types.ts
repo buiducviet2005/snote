@@ -45,6 +45,9 @@ export interface UpdateProjectMemberRoleDto {
 
 export interface ProjectResponseDto {
   id: string;
+  userId: string;
+  classId: string | null;
+  groupId: string | null;
   name: string;
   description: string | null;
   semesterId: string | null;

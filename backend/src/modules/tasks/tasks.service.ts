@@ -1,6 +1,7 @@
 import { TasksRepository } from './tasks.repository';
 import { CreateTaskDto, UpdateTaskDto, TaskFilter, TaskResponseDto } from './tasks.types';
 import { NotFoundError, ForbiddenError } from '../../shared/errors/appErrors';
+import { allowedAssignees, allowedSubject, writableProject } from '../../shared/security/studyAccess';
 
 export class TasksService {
   constructor(private readonly repository: TasksRepository = new TasksRepository()) {}
@@ -72,7 +73,13 @@ export class TasksService {
   }
 
   async createTask(userId: string, dto: CreateTaskDto): Promise<TaskResponseDto> {
-    const task = await this.repository.create(userId, dto);
+    const project = dto.projectId ? await writableProject(dto.projectId, userId) : null;
+    if (dto.subjectId) await allowedSubject(dto.subjectId, userId, project?.subjectId);
+    const requested = dto.assigneeIds?.length ? dto.assigneeIds : dto.assigneeId ? [dto.assigneeId] : [];
+    if (requested.length) allowedAssignees(requested, userId, project?.members);
+    const defaultAssignee = project && !project.members.some((member) => member.userId === userId)
+      ? project.userId : userId;
+    const task = await this.repository.create(userId, requested.length ? dto : { ...dto, assigneeIds: [defaultAssignee] });
     return this.mapDto(task, userId);
   }
 
@@ -92,6 +99,12 @@ export class TasksService {
     if (!isCreator && !isAssignee && !isProjectOwner) {
       throw new ForbiddenError('Chỉ thành viên phụ trách công việc này hoặc Trưởng nhóm mới có quyền chỉnh sửa');
     }
+
+    const projectId = dto.projectId === undefined ? task.projectId : dto.projectId;
+    const project = projectId ? await writableProject(projectId, userId) : null;
+    if (dto.subjectId) await allowedSubject(dto.subjectId, userId, project?.subjectId);
+    const requested = dto.assigneeIds !== undefined ? dto.assigneeIds : dto.assigneeId ? [dto.assigneeId] : null;
+    if (requested) allowedAssignees(requested, userId, project?.members);
 
     const updated = await this.repository.update(id, userId, dto);
     return this.mapDto(updated, userId);

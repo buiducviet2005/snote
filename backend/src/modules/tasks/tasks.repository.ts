@@ -1,5 +1,6 @@
 import { prisma } from '../../shared/db/prismaClient';
 import { CreateTaskDto, UpdateTaskDto, TaskFilter } from './tasks.types';
+import { visibleTasks } from '../../shared/security/studyAccess';
 
 export class TasksRepository {
   async findMany(userId: string, filter?: TaskFilter): Promise<{ tasks: any[]; total: number }> {
@@ -8,12 +9,7 @@ export class TasksRepository {
     const skip = (page - 1) * limit;
 
     const where: any = {
-      OR: [
-        { userId },
-        { assignees: { some: { userId } } },
-        { project: { userId } },
-        { project: { members: { some: { userId } } } }
-      ],
+      ...visibleTasks(userId),
       deletedAt: null,
       subjectId: filter?.subjectId || undefined,
       projectId: filter?.projectId || undefined,
@@ -22,21 +18,21 @@ export class TasksRepository {
     };
 
     if (filter?.assigneeId) {
-      where.OR = [
+      where.AND.push({ OR: [
         { userId: filter.assigneeId },
         { assignees: { some: { userId: filter.assigneeId } } }
-      ];
+      ] });
     }
 
     if (filter?.search) {
-      where.AND = [
+      where.AND.push(
         {
           OR: [
             { title: { contains: filter.search, mode: 'insensitive' } },
             { description: { contains: filter.search, mode: 'insensitive' } }
           ]
         }
-      ];
+      );
     }
 
     const [total, tasks] = await Promise.all([
@@ -89,12 +85,7 @@ export class TasksRepository {
       where: {
         id,
         deletedAt: null,
-        OR: [
-          { userId },
-          { assignees: { some: { userId } } },
-          { project: { userId } },
-          { project: { members: { some: { userId } } } }
-        ]
+        ...visibleTasks(userId)
       },
       include: {
         user: {

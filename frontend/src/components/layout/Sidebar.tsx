@@ -17,6 +17,7 @@ import {
   GraduationCap,
   Sparkles,
   ShieldCheck,
+  Users,
   Pin,
   PinOff,
   ChevronRight
@@ -39,6 +40,7 @@ export const Sidebar: React.FC = () => {
     { to: '/schedule', label: 'Lịch trình', icon: Calendar, desc: 'Thời khóa biểu & Thi' },
     { to: '/progress', label: 'Tiến độ', icon: BarChart3, desc: 'Thống kê & Tín chỉ' },
     { to: '/semesters', label: 'Môn & Học kỳ', icon: Layers, desc: 'Cấu trúc học phần' },
+    { to: '/classes', label: 'Lớp học & Nhóm', icon: Users, desc: 'Lớp, thành viên và dự án môn học' },
     { to: '/projects', label: 'Dự án & BTL', icon: FolderKanban, desc: 'Đồ án & Nhóm' },
     { to: '/ai-chat', label: 'Trợ lý AI Copilot', icon: Sparkles, badge: 'AI', desc: 'Hỏi đáp bài học thông minh' },
     { to: '/settings', label: 'Cài đặt & Sao lưu', icon: Settings, desc: 'Cấu hình hệ thống' }

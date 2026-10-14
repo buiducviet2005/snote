@@ -105,6 +105,7 @@ export const ProjectWorkspaceModal: React.FC<ProjectWorkspaceModalProps> = ({
   const isOwner = currentMember?.role === ProjectMemberRole.OWNER || project.userId === currentUser?.id;
   const isAdmin = currentMember?.role === ProjectMemberRole.ADMIN;
   const canManageProject = isOwner || isAdmin;
+  const isClassProject = Boolean(project.classId);
 
   // Toggle Task Status directly with Authorization Check
   const handleToggleTaskStatus = async (task: any) => {
@@ -648,7 +649,7 @@ export const ProjectWorkspaceModal: React.FC<ProjectWorkspaceModalProps> = ({
         {activeTab === 'MEMBERS' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
             {/* Invite Form (Owner & Admin) */}
-            {canManageProject && (
+            {canManageProject && !isClassProject && (
               <form onSubmit={handleAddMember} style={{ display: 'flex', gap: '10px', backgroundColor: 'var(--bg-primary)', padding: '12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
                 <input
                   type="text"
@@ -681,12 +682,12 @@ export const ProjectWorkspaceModal: React.FC<ProjectWorkspaceModalProps> = ({
                 const isMemberAdmin = m.role === ProjectMemberRole.ADMIN;
                 const isMe = m.userId === currentUser?.id;
 
-                const canKickThisMember =
+                const canKickThisMember = !isClassProject &&
                   !isMe &&
                   ((isOwner && !isMemberOwner) ||
                    (isAdmin && !isMemberOwner && !isMemberAdmin));
 
-                const canChangeThisRole =
+                const canChangeThisRole = !isClassProject &&
                   !isMe &&
                   ((isOwner && !isMemberOwner) ||
                    (isAdmin && !isMemberOwner && !isMemberAdmin));
@@ -779,7 +780,7 @@ export const ProjectWorkspaceModal: React.FC<ProjectWorkspaceModalProps> = ({
                       )}
 
                       {/* Leave Project for Self */}
-                      {isMe && !isMemberOwner && (
+                      {isMe && !isMemberOwner && !isClassProject && (
                         <button
                           type="button"
                           onClick={() => handleRemoveMember(m.userId, 'chính bạn')}
