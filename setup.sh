@@ -32,10 +32,14 @@ if command -v node &> /dev/null; then
     NODE_VERSION=$(node -v)
     echo " [OK]   Node.js:             $NODE_VERSION"
     
-    # Lấy major version
-    NODE_MAJOR=$(echo "$NODE_VERSION" | sed 's/v//' | cut -d. -f1)
-    if [ "$NODE_MAJOR" -lt 18 ]; then
-        echo " [FAIL] Phiên bản Node.js hiện tại ($NODE_VERSION) quá cũ (Yêu cầu tối thiểu >= v18.0.0)."
+    NODE_MAJOR=${NODE_VERSION#v}
+    NODE_MAJOR=${NODE_MAJOR%%.*}
+    NODE_MINOR=${NODE_VERSION#v*.}
+    NODE_MINOR=${NODE_MINOR%%.*}
+    if ! { [ "$NODE_MAJOR" -eq 20 ] && [ "$NODE_MINOR" -ge 19 ]; } \
+       && ! { [ "$NODE_MAJOR" -eq 22 ] && [ "$NODE_MINOR" -ge 12 ]; } \
+       && [ "$NODE_MAJOR" -lt 24 ]; then
+        echo " [FAIL] Node.js $NODE_VERSION không tương thích (cần 20.19+, 22.12+ hoặc 24+)."
         echo "        👉 Vui lòng nâng cấp Node.js LTS tại: https://nodejs.org/"
         PREREQ_FAIL=1
     fi

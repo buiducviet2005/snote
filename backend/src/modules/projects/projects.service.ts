@@ -17,6 +17,9 @@ export class ProjectsService {
   private mapDto(project: any): ProjectResponseDto {
     return {
       id: project.id,
+      userId: project.userId,
+      classId: project.classId,
+      groupId: project.groupId,
       name: project.name,
       description: project.description,
       semesterId: project.semesterId,
@@ -103,6 +106,9 @@ export class ProjectsService {
 
   async updateProject(id: string, userId: string, dto: UpdateProjectDto): Promise<ProjectResponseDto> {
     const project = await this.getProjectById(id, userId);
+    if (project.classId) {
+      throw new ForbiddenError('Dự án lớp học phải được quản lý trong không gian lớp học');
+    }
     const currentMember = project.members?.find((m) => m.userId === userId);
     if (currentMember?.role === 'VIEWER') {
       throw new ForbiddenError('Tài khoản của bạn chỉ có quyền Người xem (Viewer), không thể chỉnh sửa thông tin dự án');
@@ -113,6 +119,9 @@ export class ProjectsService {
 
   async deleteProject(id: string, userId: string): Promise<void> {
     const project = await this.getProjectById(id, userId);
+    if (project.classId) {
+      throw new ForbiddenError('Dự án lớp học phải được quản lý trong không gian lớp học');
+    }
     const memberRole = project.members?.find((m) => m.userId === userId)?.role;
     if (memberRole !== 'OWNER') {
       throw new ForbiddenError('Chỉ Trưởng nhóm (Owner) mới có quyền xóa toàn bộ dự án / bài tập lớn này');
@@ -122,6 +131,9 @@ export class ProjectsService {
 
   async addMember(projectId: string, currentUserId: string, dto: AddProjectMemberDto): Promise<ProjectResponseDto> {
     const project = await this.getProjectById(projectId, currentUserId);
+    if (project.classId) {
+      throw new ForbiddenError('Thành viên dự án lớp học được quản lý qua nhóm trong lớp');
+    }
 
     // Kiểm tra quyền: Chỉ OWNER và ADMIN mới có quyền thêm/mời thành viên
     const currentMember = project.members?.find((m) => m.userId === currentUserId);
@@ -161,6 +173,9 @@ export class ProjectsService {
     dto: UpdateProjectMemberRoleDto
   ): Promise<ProjectResponseDto> {
     const project = await this.getProjectById(projectId, currentUserId);
+    if (project.classId) {
+      throw new ForbiddenError('Vai trò dự án lớp học được quản lý qua nhóm trong lớp');
+    }
     const currentMember = project.members?.find((m) => m.userId === currentUserId);
     if (!currentMember || (currentMember.role !== 'OWNER' && currentMember.role !== 'ADMIN')) {
       throw new ForbiddenError('Chỉ Trưởng nhóm (Owner) hoặc Quản trị viên (Admin) mới có quyền phân quyền thành viên');
@@ -190,6 +205,9 @@ export class ProjectsService {
 
   async removeMember(projectId: string, currentUserId: string, targetUserId: string): Promise<void> {
     const project = await this.getProjectById(projectId, currentUserId);
+    if (project.classId) {
+      throw new ForbiddenError('Thành viên dự án lớp học được quản lý qua nhóm trong lớp');
+    }
     const isSelf = currentUserId === targetUserId;
     const currentMember = project.members?.find((m) => m.userId === currentUserId);
     const targetMember = project.members?.find((m) => m.userId === targetUserId);
@@ -232,6 +250,7 @@ export class ProjectsService {
   }
 
   async respondInvitation(projectId: string, userId: string, accept: boolean): Promise<void> {
-    await this.repo.respondToInvitation(projectId, userId, accept);
+    const result = await this.repo.respondToInvitation(projectId, userId, accept);
+    if (!result.count) throw new NotFoundError('Không tìm thấy lời mời dự án đang chờ phản hồi');
   }
 }

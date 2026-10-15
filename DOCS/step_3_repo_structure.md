@@ -24,12 +24,12 @@ Tài liệu xác lập cấu trúc kho lưu trữ (Repository Structure), phươ
 Dự án SNOTE áp dụng mô hình **1 Git Repository duy nhất** quản lý toàn bộ hệ thống:
 * **`backend/`**: Ứng dụng Node.js/Express/Prisma (API Server độc lập).
 * **`frontend/`**: Ứng dụng React 19/Vite/React Router (Client SPA độc lập).
-* **`packages/shared/`**: Thư viện chứa types, enums, DTO contracts và utilities dùng chung.
+* **`packages/shared/src/`**: Source TypeScript chứa enums và DTO contracts mà frontend dùng trực tiếp qua alias.
 * **`DOCS/`**: Thư mục lưu trữ toàn bộ tài liệu kiến trúc kỹ thuật và quy tắc.
 * **`docker-compose.yml`**: Điều phối hạ tầng cơ sở dữ liệu PostgreSQL cục bộ.
 
 ### 1.2. Ưu điểm của mô hình này đối với SNOTE
-1. **Dễ dàng đồng bộ API Contract:** Thay đổi DTO hay Enum chỉ cần sửa một nơi trong `packages/shared/`, cả backend và frontend lập tức được type-check tĩnh.
+1. **Dễ quản lý contract phía frontend:** Enum và DTO hiển thị được định nghĩa tập trung trong `packages/shared/src/`; backend hiện dùng kiểu Prisma riêng.
 2. **Độc lập triển khai (Decoupled Deployments):** Backend có thể deploy lên VPS/Render/Docker Container, Frontend có thể deploy lên Vercel/Cloudflare Pages/Netlify mà không bị phụ thuộc vòng đời build.
 3. **Trải nghiệm Phát triển Tối ưu (Developer Experience):** Chỉ cần 1 lệnh tại thư mục gốc (`npm run dev`) là có thể khởi động đồng thời cả Backend (Port 4000) và Frontend (Port 5173).
 
@@ -44,9 +44,7 @@ SNOTE/
 ├── docker-compose.yml                    # Container PostgreSQL 16 (Port 5432)
 ├── package.json                          # Root scripts điều phối (dev, build, test)
 ├── README.md                             # Hướng dẫn chạy dự án & tổng quan hệ thống
-├── RULES.md                              # Quy tắc & luật phát triển bắt buộc
 ├── DOCS/                                 # Toàn bộ tài liệu quy chuẩn kỹ thuật
-│   ├── RULES.md
 │   ├── PROJECT_STRUCTURE_AND_MAP.md      # Từ điển & bản đồ mã nguồn
 │   ├── step_1.md                         # Bước 1: Định nghĩa sản phẩm & phạm vi
 │   ├── step_2.md                         # Bước 2: Data model, ERD & PostgreSQL schema
@@ -54,9 +52,7 @@ SNOTE/
 │   ├── step_3_setup.md                   # Bước 3.3: Thiết lập Backend Skeleton
 │   ├── step_3_frontend.md                # Bước 3.4: Thiết lập Frontend SPA
 │   ├── step_3_repo_structure.md          # Bước 3.5: Cấu trúc repo & tổ chức mã nguồn (File này)
-│   ├── step_3_setup_checklist.md         # Checklist tiến độ setup Bước 3
-│   ├── step_3_integration_checklist.md   # Checklist kiểm thử kết nối FE-BE
-│   └── step_3.5_checklist.md             # Checklist thực thi Bước 3.5
+│   └── COMMANDS_PLAYBOOK.md               # Các lệnh cài đặt, chạy và vận hành
 ├── packages/                             # Các thư viện dùng chung (Shared Packages)
 │   └── shared/                           # Types, Enums & DTOs dùng chung
 │       ├── src/
@@ -65,7 +61,7 @@ SNOTE/
 │       │   │   ├── notes.contract.ts     # DTO Note Request & Response interfaces
 │       │   │   ├── tasks.contract.ts     # DTO Task Request & Response interfaces
 │       │   │   └── api.contract.ts       # ApiResponse wrapper
-│       │   └── index.ts                  # Public API của shared package
+│       │   └── index.ts                  # Exports của shared TypeScript source
 │       ├── package.json
 │       └── tsconfig.json
 ├── backend/                              # Backend Node.js/Express/Prisma

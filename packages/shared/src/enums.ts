@@ -1,6 +1,12 @@
 export enum UserRole {
   STUDENT = 'STUDENT',
+  TEACHER = 'TEACHER',
   ADMIN = 'ADMIN'
+}
+
+export enum ClassMemberRole {
+  CLASS_ADMIN = 'CLASS_ADMIN',
+  STUDENT = 'STUDENT'
 }
 
 export enum UserStatus {

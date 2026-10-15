@@ -9,7 +9,7 @@ Tài liệu này hướng dẫn chi tiết từng bước để clone và khởi
 Trước khi bắt đầu, hãy đảm bảo máy tính của bạn đã cài đặt các phần mềm sau:
 
 1. **Git:** [https://git-scm.com/](https://git-scm.com/) (Dùng để clone mã nguồn).
-2. **Node.js:** Phiên bản $\ge$ `v18.0.0` (Khuyên dùng bản **Node.js LTS v20.x, v22.x hoặc v24.x**).
+2. **Node.js:** `20.19+`, `22.12+` hoặc `24+` (theo yêu cầu của Prisma 7).
    - Tải tại: [https://nodejs.org/](https://nodejs.org/)
    - Kiểm tra phiên bản bằng lệnh:
      ```bash
@@ -24,11 +24,11 @@ Trước khi bắt đầu, hãy đảm bảo máy tính của bạn đã cài đ
 
 ## ⚡ CÁCH 1: KHỞI TẠO TỰ ĐỘNG BẰNG SCRIPT 1-CLICK (KHUYÊN DÙNG)
 
-Dự án đã chuẩn bị sẵn file script **tự động kiểm tra toàn diện phần mềm tiền đề (Git, Node.js $\ge$ v18, npm, Docker & PostgreSQL)** và tự động hóa 100% các bước từ cài đặt thư viện, tạo file cấu hình đến đồng bộ CSDL:
+Dự án có script kiểm tra phần mềm tiền đề (Git, phiên bản Node.js tương thích Prisma 7, npm, Docker & PostgreSQL) và tự động cài đặt thư viện, tạo file cấu hình, đồng bộ CSDL:
 
 * 🔍 **Tự động quét & kiểm tra:**
   - `[OK] / [WARN]` **Git:** Kiểm tra sự hiện diện của Git trong PATH.
-  - `[OK] / [FAIL]` **Node.js:** Kiểm tra và chặn lại nếu phiên bản nhỏ hơn `v18.0.0` (yêu cầu Node.js LTS).
+  - `[OK] / [FAIL]` **Node.js:** Kiểm tra và chặn lại nếu không phải `20.19+`, `22.12+` hoặc `24+`.
   - `[OK] / [FAIL]` **npm:** Kiểm tra trình quản lý gói npm.
   - `[OK] / [WARN]` **Docker & PostgreSQL:** Kiểm tra Docker CLI và kiểm tra Docker Daemon có đang chạy hay không để tự khởi động container PostgreSQL.
 
@@ -97,14 +97,10 @@ Tại thư mục gốc `snote/`, chạy tuần tự các lệnh sau:
 # 1. Cài đặt root dependencies (concurrently, typescript...)
 npm install
 
-# 2. Cài đặt & build gói shared types
-npm install --prefix packages/shared
-npm run build --prefix packages/shared
-
-# 3. Cài đặt dependencies cho Backend
+# 2. Cài đặt dependencies cho Backend
 npm install --prefix backend
 
-# 4. Cài đặt dependencies cho Frontend
+# 3. Cài đặt dependencies cho Frontend
 npm install --prefix frontend
 ```
 
@@ -143,6 +139,10 @@ npm run prisma:migrate --prefix backend
 # 3. Nạp dữ liệu mẫu (Tạo sẵn tài khoản Admin, Sinh viên, Học kỳ, Môn học)
 npm run prisma:seed --prefix backend
 ```
+
+Nếu nâng cấp một cơ sở dữ liệu đã có dữ liệu từ phiên bản trước khi có chức năng lớp học, hãy sao lưu và áp dụng [SQL bổ sung cho lớp học](backend/prisma/sql/20261013_classroom.sql) một lần, rồi chạy lại `npm run prisma:generate --prefix backend`. Xem [mô hình lớp học và phân quyền](DOCS/CLASSROOM_MODEL.md). Kho mã hiện chưa có lịch sử migration nền đầy đủ cho cơ sở dữ liệu cũ.
+
+Để bật đăng nhập Google, cấu hình cùng một OAuth Client ID trong `backend/.env` (`GOOGLE_CLIENT_ID`) và `frontend/.env` (`VITE_GOOGLE_CLIENT_ID`).
 
 ---
 
@@ -194,14 +194,7 @@ Sau khi chạy lệnh `prisma:seed`, hệ thống đã chuẩn bị sẵn 2 tài
   - Mở Docker Desktop và chạy lại lệnh: `docker compose up -d postgres_db`.
   - Hoặc kiểm tra xem cổng 5432 có đang bị chương trình khác chiếm dụng hay không.
 
-### Lỗi 2: `Cannot find module '@snote/shared'`
-- **Nguyên nhân:** Gói `packages/shared` chưa được build.
-- **Cách xử lý:** Chạy lệnh sau tại thư mục gốc:
-  ```bash
-  npm run build --prefix packages/shared
-  ```
-
-### Lỗi 3: `Port 4000 or 5173 is already in use`
+### Lỗi 2: `Port 4000 or 5173 is already in use`
 - **Nguyên nhân:** Có tiến trình cũ đang chạy nền chiếm cổng 4000 hoặc 5173.
 - **Cách xử lý:** 
   - Trên Windows (PowerShell):
@@ -217,4 +210,4 @@ Sau khi chạy lệnh `prisma:seed`, hệ thống đã chuẩn bị sẵn 2 tài
 
 ---
 
-🎉 **Chúc bạn thiết lập và trải nghiệm SNOTE thành công!** Nếu cần hỗ trợ thêm, hãy tham khảo chi tiết tại thư mục [DOCS/](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS).
+🎉 **Chúc bạn thiết lập và trải nghiệm SNOTE thành công!** Nếu cần hỗ trợ thêm, hãy tham khảo chi tiết tại thư mục [DOCS/](DOCS/).

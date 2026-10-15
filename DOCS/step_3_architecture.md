@@ -75,8 +75,8 @@ Hệ thống được chia thành **10 Bounded Contexts độc lập** với qua
 
 ## 5. 3.5 – Cấu trúc Repo & Quản lý Thư viện Dùng chung
 
-* **Mô hình Repo:** Monorepo nhẹ 2 apps (`backend/`, `frontend/`) và 1 shared library (`packages/shared/`).
-* **Shared Package (`@snote/shared`):** Chứa toàn bộ Enums (`NoteType`, `TaskStatus`, `TaskPriority`), DTO interfaces và `ApiResponse<T>` contract.
+* **Mô hình Repo:** Monorepo nhẹ gồm `backend/`, `frontend/` và thư mục source contracts `packages/shared/`.
+* **Shared TypeScript Source:** Frontend resolve Enums/DTOs trực tiếp từ `packages/shared/src/`; backend dùng types do Prisma sinh. Source này không được đóng gói hay build riêng.
 * **Root Dev Orchestration:** Khởi chạy toàn bộ hệ thống bằng 1 lệnh duy nhất:
   ```bash
   npm run dev

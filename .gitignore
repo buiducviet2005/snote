@@ -38,13 +38,10 @@ Thumbs.db
 !.vscode/extensions.json
 !.vscode/settings.json
 .idea/
+.vs/
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
-
-# AI Chat Internal Logs & Docs (Excluded from Git)
-DOCS/ai_chat_docs/
-DOCS/temp/
 

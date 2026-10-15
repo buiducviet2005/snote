@@ -8,7 +8,9 @@ export class ProjectsRepository {
       where: {
         OR: [
           { userId },
-          { members: { some: { userId, status: 'ACCEPTED' } } }
+          { members: { some: { userId, status: 'ACCEPTED' } } },
+          { courseClass: { teacherId: userId, deletedAt: null } },
+          { courseClass: { members: { some: { userId, role: 'CLASS_ADMIN' } }, deletedAt: null } }
         ],
         semesterId: semesterId || undefined,
         subjectId: subjectId || undefined,
@@ -34,6 +36,7 @@ export class ProjectsRepository {
     return prisma.project.findMany({
       where: {
         deletedAt: null,
+        classId: null,
         members: {
           some: {
             userId,
@@ -58,13 +61,13 @@ export class ProjectsRepository {
 
   async respondToInvitation(projectId: string, userId: string, accept: boolean): Promise<any> {
     if (accept) {
-      return prisma.projectMember.update({
-        where: { projectId_userId: { projectId, userId } },
+      return prisma.projectMember.updateMany({
+        where: { projectId, userId, status: 'PENDING', project: { classId: null, deletedAt: null } },
         data: { status: 'ACCEPTED', joinedAt: new Date() }
       });
     } else {
       return prisma.projectMember.deleteMany({
-        where: { projectId, userId }
+        where: { projectId, userId, status: 'PENDING', project: { classId: null, deletedAt: null } }
       });
     }
   }
@@ -75,7 +78,9 @@ export class ProjectsRepository {
         id,
         OR: [
           { userId },
-          { members: { some: { userId } } }
+          { members: { some: { userId, status: 'ACCEPTED' } } },
+          { courseClass: { teacherId: userId, deletedAt: null } },
+          { courseClass: { members: { some: { userId, role: 'CLASS_ADMIN' } }, deletedAt: null } }
         ],
         deletedAt: null
       },
@@ -100,7 +105,9 @@ export class ProjectsRepository {
         id,
         OR: [
           { userId },
-          { members: { some: { userId } } }
+          { members: { some: { userId, status: 'ACCEPTED' } } },
+          { courseClass: { teacherId: userId, deletedAt: null } },
+          { courseClass: { members: { some: { userId, role: 'CLASS_ADMIN' } }, deletedAt: null } }
         ],
         deletedAt: null
       },

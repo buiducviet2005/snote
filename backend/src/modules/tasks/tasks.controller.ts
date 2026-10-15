@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { TasksService } from './tasks.service';
 import { createTaskSchema, updateTaskSchema } from './tasks.schemas';
+import { z } from 'zod';
 
 export class TasksController {
   constructor(private readonly tasksService: TasksService = new TasksService()) {}
@@ -82,7 +83,7 @@ export class TasksController {
   updateStatus = async (req: Request, res: Response): Promise<void> => {
     const userId = req.user!.id;
     const id = req.params.id as string;
-    const { status } = req.body;
+    const { status } = z.object({ status: z.enum(['TODO', 'IN_PROGRESS', 'DONE', 'CANCELLED']) }).parse(req.body);
     const updated = await this.tasksService.updateStatus(id, userId, status);
 
     res.status(200).json({

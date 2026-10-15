@@ -8,7 +8,6 @@ import { QuickTaskBar } from '../components/QuickTaskBar';
 import { TasksListView } from '../components/TasksListView';
 import { TasksEisenhowerView } from '../components/TasksEisenhowerView';
 import { TaskStatus, TaskPriority } from '@snote/shared';
-import confetti from 'canvas-confetti';
 import {
   CheckSquare,
   Plus,
@@ -76,14 +75,6 @@ export const TasksListPage: React.FC = () => {
     fetchTasks();
   }, [fetchTasks, selectedSemesterId]);
 
-  const triggerCelebration = () => {
-    confetti({
-      particleCount: 80,
-      spread: 70,
-      origin: { y: 0.6 }
-    });
-  };
-
   const handleDelete = async (id: string, title: string) => {
     if (!window.confirm(`Bạn có chắc chắn muốn xóa công việc "${title}" không?`)) return;
 
@@ -101,7 +92,6 @@ export const TasksListPage: React.FC = () => {
     try {
       await api.patch(`/tasks/${id}/status`, { status: nextStatus });
       if (nextStatus === TaskStatus.DONE) {
-        triggerCelebration();
         showToast('🎉 Tuyệt vời! Bạn đã hoàn thành công việc!', 'success');
       } else {
         showToast('Đã chuyển công việc về danh sách Cần làm', 'info');
@@ -116,7 +106,6 @@ export const TasksListPage: React.FC = () => {
     try {
       await api.patch(`/tasks/${id}/status`, { status: newStatus });
       if (newStatus === TaskStatus.DONE) {
-        triggerCelebration();
         showToast('🎉 Tuyệt vời! Đã hoàn tất bài tập!', 'success');
       } else if (newStatus === TaskStatus.IN_PROGRESS) {
         showToast('⚡ Đang thực hiện công việc...', 'info');

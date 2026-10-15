@@ -78,6 +78,10 @@ export class NotesRepository {
     });
   }
 
+  async findOwnedById(id: string, userId: string): Promise<any | null> {
+    return prisma.note.findFirst({ where: { id, userId, deletedAt: null } });
+  }
+
   private async getOrCreateTags(userId: string, tagNames: string[]): Promise<string[]> {
     const tagIds: string[] = [];
     for (const name of tagNames) {

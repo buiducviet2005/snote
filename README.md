@@ -9,7 +9,7 @@
 Hệ thống SNOTE được xây dựng theo mô hình **Modular Monolith** phân tầng rõ ràng:
 * **Backend API (`backend/`):** Node.js LTS, Express, TypeScript (Strict Mode), Prisma ORM v7, PostgreSQL 16, Pino Logger, Zod Fail-Fast Config.
 * **Frontend SPA (`frontend/`):** React 19, TypeScript, Vite, React Router DOM (Feature-based: `notes`, `tasks`, `schedule`, `semesters`).
-* **Shared Contracts (`packages/shared/`):** Types, Enums (`TaskStatus`, `TaskPriority`, `NoteType`) và DTO contracts dùng chung.
+* **Shared Contracts (`packages/shared/src/`):** Enums và DTO cho frontend; backend dùng types do Prisma sinh.
 * **Database (`docker-compose.yml`):** PostgreSQL 16 Alpine với persistent storage.
 * **Tài liệu Kỹ thuật (`DOCS/`):** Lưu trữ toàn bộ đặc tả kiến trúc từ Bước 1 đến Bước 8.
 
@@ -17,13 +17,13 @@ Hệ thống SNOTE được xây dựng theo mô hình **Modular Monolith** phâ
 
 ## 🚀 HƯỚNG DẪN KHỞI CHẠY NHANH (QUICK START)
 
-> 📖 **Xem hướng dẫn chi tiết từ A đến Z cho máy mới tại:** 👉 [SETUP.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/SETUP.md)  
+> 📖 **Hướng dẫn cài đặt chi tiết:** [SETUP.md](SETUP.md)
 > ⚡ **Khởi tạo tự động 1-Click:**  
 > - **Windows:** Chạy file `setup.bat`  
 > - **macOS / Linux:** Chạy `./setup.sh`
 
 ### 1. Yêu cầu Tiền đề (Prerequisites)
-* **Node.js:** $\ge$ `v18.0.0` (Khuyên dùng `v24.x LTS`).
+* **Node.js:** `20.19+`, `22.12+` hoặc `24+` (theo yêu cầu của Prisma 7).
 * **Docker Desktop / PostgreSQL 16:** Đã bật và sẵn sàng.
 
 ### 2. Cài đặt Dependencies
@@ -74,16 +74,19 @@ npm run dev
 
 ---
 
-## 📚 TÀI LIỆU DỰ ÁN ([DOCS/](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS))
+## 📚 TÀI LIỆU DỰ ÁN ([DOCS/](DOCS/))
 
-* [DOCS/RULES.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/RULES.md): Toàn bộ quy tắc và luật phát triển bắt buộc của SNOTE.
-* [DOCS/PROJECT_STRUCTURE_AND_MAP.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/PROJECT_STRUCTURE_AND_MAP.md): Từ điển cấu trúc, danh mục file và công nghệ sử dụng.
-* [DOCS/step_1.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/step_1.md): Bước 1 – Định nghĩa sản phẩm & Phạm vi.
-* [DOCS/step_2.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/step_2.md): Bước 2 – Mô hình dữ liệu quan hệ, ERD & PostgreSQL schema.
-* [DOCS/step_3.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/step_3.md): Bước 3 – Kiến trúc hệ thống Modular Monolith.
-* [DOCS/step_3_setup.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/step_3_setup.md): Bước 3.3 – Thiết lập Backend Skeleton từ số 0.
-* [DOCS/step_3_frontend.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/step_3_frontend.md): Bước 3.4 – Thiết lập Frontend SPA Feature-based.
-* [DOCS/step_3_repo_structure.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/step_3_repo_structure.md): Bước 3.5 – Cấu trúc Repo & Tổ chức mã nguồn.
-* [DOCS/step_3_observability_security.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/step_3_observability_security.md): Bước 3.6 – Quan sát hệ thống & Cứng hóa bảo mật Backend.
-* [DOCS/step_3_architecture.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/step_3_architecture.md): Bước 3.7 – Đặc tả toàn diện kiến trúc hệ thống & nghiệm thu nền tảng.
-* [DOCS/COMMANDS_PLAYBOOK.md](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/DOCS/COMMANDS_PLAYBOOK.md): Sổ tay tra cứu toàn bộ câu lệnh CLI điều khiển & vận hành dự án.
+* [DOCS/CLASSROOM_MODEL.md](DOCS/CLASSROOM_MODEL.md): Vai trò và luồng lớp học, nhóm, dự án, báo cáo tiến độ.
+* [DOCS/AGENT_TOOLING_REVIEW.md](DOCS/AGENT_TOOLING_REVIEW.md): Đánh giá bộ skills và hướng làm việc cho agent.
+
+* [DOCS/PROJECT_STRUCTURE_AND_MAP.md](DOCS/PROJECT_STRUCTURE_AND_MAP.md): Từ điển cấu trúc, danh mục file và công nghệ sử dụng.
+* [DOCS/TECH_STACK_REVIEW.md](DOCS/TECH_STACK_REVIEW.md): Nhãn đánh giá công nghệ và quyết định giữ/bỏ.
+* [DOCS/step_1.md](DOCS/step_1.md): Bước 1 – Định nghĩa sản phẩm & Phạm vi.
+* [DOCS/step_2.md](DOCS/step_2.md): Bước 2 – Mô hình dữ liệu quan hệ, ERD & PostgreSQL schema.
+* [DOCS/step_3.md](DOCS/step_3.md): Bước 3 – Kiến trúc hệ thống Modular Monolith.
+* [DOCS/step_3_setup.md](DOCS/step_3_setup.md): Bước 3.3 – Thiết lập Backend Skeleton từ số 0.
+* [DOCS/step_3_frontend.md](DOCS/step_3_frontend.md): Bước 3.4 – Thiết lập Frontend SPA Feature-based.
+* [DOCS/step_3_repo_structure.md](DOCS/step_3_repo_structure.md): Bước 3.5 – Cấu trúc Repo & Tổ chức mã nguồn.
+* [DOCS/step_3_observability_security.md](DOCS/step_3_observability_security.md): Bước 3.6 – Quan sát hệ thống & Cứng hóa bảo mật Backend.
+* [DOCS/step_3_architecture.md](DOCS/step_3_architecture.md): Bước 3.7 – Đặc tả toàn diện kiến trúc hệ thống & nghiệm thu nền tảng.
+* [DOCS/COMMANDS_PLAYBOOK.md](DOCS/COMMANDS_PLAYBOOK.md): Sổ tay tra cứu toàn bộ câu lệnh CLI điều khiển & vận hành dự án.

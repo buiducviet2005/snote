@@ -1,6 +1,7 @@
 import { prisma } from '../../shared/db/prismaClient';
 import { ScheduleEvent } from '@prisma/client';
 import { CreateScheduleEventDto, UpdateScheduleEventDto, UnifiedScheduleItemDto } from './schedule.types';
+import { visibleTasks } from '../../shared/security/studyAccess';
 
 export class ScheduleRepository {
   async findUnifiedSchedule(
@@ -51,7 +52,7 @@ export class ScheduleRepository {
     if (startDate && endDate) {
       const tasks = await prisma.task.findMany({
         where: {
-          userId,
+          AND: [visibleTasks(userId)],
           deletedAt: null,
           dueDate: { gte: startDate, lte: endDate },
           subjectId: subjectId || undefined
@@ -118,7 +119,9 @@ export class ScheduleRepository {
         where: {
           OR: [
             { userId },
-            { members: { some: { userId } } }
+            { members: { some: { userId, status: 'ACCEPTED' } } },
+            { courseClass: { teacherId: userId, deletedAt: null } },
+            { courseClass: { members: { some: { userId, role: 'CLASS_ADMIN' } }, deletedAt: null } }
           ],
           deletedAt: null,
           dueDate: { gte: startDate, lte: endDate },

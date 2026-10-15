@@ -12,6 +12,7 @@ datasource db {
 
 enum UserRole {
   STUDENT
+  TEACHER
   ADMIN
 
   @@map("user_role")
@@ -67,6 +68,13 @@ enum ProjectMemberStatus {
   DECLINED
 
   @@map("project_member_status")
+}
+
+enum ClassMemberRole {
+  CLASS_ADMIN
+  STUDENT
+
+  @@map("class_member_role")
 }
 
 enum NoteType {
@@ -157,6 +165,12 @@ model User {
   backups            BackupRecord[]
   createdShares      ResourceShare[] @relation("SharedResourcesOwner")
   receivedShares     ResourceShare[] @relation("SharedResourcesRecipient")
+  taughtClasses      CourseClass[] @relation("ClassTeacher")
+  classMemberships   ClassMember[]
+  ledGroups          StudyGroup[] @relation("GroupLeader")
+  groupMemberships   StudyGroupMember[]
+  submittedReports   ProgressReport[] @relation("ReportSubmitter")
+  reviewedReports    ProgressReport[] @relation("ReportReviewer")
 
   @@map("users")
 }
@@ -228,11 +242,81 @@ model Subject {
   @@map("subjects")
 }
 
+model CourseClass {
+  id          String    @id @default(uuid()) @db.Uuid
+  teacherId   String    @map("teacher_id") @db.Uuid
+  name        String    @db.VarChar(150)
+  code        String?   @db.VarChar(50)
+  term        String?   @db.VarChar(100)
+  description String?   @db.Text
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(6)
+
+  teacher  User          @relation("ClassTeacher", fields: [teacherId], references: [id])
+  members  ClassMember[]
+  groupMembers StudyGroupMember[]
+  groups   StudyGroup[]
+  projects Project[]
+
+  @@index([teacherId, deletedAt])
+  @@map("course_classes")
+}
+
+model ClassMember {
+  classId  String          @map("class_id") @db.Uuid
+  userId   String          @map("user_id") @db.Uuid
+  role     ClassMemberRole @default(STUDENT)
+  joinedAt DateTime        @default(now()) @map("joined_at") @db.Timestamptz(6)
+
+  courseClass CourseClass @relation(fields: [classId], references: [id], onDelete: Cascade)
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([classId, userId])
+  @@index([userId])
+  @@map("class_members")
+}
+
+model StudyGroup {
+  id        String   @id @default(uuid()) @db.Uuid
+  classId   String   @map("class_id") @db.Uuid
+  leaderId  String   @map("leader_id") @db.Uuid
+  name      String   @db.VarChar(150)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  courseClass CourseClass         @relation(fields: [classId], references: [id], onDelete: Cascade)
+  leader      User                @relation("GroupLeader", fields: [leaderId], references: [id])
+  members     StudyGroupMember[]
+  projects    Project[]
+
+  @@index([classId])
+  @@map("study_groups")
+}
+
+model StudyGroupMember {
+  groupId  String   @map("group_id") @db.Uuid
+  classId  String   @map("class_id") @db.Uuid
+  userId   String   @map("user_id") @db.Uuid
+  joinedAt DateTime @default(now()) @map("joined_at") @db.Timestamptz(6)
+
+  group       StudyGroup  @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  courseClass CourseClass @relation(fields: [classId], references: [id], onDelete: Cascade)
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([groupId, userId])
+  @@unique([classId, userId])
+  @@index([userId])
+  @@map("study_group_members")
+}
+
 model Project {
   id          String        @id @default(uuid()) @db.Uuid
   userId      String        @map("user_id") @db.Uuid
   semesterId  String?       @map("semester_id") @db.Uuid
   subjectId   String?       @map("subject_id") @db.Uuid
+  classId     String?       @map("class_id") @db.Uuid
+  groupId     String?       @map("group_id") @db.Uuid
   name        String        @db.VarChar(150)
   description String?       @db.Text
   status      ProjectStatus @default(ACTIVE)
@@ -248,13 +332,38 @@ model Project {
   members  ProjectMember[]
   notes    Note[]
   tasks    Task[]
+  courseClass CourseClass? @relation(fields: [classId], references: [id], onDelete: SetNull)
+  studyGroup  StudyGroup?  @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  progressReports ProgressReport[]
 
   @@index([userId])
   @@index([subjectId])
+  @@index([classId, groupId])
   @@index([userId, deletedAt])
   @@index([userId, status, deletedAt])
   @@index([userId, dueDate])
   @@map("projects")
+}
+
+model ProgressReport {
+  id              String    @id @default(uuid()) @db.Uuid
+  projectId       String    @map("project_id") @db.Uuid
+  submittedById   String    @map("submitted_by_id") @db.Uuid
+  progressPercent Int       @map("progress_percent")
+  summary         String    @db.Text
+  blockers        String?   @db.Text
+  reviewScore     Int?      @map("review_score")
+  reviewComment   String?   @map("review_comment") @db.Text
+  reviewedById    String?   @map("reviewed_by_id") @db.Uuid
+  reviewedAt      DateTime? @map("reviewed_at") @db.Timestamptz(6)
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  project     Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  submittedBy User    @relation("ReportSubmitter", fields: [submittedById], references: [id])
+  reviewedBy  User?   @relation("ReportReviewer", fields: [reviewedById], references: [id])
+
+  @@index([projectId, createdAt])
+  @@map("progress_reports")
 }
 
 model ProjectMember {

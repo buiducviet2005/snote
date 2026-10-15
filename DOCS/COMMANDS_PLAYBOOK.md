@@ -27,7 +27,7 @@ Thực thi tại **thư mục gốc của dự án (`SNOTE/`)**:
 | :--- | :--- | :--- |
 | **Tự động thiết lập 1-Click (Windows)** | `.\setup.bat` | Tự động tạo `.env`, cài đặt toàn bộ dependencies, khởi động Docker, migrate CSDL và nạp dữ liệu mẫu. |
 | **Tự động thiết lập 1-Click (macOS/Linux)** | `./setup.sh` | Script bash tự động hóa toàn diện từ A đến Z trên Unix. |
-| **Cài đặt toàn bộ dependencies Monorepo** | `npm run install:all` | Cài đặt `root`, `packages/shared` (kèm build), `backend` và `frontend`. |
+| **Cài đặt toàn bộ dependencies Monorepo** | `npm run install:all` | Cài đặt dependencies của root, backend và frontend. Shared contracts được resolve trực tiếp từ source. |
 | **Khởi tạo & Đồng bộ CSDL trọn gói** | `npm run db:setup` | Chạy `prisma:generate` -> `prisma:migrate` -> `prisma:seed` trong 1 lệnh. |
 | **Thiết lập toàn bộ (Dependencies + DB)** | `npm run setup` | Kết hợp `npm run install:all` và `npm run db:setup`. |
 | **Mở giao diện Web Prisma Studio** | `npm run db:studio` | Mở trực tiếp Web GUI quản lý dữ liệu CSDL tại `http://localhost:5555`. |
@@ -84,7 +84,6 @@ Thực thi tại **thư mục gốc `SNOTE/`**:
 | :--- | :--- | :--- |
 | **Build toàn bộ dự án** | `npm run build` | Thực thi build production cho cả Backend (tsc) và Frontend (Vite build). |
 | **Kiểm tra TypeScript toàn bộ** | `npm run type-check` | Chạy `tsc --noEmit` trên cả `backend/` và `frontend/` để phát hiện lỗi kiểu. |
-| **Build riêng Shared Library** | `npx tsc --project packages/shared/tsconfig.json` | Build `@snote/shared` xuất file định nghĩa `.d.ts` vào `packages/shared/dist/`. |
 | **Build riêng Backend** | `cd backend && npm run build` | Biên dịch TypeScript backend vào thư mục `backend/dist/`. |
 | **Build riêng Frontend** | `cd frontend && npm run build` | Đóng gói production frontend vào thư mục `frontend/dist/`. |
 
@@ -194,4 +193,4 @@ Thực thi tại **thư mục gốc `SNOTE/`**:
 | Thao tác | Câu lệnh thực thi | Ghi chú |
 | :--- | :--- | :--- |
 | **Cài đặt lại toàn bộ dependencies** | `npm install`<br>`cd backend && npm install`<br>`cd ../frontend && npm install`<br>`cd ..` | Cài đặt lại các gói thư viện sau khi clone project từ Git. |
-| **Xóa toàn bộ thư mục Build (`dist/`)** | `Remove-Item -Recurse -Force backend/dist, frontend/dist, packages/shared/dist` *(PowerShell)* | Xóa các file build cũ để build sạch từ đầu. |
+| **Xóa thư mục Build (`dist/`)** | `Remove-Item -Recurse -Force backend/dist, frontend/dist` *(PowerShell)* | Xóa các file build cũ để build sạch từ đầu. |
