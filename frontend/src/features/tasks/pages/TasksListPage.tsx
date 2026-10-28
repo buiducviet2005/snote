@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api, ApiResponse } from '../../../services/api';
 import { useAppFilter } from '../../../contexts/AppFilterContext';
@@ -46,6 +46,22 @@ export const TasksListPage: React.FC = () => {
   const { showToast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
   const deepTaskId = searchParams.get('taskId');
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
+  const filterRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleOutside = (e: MouseEvent) => {
+      if (filterRef.current && !filterRef.current.contains(e.target as Node)) {
+        setIsFilterOpen(false);
+      }
+    };
+    if (isFilterOpen) {
+      document.addEventListener('mousedown', handleOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleOutside);
+  }, [isFilterOpen]);
+
 
   useEffect(() => {
     if (!deepTaskId) return;
@@ -198,220 +214,300 @@ export const TasksListPage: React.FC = () => {
 
   return (
     <div style={{ maxWidth: '1380px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-      {/* 1. Quick Task Capture Bar (1-Click Instant Add) */}
-      <QuickTaskBar
-        subjects={subjects}
-        defaultSubjectId={selectedSubjectId || undefined}
-        onTaskCreated={fetchTasks}
-      />
-
-      {/* 2. Top Header Toolbar: Metrics & View Switcher */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
-        {/* Left: View Mode Switcher */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            background: 'var(--bg-secondary)',
-            border: '1px solid var(--border-color)',
-            borderRadius: 'var(--radius-md)',
-            padding: '3px',
-            gap: '3px'
-          }}
-        >
-          <button
-            onClick={() => handleSelectViewMode('GANTT')}
-            className={`btn btn-sm ${viewMode === 'GANTT' ? 'btn-primary' : 'btn-ghost'}`}
-            style={{
-              fontSize: '12.5px',
-              fontWeight: viewMode === 'GANTT' ? 700 : 500,
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '6px 14px',
-              borderRadius: '6px',
-              backgroundColor: viewMode === 'GANTT' ? 'var(--accent-primary)' : 'transparent',
-              color: viewMode === 'GANTT' ? '#ffffff' : 'var(--text-secondary)'
-            }}
-          >
-            <TrendingUp size={15} />
-            <span>Sơ đồ Gantt (7 Tuần)</span>
-          </button>
-
-          <button
-            onClick={() => handleSelectViewMode('KANBAN')}
-            className={`btn btn-sm ${viewMode === 'KANBAN' ? 'btn-primary' : 'btn-ghost'}`}
-            style={{
-              fontSize: '12.5px',
-              fontWeight: viewMode === 'KANBAN' ? 700 : 500,
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '6px 14px',
-              borderRadius: '6px',
-              backgroundColor: viewMode === 'KANBAN' ? 'var(--accent-primary)' : 'transparent',
-              color: viewMode === 'KANBAN' ? '#ffffff' : 'var(--text-secondary)'
-            }}
-          >
-            <Columns3 size={15} />
-            <span>Bảng Kanban</span>
-          </button>
-
-          <button
-            onClick={() => handleSelectViewMode('LIST')}
-            className={`btn btn-sm ${viewMode === 'LIST' ? 'btn-primary' : 'btn-ghost'}`}
-            style={{
-              fontSize: '12.5px',
-              fontWeight: viewMode === 'LIST' ? 700 : 500,
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '6px 14px',
-              borderRadius: '6px',
-              backgroundColor: viewMode === 'LIST' ? 'var(--accent-primary)' : 'transparent',
-              color: viewMode === 'LIST' ? '#ffffff' : 'var(--text-secondary)'
-            }}
-          >
-            <ListFilter size={15} />
-            <span>Danh sách Hạn chót</span>
-          </button>
-
-          <button
-            onClick={() => handleSelectViewMode('EISENHOWER')}
-            className={`btn btn-sm ${viewMode === 'EISENHOWER' ? 'btn-primary' : 'btn-ghost'}`}
-            style={{
-              fontSize: '12.5px',
-              fontWeight: viewMode === 'EISENHOWER' ? 700 : 500,
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '6px 14px',
-              borderRadius: '6px',
-              backgroundColor: viewMode === 'EISENHOWER' ? 'var(--accent-primary)' : 'transparent',
-              color: viewMode === 'EISENHOWER' ? '#ffffff' : 'var(--text-secondary)'
-            }}
-          >
-            <LayoutGrid size={15} />
-            <span>Ma trận Eisenhower (2x2)</span>
-          </button>
-        </div>
-
-        {/* Right: Metrics & Add Button */}
+      {/* Unified Minimal Toolbar (Height: 38px, High Density, Zero Waste) */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '10px',
+          padding: '2px 0'
+        }}
+      >
+        {/* Left: View Mode Segmented Controls & Task Counts */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+          <div
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              backgroundColor: 'var(--bg-secondary)',
+              border: '1px solid var(--border-color)',
+              borderRadius: '8px',
+              padding: '2px',
+              gap: '2px'
+            }}
+          >
+            <button
+              onClick={() => handleSelectViewMode('GANTT')}
+              className={`btn btn-sm ${viewMode === 'GANTT' ? 'btn-primary' : 'btn-ghost'}`}
+              style={{
+                padding: '5px 10px',
+                borderRadius: '6px',
+                backgroundColor: viewMode === 'GANTT' ? 'var(--accent)' : 'transparent',
+                color: viewMode === 'GANTT' ? '#ffffff' : 'var(--text-secondary)'
+              }}
+              title="Sơ đồ Gantt tiến độ (7 Tuần)"
+            >
+              <TrendingUp size={15} />
+            </button>
+
+            <button
+              onClick={() => handleSelectViewMode('KANBAN')}
+              className={`btn btn-sm ${viewMode === 'KANBAN' ? 'btn-primary' : 'btn-ghost'}`}
+              style={{
+                padding: '5px 10px',
+                borderRadius: '6px',
+                backgroundColor: viewMode === 'KANBAN' ? 'var(--accent)' : 'transparent',
+                color: viewMode === 'KANBAN' ? '#ffffff' : 'var(--text-secondary)'
+              }}
+              title="Bảng Kanban"
+            >
+              <Columns3 size={15} />
+            </button>
+
+            <button
+              onClick={() => handleSelectViewMode('LIST')}
+              className={`btn btn-sm ${viewMode === 'LIST' ? 'btn-primary' : 'btn-ghost'}`}
+              style={{
+                padding: '5px 10px',
+                borderRadius: '6px',
+                backgroundColor: viewMode === 'LIST' ? 'var(--accent)' : 'transparent',
+                color: viewMode === 'LIST' ? '#ffffff' : 'var(--text-secondary)'
+              }}
+              title="Danh sách nhiệm vụ & Hạn chót"
+            >
+              <ListFilter size={15} />
+            </button>
+
+            <button
+              onClick={() => handleSelectViewMode('EISENHOWER')}
+              className={`btn btn-sm ${viewMode === 'EISENHOWER' ? 'btn-primary' : 'btn-ghost'}`}
+              style={{
+                padding: '5px 10px',
+                borderRadius: '6px',
+                backgroundColor: viewMode === 'EISENHOWER' ? 'var(--accent)' : 'transparent',
+                color: viewMode === 'EISENHOWER' ? '#ffffff' : 'var(--text-secondary)'
+              }}
+              title="Ma trận Eisenhower (2x2)"
+            >
+              <LayoutGrid size={15} />
+            </button>
+          </div>
+
+          <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>
+            {totalTasks} công việc
+          </span>
+
           {overdueCount > 0 && (
             <span
               className="badge"
               style={{
-                fontSize: '11.5px',
-                padding: '4px 9px',
+                fontSize: '11px',
+                padding: '2px 7px',
                 backgroundColor: 'rgba(239, 68, 68, 0.15)',
                 color: '#ef4444',
                 border: '1px solid rgba(239, 68, 68, 0.3)',
-                fontWeight: 700,
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '4px'
+                fontWeight: 700
               }}
             >
-              <AlertTriangle size={13} />
-              {overdueCount} Quá hạn
+              {overdueCount} quá hạn
             </span>
           )}
 
-          <span className="badge badge-green" style={{ fontSize: '11.5px', padding: '4px 9px', fontWeight: 700 }}>
-            {doneTasks.length}/{totalTasks} Hoàn thành ({completedPercent}%)
+          <span className="badge badge-green" style={{ fontSize: '11px', padding: '2px 7px', fontWeight: 600 }}>
+            {doneTasks.length}/{totalTasks} xong
           </span>
+        </div>
 
+        {/* Right: Quick Search, Filter Popover, Add Buttons */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          {/* Quick Search */}
+          <div style={{ position: 'relative', width: '200px' }}>
+            <span style={{ position: 'absolute', left: '9px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', display: 'flex' }}>
+              <Search size={13} />
+            </span>
+            <input
+              type="text"
+              placeholder="Tìm việc..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="snote-input"
+              style={{ paddingLeft: '28px', paddingRight: search ? '26px' : '8px', height: '32px', fontSize: '12px', borderRadius: '6px' }}
+            />
+            {search && (
+              <button
+                onClick={() => setSearch('')}
+                style={{
+                  position: 'absolute',
+                  right: '8px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'var(--text-muted)',
+                  cursor: 'pointer'
+                }}
+              >
+                <X size={12} />
+              </button>
+            )}
+          </div>
+
+          {/* Filter Popover Button */}
+          <div ref={filterRef} style={{ position: 'relative' }}>
+            <button
+              type="button"
+              onClick={() => setIsFilterOpen(!isFilterOpen)}
+              className={`btn btn-sm ${isFilterOpen || filterPriority !== 'ALL' || filterProjectId !== 'ALL' ? 'btn-secondary' : 'btn-ghost'}`}
+              style={{
+                height: '32px',
+                fontSize: '12px',
+                padding: '0 10px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px',
+                border: '1px solid var(--border-color)',
+                borderRadius: '6px'
+              }}
+              title="Bộ lọc dự án & mức ưu tiên"
+            >
+              <Filter size={13} />
+              <span>Lọc</span>
+              {(filterPriority !== 'ALL' || filterProjectId !== 'ALL') && (
+                <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: 'var(--accent)' }} />
+              )}
+            </button>
+
+            {isFilterOpen && (
+              <div
+                style={{
+                  position: 'absolute',
+                  right: 0,
+                  top: 'calc(100% + 6px)',
+                  backgroundColor: 'var(--bg-surface)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '8px',
+                  padding: '12px',
+                  boxShadow: 'var(--shadow-lg)',
+                  zIndex: 50,
+                  minWidth: '240px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '10px'
+                }}
+              >
+                <div>
+                  <label style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>
+                    Dự án / Môn học
+                  </label>
+                  <select
+                    value={filterProjectId}
+                    onChange={(e) => setFilterProjectId(e.target.value)}
+                    className="snote-select"
+                    style={{ fontSize: '12px', width: '100%' }}
+                  >
+                    <option value="ALL">Tất cả dự án</option>
+                    {projects.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        📁 {p.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>
+                    Mức độ ưu tiên
+                  </label>
+                  <select
+                    value={filterPriority}
+                    onChange={(e) => setFilterPriority(e.target.value)}
+                    className="snote-select"
+                    style={{ fontSize: '12px', width: '100%' }}
+                  >
+                    <option value="ALL">Tất cả mức độ</option>
+                    <option value={TaskPriority.URGENT}>🔴 Khẩn cấp (Urgent)</option>
+                    <option value={TaskPriority.HIGH}>🟠 Cao (High)</option>
+                    <option value={TaskPriority.MEDIUM}>🟡 Trung bình (Medium)</option>
+                    <option value={TaskPriority.LOW}>🟢 Thấp (Low)</option>
+                  </select>
+                </div>
+
+                {(filterPriority !== 'ALL' || filterProjectId !== 'ALL') && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFilterPriority('ALL');
+                      setFilterProjectId('ALL');
+                    }}
+                    className="btn btn-ghost btn-sm"
+                    style={{ fontSize: '11px', padding: '4px', color: 'var(--color-danger)' }}
+                  >
+                    Đặt lại bộ lọc
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Quick Capture Inline Toggle */}
           <button
-            onClick={handleOpenCreate}
-            className="btn btn-primary btn-sm"
-            style={{ padding: '7px 14px', fontWeight: 700, gap: '5px' }}
+            type="button"
+            onClick={() => setIsQuickAddOpen(!isQuickAddOpen)}
+            className="btn btn-sm btn-ghost"
+            style={{
+              height: '32px',
+              fontSize: '12px',
+              padding: '0 10px',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '4px',
+              border: '1px solid var(--border-color)',
+              borderRadius: '6px',
+              color: isQuickAddOpen ? 'var(--accent)' : 'var(--text-secondary)'
+            }}
+            title="Thêm nhanh công việc"
           >
-            <Plus size={15} />
-            <span>Thêm Chi Tiết</span>
+            <Zap size={13} />
+            <span>Thêm nhanh</span>
+          </button>
+
+          {/* New Task Button */}
+          <button
+            type="button"
+            onClick={handleOpenCreate}
+            className="btn btn-sm btn-primary"
+            style={{
+              height: '32px',
+              fontSize: '12px',
+              padding: '0 12px',
+              fontWeight: 700,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '4px',
+              borderRadius: '6px'
+            }}
+          >
+            <Plus size={14} />
+            <span>Tạo mới</span>
           </button>
         </div>
       </div>
 
-      {/* 3. Search & Filter Bar */}
-      <div
-        className="snote-card"
-        style={{
-          padding: '10px 14px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '12px',
-          flexWrap: 'wrap',
-          borderRadius: 'var(--radius-lg)'
-        }}
-      >
-        {/* Search */}
-        <div style={{ flex: 1, minWidth: '220px', position: 'relative' }}>
-          <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', display: 'flex' }}>
-            <Search size={16} />
-          </span>
-          <input
-            type="text"
-            placeholder="Tìm kiếm bài tập, hạn nộp hoặc công việc..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="snote-input"
-            style={{ paddingLeft: '38px', paddingRight: search ? '36px' : '14px' }}
+      {/* Collapsible Quick Add Box (Takes 0 space when collapsed) */}
+      {isQuickAddOpen && (
+        <div style={{ animation: 'wsFadeIn 0.14s ease-out' }}>
+          <QuickTaskBar
+            subjects={subjects}
+            defaultSubjectId={selectedSubjectId || undefined}
+            onTaskCreated={() => {
+              fetchTasks();
+              setIsQuickAddOpen(false);
+            }}
           />
-          {search && (
-            <button
-              onClick={() => setSearch('')}
-              style={{
-                position: 'absolute',
-                right: '10px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                background: 'transparent',
-                border: 'none',
-                color: 'var(--text-muted)',
-                cursor: 'pointer',
-                display: 'flex',
-                padding: 0
-              }}
-            >
-              <X size={14} />
-            </button>
-          )}
         </div>
-
-        {/* Project Filter */}
-        <div style={{ minWidth: '180px' }}>
-          <select
-            value={filterProjectId}
-            onChange={(e) => setFilterProjectId(e.target.value)}
-            className="snote-select"
-            style={{ fontSize: '13px' }}
-          >
-            <option value="ALL">Tất cả dự án & việc</option>
-            {projects.map((p) => (
-              <option key={p.id} value={p.id}>
-                📁 {p.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Priority Filter */}
-        <div style={{ minWidth: '180px' }}>
-          <select
-            value={filterPriority}
-            onChange={(e) => setFilterPriority(e.target.value)}
-            className="snote-select"
-            style={{ fontSize: '13px' }}
-          >
-            <option value="ALL">Tất cả mức ưu tiên</option>
-            <option value={TaskPriority.URGENT}>🔴 Khẩn cấp (Urgent)</option>
-            <option value={TaskPriority.HIGH}>🟠 Cao (High)</option>
-            <option value={TaskPriority.MEDIUM}>🟡 Trung bình (Medium)</option>
-            <option value={TaskPriority.LOW}>🟢 Thấp (Low)</option>
-          </select>
-        </div>
-      </div>
+      )}
 
       {/* 4. Main Tasks Area: Conditional Rendering based on ViewMode */}
       {loading ? (

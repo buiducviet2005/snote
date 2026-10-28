@@ -417,3 +417,4 @@ export const TasksGanttView: React.FC<TasksGanttViewProps> = ({
     </div>
   );
 };
+
