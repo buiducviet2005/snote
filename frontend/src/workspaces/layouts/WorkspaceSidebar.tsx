@@ -1,17 +1,14 @@
 import React from 'react';
-import { WorkspaceSummary, NavItemDef } from './types';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { WorkspaceSummary } from './types';
 import { WorkspaceSwitcher } from './WorkspaceSwitcher';
 import {
-  LayoutDashboard,
-  CheckSquare,
   FileText,
+  CheckSquare,
   Calendar,
+  BookOpen,
   Layers,
-  Kanban,
-  ListTodo,
-  TrendingUp,
   FolderOpen,
-  Users,
   Settings,
   Sparkles,
   Command,
@@ -19,17 +16,19 @@ import {
   Minimize2,
   Moon,
   Sun,
-  LogOut
+  LogOut,
+  Shield
 } from 'lucide-react';
 
 interface WorkspaceSidebarProps {
   currentWorkspace: WorkspaceSummary;
   workspaces: WorkspaceSummary[];
-  activeNavId: string;
-  onSelectNav: (navId: string) => void;
+  activeNavId?: string;
+  onSelectNav?: (navId: string) => void;
   onSelectWorkspace: (ws: WorkspaceSummary) => void;
   onCreateWorkspace?: () => void;
   currentUser?: { fullName?: string; email?: string } | null;
+  isAdmin?: boolean;
   onLogout?: () => void;
   isMobileOpen?: boolean;
   onCloseMobile?: () => void;
@@ -43,11 +42,10 @@ interface WorkspaceSidebarProps {
 export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
   currentWorkspace,
   workspaces,
-  activeNavId,
-  onSelectNav,
   onSelectWorkspace,
   onCreateWorkspace,
   currentUser,
+  isAdmin = false,
   onLogout,
   isMobileOpen,
   onCloseMobile,
@@ -57,65 +55,40 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
   theme = 'dark',
   onToggleTheme
 }) => {
-  // Navigation definitions based on workspace type (flat list of icons)
-  const getNavItems = (): NavItemDef[] => {
-    switch (currentWorkspace.type) {
-      case 'PERSONAL':
-        return [
-          { id: 'overview', label: 'Bàn học tổng quan', iconName: 'dashboard' },
-          { id: 'notes', label: 'Ghi chú & Bài đọc', iconName: 'notes', badge: '12' },
-          { id: 'tasks', label: 'Việc cần làm hôm nay', iconName: 'tasks', badge: '3' },
-          { id: 'calendar', label: 'Lịch học & Deadline', iconName: 'calendar' }
-        ];
-      case 'SUBJECT':
-        return [
-          { id: 'overview', label: `Bảng tin môn ${currentWorkspace.code || ''}`, iconName: 'dashboard' },
-          { id: 'notes', label: 'Bài giảng & Slide', iconName: 'notes', badge: '8' },
-          { id: 'tasks', label: 'Bài tập & Nhiệm vụ', iconName: 'tasks', badge: '2' },
-          { id: 'documents', label: 'Tài liệu & Đề thi mẫu', iconName: 'documents' },
-          { id: 'members', label: `Giảng viên & Bạn học (${currentWorkspace.memberCount || 1})`, iconName: 'members' }
-        ];
-      case 'PROJECT':
-        return [
-          { id: 'overview', label: 'Tổng quan đồ án', iconName: 'dashboard' },
-          { id: 'kanban', label: 'Bảng Kanban', iconName: 'kanban' },
-          { id: 'tasks', label: 'Danh sách công việc', iconName: 'list', badge: '5' },
-          { id: 'gantt', label: 'Dòng thời gian Gantt', iconName: 'gantt' },
-          { id: 'notes', label: 'Biên bản & Ghi chép', iconName: 'notes', badge: '4' },
-          { id: 'documents', label: 'Tài liệu bàn giao', iconName: 'documents' },
-          { id: 'members', label: `Thành viên (${currentWorkspace.memberCount || 1})`, iconName: 'members' }
-        ];
-    }
+  const navigate = useNavigate();
+  const location = useLocation();
+  const currentPath = location.pathname;
+
+  // Academic Core Navigation Items (Pure Monochromatic Icons & Clear Vietnamese Tooltips)
+  const navItems = [
+    { id: 'notes', label: 'Kho Ghi Chú & Bài Giảng', icon: FileText, path: '/notes' },
+    { id: 'tasks', label: 'Việc Cần Làm & Bài Tập', icon: CheckSquare, path: '/tasks' },
+    { id: 'schedule', label: 'Thời Khóa Biểu & Lịch Thi', icon: Calendar, path: '/schedule' },
+    { id: 'classes', label: 'Lớp Học Học Phần', icon: BookOpen, path: '/classes' },
+    { id: 'semesters', label: 'Kế Hoạch Học Kỳ', icon: Layers, path: '/semesters' },
+    { id: 'projects', label: 'Đồ Án & Dự Án', icon: FolderOpen, path: '/projects' }
+  ];
+
+  const handleNavClick = (path: string) => {
+    navigate(path);
+    if (onCloseMobile) onCloseMobile();
   };
 
-  const renderNavIcon = (name: string) => {
-    switch (name) {
-      case 'dashboard':
-        return <LayoutDashboard size={19} />;
-      case 'notes':
-        return <FileText size={19} />;
-      case 'tasks':
-        return <CheckSquare size={19} />;
-      case 'calendar':
-        return <Calendar size={19} />;
-      case 'kanban':
-        return <Kanban size={19} />;
-      case 'list':
-        return <ListTodo size={19} />;
-      case 'gantt':
-        return <TrendingUp size={19} />;
-      case 'documents':
-        return <FolderOpen size={19} />;
-      case 'members':
-        return <Users size={19} />;
-      case 'settings':
-        return <Settings size={19} />;
-      default:
-        return <Layers size={19} />;
+  const isItemActive = (path: string) => {
+    if (path === '/notes') {
+      return currentPath === '/' || currentPath === '/notes' || currentPath.startsWith('/notes/');
     }
+    return currentPath === path || currentPath.startsWith(path + '/');
   };
 
-  const navItems = getNavItems();
+  const getUserInitial = () => {
+    if (currentUser?.fullName && currentUser.fullName.trim().length > 0) {
+      const parts = currentUser.fullName.trim().split(/\s+/);
+      const lastWord = parts[parts.length - 1];
+      return lastWord.charAt(0).toUpperCase();
+    }
+    return 'S';
+  };
 
   return (
     <>
@@ -138,34 +111,28 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
 
         <div className="ws-rail-divider" />
 
-        {/* Center: Main Navigation Icons with Rounded Floating Tooltips */}
+        {/* Center: Main Academic Navigation Icons with Rounded Floating Tooltips */}
         <nav className="ws-rail-nav">
           {navItems.map((item) => {
-            const isActive = activeNavId === item.id;
+            const active = isItemActive(item.path);
+            const Icon = item.icon;
             return (
               <div key={item.id} className="ws-rail-item-wrapper">
                 <button
                   type="button"
-                  className={`ws-rail-btn ${isActive ? 'active' : ''}`}
-                  onClick={() => {
-                    onSelectNav(item.id);
-                    if (onCloseMobile) onCloseMobile();
-                  }}
+                  className={`ws-rail-btn ${active ? 'active' : ''}`}
+                  onClick={() => handleNavClick(item.path)}
                   title={item.label}
                   aria-label={item.label}
                 >
-                  <span className="ws-rail-icon">{renderNavIcon(item.iconName)}</span>
-                  {item.badge !== undefined && (
-                    <span className="ws-rail-badge-dot" />
-                  )}
+                  <span className="ws-rail-icon">
+                    <Icon size={19} strokeWidth={1.8} />
+                  </span>
                 </button>
 
-                {/* Floating Rounded Tooltip on Hover (Direct sibling of button) */}
+                {/* Floating Rounded Tooltip on Hover (Bo tròn các góc) */}
                 <div className="ws-rail-tooltip" role="tooltip">
                   <span className="ws-tooltip-text">{item.label}</span>
-                  {item.badge !== undefined && (
-                    <span className="ws-tooltip-badge">{item.badge}</span>
-                  )}
                 </div>
               </div>
             );
@@ -174,7 +141,7 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
 
         <div className="ws-rail-divider" />
 
-        {/* Bottom Utility Icons: Command Palette, AI, Zen, Theme, User */}
+        {/* Bottom Utility Icons: Command Palette, AI, Zen, Theme, Admin, Settings, User */}
         <div className="ws-rail-bottom">
           {/* Command Palette Trigger */}
           <div className="ws-rail-item-wrapper">
@@ -185,7 +152,7 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
               title="Tìm kiếm & Bảng lệnh (Ctrl + K)"
               aria-label="Tìm kiếm và lệnh nhanh"
             >
-              <Command size={18} />
+              <Command size={18} strokeWidth={1.8} />
             </button>
             <div className="ws-rail-tooltip" role="tooltip">
               <span className="ws-tooltip-text">Tìm kiếm & Bảng lệnh</span>
@@ -197,12 +164,12 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
           <div className="ws-rail-item-wrapper">
             <button
               type="button"
-              className="ws-rail-btn"
-              onClick={() => onSelectNav('ai-assistant')}
+              className={`ws-rail-btn ${currentPath.startsWith('/ai-chat') ? 'active' : ''}`}
+              onClick={() => handleNavClick('/ai-chat')}
               title="Gia sư AI học thuật"
               aria-label="Gia sư AI học thuật"
             >
-              <Sparkles size={18} />
+              <Sparkles size={18} strokeWidth={1.8} />
             </button>
             <div className="ws-rail-tooltip" role="tooltip">
               <span className="ws-tooltip-text">Gia sư AI học thuật</span>
@@ -218,7 +185,7 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
               title={isZenMode ? 'Thoát Chế độ tập trung (Z)' : 'Chế độ tập trung (Z)'}
               aria-label="Chế độ tập trung"
             >
-              {isZenMode ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
+              {isZenMode ? <Minimize2 size={18} strokeWidth={1.8} /> : <Maximize2 size={18} strokeWidth={1.8} />}
             </button>
             <div className="ws-rail-tooltip" role="tooltip">
               <span className="ws-tooltip-text">{isZenMode ? 'Thoát Chế độ tập trung' : 'Chế độ tập trung (Zen)'}</span>
@@ -236,7 +203,7 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
                 title={theme === 'dark' ? 'Chuyển sang Giao diện Sáng' : 'Chuyển sang Giao diện Tối'}
                 aria-label="Đổi giao diện sáng/tối"
               >
-                {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+                {theme === 'dark' ? <Sun size={18} strokeWidth={1.8} /> : <Moon size={18} strokeWidth={1.8} />}
               </button>
               <div className="ws-rail-tooltip" role="tooltip">
                 <span className="ws-tooltip-text">
@@ -246,6 +213,40 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
             </div>
           )}
 
+          {/* Admin System Status (Only visible if admin) */}
+          {isAdmin && (
+            <div className="ws-rail-item-wrapper">
+              <button
+                type="button"
+                className={`ws-rail-btn ${currentPath.startsWith('/status') ? 'active' : ''}`}
+                onClick={() => handleNavClick('/status')}
+                title="Trạng thái hệ thống máy chủ"
+                aria-label="Trạng thái hệ thống"
+              >
+                <Shield size={18} strokeWidth={1.8} />
+              </button>
+              <div className="ws-rail-tooltip" role="tooltip">
+                <span className="ws-tooltip-text">Trạng thái Hệ thống & Máy chủ</span>
+              </div>
+            </div>
+          )}
+
+          {/* Settings */}
+          <div className="ws-rail-item-wrapper">
+            <button
+              type="button"
+              className={`ws-rail-btn ${currentPath.startsWith('/settings') ? 'active' : ''}`}
+              onClick={() => handleNavClick('/settings')}
+              title="Cài đặt tài khoản & Hệ thống"
+              aria-label="Cài đặt"
+            >
+              <Settings size={18} strokeWidth={1.8} />
+            </button>
+            <div className="ws-rail-tooltip" role="tooltip">
+              <span className="ws-tooltip-text">Cài đặt Tài khoản</span>
+            </div>
+          </div>
+
           <div className="ws-rail-divider" />
 
           {/* User Avatar with Tooltip & Logout Action */}
@@ -254,12 +255,17 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
               className="ws-rail-user-avatar"
               title={currentUser?.fullName || 'Sinh viên'}
             >
-              {currentUser?.fullName ? currentUser.fullName.charAt(0).toUpperCase() : 'S'}
+              {getUserInitial()}
             </div>
             <div className="ws-rail-tooltip user-tooltip" role="tooltip">
               <div className="ws-tooltip-user-meta">
                 <div className="ws-tooltip-user-name">{currentUser?.fullName || 'Sinh viên SNOTE'}</div>
-                <div className="ws-tooltip-user-email">{currentUser?.email || 'sinhvien@snote.edu.vn'}</div>
+                <div className="ws-tooltip-user-email">{currentUser?.email || ''}</div>
+                {isAdmin && (
+                  <span style={{ fontSize: '9.5px', color: 'var(--ws-accent-blue)', marginTop: '2px', fontWeight: 600 }}>
+                    Quản trị viên
+                  </span>
+                )}
               </div>
               {onLogout && (
                 <button
@@ -268,7 +274,7 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
                   onClick={onLogout}
                   title="Đăng xuất khỏi tài khoản"
                 >
-                  <LogOut size={13} />
+                  <LogOut size={13} strokeWidth={1.8} />
                   <span>Đăng xuất</span>
                 </button>
               )}

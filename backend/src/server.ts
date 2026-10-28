@@ -68,6 +68,7 @@ app.use('/health', healthRouter);
 
 // 8. Đăng ký Domain Routes (Modular Monolith)
 app.use('/api/auth', authRouter);
+app.use('/api/workspaces', workspacesRouter);
 app.use('/api/v1/workspaces', workspacesRouter);
 app.use('/api/semesters', semestersRouter);
 app.use('/api/subjects', subjectsRouter);
