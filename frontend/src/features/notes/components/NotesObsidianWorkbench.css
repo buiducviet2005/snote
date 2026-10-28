@@ -238,142 +238,110 @@
   min-width: 0;
 }
 
-.obs-center-header {
-  padding: 8px 14px;
-  border-bottom: 1px solid var(--ws-border-hairline);
-  background-color: var(--ws-bg-surface);
+/* Inline Document Header & Minimal Tools */
+.obs-doc-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
+  gap: 16px;
+  padding: 16px 24px 8px;
+  background: transparent;
+  border-bottom: 1px solid var(--ws-border-hairline);
 }
 
-.obs-center-header-left {
+.obs-doc-title-input {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--ws-text-main);
+  background: transparent;
+  border: none;
+  padding: 4px 0;
+  outline: none;
+  flex: 1;
+  font-family: inherit;
+  letter-spacing: -0.02em;
+}
+
+.obs-doc-tools {
   display: flex;
   align-items: center;
-  gap: 8px;
-  min-width: 0;
-  flex: 1;
+  gap: 4px;
 }
 
-.obs-unhide-btn {
-  padding: 4px;
+.obs-doc-tool-btn {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--ws-text-muted);
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.obs-doc-tool-btn:hover {
+  background: var(--ws-bg-surface-hover);
+  color: var(--ws-text-main);
+  border-color: var(--ws-border-hairline);
+}
+
+.obs-doc-tool-btn.active {
+  background: var(--ws-accent-soft);
+  color: var(--ws-accent);
+}
+
+.obs-doc-tool-btn.danger:hover {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+/* Floating Edge Unhide Buttons */
+.obs-unhide-floating-left {
+  position: absolute;
+  top: 14px;
+  left: 8px;
+  z-index: 30;
+  width: 24px;
+  height: 24px;
+  border-radius: 5px;
   background: var(--ws-bg-surface-elevated);
   border: 1px solid var(--ws-border-hairline);
   color: var(--ws-text-muted);
-  border-radius: 4px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-.obs-unhide-btn:hover {
-  color: var(--ws-text-main);
-  border-color: var(--ws-accent);
-}
-
-.obs-title-input {
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--ws-text-main);
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: 4px;
-  padding: 3px 6px;
-  outline: none;
-  flex: 1;
-  min-width: 120px;
-}
-
-.obs-title-input:hover,
-.obs-title-input:focus {
-  background: var(--ws-bg-app);
-  border-color: var(--ws-border-hairline);
-}
-
-.obs-center-header-tools {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.obs-mode-switcher {
-  display: flex;
-  background: var(--ws-bg-rail);
-  border: 1px solid var(--ws-border-hairline);
-  border-radius: 6px;
-  padding: 2px;
-  gap: 2px;
-}
-
-.obs-mode-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 3px 8px;
-  font-size: 11px;
-  font-weight: 600;
-  border: none;
-  background: transparent;
-  color: var(--ws-text-muted);
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.1s ease;
-}
-
-.obs-mode-btn:hover {
-  color: var(--ws-text-main);
-}
-
-.obs-mode-btn.active {
-  background: var(--ws-bg-surface);
-  color: var(--ws-accent);
   box-shadow: var(--ws-shadow-sm);
+  transition: all 0.12s ease;
 }
 
-/* Quick Formatting Toolbar */
-.obs-format-bar {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 14px;
-  background-color: var(--ws-bg-rail);
-  border-bottom: 1px solid var(--ws-border-hairline);
-  overflow-x: auto;
-}
-
-.obs-fmt-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 2px 7px;
-  font-size: 11px;
-  font-weight: 600;
-  border-radius: 4px;
-  background: var(--ws-bg-surface);
+.obs-unhide-floating-right {
+  position: absolute;
+  top: 14px;
+  right: 8px;
+  z-index: 30;
+  width: 24px;
+  height: 24px;
+  border-radius: 5px;
+  background: var(--ws-bg-surface-elevated);
   border: 1px solid var(--ws-border-hairline);
   color: var(--ws-text-muted);
   cursor: pointer;
-  white-space: nowrap;
-  transition: all 0.1s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--ws-shadow-sm);
+  transition: all 0.12s ease;
 }
 
-.obs-fmt-btn:hover {
-  background: var(--ws-bg-surface-hover);
+.obs-unhide-floating-left:hover,
+.obs-unhide-floating-right:hover {
   color: var(--ws-text-main);
   border-color: var(--ws-accent);
-}
-
-.obs-fmt-wiki {
-  color: #38bdf8;
-  border-color: rgba(56, 189, 248, 0.3);
-}
-
-.obs-fmt-tag {
-  color: #c084fc;
-  border-color: rgba(192, 132, 252, 0.3);
 }
 
 /* Editor & Reader Canvas Area */

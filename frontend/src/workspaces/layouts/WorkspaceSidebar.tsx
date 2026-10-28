@@ -14,7 +14,8 @@ import {
   Moon,
   Sun,
   LogOut,
-  Shield
+  Shield,
+  GraduationCap
 } from 'lucide-react';
 
 interface WorkspaceSidebarProps {
@@ -58,11 +59,13 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
 
   // Academic Core Navigation Items (Pure Monochromatic Icons & Clear Vietnamese Tooltips)
   // Quy tắc người dùng: "Dự án và lớp học nằm ở workspace, không nằm thừa thãi ở bên menu"
+  const isTeacher = (currentUser as any)?.role === 'TEACHER';
   const navItems = [
-    { id: 'notes', label: 'Kho Ghi Chú & Bài Giảng', icon: FileText, path: '/notes' },
-    { id: 'tasks', label: 'Việc Cần Làm & Bài Tập', icon: CheckSquare, path: '/tasks' },
-    { id: 'schedule', label: 'Thời Khóa Biểu & Lịch Thi', icon: Calendar, path: '/schedule' },
-    { id: 'semesters', label: 'Kế Hoạch Học Kỳ', icon: Layers, path: '/semesters' }
+    { id: 'notes', label: 'Ghi Chú Học Tập', icon: FileText, path: '/notes' },
+    { id: 'tasks', label: 'Công Việc & Bài Tập', icon: CheckSquare, path: '/tasks' },
+    { id: 'schedule', label: 'Thời Khóa Biểu', icon: Calendar, path: '/schedule' },
+    { id: 'semesters', label: 'Kế Hoạch Học Kỳ', icon: Layers, path: '/semesters' },
+    ...((isTeacher || isAdmin) ? [{ id: 'classes', label: 'Quản Lý Lớp Học', icon: GraduationCap, path: '/classes' }] : [])
   ];
 
   const handleNavClick = (path: string) => {
@@ -92,18 +95,11 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
       {isMobileOpen && <div className="ws-sidebar-backdrop" onClick={onCloseMobile} />}
 
       <aside className={`ws-icon-rail ${isMobileOpen ? 'open' : ''}`} aria-label="Thanh điều hướng thu gọn">
-        {/* Top: Workspace Switcher Mark with Monogram & Arrow */}
+        {/* Top: SNOTE Brand Mark */}
         <div className="ws-rail-top">
-          <WorkspaceSwitcher
-            currentWorkspace={currentWorkspace}
-            workspaces={workspaces}
-            onSelectWorkspace={(ws) => {
-              onSelectWorkspace(ws);
-              if (onCloseMobile) onCloseMobile();
-            }}
-            onRefreshWorkspaces={onRefreshWorkspaces}
-            triggerMode="rail"
-          />
+          <div className="ws-rail-brand-mark" title="SNOTE Academic Precision System">
+            <span className="ws-brand-mono">S</span>
+          </div>
         </div>
 
         <div className="ws-rail-divider" />
@@ -140,23 +136,6 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
 
         {/* Bottom Utility Icons: Command Palette, Zen, Theme, Admin, Settings, User (KHÔNG CÓ AI) */}
         <div className="ws-rail-bottom">
-          {/* Command Palette Trigger */}
-          <div className="ws-rail-item-wrapper">
-            <button
-              type="button"
-              className="ws-rail-btn"
-              onClick={onOpenCommandPalette}
-              title="Tìm kiếm & Bảng lệnh (Ctrl + K)"
-              aria-label="Tìm kiếm và lệnh nhanh"
-            >
-              <Command size={18} strokeWidth={1.8} />
-            </button>
-            <div className="ws-rail-tooltip" role="tooltip">
-              <span className="ws-tooltip-text">Tìm kiếm & Bảng lệnh</span>
-              <kbd className="ws-tooltip-kbd">Ctrl K</kbd>
-            </div>
-          </div>
-
           {/* Zen Focus Mode */}
           <div className="ws-rail-item-wrapper">
             <button
@@ -218,7 +197,7 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
               type="button"
               className={`ws-rail-btn ${currentPath.startsWith('/settings') ? 'active' : ''}`}
               onClick={() => handleNavClick('/settings')}
-              title="Cài đặt tài khoản & Hệ thống"
+              title="Cài đặt tài khoản"
               aria-label="Cài đặt"
             >
               <Settings size={18} strokeWidth={1.8} />

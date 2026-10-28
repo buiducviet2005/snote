@@ -57,7 +57,11 @@ export const WorkspaceSwitcher: React.FC<WorkspaceSwitcherProps> = ({
   const [focusedIndex, setFocusedIndex] = useState(-1);
 
   // Sub-action views
-  const [activeView, setActiveView] = useState<'LIST' | 'CREATE' | 'JOIN' | 'ADD_MEMBER'>('LIST');
+  const [activeView, setActiveView] = useState<'LIST' | 'CREATE' | 'JOIN' | 'MANAGE'>('LIST');
+  const [manageTab, setManageTab] = useState<'PROGRESS' | 'MEMBERS'>('PROGRESS');
+  const [progressData, setProgressData] = useState<any | null>(null);
+  const [membersList, setMembersList] = useState<any[]>([]);
+  const [isLoadingManage, setIsLoadingManage] = useState(false);
 
   // Create form state
   const [createType, setCreateType] = useState<WorkspaceType>('PROJECT');
@@ -239,6 +243,45 @@ export const WorkspaceSwitcher: React.FC<WorkspaceSwitcherProps> = ({
     }
   };
 
+
+  const fetchManageData = async (wsId: string) => {
+    try {
+      setIsLoadingManage(true);
+      const [progRes, memRes] = await Promise.all([
+        api.get<any>(`/workspaces/${wsId}/progress`).catch(() => ({ data: null })),
+        api.get<any>(`/workspaces/${wsId}/members`).catch(() => ({ data: [] }))
+      ]);
+      setProgressData(progRes.data?.data || progRes.data || null);
+      const mList = memRes.data?.data || memRes.data || [];
+      setMembersList(Array.isArray(mList) ? mList : []);
+    } catch {
+      // Non-blocking
+    } finally {
+      setIsLoadingManage(false);
+    }
+  };
+
+  const handleUpdateMemberRole = async (memberId: string, newRole: WorkspaceRole) => {
+    try {
+      await api.patch(`/workspaces/${currentWorkspace.id}/members/${memberId}`, { role: newRole });
+      showToast('Đã cập nhật vai trò thành viên thành công!', 'success');
+      fetchManageData(currentWorkspace.id);
+    } catch (err: any) {
+      showToast(err.response?.data?.message || 'Không thể đổi vai trò thành viên', 'error');
+    }
+  };
+
+  const handleRemoveMember = async (memberId: string, memberName: string) => {
+    if (!window.confirm(`Bạn có chắc chắn muốn xóa "${memberName}" khỏi Không gian này không?`)) return;
+    try {
+      await api.delete(`/workspaces/${currentWorkspace.id}/members/${memberId}`);
+      showToast(`Đã xóa "${memberName}" khỏi không gian!`, 'success');
+      fetchManageData(currentWorkspace.id);
+    } catch (err: any) {
+      showToast(err.response?.data?.message || 'Không thể xóa thành viên', 'error');
+    }
+  };
+
   // Handle Add Member
   const handleAddMember = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -360,12 +403,19 @@ export const WorkspaceSwitcher: React.FC<WorkspaceSwitcherProps> = ({
             {canAddMember && (
               <button
                 type="button"
-                className={`ws-action-pill-btn ${activeView === 'ADD_MEMBER' ? 'active' : ''}`}
-                onClick={() => setActiveView(activeView === 'ADD_MEMBER' ? 'LIST' : 'ADD_MEMBER')}
-                title="Mời thành viên vào không gian này"
+                className={`ws-action-pill-btn ${activeView === 'MANAGE' ? 'active' : ''}`}
+                onClick={() => {
+                  if (activeView === 'MANAGE') {
+                    setActiveView('LIST');
+                  } else {
+                    setActiveView('MANAGE');
+                    fetchManageData(currentWorkspace.id);
+                  }
+                }}
+                title="Quan sát tiến độ & Quản lý cấp quyền thành viên"
               >
-                <UserPlus size={12} />
-                <span>Thêm bạn</span>
+                <Users size={12} />
+                <span>Quản lý & Tiến độ</span>
               </button>
             )}
           </div>
@@ -382,15 +432,7 @@ export const WorkspaceSwitcher: React.FC<WorkspaceSwitcherProps> = ({
                   onClick={() => setCreateType('PROJECT')}
                 >
                   <FolderGit2 size={13} />
-                  <span>Đồ án / Dự án</span>
-                </button>
-                <button
-                  type="button"
-                  className={`ws-type-opt ${createType === 'SUBJECT' ? 'active' : ''}`}
-                  onClick={() => setCreateType('SUBJECT')}
-                >
-                  <GraduationCap size={13} />
-                  <span>Lớp học</span>
+                  <span>Đồ án & Nhóm làm việc</span>
                 </button>
                 <button
                   type="button"
@@ -398,7 +440,7 @@ export const WorkspaceSwitcher: React.FC<WorkspaceSwitcherProps> = ({
                   onClick={() => setCreateType('PERSONAL')}
                 >
                   <User size={13} />
-                  <span>Cá nhân</span>
+                  <span>Không gian cá nhân</span>
                 </button>
               </div>
 
@@ -482,55 +524,178 @@ export const WorkspaceSwitcher: React.FC<WorkspaceSwitcherProps> = ({
             </form>
           )}
 
-          {/* VIEW: ADD MEMBER */}
-          {activeView === 'ADD_MEMBER' && (
-            <form onSubmit={handleAddMember} className="ws-subform-box">
-              <div className="ws-subform-title">Thêm Thành Viên Vào Không Gian</div>
-              <p className="ws-subform-hint">
-                Không gian: <strong>{currentWorkspace.name}</strong>
-              </p>
-
-              <div className="ws-form-field">
-                <label>Email tài khoản người dùng *</label>
-                <input
-                  type="email"
-                  required
-                  placeholder="nguyenvana@vnu.edu.vn"
-                  value={memberEmail}
-                  onChange={(e) => setMemberEmail(e.target.value)}
-                />
-              </div>
-
-              <div className="ws-form-field">
-                <label>Vai trò trong không gian</label>
-                <select
-                  value={memberRole}
-                  onChange={(e) => setMemberRole(e.target.value as WorkspaceRole)}
-                  className="ws-select-field"
-                >
-                  <option value="MEMBER">Thành viên (MEMBER - Tạo & xem việc, ghi chú)</option>
-                  <option value="MANAGER">Quản lý (MANAGER - Quản lý việc & thành viên)</option>
-                  <option value="VIEWER">Chỉ xem (VIEWER - Xem nội dung)</option>
-                </select>
-              </div>
-
-              <div className="ws-subform-actions">
+          {/* VIEW: WORKSPACE GOVERNANCE & PROGRESS OBSERVATION */}
+          {activeView === 'MANAGE' && (
+            <div className="ws-manage-box">
+              <div className="ws-manage-header">
+                <div>
+                  <div className="ws-subform-title">Quản Lý Không Gian & Tiến Độ</div>
+                  <span style={{ fontSize: '11px', color: 'var(--ws-text-muted)' }}>{currentWorkspace.name}</span>
+                </div>
                 <button
                   type="button"
                   className="ws-btn-cancel"
+                  style={{ padding: '2px 8px', fontSize: '11px' }}
                   onClick={() => setActiveView('LIST')}
                 >
-                  Hủy
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmittingMember}
-                  className="ws-btn-submit"
-                >
-                  {isSubmittingMember ? 'Đang gửi...' : 'Gửi Lời Mời'}
+                  Quay lại
                 </button>
               </div>
-            </form>
+
+              {/* Subtabs: PROGRESS vs MEMBERS */}
+              <div className="ws-manage-tabs">
+                <button
+                  type="button"
+                  className={`ws-manage-tab ${manageTab === 'PROGRESS' ? 'active' : ''}`}
+                  onClick={() => setManageTab('PROGRESS')}
+                >
+                  Tiến độ & Năng suất
+                </button>
+                <button
+                  type="button"
+                  className={`ws-manage-tab ${manageTab === 'MEMBERS' ? 'active' : ''}`}
+                  onClick={() => setManageTab('MEMBERS')}
+                >
+                  Thành viên & Phân quyền ({membersList.length})
+                </button>
+              </div>
+
+              {isLoadingManage ? (
+                <div style={{ textAlign: 'center', padding: '30px 10px', fontSize: '12px', color: 'var(--ws-text-muted)' }}>
+                  Đang đồng bộ dữ liệu quản trị...
+                </div>
+              ) : manageTab === 'PROGRESS' ? (
+                <div className="ws-manage-progress-pane">
+                  {/* Progress Bar */}
+                  <div className="ws-progress-summary-card">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '12px', fontWeight: 700 }}>
+                      <span>Tiến độ tổng thể</span>
+                      <span style={{ color: 'var(--ws-accent)' }}>{progressData?.completionRate || 0}%</span>
+                    </div>
+                    <div className="ws-progress-bar-bg">
+                      <div
+                        className="ws-progress-bar-fill"
+                        style={{ width: `${progressData?.completionRate || 0}%` }}
+                      />
+                    </div>
+                    <div className="ws-progress-counters">
+                      <span>✓ {progressData?.completedTasks || 0} xong</span>
+                      <span>⚡ {progressData?.inProgressTasks || 0} đang làm</span>
+                      <span>• {progressData?.todoTasks || 0} cần làm</span>
+                      {progressData?.overdueTasks > 0 && (
+                        <span style={{ color: '#ef4444' }}>! {progressData.overdueTasks} quá hạn</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Member Productivity Breakdown */}
+                  <div className="ws-member-prod-section">
+                    <span style={{ fontSize: '11.5px', fontWeight: 700, color: 'var(--ws-text-muted)', marginBottom: '8px', display: 'block' }}>
+                      Năng suất từng thành viên
+                    </span>
+                    {(!progressData?.memberProductivity || progressData.memberProductivity.length === 0) ? (
+                      <div style={{ fontSize: '11px', color: 'var(--ws-text-faint)', fontStyle: 'italic', padding: '10px 0' }}>
+                        Chưa có dữ liệu phân công nhiệm vụ cho thành viên.
+                      </div>
+                    ) : (
+                      progressData.memberProductivity.map((m: any) => (
+                        <div key={m.userId} className="ws-prod-member-item">
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontSize: '12px', fontWeight: 600 }}>{m.fullName || m.email}</span>
+                            <span style={{ fontSize: '11px', color: 'var(--ws-accent)', fontWeight: 700 }}>
+                              {m.completedCount}/{m.assignedCount} xong ({m.productivityPercent}%)
+                            </span>
+                          </div>
+                          <div className="ws-progress-bar-bg" style={{ height: '4px', marginTop: '4px' }}>
+                            <div
+                              className="ws-progress-bar-fill"
+                              style={{ width: `${m.productivityPercent}%` }}
+                            />
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="ws-manage-members-pane">
+                  {/* Member List with Role Dropdowns */}
+                  <div className="ws-members-list-scroll">
+                    {membersList.map((m: any) => {
+                      const isOwner = m.role === 'OWNER';
+                      const canEditThisMember = currentWorkspace.role === 'OWNER' && !isOwner;
+                      return (
+                        <div key={m.id} className="ws-manage-member-row">
+                          <div className="ws-member-info">
+                            <span className="ws-member-name">{m.user?.fullName || m.user?.email || 'Thành viên'}</span>
+                            <span className="ws-member-email">{m.user?.email}</span>
+                          </div>
+
+                          <div className="ws-member-role-actions">
+                            {isOwner ? (
+                              <span className="ws-role-tag owner">Trưởng nhóm</span>
+                            ) : canEditThisMember ? (
+                              <select
+                                className="ws-role-select"
+                                value={m.role}
+                                onChange={(e) => handleUpdateMemberRole(m.id, e.target.value as WorkspaceRole)}
+                              >
+                                <option value="MEMBER">Thành viên</option>
+                                <option value="MANAGER">Quản lý</option>
+                              </select>
+                            ) : (
+                              <span className="ws-role-tag">{m.role === 'MANAGER' ? 'Quản lý' : 'Thành viên'}</span>
+                            )}
+
+                            {canEditThisMember && (
+                              <button
+                                type="button"
+                                className="ws-member-kick-btn"
+                                onClick={() => handleRemoveMember(m.id, m.user?.fullName || m.user?.email)}
+                                title="Xóa khỏi nhóm"
+                              >
+                                <X size={12} />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Add Member Subform */}
+                  <form onSubmit={handleAddMember} className="ws-add-member-mini-form">
+                    <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--ws-text-muted)' }}>Mời thêm thành viên</span>
+                    <div style={{ display: 'flex', gap: '6px', marginTop: '4px' }}>
+                      <input
+                        type="email"
+                        required
+                        placeholder="Email sinh viên..."
+                        value={memberEmail}
+                        onChange={(e) => setMemberEmail(e.target.value)}
+                        className="ws-mini-input"
+                      />
+                      <select
+                        value={memberRole}
+                        onChange={(e) => setMemberRole(e.target.value as WorkspaceRole)}
+                        className="ws-mini-select"
+                      >
+                        <option value="MEMBER">Thành viên</option>
+                        <option value="MANAGER">Quản lý</option>
+                      </select>
+                      <button
+                        type="submit"
+                        disabled={isSubmittingMember}
+                        className="ws-btn-submit"
+                        style={{ padding: '4px 10px', fontSize: '11px' }}
+                      >
+                        {isSubmittingMember ? '...' : 'Mời'}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              )}
+            </div>
           )}
 
           {/* VIEW: DEFAULT WORKSPACE LIST & INVITATIONS */}

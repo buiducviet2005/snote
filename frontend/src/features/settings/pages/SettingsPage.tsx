@@ -238,17 +238,17 @@ export const SettingsPage: React.FC = () => {
   return (
     <div style={{ maxWidth: '920px', margin: '0 auto' }}>
       {/* Header */}
-      <div style={{ marginBottom: '28px' }}>
+      <div style={{ marginBottom: '24px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <h1 style={{ fontSize: '24px', fontWeight: 800, margin: 0, letterSpacing: '-0.02em' }}>
-            Cài Đặt Tài Khoản & Quản Lý Dữ Liệu
+          <h1 style={{ fontSize: '22px', fontWeight: 800, margin: 0, letterSpacing: '-0.02em' }}>
+            Cài Đặt Tài Khoản
           </h1>
-          <span className={`badge ${isAdmin ? 'badge-rose' : 'badge-blue'}`}>
-            {isAdmin ? '🛡️ QUẢN TRỊ VIÊN (ADMIN)' : '🎓 SINH VIÊN (STUDENT)'}
+          <span className={`badge ${isAdmin ? 'badge-rose' : 'badge-blue'}`} style={{ fontSize: '11px', fontWeight: 600 }}>
+            {isAdmin ? 'Quản trị viên' : (user as any)?.role === 'TEACHER' ? 'Giảng viên' : 'Sinh viên'}
           </span>
         </div>
-        <p style={{ margin: '4px 0 0 0', fontSize: '13.5px', color: 'var(--text-secondary)' }}>
-          Quản lý hồ sơ, đổi mật khẩu bảo mật, sao lưu đa cấp độ và phục hồi toàn vẹn dữ liệu
+        <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: 'var(--text-secondary)' }}>
+          Quản lý thông tin cá nhân, bảo mật mật khẩu và sao lưu dữ liệu học tập
         </p>
       </div>
 

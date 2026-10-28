@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import './workspaceLayout.css';
 import { WorkspaceSummary } from './types';
+import { executeWaterDropThemeTransition } from '../utils/themeTransition';
 import { WorkspaceSidebar } from './WorkspaceSidebar';
 import { WorkspaceSwitcher } from './WorkspaceSwitcher';
 import { WorkspaceCommandPalette } from './WorkspaceCommandPalette';
@@ -132,7 +133,10 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
   }, [theme]);
 
   const toggleTheme = () => {
-    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+    const next = theme === 'dark' ? 'light' : 'dark';
+    executeWaterDropThemeTransition(next, () => {
+      setTheme(next);
+    });
   };
 
   // Fetch workspaces from API on mount

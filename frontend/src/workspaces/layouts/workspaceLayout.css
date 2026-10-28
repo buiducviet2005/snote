@@ -109,6 +109,27 @@
   overflow: visible !important;
 }
 
+.ws-rail-brand-mark {
+  width: 40px;
+  height: 40px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ws-bg-surface-elevated);
+  border: 1px solid var(--ws-border-hairline);
+  color: var(--ws-accent);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 16px;
+  font-weight: 800;
+  user-select: none;
+  box-shadow: var(--ws-shadow-sm);
+}
+
+.ws-brand-mono {
+  line-height: 1;
+}
+
 .ws-rail-divider {
   width: 32px;
   height: 1px;
@@ -2847,4 +2868,258 @@
   background: rgba(99, 102, 241, 0.15);
   color: #6366f1;
   border-color: rgba(99, 102, 241, 0.3);
+}
+
+/* ==========================================================================
+   WATER DROP / INK RIPPLE THEME TRANSITION (EXPANDS RADIALLY FROM SCREEN CENTER)
+   ========================================================================== */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+::view-transition-old(root) {
+  z-index: 1;
+}
+::view-transition-new(root) {
+  z-index: 9999999;
+}
+
+.ws-water-drop-ripple {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  pointer-events: none;
+  z-index: 9999999;
+  opacity: 0.98;
+  box-shadow: 0 0 60px rgba(0, 0, 0, 0.4);
+  transition: transform 0.65s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease;
+}
+
+.ws-water-drop-ripple.animate {
+  transform: translate(-50%, -50%) scale(220);
+}
+
+.ws-water-drop-ripple.fade-out {
+  opacity: 0;
+}
+
+/* ==========================================================================
+   WORKSPACE GOVERNANCE & PROGRESS OBSERVATION FLYOUT STYLES
+   ========================================================================== */
+.ws-manage-box {
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background-color: var(--ws-bg-surface);
+}
+
+.ws-manage-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--ws-border-hairline);
+  padding-bottom: 8px;
+}
+
+.ws-manage-tabs {
+  display: flex;
+  background: var(--ws-bg-rail);
+  border: 1px solid var(--ws-border-hairline);
+  border-radius: 6px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.ws-manage-tab {
+  flex: 1;
+  padding: 5px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  border: none;
+  background: transparent;
+  color: var(--ws-text-muted);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.1s ease;
+  text-align: center;
+}
+
+.ws-manage-tab.active {
+  background: var(--ws-bg-surface);
+  color: var(--ws-accent);
+  box-shadow: var(--ws-shadow-sm);
+}
+
+.ws-manage-progress-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ws-progress-summary-card {
+  background: var(--ws-bg-surface-elevated);
+  border: 1px solid var(--ws-border-hairline);
+  border-radius: 6px;
+  padding: 10px 12px;
+}
+
+.ws-progress-bar-bg {
+  width: 100%;
+  height: 6px;
+  background: var(--ws-bg-app);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.ws-progress-bar-fill {
+  height: 100%;
+  background: var(--ws-accent);
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+.ws-progress-counters {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--ws-text-muted);
+}
+
+.ws-member-prod-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ws-prod-member-item {
+  background: var(--ws-bg-surface-elevated);
+  border: 1px solid var(--ws-border-hairline);
+  border-radius: 6px;
+  padding: 8px 10px;
+}
+
+.ws-members-list-scroll {
+  max-height: 200px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-bottom: 6px;
+}
+
+.ws-manage-member-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 8px;
+  background: var(--ws-bg-surface-elevated);
+  border: 1px solid var(--ws-border-hairline);
+  border-radius: 5px;
+}
+
+.ws-member-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.ws-member-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ws-text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ws-member-email {
+  font-size: 10px;
+  color: var(--ws-text-faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ws-member-role-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ws-role-tag {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--ws-bg-surface);
+  border: 1px solid var(--ws-border-hairline);
+  color: var(--ws-text-muted);
+}
+
+.ws-role-tag.owner {
+  background: rgba(59, 130, 246, 0.12);
+  border-color: rgba(59, 130, 246, 0.3);
+  color: var(--ws-accent);
+}
+
+.ws-role-select {
+  font-size: 10.5px;
+  padding: 2px 4px;
+  border-radius: 4px;
+  background: var(--ws-bg-surface);
+  border: 1px solid var(--ws-border-hairline);
+  color: var(--ws-text-main);
+  outline: none;
+}
+
+.ws-member-kick-btn {
+  padding: 3px;
+  background: transparent;
+  border: none;
+  color: var(--ws-text-faint);
+  cursor: pointer;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ws-member-kick-btn:hover {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+.ws-add-member-mini-form {
+  padding-top: 8px;
+  border-top: 1px solid var(--ws-border-hairline);
+}
+
+.ws-mini-input {
+  flex: 1;
+  padding: 4px 6px;
+  font-size: 11px;
+  border-radius: 4px;
+  border: 1px solid var(--ws-border-hairline);
+  background: var(--ws-bg-app);
+  color: var(--ws-text-main);
+  outline: none;
+}
+
+.ws-mini-select {
+  font-size: 11px;
+  padding: 4px;
+  border-radius: 4px;
+  border: 1px solid var(--ws-border-hairline);
+  background: var(--ws-bg-app);
+  color: var(--ws-text-main);
+  outline: none;
 }

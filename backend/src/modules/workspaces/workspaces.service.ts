@@ -1,3 +1,4 @@
+import type { WorkspaceRole } from '@prisma/client';
 import {
   ConflictError,
   ForbiddenError,
@@ -293,5 +294,48 @@ export class WorkspacesService {
   async join(userId: string, codeOrId: string): Promise<WorkspaceContextDto> {
     const workspaceId = await this.repo.joinWorkspace(userId, codeOrId.trim());
     return this.getContext(workspaceId, userId);
+  }
+
+  async updateMemberRole(
+    workspaceId: string,
+    actorId: string,
+    memberId: string,
+    role: WorkspaceRole
+  ): Promise<WorkspaceMemberDto> {
+    const workspace = await this.repo.findAcceptedContext(workspaceId, actorId);
+    if (!workspace) {
+      throw new NotFoundError('Không tìm thấy Không gian làm việc');
+    }
+    this.assertAction(workspace, 'role.assign');
+
+    const updated = await this.repo.updateMemberRole(workspaceId, memberId, role);
+    return this.mapMember(updated);
+  }
+
+  async removeMember(
+    workspaceId: string,
+    actorId: string,
+    memberId: string
+  ): Promise<void> {
+    const workspace = await this.repo.findAcceptedContext(workspaceId, actorId);
+    if (!workspace) {
+      throw new NotFoundError('Không tìm thấy Không gian làm việc');
+    }
+    this.assertAction(workspace, 'member.manage');
+
+    await this.repo.removeMember(workspaceId, memberId);
+  }
+
+  async getProgress(
+    workspaceId: string,
+    actorId: string
+  ) {
+    const workspace = await this.repo.findAcceptedContext(workspaceId, actorId);
+    if (!workspace) {
+      throw new NotFoundError('Không tìm thấy Không gian làm việc');
+    }
+    this.assertAction(workspace, 'progress.read.workspace');
+
+    return this.repo.getWorkspaceProgress(workspaceId);
   }
 }

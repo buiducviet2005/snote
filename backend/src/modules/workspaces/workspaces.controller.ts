@@ -70,4 +70,23 @@ export class WorkspacesController {
     const data = await this.service.join(req.user!.id, input.codeOrId);
     res.status(200).json({ success: true, data });
   };
+
+  updateMemberRole = async (req: Request, res: Response): Promise<void> => {
+    const { workspaceId, memberId } = req.params;
+    const { role } = req.body;
+    const data = await this.service.updateMemberRole(workspaceId as string, req.user!.id, memberId as string, role);
+    res.status(200).json({ success: true, data, message: 'Đã cập nhật vai trò thành viên' });
+  };
+
+  removeMember = async (req: Request, res: Response): Promise<void> => {
+    const { workspaceId, memberId } = req.params;
+    await this.service.removeMember(workspaceId as string, req.user!.id, memberId as string);
+    res.status(200).json({ success: true, message: 'Đã xóa thành viên khỏi không gian làm việc' });
+  };
+
+  progress = async (req: Request, res: Response): Promise<void> => {
+    const { workspaceId } = req.params;
+    const data = await this.service.getProgress(workspaceId as string, req.user!.id);
+    res.status(200).json({ success: true, data });
+  };
 }

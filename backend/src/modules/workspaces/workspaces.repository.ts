@@ -99,6 +99,9 @@ export interface WorkspaceRepositoryPort {
   acceptInvitation(memberId: string, userId: string): Promise<string>;
   declineInvitation(memberId: string, userId: string): Promise<void>;
   joinWorkspace(userId: string, codeOrId: string): Promise<string>;
+  updateMemberRole(workspaceId: string, memberId: string, newRole: WorkspaceRole): Promise<WorkspaceMemberRecord>;
+  removeMember(workspaceId: string, memberId: string): Promise<void>;
+  getWorkspaceProgress(workspaceId: string): Promise<any>;
 }
 
 const contextInclude = {
@@ -411,6 +414,118 @@ export class WorkspaceRepository implements WorkspaceRepositoryPort {
         status: 'DECLINED'
       }
     });
+  }
+
+  async updateMemberRole(
+    workspaceId: string,
+    memberId: string,
+    newRole: WorkspaceRole
+  ): Promise<WorkspaceMemberRecord> {
+    const member = await prisma.workspaceMember.findFirst({
+      where: { id: memberId, workspaceId },
+      select: memberSelect
+    });
+    if (!member) {
+      throw new NotFoundError('Không tìm thấy thành viên trong Không gian làm việc');
+    }
+    return prisma.workspaceMember.update({
+      where: { id: memberId },
+      data: { role: newRole },
+      select: memberSelect
+    });
+  }
+
+  async removeMember(
+    workspaceId: string,
+    memberId: string
+  ): Promise<void> {
+    const member = await prisma.workspaceMember.findFirst({
+      where: { id: memberId, workspaceId }
+    });
+    if (!member) {
+      throw new NotFoundError('Không tìm thấy thành viên trong Không gian làm việc');
+    }
+    if (member.role === 'OWNER') {
+      throw new ConflictError('Không thể xóa Trưởng nhóm (Owner) khỏi Không gian làm việc');
+    }
+    await prisma.workspaceMember.update({
+      where: { id: memberId },
+      data: { status: 'REMOVED' }
+    });
+  }
+
+  async getWorkspaceProgress(workspaceId: string) {
+    const workspace = await prisma.workspace.findUnique({
+      where: { id: workspaceId },
+      select: {
+        id: true,
+        type: true,
+        projectId: true,
+        members: {
+          where: { status: 'ACCEPTED' },
+          select: {
+            id: true,
+            userId: true,
+            role: true,
+            user: { select: { id: true, fullName: true, email: true } }
+          }
+        }
+      }
+    });
+    if (!workspace) {
+      throw new NotFoundError('Không tìm thấy Không gian làm việc');
+    }
+
+    const tasks = workspace.projectId
+      ? await prisma.task.findMany({
+          where: { projectId: workspace.projectId, deletedAt: null },
+          select: {
+            id: true,
+            status: true,
+            dueDate: true,
+            assignees: { select: { userId: true } }
+          }
+        })
+      : [];
+
+    const now = new Date();
+    const totalTasks = tasks.length;
+    const completedTasks = tasks.filter((t) => t.status === 'DONE').length;
+    const inProgressTasks = tasks.filter((t) => t.status === 'IN_PROGRESS').length;
+    const todoTasks = tasks.filter((t) => t.status === 'TODO').length;
+    const overdueTasks = tasks.filter((t) => t.status !== 'DONE' && t.dueDate && new Date(t.dueDate) < now).length;
+    const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+    const memberProductivity = workspace.members.map((m) => {
+      const assigned = tasks.filter((t) => t.assignees.some((a) => a.userId === m.userId));
+      const assignedCount = assigned.length;
+      const memberDone = assigned.filter((t) => t.status === 'DONE').length;
+      const memberInProgress = assigned.filter((t) => t.status === 'IN_PROGRESS').length;
+      const productivityPercent = assignedCount > 0 ? Math.round((memberDone / assignedCount) * 100) : 0;
+      return {
+        memberId: m.id,
+        userId: m.userId,
+        fullName: m.user.fullName,
+        email: m.user.email,
+        role: m.role,
+        assignedCount,
+        completedCount: memberDone,
+        inProgressCount: memberInProgress,
+        productivityPercent
+      };
+    });
+
+    return {
+      workspaceId,
+      totalTasks,
+      completedTasks,
+      inProgressTasks,
+      todoTasks,
+      overdueTasks,
+      completionRate,
+      membersCount: workspace.members.length,
+      memberProductivity
+    };
   }
 
   async joinWorkspace(userId: string, codeOrId: string): Promise<string> {

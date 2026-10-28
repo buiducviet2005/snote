@@ -448,178 +448,30 @@ export const NotesObsidianWorkbench: React.FC<NotesObsidianWorkbenchProps> = ({
       </aside>
 
       {/* ====================================================================
-          2. CENTER WORKSPACE EDITOR & READER PANE
+          2. CENTER WORKSPACE EDITOR & READER PANE (ZERO CLUTTER)
           ==================================================================== */}
-      <main className="obs-center-pane">
-        {/* Top Header Toolbar */}
-        <header className="obs-center-header">
-          <div className="obs-center-header-left">
-            {isLeftCollapsed && (
-              <button
-                type="button"
-                className="obs-unhide-btn"
-                onClick={() => setIsLeftCollapsed(false)}
-                title="Hiện lại ngăn duyệt bài"
-              >
-                <ChevronRight size={14} />
-              </button>
-            )}
+      <main className="obs-center-pane" style={{ position: 'relative' }}>
+        {/* Floating Unhide Triggers */}
+        {isLeftCollapsed && (
+          <button
+            type="button"
+            className="obs-unhide-floating-left"
+            onClick={() => setIsLeftCollapsed(false)}
+            title="Hiện lại danh sách bài ghi"
+          >
+            <ChevronRight size={13} />
+          </button>
+        )}
 
-            {/* Live Editable Title Input */}
-            <input
-              type="text"
-              className="obs-title-input"
-              value={editTitle}
-              onChange={handleTitleChange}
-              placeholder="Nhập tiêu đề ghi chú..."
-              disabled={!selectedNote}
-            />
-          </div>
-
-          {/* Right Header Actions */}
-          <div className="obs-center-header-tools">
-            {/* Live Preview vs Reading View Mode Switcher */}
-            <div className="obs-mode-switcher">
-              <button
-                type="button"
-                className={`obs-mode-btn ${editorMode === 'EDIT' ? 'active' : ''}`}
-                onClick={() => setEditorMode('EDIT')}
-                title="Chế độ soạn thảo trực tiếp"
-              >
-                <Edit3 size={12} />
-                <span>Soạn thảo</span>
-              </button>
-              <button
-                type="button"
-                className={`obs-mode-btn ${editorMode === 'READ' ? 'active' : ''}`}
-                onClick={() => setEditorMode('READ')}
-                title="Chế độ đọc tĩnh chuẩn Markdown"
-              >
-                <BookOpen size={12} />
-                <span>Xem đọc</span>
-              </button>
-            </div>
-
-            {selectedNote && (
-              <>
-                <button
-                  type="button"
-                  className="icon-button"
-                  onClick={() => onTogglePin(selectedNote.id)}
-                  title={selectedNote.isPinned ? 'Bỏ ghim' : 'Ghim bài ghi'}
-                >
-                  <Pin size={13} style={{ color: selectedNote.isPinned ? 'var(--ws-accent)' : undefined }} />
-                </button>
-
-                {onShareNote && (
-                  <button
-                    type="button"
-                    className="icon-button"
-                    onClick={() => onShareNote(selectedNote)}
-                    title="Chia sẻ ghi chú"
-                  >
-                    <Share2 size={13} />
-                  </button>
-                )}
-
-                {onConvertToTask && (
-                  <button
-                    type="button"
-                    className="icon-button"
-                    onClick={() => onConvertToTask(selectedNote)}
-                    title="Chuyển thành Công việc (Task)"
-                  >
-                    <CheckSquare size={13} style={{ color: 'var(--color-success)' }} />
-                  </button>
-                )}
-
-                <button
-                  type="button"
-                  className="icon-button"
-                  onClick={() => onDeleteNote(selectedNote.id)}
-                  title="Xóa ghi chú"
-                >
-                  <Trash2 size={13} style={{ color: '#ef4444' }} />
-                </button>
-              </>
-            )}
-
-            {isRightCollapsed && (
-              <button
-                type="button"
-                className="obs-unhide-btn"
-                onClick={() => setIsRightCollapsed(false)}
-                title="Hiện ngăn thanh tra tri thức (Inspector)"
-              >
-                <ChevronLeft size={14} />
-              </button>
-            )}
-          </div>
-        </header>
-
-        {/* Quick Formatting Bar (Obsidian Style) */}
-        {editorMode === 'EDIT' && (
-          <div className="obs-format-bar">
-            <button
-              type="button"
-              className="obs-fmt-btn obs-fmt-wiki"
-              onClick={() => insertText('[[', ']]', 'Tên ghi chú liên kết')}
-              title="Chèn liên kết hai chiều [[Tên bài ghi]]"
-            >
-              <span style={{ fontFamily: 'JetBrains Mono, monospace', fontWeight: 800 }}>[[ ]]</span>
-              <span>Wiki-Link</span>
-            </button>
-
-            <button
-              type="button"
-              className="obs-fmt-btn obs-fmt-tag"
-              onClick={() => insertText('#', '', 'tag')}
-              title="Chèn thẻ phân loại #tag"
-            >
-              <span style={{ fontWeight: 800 }}>#</span>
-              <span>Tag</span>
-            </button>
-
-            <button
-              type="button"
-              className="obs-fmt-btn"
-              onClick={() => insertText('- [ ] ', '', 'Công việc cần làm')}
-              title="Chèn hộp kiểm việc cần làm [ ]"
-            >
-              <CheckSquare size={12} />
-              <span>Việc cần làm</span>
-            </button>
-
-            <button
-              type="button"
-              className="obs-fmt-btn"
-              onClick={() => insertText('- ', '', 'Mục danh sách')}
-              title="Chèn danh sách đầu dòng"
-            >
-              <List size={12} />
-              <span>Danh sách</span>
-            </button>
-
-            <button
-              type="button"
-              className="obs-fmt-btn"
-              onClick={() => insertText('**', '**', 'chữ in đậm')}
-              title="In đậm chữ"
-            >
-              <strong>B</strong>
-              <span>In đậm</span>
-            </button>
-
-            <button
-              type="button"
-              className="obs-fmt-btn"
-              onClick={() => insertText('```\n', '\n```', 'mã code')}
-              title="Chèn khối mã nguồn"
-            >
-              <span style={{ fontFamily: 'JetBrains Mono, monospace' }}>{'</>'}</span>
-              <span>Khối mã</span>
-            </button>
-          </div>
+        {isRightCollapsed && (
+          <button
+            type="button"
+            className="obs-unhide-floating-right"
+            onClick={() => setIsRightCollapsed(false)}
+            title="Hiện ngăn thanh tra liên kết (Inspector)"
+          >
+            <ChevronLeft size={13} />
+          </button>
         )}
 
         {/* Main Content Area */}
@@ -628,7 +480,66 @@ export const NotesObsidianWorkbench: React.FC<NotesObsidianWorkbenchProps> = ({
             <div style={{ textAlign: 'center', padding: '120px 20px', color: 'var(--ws-text-muted)' }}>
               <i>Chọn một ghi chú ở cột bên trái hoặc bấm <b>"+ Mới"</b> để bắt đầu soạn thảo.</i>
             </div>
-          ) : editorMode === 'EDIT' ? (
+          ) : (
+            <>
+              {/* Obsidian Inline Document Header */}
+              <div className="obs-doc-header">
+                <input
+                  type="text"
+                  className="obs-doc-title-input"
+                  value={editTitle}
+                  onChange={handleTitleChange}
+                  placeholder="Ghi chú không tên..."
+                />
+                <div className="obs-doc-tools">
+                  <button
+                    type="button"
+                    className={`obs-doc-tool-btn ${editorMode === 'READ' ? 'active' : ''}`}
+                    onClick={() => setEditorMode(editorMode === 'EDIT' ? 'READ' : 'EDIT')}
+                    title={editorMode === 'EDIT' ? 'Chuyển sang chế độ đọc tĩnh (Ctrl+E)' : 'Chuyển sang chế độ soạn thảo (Ctrl+E)'}
+                  >
+                    {editorMode === 'EDIT' ? <BookOpen size={14} /> : <Edit3 size={14} />}
+                  </button>
+                  <button
+                    type="button"
+                    className={`obs-doc-tool-btn ${selectedNote.isPinned ? 'active' : ''}`}
+                    onClick={() => onTogglePin(selectedNote.id)}
+                    title={selectedNote.isPinned ? 'Bỏ ghim bài ghi' : 'Ghim bài ghi'}
+                  >
+                    <Pin size={14} style={{ color: selectedNote.isPinned ? 'var(--ws-accent)' : undefined }} />
+                  </button>
+                  {onConvertToTask && (
+                    <button
+                      type="button"
+                      className="obs-doc-tool-btn"
+                      onClick={() => onConvertToTask(selectedNote)}
+                      title="Chuyển thành Công việc (Task)"
+                    >
+                      <CheckSquare size={14} />
+                    </button>
+                  )}
+                  {onShareNote && (
+                    <button
+                      type="button"
+                      className="obs-doc-tool-btn"
+                      onClick={() => onShareNote(selectedNote)}
+                      title="Chia sẻ ghi chú"
+                    >
+                      <Share2 size={14} />
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className="obs-doc-tool-btn danger"
+                    onClick={() => onDeleteNote(selectedNote.id)}
+                    title="Xóa ghi chú"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              </div>
+
+              {editorMode === 'EDIT' ? (
             <textarea
               ref={textareaRef}
               className="obs-editor-textarea"
@@ -659,6 +570,8 @@ export const NotesObsidianWorkbench: React.FC<NotesObsidianWorkbenchProps> = ({
                 setSearchQuery(`#${tag}`);
               }}
             />
+          )}
+            </>
           )}
         </div>
 
