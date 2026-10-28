@@ -5,10 +5,10 @@
 .obs-workbench {
   display: flex;
   height: 100%;
-  min-height: 580px;
+  min-height: 500px;
   background-color: var(--ws-bg-surface);
-  border: 1px solid var(--ws-border-hairline);
-  border-radius: 8px;
+  border: none;
+  border-radius: 0;
   overflow: hidden;
   position: relative;
 }

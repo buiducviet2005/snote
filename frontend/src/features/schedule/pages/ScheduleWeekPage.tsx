@@ -79,22 +79,11 @@ export const ScheduleWeekPage: React.FC = () => {
 
   return (
     <div style={{ maxWidth: '1440px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-      {/* Top Header: Context Badges & Action Button */}
+      {/* Top Header: Actions */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          {currentSubjectObj ? (
-            <span className="badge badge-blue" style={{ fontSize: '12px', padding: '4px 10px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-              <BookOpen size={13} />
-              <span>[{currentSubjectObj.code || 'MÔN'}] {currentSubjectObj.name}</span>
-            </span>
-          ) : (
-            <span className="badge badge-neutral" style={{ fontSize: '12px', padding: '4px 10px' }}>
-              Tất cả môn học & đồ án
-            </span>
-          )}
-
-          <span className="badge badge-green" style={{ fontSize: '12px', padding: '4px 10px' }}>
-            {events.length} mốc lịch & đầu việc
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 500 }}>
+            {events.length} mốc sự kiện & lịch trình
           </span>
         </div>
 

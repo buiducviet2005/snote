@@ -233,16 +233,16 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
 
   // Compute Breadcrumb Title from current route
   const getBreadcrumbTitle = (path: string) => {
-    if (path.startsWith('/notes')) return 'Kho Ghi Chú & Bài Giảng';
-    if (path.startsWith('/tasks')) return 'Việc Cần Làm & Bài Tập';
-    if (path.startsWith('/schedule')) return 'Thời Khóa Biểu & Lịch Thi';
-    if (path.startsWith('/classes')) return 'Lớp Học Học Phần';
-    if (path.startsWith('/semesters')) return 'Kế Hoạch Học Kỳ';
-    if (path.startsWith('/projects')) return 'Đồ Án & Dự Án';
-    if (path.startsWith('/progress')) return 'Tiến Độ Học Tập';
-    if (path.startsWith('/settings')) return 'Cài Đặt Hệ Thống';
-    if (path.startsWith('/status')) return 'Trạng Thái Máy Chủ';
-    return 'Bàn Học Cá Nhân';
+    if (path.startsWith('/notes')) return 'Ghi chú';
+    if (path.startsWith('/tasks')) return 'Công việc';
+    if (path.startsWith('/schedule')) return 'Thời khóa biểu';
+    if (path.startsWith('/classes')) return 'Lớp học';
+    if (path.startsWith('/semesters')) return 'Học kỳ';
+    if (path.startsWith('/projects')) return 'Đồ án';
+    if (path.startsWith('/progress')) return 'Tiến độ';
+    if (path.startsWith('/settings')) return 'Cài đặt';
+    if (path.startsWith('/status')) return 'Trạng thái';
+    return 'Bàn học';
   };
 
   const handleCreateNote = () => {
@@ -437,7 +437,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
         )}
 
         {/* Dynamic Content Canvas - Edge-to-Edge Full Bleed */}
-        <main className="ws-content-scroll">
+        <main className={`ws-content-scroll ${location.pathname.startsWith('/notes') ? 'ws-content-fullbleed' : ''}`}>
           {children || <Outlet />}
         </main>
       </div>

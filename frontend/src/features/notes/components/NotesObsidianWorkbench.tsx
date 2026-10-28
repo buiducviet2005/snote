@@ -9,6 +9,7 @@ import {
   OutlineHeading,
   WikiLink
 } from '../utils/smartNoteParser';
+import { handleSmartListKeyDown } from '../utils/smartKeyboard';
 import { useToast } from '../../../contexts/ToastContext';
 import {
   Search,
@@ -386,7 +387,7 @@ export const NotesObsidianWorkbench: React.FC<NotesObsidianWorkbenchProps> = ({
               className={`obs-filter-pill ${filterType === 'PINNED' ? 'active' : ''}`}
               onClick={() => setFilterType('PINNED')}
             >
-              📌 Ghim
+              Ghim
             </button>
             <button
               type="button"
@@ -634,6 +635,12 @@ export const NotesObsidianWorkbench: React.FC<NotesObsidianWorkbenchProps> = ({
               placeholder="Bắt đầu ghi chép học tập... Gõ [[ để liên kết bài khác, # để gắn thẻ..."
               value={editContent}
               onChange={handleContentChange}
+              onKeyDown={(e) => {
+                handleSmartListKeyDown(e, editContent, (newContent) => {
+                  setEditContent(newContent);
+                  triggerAutosave(editTitle, newContent);
+                });
+              }}
             />
           ) : (
             <MarkdownViewer
@@ -658,13 +665,16 @@ export const NotesObsidianWorkbench: React.FC<NotesObsidianWorkbenchProps> = ({
         {/* 4. Bottom Status Bar */}
         <footer className="obs-status-bar">
           <div className="obs-status-left">
-            <span>📝 {wordsCount} từ</span>
-            <span>🔤 {editContent.length} ký tự</span>
-            <span>🔗 {linkedBacklinks.length} backlinks</span>
-            <span>⏱️ ~{Math.ceil(Math.max(wordsCount, 1) / 200)} phút đọc</span>
+            <span>{wordsCount} từ</span>
+            <span style={{ opacity: 0.35 }}>•</span>
+            <span>{editContent.length} ký tự</span>
+            <span style={{ opacity: 0.35 }}>•</span>
+            <span>{linkedBacklinks.length} liên kết</span>
+            <span style={{ opacity: 0.35 }}>•</span>
+            <span>~{Math.ceil(Math.max(wordsCount, 1) / 200)} phút đọc</span>
           </div>
           <div className="obs-status-right">
-            <span>{isSaving ? 'Đang lưu...' : '✓ Đã lưu'}</span>
+            <span>{isSaving ? 'Đang lưu...' : 'Đã lưu'}</span>
           </div>
         </footer>
       </main>

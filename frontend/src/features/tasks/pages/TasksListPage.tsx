@@ -138,7 +138,7 @@ export const TasksListPage: React.FC = () => {
     try {
       await api.patch(`/tasks/${id}/status`, { status: nextStatus });
       if (nextStatus === TaskStatus.DONE) {
-        showToast('🎉 Tuyệt vời! Bạn đã hoàn thành công việc!', 'success');
+        showToast('Đã hoàn thành công việc!', 'success');
       } else {
         showToast('Đã chuyển công việc về danh sách Cần làm', 'info');
       }
@@ -152,9 +152,9 @@ export const TasksListPage: React.FC = () => {
     try {
       await api.patch(`/tasks/${id}/status`, { status: newStatus });
       if (newStatus === TaskStatus.DONE) {
-        showToast('🎉 Tuyệt vời! Đã hoàn tất bài tập!', 'success');
+        showToast('Đã hoàn tất bài tập!', 'success');
       } else if (newStatus === TaskStatus.IN_PROGRESS) {
-        showToast('⚡ Đang thực hiện công việc...', 'info');
+        showToast('Đang thực hiện công việc...', 'info');
       } else {
         showToast('Đã cập nhật trạng thái công việc', 'info');
       }
@@ -306,29 +306,27 @@ export const TasksListPage: React.FC = () => {
             </button>
           </div>
 
-          <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>
-            {totalTasks} công việc
+          <span style={{ fontSize: '11.5px', color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+            <span>{totalTasks} việc</span>
+            <span>•</span>
+            <span style={{ color: 'var(--color-success)', fontWeight: 600 }}>{doneTasks.length} xong</span>
           </span>
 
           {overdueCount > 0 && (
             <span
               className="badge"
               style={{
-                fontSize: '11px',
-                padding: '2px 7px',
-                backgroundColor: 'rgba(239, 68, 68, 0.15)',
+                fontSize: '10.5px',
+                padding: '1px 6px',
+                backgroundColor: 'rgba(239, 68, 68, 0.12)',
                 color: '#ef4444',
-                border: '1px solid rgba(239, 68, 68, 0.3)',
-                fontWeight: 700
+                border: '1px solid rgba(239, 68, 68, 0.25)',
+                fontWeight: 600
               }}
             >
               {overdueCount} quá hạn
             </span>
           )}
-
-          <span className="badge badge-green" style={{ fontSize: '11px', padding: '2px 7px', fontWeight: 600 }}>
-            {doneTasks.length}/{totalTasks} xong
-          </span>
         </div>
 
         {/* Right: Quick Search, Filter Popover, Add Buttons */}
@@ -438,10 +436,10 @@ export const TasksListPage: React.FC = () => {
                     style={{ fontSize: '12px', width: '100%' }}
                   >
                     <option value="ALL">Tất cả mức độ</option>
-                    <option value={TaskPriority.URGENT}>🔴 Khẩn cấp (Urgent)</option>
-                    <option value={TaskPriority.HIGH}>🟠 Cao (High)</option>
-                    <option value={TaskPriority.MEDIUM}>🟡 Trung bình (Medium)</option>
-                    <option value={TaskPriority.LOW}>🟢 Thấp (Low)</option>
+                    <option value={TaskPriority.URGENT}>Khẩn cấp (Urgent)</option>
+                    <option value={TaskPriority.HIGH}>Cao (High)</option>
+                    <option value={TaskPriority.MEDIUM}>Trung bình (Medium)</option>
+                    <option value={TaskPriority.LOW}>Thấp (Low)</option>
                   </select>
                 </div>
 

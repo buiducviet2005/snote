@@ -195,7 +195,7 @@ export const NotesListPage: React.FC = () => {
   };
 
   return (
-    <div style={{ width: '100%', height: 'calc(100vh - 86px)', margin: '0', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ width: '100%', height: '100%', margin: '0', display: 'flex', flexDirection: 'column' }}>
       {loading && notes.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '100px 0', color: 'var(--text-muted)' }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', fontSize: '14px' }}>
