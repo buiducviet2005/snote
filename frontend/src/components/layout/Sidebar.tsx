@@ -521,7 +521,14 @@ export const Sidebar: React.FC = () => {
 
                 <button
                   type="button"
-                  onClick={logout}
+                  onClick={async () => {
+                    try {
+                      await logout();
+                    } catch (error) {
+                      // Logout unmounts this sidebar immediately; a browser alert remains visible.
+                      window.alert((error as Error).message || 'Chưa thể xác nhận đăng xuất. Vui lòng tải lại trang để thử lại.');
+                    }
+                  }}
                   className="btn btn-ghost btn-icon btn-sm"
                   title="Đăng xuất"
                   style={{
