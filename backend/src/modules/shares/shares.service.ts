@@ -159,7 +159,7 @@ export class SharesService {
     const share = await prisma.resourceShare.findUnique({
       where: { shareToken: token },
       include: {
-        owner: { select: { id: true, fullName: true, email: true, avatarUrl: true } }
+        owner: { select: { id: true, fullName: true, avatarUrl: true } }
       }
     });
 
@@ -175,7 +175,14 @@ export class SharesService {
     if (share.targetType === ShareTargetType.NOTE) {
       targetItem = await prisma.note.findFirst({
         where: { id: share.targetId, deletedAt: null },
-        include: {
+        select: {
+          id: true,
+          title: true,
+          content: true,
+          noteType: true,
+          isPinned: true,
+          createdAt: true,
+          updatedAt: true,
           subject: { select: { id: true, name: true, code: true, color: true } },
           noteTags: { include: { tag: true } }
         }
@@ -183,7 +190,15 @@ export class SharesService {
     } else if (share.targetType === ShareTargetType.TASK) {
       targetItem = await prisma.task.findFirst({
         where: { id: share.targetId, deletedAt: null },
-        include: {
+        select: {
+          id: true,
+          title: true,
+          description: true,
+          status: true,
+          priority: true,
+          dueDate: true,
+          createdAt: true,
+          updatedAt: true,
           subject: { select: { id: true, name: true, code: true, color: true } }
         }
       });

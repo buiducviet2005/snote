@@ -61,7 +61,7 @@ export const Topbar: React.FC = () => {
   return (
     <>
       <header
-        className="glass-panel"
+        className="glass-panel topbar-header"
         style={{
           height: '68px',
           borderBottom: '1px solid var(--border-color)',

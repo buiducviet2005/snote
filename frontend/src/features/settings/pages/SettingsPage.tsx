@@ -616,7 +616,7 @@ export const SettingsPage: React.FC = () => {
               style={{ fontSize: '12.5px', width: '220px' }}
             >
               <option value="MERGE">➕ Chế độ Gộp (Merge - Giữ dữ liệu cũ)</option>
-              <option value="REPLACE">⚠️ Chế độ Ghi đè (Replace - Xóa cũ)</option>
+              <option value="REPLACE" disabled>⚠️ Chế độ Ghi đè (Replace - Khóa trong bản Pilot)</option>
             </select>
 
             <button

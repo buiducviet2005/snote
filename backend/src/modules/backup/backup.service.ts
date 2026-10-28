@@ -206,23 +206,13 @@ ${note.content || ''}
       throw new BadRequestError('Tệp sao lưu không hợp lệ hoặc không đúng định dạng SNOTE');
     }
 
-    return await prisma.$transaction(async (tx) => {
-      // Nếu là REPLACE, xóa dữ liệu cũ
-      if (mode === 'REPLACE') {
-        await tx.noteTag.deleteMany({ where: { note: { userId } } });
-        await tx.taskTag.deleteMany({ where: { task: { userId } } });
-        await tx.taskNoteLink.deleteMany({ where: { task: { userId } } });
-        await tx.taskAssignee.deleteMany({ where: { task: { userId } } });
-        await tx.note.deleteMany({ where: { userId } });
-        await tx.task.deleteMany({ where: { userId } });
-        await tx.scheduleEvent.deleteMany({ where: { userId } });
-        await tx.projectMember.deleteMany({ where: { userId } });
-        await tx.project.deleteMany({ where: { userId } });
-        await tx.subject.deleteMany({ where: { userId } });
-        await tx.semester.deleteMany({ where: { userId } });
-        await tx.tag.deleteMany({ where: { userId } });
-      }
+    if (mode === 'REPLACE') {
+      throw new BadRequestError(
+        'Chế độ Ghi đè (REPLACE) tạm thời bị khóa trong giai đoạn thử nghiệm pilot nhằm phòng ngừa rủi ro mất mát dữ liệu học tập ngoài ý muốn. Vui lòng chọn chế độ Ghép thêm (MERGE).'
+      );
+    }
 
+    return await prisma.$transaction(async (tx) => {
       const idMap = new Map<string, string>(); // oldId -> newId
 
       // 1. Restore Semesters

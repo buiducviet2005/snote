@@ -1022,3 +1022,55 @@ code, pre, kbd {
 
 
 
+
+
+/* ==========================================================================
+   Responsive & Viewport Safety Rules (360px Mobile to 1280px Desktop)
+   ========================================================================== */
+
+html, body, #root {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
+.topbar-header {
+  min-height: 64px;
+  padding: 0 clamp(10px, 2.5vw, 28px);
+}
+
+@media (max-width: 768px) {
+  .topbar-header {
+    height: auto !important;
+    padding: 8px 12px !important;
+    gap: 8px !important;
+    flex-wrap: wrap !important;
+  }
+  .topbar-context-group {
+    width: 100% !important;
+    gap: 8px !important;
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+  .topbar-actions-group {
+    width: 100% !important;
+    justify-content: space-between !important;
+    gap: 8px !important;
+  }
+  .topbar-search-trigger {
+    min-width: 0 !important;
+    flex: 1 !important;
+  }
+  .app-main-content {
+    padding: clamp(10px, 2vw, 16px) !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .sidebar-rail-placeholder {
+    width: 56px !important;
+  }
+  .snote-select {
+    min-width: 120px !important;
+    font-size: 12px !important;
+  }
+}
