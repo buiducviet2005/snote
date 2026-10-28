@@ -92,7 +92,7 @@ export const NotesObsidianWorkbench: React.FC<NotesObsidianWorkbenchProps> = ({
 
   // Left Explorer Filters
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterType, setFilterType] = useState<'ALL' | 'PINNED' | 'SUBJECT' | 'PROJECT'>('ALL');
+  const [filterType, setFilterType] = useState<'ALL' | 'PINNED' | 'PROJECT'>('ALL');
 
   // Editor State
   const [editTitle, setEditTitle] = useState('');
@@ -166,8 +166,6 @@ export const NotesObsidianWorkbench: React.FC<NotesObsidianWorkbenchProps> = ({
     let list = notes;
     if (filterType === 'PINNED') {
       list = list.filter((n) => n.isPinned);
-    } else if (filterType === 'SUBJECT') {
-      list = list.filter((n) => Boolean(n.subjectId));
     } else if (filterType === 'PROJECT') {
       list = list.filter((n) => Boolean(n.projectId));
     }
@@ -391,17 +389,10 @@ export const NotesObsidianWorkbench: React.FC<NotesObsidianWorkbenchProps> = ({
             </button>
             <button
               type="button"
-              className={`obs-filter-pill ${filterType === 'SUBJECT' ? 'active' : ''}`}
-              onClick={() => setFilterType('SUBJECT')}
-            >
-              Lớp học
-            </button>
-            <button
-              type="button"
               className={`obs-filter-pill ${filterType === 'PROJECT' ? 'active' : ''}`}
               onClick={() => setFilterType('PROJECT')}
             >
-              Đồ án
+              Dự án
             </button>
           </div>
         </div>
