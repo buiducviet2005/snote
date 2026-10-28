@@ -7,7 +7,7 @@ const optionalUuid = z.preprocess(
 
 export const createTaskSchema = z.object({
   title: z
-    .string({ required_error: 'Tiêu đề công việc là bắt buộc' })
+    .string({ error: 'Tiêu đề công việc là bắt buộc' })
     .trim()
     .min(1, 'Tiêu đề công việc không được để trống')
     .max(255, 'Tiêu đề công việc không quá 255 ký tự'),

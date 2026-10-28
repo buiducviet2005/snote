@@ -1,9 +1,9 @@
 import { z } from 'zod';
 
 export const createSubjectSchema = z.object({
-  semesterId: z.string({ required_error: 'Học kỳ (semesterId) là bắt buộc' }).uuid('semesterId phải là UUID hợp lệ'),
+  semesterId: z.string({ error: 'Học kỳ (semesterId) là bắt buộc' }).uuid('semesterId phải là UUID hợp lệ'),
   name: z
-    .string({ required_error: 'Tên môn học là bắt buộc' })
+    .string({ error: 'Tên môn học là bắt buộc' })
     .min(2, 'Tên môn học phải có ít nhất 2 ký tự')
     .max(150, 'Tên môn học không được vượt quá 150 ký tự'),
   code: z.string().max(50, 'Mã môn học không vượt quá 50 ký tự').optional(),
