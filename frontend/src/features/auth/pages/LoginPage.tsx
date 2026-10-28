@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
 import { GoogleSignInButton } from '../components/GoogleSignInButton';
-import { GraduationCap, Mail, Lock, Eye, EyeOff, ArrowRight, Sparkles, ShieldCheck } from 'lucide-react';
+import { GraduationCap, Mail, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react';
 
 export const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -203,37 +203,6 @@ export const LoginPage: React.FC = () => {
         {/* Google Sign-In */}
         <GoogleSignInButton onSuccess={() => navigate('/notes')} text="Đăng nhập bằng Google" />
 
-        {/* Demo Quick Fills (Chỉ hiển thị trên môi trường phát triển cục bộ) */}
-        {process.env.NODE_ENV !== 'production' && (
-        <div style={{ marginTop: '22px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <div style={{ fontSize: '11.5px', color: 'var(--text-muted)', textAlign: 'center', fontWeight: 600 }}>
-            TÀI KHOẢN TRẢI NGHIỆM MẪU (1-CLICK FILL):
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-            <button
-              type="button"
-              onClick={handleFillStudent}
-              className="btn btn-secondary btn-sm"
-              style={{ fontSize: '12px', justifyContent: 'center' }}
-            >
-              <Sparkles size={13} style={{ color: 'var(--accent-primary)' }} />
-              <span>Sinh Viên</span>
-            </button>
-            <button
-              type="button"
-              onClick={handleFillAdmin}
-              className="btn btn-secondary btn-sm"
-              style={{ fontSize: '12px', justifyContent: 'center' }}
-            >
-              <ShieldCheck size={13} style={{ color: 'var(--color-danger)' }} />
-              <span>Admin Hệ Thống</span>
-            </button>
-          </div>
-        </div>
-
-        )}
-
-        {/* Register Link */}
         <div style={{ marginTop: '20px', paddingTop: '18px', borderTop: '1px solid var(--border-color)', textAlign: 'center', fontSize: '13.5px', color: 'var(--text-secondary)' }}>
           Chưa có tài khoản sinh viên?{' '}
           <Link to="/register" style={{ color: 'var(--accent-primary)', textDecoration: 'none', fontWeight: 700 }}>

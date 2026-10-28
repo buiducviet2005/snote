@@ -17,7 +17,8 @@
     "setup": "npm run install:all && npm run db:setup",
     "test": "npm test --prefix backend && npm test --prefix frontend",
     "db:generate": "npm run prisma:generate --prefix backend",
-    "db:migrate:deploy": "npm run prisma:migrate:deploy --prefix backend"
+    "db:migrate:deploy": "npm run prisma:migrate:deploy --prefix backend",
+    "db:clean": "npm run db:clean --prefix backend"
   },
   "devDependencies": {
     "concurrently": "^9.1.2",

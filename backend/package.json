@@ -13,7 +13,8 @@
     "prisma:seed": "tsx prisma/seed.ts",
     "type-check": "tsc --noEmit",
     "admin:create": "tsx scripts/createAdmin.ts",
-    "prisma:migrate:deploy": "prisma migrate deploy"
+    "prisma:migrate:deploy": "prisma migrate deploy",
+    "db:clean": "tsx scripts/cleanDatabase.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

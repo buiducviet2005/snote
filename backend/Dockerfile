@@ -19,3 +19,4 @@ COPY --from=builder /app/backend/prisma ./prisma
 COPY --from=builder /app/backend/prisma.config.ts ./
 EXPOSE 4000
 CMD ["node", "dist/server.js"]
+

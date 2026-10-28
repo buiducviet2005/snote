@@ -52,3 +52,4 @@ networks:
   snote_network:
     name: snote_network
     driver: bridge
+

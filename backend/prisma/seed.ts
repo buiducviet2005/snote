@@ -7,7 +7,13 @@ async function main() {
     throw new Error('❌ BẢO VỆ AN TOÀN: Không được chạy seed dữ liệu demo trên môi trường Production! Vui lòng dùng lệnh "npm run admin:create" để khởi tạo tài khoản quản trị viên.');
   }
 
-  console.log('🌱 Đang khởi tạo dữ liệu mẫu (Seeding SNOTE database)...');
+  console.log('🌱 Kiểm tra khởi tạo cơ sở dữ liệu SNOTE...');
+
+  // Chỉ nạp dữ liệu mẫu nếu có cờ SEED_SAMPLE_DATA=true. Mặc định giữ database hoàn toàn sạch.
+  if (process.env.SEED_SAMPLE_DATA !== 'true') {
+    console.log('ℹ️ Cờ SEED_SAMPLE_DATA không được bật. Bỏ qua nạp dữ liệu mẫu để giữ cơ sở dữ liệu hoàn toàn sạch.');
+    return;
+  }
 
   // 1. Tạo User Admin mẫu (KHÔNG ghi đè mật khẩu nếu đã tồn tại)
   const defaultAdminPassword = process.env.DEFAULT_ADMIN_PASSWORD || 'Admin@123456';
