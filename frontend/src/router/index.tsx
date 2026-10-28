@@ -15,11 +15,15 @@ import { SettingsPage } from '../features/settings';
 import { SystemStatusPage } from '../features/status';
 import { AiChatPage } from '../features/ai';
 import { ClassesPage } from '../features/classes/pages/ClassesPage';
+import { WorkspaceLayout } from '../workspaces/layouts';
 
 export const AppRouter: React.FC = () => {
   return (
     <Routes>
       {/* Public Routes */}
+      <Route path="/" element={<WorkspaceLayout />} />
+      <Route path="/ws" element={<WorkspaceLayout />} />
+      <Route path="/workspace-preview" element={<WorkspaceLayout />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/share/:token" element={<PublicShareViewPage />} />
@@ -46,7 +50,7 @@ export const AppRouter: React.FC = () => {
       </Route>
 
       {/* Fallback */}
-      <Route path="*" element={<Navigate to="/notes" replace />} />
+      <Route path="*" element={<Navigate to="/ws" replace />} />
     </Routes>
   );
 };
