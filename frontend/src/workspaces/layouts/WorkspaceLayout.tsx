@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import './workspaceLayout.css';
 import { WorkspaceSummary, WorkspaceType } from './types';
 import { WorkspaceSidebar } from './WorkspaceSidebar';
+import { WorkspaceCommandPalette } from './WorkspaceCommandPalette';
+import { WorkspaceTimer } from './WorkspaceTimer';
+import { WorkspaceQuickCapture } from './WorkspaceQuickCapture';
 import {
   WorkspaceArchivedBanner,
   WorkspaceForbiddenState,
@@ -11,9 +14,17 @@ import {
   Menu,
   Search,
   Plus,
-  Sparkles,
-  Command,
-  HelpCircle,
+  PenTool,
+  Maximize2,
+  Minimize2,
+  CheckCircle2,
+  Clock,
+  BookOpen,
+  Calendar,
+  Layers,
+  FileText,
+  CheckSquare,
+  ArrowRight,
   ExternalLink
 } from 'lucide-react';
 
@@ -26,13 +37,13 @@ interface WorkspaceLayoutProps {
   onLogout?: () => void;
 }
 
-// Mock initial workspaces conforming to C03 / API Contract
+// Sample academic workspaces conforming to C03 / API Contract
 const DEFAULT_WORKSPACES: WorkspaceSummary[] = [
   {
     id: 'ws-personal',
     type: 'PERSONAL',
     name: 'Không gian Cá nhân',
-    description: 'Quản lý việc học và ghi chú riêng',
+    description: 'Bàn học riêng tư: Quản lý kế hoạch ôn tập, ghi chép cá nhân',
     status: 'ACTIVE',
     role: 'OWNER'
   },
@@ -41,52 +52,52 @@ const DEFAULT_WORKSPACES: WorkspaceSummary[] = [
     type: 'SUBJECT',
     name: 'Phát triển ứng dụng Web',
     code: 'INT3306',
-    description: 'Học kỳ 1 năm học 2026-2027',
+    description: 'Học kỳ 1 năm học 2026-2027 • Giảng đường 301-G2',
     status: 'ACTIVE',
     role: 'MEMBER',
     memberCount: 48,
-    color: '#3b82f6'
+    color: '#235f74'
   },
   {
     id: 'ws-sub-db',
     type: 'SUBJECT',
     name: 'Cơ sở dữ liệu nâng cao',
     code: 'INT3202',
-    description: 'Học kỳ 1 năm học 2026-2027',
+    description: 'Học kỳ 1 năm học 2026-2027 • Giảng đường 205-G2',
     status: 'ACTIVE',
     role: 'MEMBER',
     memberCount: 52,
-    color: '#10b981'
+    color: '#2d6a4f'
   },
   {
     id: 'ws-proj-snote',
     type: 'PROJECT',
     name: 'Đồ án Xây dựng Website SNOTE',
-    description: 'Bài tập lớn môn Web - Nhóm 4 sinh viên',
+    description: 'Đồ án lớn môn Web - Nhóm 4 sinh viên K66-CACLC',
     status: 'ACTIVE',
     role: 'OWNER',
     memberCount: 4,
-    color: '#7c3aed'
+    color: '#4338ca'
   },
   {
     id: 'ws-proj-rag',
     type: 'PROJECT',
     name: 'Nghiên cứu Tối ưu AI & RAG',
-    description: 'Dự án độc lập (không thuộc môn học)',
+    description: 'Dự án độc lập phòng thí nghiệm AI',
     status: 'ACTIVE',
     role: 'OWNER',
     memberCount: 2,
-    color: '#f59e0b'
+    color: '#b45309'
   },
   {
     id: 'ws-proj-archive-sample',
     type: 'PROJECT',
     name: 'Đồ án Khóa trước (Lưu trữ)',
-    description: 'Đồ án đã bảo vệ xong kỳ trước',
+    description: 'Đồ án đã bảo vệ xong kỳ trước, lưu lại làm tài liệu tham khảo',
     status: 'ARCHIVED',
     role: 'OWNER',
     memberCount: 3,
-    color: '#64748b'
+    color: '#8a9691'
   }
 ];
 
@@ -104,19 +115,40 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
   );
   const [activeNavId, setActiveNavId] = useState<string>('overview');
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
-  const [isCreatingNew, setIsCreatingNew] = useState(false);
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+  const [isQuickCaptureOpen, setIsQuickCaptureOpen] = useState(false);
+  const [isZenMode, setIsZenMode] = useState(false);
   const [isActionMenuOpen, setIsActionMenuOpen] = useState(false);
+
+  // Sample interactive task states in overview
+  const [sampleTasks, setSampleTasks] = useState([
+    { id: 't1', title: 'Hoàn thiện giao diện WorkspaceLayout & Switcher', deadline: 'Hôm nay', urgent: true, done: true },
+    { id: 't2', title: 'Soạn slide báo cáo tiến độ Sprint 1 môn Web', deadline: 'Mai, 23:59', urgent: true, done: false },
+    { id: 't3', title: 'Luyện tập đề thi giữa kỳ CSDL (Chương 3 & 4)', deadline: '30/10/2026', urgent: false, done: false },
+    { id: 't4', title: 'Đọc tài liệu React 19 Server Components', deadline: '02/11/2026', urgent: false, done: false }
+  ]);
 
   const currentWorkspace = workspaces.find((w) => w.id === activeWorkspaceId) || workspaces[0];
 
-  // Shortcut Ctrl + K for quick search
+  // Global Keyboard Shortcuts (Ctrl+K for command menu, Z for Zen mode, Q for Quick capture)
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+      // Don't intercept when user is typing inside an input/textarea
+      const targetTag = (e.target as HTMLElement)?.tagName?.toLowerCase();
+      const isInput = targetTag === 'input' || targetTag === 'textarea';
+
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
-        alert('Phím tắt tìm kiếm nhanh toàn hệ thống (Ctrl + K) đang hoạt động');
+        setIsCommandPaletteOpen((prev) => !prev);
+      } else if (!isInput && (e.key === 'z' || e.key === 'Z')) {
+        e.preventDefault();
+        setIsZenMode((prev) => !prev);
+      } else if (!isInput && (e.key === 'q' || e.key === 'Q')) {
+        e.preventDefault();
+        setIsQuickCaptureOpen((prev) => !prev);
       }
     };
+
     window.addEventListener('keydown', handleGlobalKeyDown);
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
   }, []);
@@ -132,150 +164,157 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
     );
   };
 
+  const toggleTask = (id: string) => {
+    setSampleTasks((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, done: !t.done } : t))
+    );
+  };
+
+  const completedCount = sampleTasks.filter((t) => t.done).length;
+  const progressPercent = Math.round((completedCount / sampleTasks.length) * 100);
+
   return (
-    <div className="ws-shell">
-      {/* Modern Workspace Sidebar */}
+    <div className={`ws-shell ${isZenMode ? 'zen-mode' : ''}`}>
+      {/* 1. Academic Bookshelf Sidebar */}
       <WorkspaceSidebar
         currentWorkspace={currentWorkspace}
         workspaces={workspaces}
         activeNavId={activeNavId}
         onSelectNav={setActiveNavId}
         onSelectWorkspace={handleSelectWorkspace}
-        onCreateWorkspace={() => setIsCreatingNew(true)}
         currentUser={currentUser}
         onLogout={onLogout}
         isMobileOpen={isMobileSidebarOpen}
         onCloseMobile={() => setIsMobileSidebarOpen(false)}
+        onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
+        onToggleZenMode={() => setIsZenMode(!isZenMode)}
+        isZenMode={isZenMode}
       />
 
-      {/* Main Content Area */}
+      {/* 2. Main Workstation Arena */}
       <div className="ws-main">
-        {/* Top Navigation Bar */}
+        {/* Topbar Precision Navigation */}
         <header className="ws-topbar">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div className="ws-topbar-left">
             <button
               type="button"
               className="icon-button"
               onClick={() => setIsMobileSidebarOpen(true)}
-              style={{ display: 'none', background: 'transparent', border: 'none', cursor: 'pointer' }}
+              style={{ display: 'none' }}
               title="Mở menu"
             >
-              <Menu size={20} />
+              <Menu size={18} />
             </button>
+
+            {/* In Zen Mode: Provide subtle restore button */}
+            {isZenMode && (
+              <button
+                type="button"
+                className="ws-zen-exit-btn"
+                onClick={() => setIsZenMode(false)}
+                title="Hiện lại thanh bên (Z)"
+              >
+                <Minimize2 size={13} />
+                <span>Thoát Zen Mode</span>
+              </button>
+            )}
 
             {/* Breadcrumb Hierarchy */}
             <div className="ws-breadcrumbs">
-              <span style={{ fontWeight: 600 }}>{currentWorkspace.name}</span>
+              <span className="ws-breadcrumb-parent">{currentWorkspace.name}</span>
               <span>/</span>
-              <b style={{ textTransform: 'capitalize' }}>
+              <span className="ws-breadcrumb-current">
                 {activeNavId === 'overview'
-                  ? 'Tổng quan'
+                  ? 'Bàn học tổng quan'
                   : activeNavId === 'kanban'
                   ? 'Bảng Kanban'
                   : activeNavId === 'gantt'
                   ? 'Dòng thời gian Gantt'
                   : activeNavId === 'notes'
-                  ? 'Ghi chú'
+                  ? 'Kho Ghi chú & Bài giảng'
                   : activeNavId === 'tasks'
-                  ? 'Công việc'
+                  ? 'Danh sách nhiệm vụ'
                   : activeNavId === 'documents'
-                  ? 'Tài liệu'
+                  ? 'Tài liệu & Đề thi'
                   : activeNavId === 'members'
                   ? 'Thành viên'
                   : activeNavId}
-              </b>
+              </span>
             </div>
           </div>
 
-          {/* Quick Action Topbar Tools */}
-          <div className="ws-topbar-actions">
-            {/* Quick Search Pill */}
+          {/* Topbar Tools: Command Search, Pomodoro Timer, Quick Capture, New Item */}
+          <div className="ws-topbar-tools">
+            {/* Quick Command Trigger Pill */}
             <button
               type="button"
-              onClick={() => alert('Mở thanh tìm kiếm Command Palette')}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '6px 12px',
-                borderRadius: 'var(--radius-md, 8px)',
-                border: '1px solid var(--border-color, #e2e8f0)',
-                background: 'var(--bg-secondary, #f8fafc)',
-                color: 'var(--text-muted, #64748b)',
-                fontSize: '12.5px',
-                cursor: 'pointer'
-              }}
+              className="ws-quick-search-pill"
+              onClick={() => setIsCommandPaletteOpen(true)}
+              title="Tìm kiếm & Mở bảng lệnh (Ctrl + K)"
             >
-              <Search size={14} />
-              <span>Tìm kiếm...</span>
-              <kbd
-                style={{
-                  fontSize: '10px',
-                  padding: '2px 5px',
-                  borderRadius: '4px',
-                  background: 'var(--bg-primary, #ffffff)',
-                  border: '1px solid var(--border-color, #cbd5e1)'
-                }}
-              >
-                Ctrl K
-              </kbd>
+              <Search size={13} />
+              <span>Tìm kiếm & Lệnh...</span>
+              <kbd>Ctrl K</kbd>
             </button>
 
-            {/* New Item Action Button */}
+            {/* Pomodoro Focus Timer Capsule */}
+            <WorkspaceTimer />
+
+            {/* Quick Capture Scratchpad Trigger */}
+            <button
+              type="button"
+              className={`ws-tool-btn ${isQuickCaptureOpen ? 'active' : ''}`}
+              onClick={() => setIsQuickCaptureOpen(!isQuickCaptureOpen)}
+              title="Bàn ghi nháp siêu tốc (Phím tắt: Q)"
+            >
+              <PenTool size={15} />
+            </button>
+
+            {/* Zen Mode Toggle */}
+            <button
+              type="button"
+              className={`ws-tool-btn ${isZenMode ? 'active' : ''}`}
+              onClick={() => setIsZenMode(!isZenMode)}
+              title={isZenMode ? 'Thoát Zen Mode (Z)' : 'Bật Zen Mode toàn màn hình (Z)'}
+            >
+              {isZenMode ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
+            </button>
+
+            {/* Quick Create Action Menu */}
             {currentWorkspace.status === 'ACTIVE' && (
-              <div style={{ position: 'relative' }}>
+              <div className="ws-new-item-wrap">
                 <button
                   type="button"
-                  className="btn btn-primary"
+                  className="ws-new-item-btn"
                   onClick={() => setIsActionMenuOpen(!isActionMenuOpen)}
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    fontWeight: 600,
-                    fontSize: '13px',
-                    padding: '6px 12px'
-                  }}
                 >
-                  <Plus size={15} />
+                  <Plus size={14} />
                   <span>Tạo mới</span>
                 </button>
 
                 {isActionMenuOpen && (
-                  <div
-                    style={{
-                      position: 'absolute',
-                      right: 0,
-                      top: '100%',
-                      marginTop: '6px',
-                      background: 'var(--bg-primary, #ffffff)',
-                      border: '1px solid var(--border-color, #e2e8f0)',
-                      borderRadius: 'var(--radius-md, 8px)',
-                      boxShadow: '0 8px 16px rgba(0,0,0,0.08)',
-                      minWidth: '160px',
-                      zIndex: 50,
-                      padding: '4px'
-                    }}
-                  >
+                  <div className="ws-new-item-dropdown">
                     <button
                       type="button"
-                      className="ws-item-btn"
+                      className="ws-new-menu-opt"
                       onClick={() => {
                         setIsActionMenuOpen(false);
                         if (onOpenCreateNote) onOpenCreateNote(currentWorkspace);
                       }}
                     >
-                      📝 Tạo ghi chú mới
+                      <FileText size={14} />
+                      <span>Ghi chú bài học mới</span>
                     </button>
                     <button
                       type="button"
-                      className="ws-item-btn"
+                      className="ws-new-menu-opt"
                       onClick={() => {
                         setIsActionMenuOpen(false);
                         if (onOpenCreateTask) onOpenCreateTask(currentWorkspace);
                       }}
                     >
-                      ✅ Tạo nhiệm vụ mới
+                      <CheckSquare size={14} />
+                      <span>Bài tập / Nhiệm vụ mới</span>
                     </button>
                   </div>
                 )}
@@ -297,179 +336,217 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
           {children ? (
             children
           ) : (
-            <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
-              {/* Header card for the active section */}
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  justifyContent: 'space-between',
-                  paddingBottom: '20px',
-                  marginBottom: '20px',
-                  borderBottom: '1px solid var(--border-color, #e2e8f0)'
-                }}
-              >
+            <div className="ws-content-inner">
+              {/* Workspace Header Block */}
+              <div className="ws-canvas-header">
                 <div>
-                  <h1 style={{ fontSize: '22px', fontWeight: 800, margin: '0 0 6px 0' }}>
+                  <h1 className="ws-canvas-title">
                     {activeNavId === 'overview'
-                      ? `Tổng quan: ${currentWorkspace.name}`
+                      ? currentWorkspace.name
                       : activeNavId === 'kanban'
                       ? 'Bảng công việc Kanban'
                       : activeNavId === 'gantt'
-                      ? 'Dòng thời gian Gantt Chart'
+                      ? 'Dòng thời gian Gantt'
                       : activeNavId === 'notes'
                       ? 'Kho Ghi chú & Bài giảng'
                       : activeNavId === 'tasks'
-                      ? 'Danh sách nhiệm vụ'
+                      ? 'Danh sách bài tập & Nhiệm vụ'
                       : activeNavId === 'documents'
-                      ? 'Tài liệu & Thư viện đính kèm'
+                      ? 'Tài liệu & Đề thi mẫu'
                       : activeNavId === 'members'
                       ? 'Danh sách thành viên'
                       : 'Cài đặt'}
                   </h1>
-                  <p style={{ margin: 0, fontSize: '13.5px', color: 'var(--text-muted, #64748b)' }}>
-                    {currentWorkspace.description || 'Không gian làm việc cộng tác và quản lý học tập SNOTE.'}
+                  <p className="ws-canvas-desc">
+                    {currentWorkspace.description ||
+                      'Không gian làm việc học thuật chính xác cho sinh viên SNOTE.'}
                   </p>
                 </div>
 
-                <div
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    padding: '4px 10px',
-                    borderRadius: '12px',
-                    fontSize: '12px',
-                    fontWeight: 600,
-                    backgroundColor:
-                      currentWorkspace.type === 'PERSONAL'
-                        ? 'rgba(59, 130, 246, 0.1)'
-                        : currentWorkspace.type === 'SUBJECT'
-                        ? 'rgba(16, 185, 129, 0.1)'
-                        : 'rgba(168, 85, 247, 0.1)',
-                    color:
-                      currentWorkspace.type === 'PERSONAL'
-                        ? '#2563eb'
-                        : currentWorkspace.type === 'SUBJECT'
-                        ? '#059669'
-                        : '#7c3aed'
-                  }}
-                >
-                  <span>
-                    {currentWorkspace.type === 'PERSONAL'
-                      ? '🏠 Không gian Cá nhân'
-                      : currentWorkspace.type === 'SUBJECT'
-                      ? '📚 Môn học'
-                      : '🚀 Dự án nhóm'}
-                  </span>
+                <div className="ws-canvas-badge">
+                  {currentWorkspace.type === 'PERSONAL'
+                    ? '🏠 Không gian Cá nhân'
+                    : currentWorkspace.type === 'SUBJECT'
+                    ? `📚 Môn học [${currentWorkspace.code || 'INT'}]`
+                    : '🚀 Đồ án nhóm'}
                 </div>
               </div>
 
-              {/* Sample view demonstration based on active nav */}
+              {/* View Rendering based on activeNavId */}
               {activeNavId === 'kanban' ? (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
-                  {['CẦN LÀM (TODO)', 'ĐANG THỰC HIỆN (IN PROGRESS)', 'HOÀN THÀNH (DONE)'].map((col, idx) => (
+                  {['CẦN LÀM (TODO)', 'ĐANG LÀM (IN PROGRESS)', 'HOÀN THÀNH (DONE)'].map((col, idx) => (
                     <div
                       key={col}
-                      style={{
-                        background: 'var(--bg-secondary, #f8fafc)',
-                        borderRadius: 'var(--radius-lg, 12px)',
-                        padding: '14px',
-                        border: '1px solid var(--border-color, #e2e8f0)',
-                        minHeight: '380px'
-                      }}
+                      className="ws-bento-card"
+                      style={{ minHeight: '380px', display: 'flex', flexDirection: 'column' }}
                     >
-                      <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '12px' }}>
-                        {col} • {idx === 1 ? '2' : idx === 0 ? '1' : '3'}
+                      <div className="ws-bento-card-title">
+                        <span>{col}</span>
+                        <span style={{ fontSize: '11px', color: 'var(--ws-ink-faint)' }}>
+                          {idx === 0 ? '2' : idx === 1 ? '1' : '3'}
+                        </span>
                       </div>
-                      <div
-                        style={{
-                          background: 'var(--bg-primary, #ffffff)',
-                          padding: '12px',
-                          borderRadius: 'var(--radius-md, 8px)',
-                          border: '1px solid var(--border-color, #e2e8f0)',
-                          marginBottom: '10px',
-                          boxShadow: '0 1px 3px rgba(0,0,0,0.04)'
-                        }}
-                      >
-                        <div style={{ fontSize: '13.5px', fontWeight: 600, marginBottom: '6px' }}>
-                          {idx === 0 ? 'Phân tích yêu cầu kiến trúc' : idx === 1 ? 'Xây dựng WorkspaceLayout' : 'Kiểm thử bảo mật v3'}
+                      <div className="ws-task-strip">
+                        <div className="ws-task-item">
+                          <span className="ws-task-label">
+                            {idx === 0 ? 'Chuẩn bị tài liệu thuyết trình' : idx === 1 ? 'Phát triển giao diện Workspace' : 'Khởi tạo cấu trúc CSDL'}
+                          </span>
                         </div>
-                        <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Hạn chót: 30/10/2026</div>
                       </div>
                     </div>
                   ))}
                 </div>
               ) : activeNavId === 'gantt' ? (
-                <div
-                  style={{
-                    background: 'var(--bg-secondary, #f8fafc)',
-                    borderRadius: 'var(--radius-lg, 12px)',
-                    padding: '24px',
-                    border: '1px solid var(--border-color, #e2e8f0)',
-                    textAlign: 'center'
-                  }}
-                >
-                  <div style={{ fontSize: '16px', fontWeight: 700, marginBottom: '8px' }}>
-                    📈 Dòng thời gian tiến độ (Gantt View)
-                  </div>
-                  <p style={{ fontSize: '13px', color: 'var(--text-muted)', maxWidth: '500px', margin: '0 auto 16px' }}>
-                    Biểu đồ Gantt trực quan kết nối trực tiếp với danh sách nhiệm vụ của dự án mà không tạo bản sao dữ liệu.
+                <div className="ws-bento-card" style={{ textAlign: 'center', padding: '36px' }}>
+                  <h3 style={{ fontSize: '16px', fontWeight: 700, margin: '0 0 8px 0' }}>
+                    📈 Dòng Thời Gian Tiến Độ Gantt Chart
+                  </h3>
+                  <p style={{ fontSize: '13px', color: 'var(--ws-ink-muted)', maxWidth: '540px', margin: '0 auto 20px' }}>
+                    Biểu đồ Gantt trực quan được đồng bộ trực tiếp với danh sách nhiệm vụ của dự án theo ranh giới thẻ A06.
                   </p>
                   <div
                     style={{
-                      height: '180px',
-                      background: 'var(--bg-primary, #ffffff)',
-                      borderRadius: '8px',
-                      border: '1px dashed var(--border-color, #cbd5e1)',
+                      height: '160px',
+                      background: 'var(--ws-canvas)',
+                      border: '1px dashed var(--ws-line)',
+                      borderRadius: 'var(--ws-radius-md)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      color: 'var(--text-muted)'
+                      color: 'var(--ws-ink-muted)',
+                      fontSize: '13px'
                     }}
                   >
-                    <span>Timeline Gantt Engine sẵn sàng cho thẻ A06</span>
+                    <span>Lộ trình công việc sẵn sàng tiếp nhận dữ liệu thời gian</span>
                   </div>
                 </div>
               ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '20px' }}>
-                  <div
-                    style={{
-                      background: 'var(--bg-primary, #ffffff)',
-                      borderRadius: 'var(--radius-lg, 12px)',
-                      padding: '20px',
-                      border: '1px solid var(--border-color, #e2e8f0)'
-                    }}
-                  >
-                    <h3 style={{ fontSize: '15px', fontWeight: 700, margin: '0 0 14px 0' }}>
-                      📌 Hoạt động gần đây trong không gian
-                    </h3>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                      <div style={{ fontSize: '13px', padding: '10px', background: 'var(--bg-secondary, #f8fafc)', borderRadius: '6px' }}>
-                        ✅ <b>Nguyễn Văn Sinh Viên</b> vừa cập nhật công việc <i>"Thiết kế CSDL và luồng Auth"</i>
+                /* Overview Bento Grid */
+                <div className="ws-bento-grid">
+                  {/* Left Column: Deadlines & Tasks */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                    {/* Active Tasks & Deadlines Bento */}
+                    <div className="ws-bento-card">
+                      <div className="ws-bento-card-title">
+                        <span>🎯 Bài tập & Việc cần nộp cận kề</span>
+                        <button
+                          type="button"
+                          className="ws-card-action-link"
+                          onClick={() => setActiveNavId('tasks')}
+                        >
+                          Xem tất cả →
+                        </button>
                       </div>
-                      <div style={{ fontSize: '13px', padding: '10px', background: 'var(--bg-secondary, #f8fafc)', borderRadius: '6px' }}>
-                        📝 <b>Trần Thị Bạn Học</b> vừa tạo ghi chú <i>"Biên bản họp Sprint 1"</i>
+
+                      <div className="ws-task-strip">
+                        {sampleTasks.map((t) => (
+                          <div
+                            key={t.id}
+                            className={`ws-task-item ${t.done ? 'done' : ''}`}
+                            onClick={() => toggleTask(t.id)}
+                            style={{ cursor: 'pointer' }}
+                          >
+                            <input
+                              type="checkbox"
+                              className="ws-task-checkbox"
+                              checked={t.done}
+                              onChange={() => toggleTask(t.id)}
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                            <span className="ws-task-label">{t.title}</span>
+                            <span className={`ws-task-deadline ${t.urgent ? 'urgent' : ''}`}>
+                              {t.deadline}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Recent Lecture Notes Bento */}
+                    <div className="ws-bento-card">
+                      <div className="ws-bento-card-title">
+                        <span>📖 Ghi chú & Bài giảng gần đây</span>
+                        <button
+                          type="button"
+                          className="ws-card-action-link"
+                          onClick={() => setActiveNavId('notes')}
+                        >
+                          Mở kho ghi chú →
+                        </button>
+                      </div>
+
+                      <div className="ws-notes-mini-list">
+                        <div
+                          className="ws-note-mini-item"
+                          onClick={() => setActiveNavId('notes')}
+                        >
+                          <div className="ws-note-mini-title">
+                            Kiến trúc Microservices & REST API Design
+                          </div>
+                          <div className="ws-note-mini-excerpt">
+                            Nguyên tắc thiết kế Idempotency, JWT stateless authentication và kỹ thuật phân đoạn cơ sở dữ liệu...
+                          </div>
+                        </div>
+
+                        <div
+                          className="ws-note-mini-item"
+                          onClick={() => setActiveNavId('notes')}
+                        >
+                          <div className="ws-note-mini-title">
+                            Tối ưu hóa Truy vấn PostgreSQL & Chỉ mục B-Tree
+                          </div>
+                          <div className="ws-note-mini-excerpt">
+                            Phân tích chi phí EXPLAIN ANALYZE, Sequential Scan so với Index Scan trên bảng dữ liệu lớn...
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
 
-                  <div
-                    style={{
-                      background: 'var(--bg-secondary, #f8fafc)',
-                      borderRadius: 'var(--radius-lg, 12px)',
-                      padding: '20px',
-                      border: '1px solid var(--border-color, #e2e8f0)'
-                    }}
-                  >
-                    <h3 style={{ fontSize: '14px', fontWeight: 700, margin: '0 0 10px 0' }}>
-                      ℹ️ Thông tin không gian
-                    </h3>
-                    <div style={{ fontSize: '12.5px', color: 'var(--text-muted)', lineHeight: 1.6 }}>
-                      <div><b>Loại:</b> {currentWorkspace.type}</div>
-                      <div><b>Vai trò của bạn:</b> {currentWorkspace.role}</div>
-                      <div><b>Trạng thái:</b> {currentWorkspace.status}</div>
-                      <div><b>Số thành viên:</b> {currentWorkspace.memberCount || 1} người</div>
+                  {/* Right Column: Academic Progress & Study Session */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                    {/* Progress Metric Card */}
+                    <div className="ws-bento-card">
+                      <div className="ws-bento-card-title">
+                        <span>📊 Tiến độ học tập tuần</span>
+                      </div>
+
+                      <div className="ws-progress-metric">
+                        <div className="ws-progress-header">
+                          <span>Tỷ lệ hoàn thành nhiệm vụ</span>
+                          <span style={{ color: 'var(--ws-accent)', fontWeight: 700 }}>
+                            {progressPercent}%
+                          </span>
+                        </div>
+                        <div className="ws-hairline-track">
+                          <div
+                            className="ws-hairline-fill"
+                            style={{ width: `${progressPercent}%` }}
+                          />
+                        </div>
+                      </div>
+
+                      <div style={{ fontSize: '12px', color: 'var(--ws-ink-muted)', lineHeight: 1.6 }}>
+                        <div>• Đã hoàn thành: <b>{completedCount}/{sampleTasks.length}</b> mục</div>
+                        <div>• Hạn chót kế tiếp: <b>Mai, 23:59</b></div>
+                        <div>• Phiên tập trung hôm nay: <b>3 phiên Pomodoro</b></div>
+                      </div>
+                    </div>
+
+                    {/* Quick Course / Project Meta Bento */}
+                    <div className="ws-bento-card" style={{ background: '#fbfbf9' }}>
+                      <div className="ws-bento-card-title">
+                        <span>ℹ️ Thông tin môn / Dự án</span>
+                      </div>
+                      <div style={{ fontSize: '12px', color: 'var(--ws-ink-muted)', lineHeight: 1.7 }}>
+                        {currentWorkspace.code && (
+                          <div><b>Mã học phần:</b> <code style={{ fontFamily: 'var(--ws-font-mono)' }}>{currentWorkspace.code}</code></div>
+                        )}
+                        <div><b>Vai trò:</b> {currentWorkspace.role === 'OWNER' ? 'Chủ sở hữu' : 'Thành viên'}</div>
+                        <div><b>Quy mô:</b> {currentWorkspace.memberCount || 1} thành viên</div>
+                        <div><b>Trạng thái:</b> {currentWorkspace.status === 'ACTIVE' ? 'Đang hoạt động' : 'Đã lưu trữ'}</div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -478,6 +555,36 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
           )}
         </main>
       </div>
+
+      {/* 3. Global Command Palette Modal (Ctrl + K) */}
+      <WorkspaceCommandPalette
+        isOpen={isCommandPaletteOpen}
+        onClose={() => setIsCommandPaletteOpen(false)}
+        workspaces={workspaces}
+        currentWorkspace={currentWorkspace}
+        onSelectWorkspace={handleSelectWorkspace}
+        onSelectNav={setActiveNavId}
+        onOpenCreateNote={() => {
+          if (onOpenCreateNote) onOpenCreateNote(currentWorkspace);
+        }}
+        onOpenCreateTask={() => {
+          if (onOpenCreateTask) onOpenCreateTask(currentWorkspace);
+        }}
+        isZenMode={isZenMode}
+        onToggleZenMode={() => setIsZenMode(!isZenMode)}
+        onToggleTimer={() => {
+          // Timer toggle from command palette
+        }}
+      />
+
+      {/* 4. Quick Capture Scratchpad Slide-over Drawer (Q) */}
+      <WorkspaceQuickCapture
+        isOpen={isQuickCaptureOpen}
+        onClose={() => setIsQuickCaptureOpen(false)}
+        onSaveToPersonalNotes={(scratchContent) => {
+          console.log('Saved scratch content to personal notes:', scratchContent);
+        }}
+      />
     </div>
   );
 };

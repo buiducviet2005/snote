@@ -33,3 +33,4 @@ export interface NavItemDef {
   viewType?: string;
   isExternal?: boolean;
 }
+

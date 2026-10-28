@@ -124,3 +124,4 @@ export const WorkspaceLoadingState: React.FC = () => {
     </div>
   );
 };
+

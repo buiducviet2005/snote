@@ -15,7 +15,9 @@ import {
   Settings,
   Bell,
   LogOut,
-  Sparkles
+  Sparkles,
+  Command,
+  Maximize2
 } from 'lucide-react';
 
 interface WorkspaceSidebarProps {
@@ -29,6 +31,9 @@ interface WorkspaceSidebarProps {
   onLogout?: () => void;
   isMobileOpen?: boolean;
   onCloseMobile?: () => void;
+  onOpenCommandPalette?: () => void;
+  onToggleZenMode?: () => void;
+  isZenMode?: boolean;
 }
 
 export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
@@ -41,18 +46,21 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
   currentUser,
   onLogout,
   isMobileOpen,
-  onCloseMobile
+  onCloseMobile,
+  onOpenCommandPalette,
+  onToggleZenMode,
+  isZenMode
 }) => {
   // Navigation definitions based on workspace type
-  const getNavItems = (): { section: string; items: NavItemDef[] }[] => {
+  const getNavSections = (): { title: string; items: NavItemDef[] }[] => {
     switch (currentWorkspace.type) {
       case 'PERSONAL':
         return [
           {
-            section: 'KHÔNG GIAN CÁ NHÂN',
+            title: 'HỌC TẬP CÁ NHÂN',
             items: [
-              { id: 'overview', label: 'Tổng quan ngày học', iconName: 'dashboard' },
-              { id: 'notes', label: 'Ghi chú của tôi', iconName: 'notes', badge: '12' },
+              { id: 'overview', label: 'Bàn học tổng quan', iconName: 'dashboard' },
+              { id: 'notes', label: 'Ghi chú & Bài đọc', iconName: 'notes', badge: '12' },
               { id: 'tasks', label: 'Việc cần làm hôm nay', iconName: 'tasks', badge: '3' },
               { id: 'calendar', label: 'Lịch học & Deadline', iconName: 'calendar' }
             ]
@@ -61,12 +69,12 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
       case 'SUBJECT':
         return [
           {
-            section: `MÔN HỌC [${currentWorkspace.code || 'INT'}]`,
+            title: `MÔN HỌC ${currentWorkspace.code ? `[${currentWorkspace.code}]` : ''}`,
             items: [
               { id: 'overview', label: 'Bảng tin môn học', iconName: 'dashboard' },
-              { id: 'notes', label: 'Bài giảng & Slide', iconName: 'notes' },
+              { id: 'notes', label: 'Bài giảng & Slide', iconName: 'notes', badge: '8' },
               { id: 'tasks', label: 'Bài tập & Nhiệm vụ', iconName: 'tasks', badge: '2' },
-              { id: 'documents', label: 'Tài liệu & Đề thi', iconName: 'documents' },
+              { id: 'documents', label: 'Tài liệu & Đề thi mẫu', iconName: 'documents' },
               { id: 'members', label: 'Giảng viên & Bạn học', iconName: 'members', badge: currentWorkspace.memberCount }
             ]
           }
@@ -74,18 +82,18 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
       case 'PROJECT':
         return [
           {
-            section: 'GÓC NHÌN CÔNG VIỆC',
+            title: 'TIẾN ĐỘ & NHIỆM VỤ',
             items: [
-              { id: 'overview', label: 'Tiến độ dự án', iconName: 'dashboard' },
+              { id: 'overview', label: 'Tổng quan đồ án', iconName: 'dashboard' },
               { id: 'kanban', label: 'Bảng Kanban', iconName: 'kanban' },
-              { id: 'tasks', label: 'Danh sách việc', iconName: 'list' },
+              { id: 'tasks', label: 'Danh sách công việc', iconName: 'list', badge: '5' },
               { id: 'gantt', label: 'Dòng thời gian Gantt', iconName: 'gantt' }
             ]
           },
           {
-            section: 'TÀI NGUYÊN & CỘNG TÁC',
+            title: 'TÀI NGUYÊN & CỘNG TÁC',
             items: [
-              { id: 'notes', label: 'Biên bản & Ghi chép', iconName: 'notes' },
+              { id: 'notes', label: 'Biên bản & Ghi chép', iconName: 'notes', badge: '4' },
               { id: 'documents', label: 'Tài liệu bàn giao', iconName: 'documents' },
               { id: 'members', label: 'Thành viên nhóm', iconName: 'members', badge: currentWorkspace.memberCount },
               { id: 'settings', label: 'Cài đặt dự án', iconName: 'settings' }
@@ -95,34 +103,34 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
     }
   };
 
-  const renderIcon = (name: string) => {
+  const renderNavIcon = (name: string) => {
     switch (name) {
       case 'dashboard':
-        return <LayoutDashboard size={17} />;
+        return <LayoutDashboard size={15} />;
       case 'notes':
-        return <FileText size={17} />;
+        return <FileText size={15} />;
       case 'tasks':
-        return <CheckSquare size={17} />;
+        return <CheckSquare size={15} />;
       case 'calendar':
-        return <Calendar size={17} />;
+        return <Calendar size={15} />;
       case 'kanban':
-        return <Kanban size={17} />;
+        return <Kanban size={15} />;
       case 'list':
-        return <ListTodo size={17} />;
+        return <ListTodo size={15} />;
       case 'gantt':
-        return <TrendingUp size={17} />;
+        return <TrendingUp size={15} />;
       case 'documents':
-        return <FolderOpen size={17} />;
+        return <FolderOpen size={15} />;
       case 'members':
-        return <Users size={17} />;
+        return <Users size={15} />;
       case 'settings':
-        return <Settings size={17} />;
+        return <Settings size={15} />;
       default:
-        return <Layers size={17} />;
+        return <Layers size={15} />;
     }
   };
 
-  const sections = getNavItems();
+  const sections = getNavSections();
 
   return (
     <>
@@ -130,7 +138,7 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
       {isMobileOpen && <div className="ws-sidebar-backdrop" onClick={onCloseMobile} />}
 
       <aside className={`ws-sidebar ${isMobileOpen ? 'open' : ''}`}>
-        {/* Top Header with WorkspaceSwitcher */}
+        {/* Workspace Switcher Header */}
         <div className="ws-sidebar-header">
           <WorkspaceSwitcher
             currentWorkspace={currentWorkspace}
@@ -143,11 +151,25 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
           />
         </div>
 
+        {/* Quick Search / Command Palette shortcut trigger in sidebar */}
+        <div className="ws-sidebar-quick-cmd">
+          <button
+            type="button"
+            className="ws-sidebar-cmd-btn"
+            onClick={onOpenCommandPalette}
+            title="Mở bảng lệnh nhanh (Ctrl + K)"
+          >
+            <Command size={13} />
+            <span>Tìm kiếm & Lệnh nhanh</span>
+            <kbd>Ctrl K</kbd>
+          </button>
+        </div>
+
         {/* Navigation Sections */}
-        <nav className="ws-sidebar-nav" aria-label="Điều hướng không gian">
+        <nav className="ws-sidebar-nav" aria-label="Điều hướng không gian làm việc">
           {sections.map((sec) => (
-            <div key={sec.section} className="ws-nav-section">
-              <div className="ws-section-label">{sec.section}</div>
+            <div key={sec.title} className="ws-nav-section">
+              <div className="ws-section-label">{sec.title}</div>
               {sec.items.map((item) => {
                 const isActive = activeNavId === item.id;
                 return (
@@ -160,8 +182,8 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
                       if (onCloseMobile) onCloseMobile();
                     }}
                   >
-                    {renderIcon(item.iconName)}
-                    <span>{item.label}</span>
+                    <span className="ws-nav-icon">{renderNavIcon(item.iconName)}</span>
+                    <span className="ws-nav-text">{item.label}</span>
                     {item.badge !== undefined && (
                       <span className="ws-nav-badge">{item.badge}</span>
                     )}
@@ -171,35 +193,35 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
             </div>
           ))}
 
-          {/* Quick AI Assistant shortcut */}
-          <div className="ws-nav-section" style={{ marginTop: 'auto', paddingTop: '10px' }}>
+          {/* Quick study aids */}
+          <div className="ws-nav-section ws-sidebar-study-aids">
             <button
               type="button"
-              className="ws-nav-link"
+              className="ws-nav-link ai-link"
               onClick={() => onSelectNav('ai-assistant')}
-              style={{ color: 'var(--color-purple, #9333ea)' }}
             >
-              <Sparkles size={17} />
-              <span style={{ fontWeight: 600 }}>Trợ lý học tập AI</span>
+              <span className="ws-nav-icon"><Sparkles size={15} /></span>
+              <span className="ws-nav-text">Gia sư AI học thuật</span>
             </button>
 
             <button
               type="button"
-              className="ws-nav-link"
-              onClick={() => onSelectNav('inbox')}
+              className="ws-nav-link zen-link"
+              onClick={onToggleZenMode}
+              title="Phím tắt: Z"
             >
-              <Bell size={17} />
-              <span>Hộp thư thông báo</span>
-              <span className="ws-nav-badge">1</span>
+              <span className="ws-nav-icon"><Maximize2 size={15} /></span>
+              <span className="ws-nav-text">Chế độ tập trung (Zen)</span>
+              <kbd className="ws-nav-kbd">Z</kbd>
             </button>
           </div>
         </nav>
 
-        {/* Footer with User Profile */}
+        {/* User Card Footer */}
         <div className="ws-sidebar-footer">
           <div className="ws-user-card">
             <div className="ws-user-avatar">
-              {currentUser?.fullName ? currentUser.fullName.charAt(0).toUpperCase() : 'U'}
+              {currentUser?.fullName ? currentUser.fullName.charAt(0).toUpperCase() : 'S'}
             </div>
             <div className="ws-user-info">
               <div className="ws-user-name">{currentUser?.fullName || 'Sinh viên SNOTE'}</div>
@@ -211,20 +233,10 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
             <button
               type="button"
               onClick={onLogout}
-              className="icon-button"
+              className="ws-logout-btn"
               title="Đăng xuất khỏi SNOTE"
-              style={{
-                background: 'transparent',
-                border: 'none',
-                cursor: 'pointer',
-                color: 'var(--text-muted, #64748b)',
-                padding: '4px',
-                display: 'flex',
-                alignItems: 'center',
-                borderRadius: 'var(--radius-sm, 6px)'
-              }}
             >
-              <LogOut size={16} />
+              <LogOut size={15} />
             </button>
           )}
         </div>

@@ -6,11 +6,12 @@ import {
   Plus,
   Search,
   User,
-  BookOpen,
-  FolderKanban,
+  GraduationCap,
+  FolderGit2,
   Crown,
   Shield,
-  Users
+  Users,
+  Compass
 } from 'lucide-react';
 
 interface WorkspaceSwitcherProps {
@@ -28,6 +29,7 @@ export const WorkspaceSwitcher: React.FC<WorkspaceSwitcherProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState<'ALL' | WorkspaceType>('ALL');
   const [focusedIndex, setFocusedIndex] = useState(-1);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -51,21 +53,19 @@ export const WorkspaceSwitcher: React.FC<WorkspaceSwitcherProps> = ({
 
   // Filtered workspaces
   const filtered = useMemo(() => {
+    let list = workspaces;
+    if (categoryFilter !== 'ALL') {
+      list = list.filter((w) => w.type === categoryFilter);
+    }
     const q = search.trim().toLowerCase();
-    if (!q) return workspaces;
-    return workspaces.filter(
+    if (!q) return list;
+    return list.filter(
       (w) =>
         w.name.toLowerCase().includes(q) ||
         (w.code && w.code.toLowerCase().includes(q)) ||
         (w.subjectCode && w.subjectCode.toLowerCase().includes(q))
     );
-  }, [workspaces, search]);
-
-  const personals = useMemo(() => filtered.filter((w) => w.type === 'PERSONAL'), [filtered]);
-  const subjects = useMemo(() => filtered.filter((w) => w.type === 'SUBJECT'), [filtered]);
-  const projects = useMemo(() => filtered.filter((w) => w.type === 'PROJECT'), [filtered]);
-
-  const flattenedList = useMemo(() => [...personals, ...subjects, ...projects], [personals, subjects, projects]);
+  }, [workspaces, search, categoryFilter]);
 
   // Keyboard navigation
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -83,222 +83,185 @@ export const WorkspaceSwitcher: React.FC<WorkspaceSwitcherProps> = ({
       triggerRef.current?.focus();
     } else if (e.key === 'ArrowDown') {
       e.preventDefault();
-      setFocusedIndex((prev) => (prev < flattenedList.length - 1 ? prev + 1 : 0));
+      setFocusedIndex((prev) => (prev < filtered.length - 1 ? prev + 1 : 0));
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
-      setFocusedIndex((prev) => (prev > 0 ? prev - 1 : flattenedList.length - 1));
-    } else if (e.key === 'Enter' && focusedIndex >= 0 && focusedIndex < flattenedList.length) {
+      setFocusedIndex((prev) => (prev > 0 ? prev - 1 : filtered.length - 1));
+    } else if (e.key === 'Enter' && focusedIndex >= 0 && focusedIndex < filtered.length) {
       e.preventDefault();
-      onSelectWorkspace(flattenedList[focusedIndex]);
+      onSelectWorkspace(filtered[focusedIndex]);
       setIsOpen(false);
       triggerRef.current?.focus();
     }
   };
 
-  const getWorkspaceIcon = (type: WorkspaceType) => {
+  const getWorkspaceTypeIcon = (type: WorkspaceType) => {
     switch (type) {
       case 'PERSONAL':
-        return <User size={16} />;
+        return <User size={15} />;
       case 'SUBJECT':
-        return <BookOpen size={16} />;
+        return <GraduationCap size={15} />;
       case 'PROJECT':
-        return <FolderKanban size={16} />;
+        return <FolderGit2 size={15} />;
     }
   };
 
-  const getRoleBadge = (role: string) => {
-    if (role === 'OWNER') return <span title="Chủ sở hữu" style={{ color: '#d97706', display: 'flex' }}><Crown size={12} /></span>;
-    if (role === 'MANAGER') return <span title="Quản lý" style={{ color: '#2563eb', display: 'flex' }}><Shield size={12} /></span>;
-    return <span title="Thành viên" style={{ color: 'var(--text-muted)', display: 'flex' }}><Users size={12} /></span>;
+  const getRoleTag = (role: string) => {
+    if (role === 'OWNER') return <span className="ws-role-pill owner" title="Chủ sở hữu"><Crown size={11} /> Sở hữu</span>;
+    if (role === 'MANAGER') return <span className="ws-role-pill manager" title="Quản lý"><Shield size={11} /> Quản lý</span>;
+    return <span className="ws-role-pill member" title="Thành viên"><Users size={11} /> Thành viên</span>;
   };
 
   return (
-    <div ref={dropdownRef} style={{ position: 'relative', width: '100%' }}>
-      {/* Switcher Button Trigger */}
+    <div ref={dropdownRef} className="ws-switcher-wrapper">
+      {/* Trigger Button */}
       <button
         ref={triggerRef}
         type="button"
-        className="ws-switcher-btn"
+        className="ws-switcher-trigger"
         onClick={() => setIsOpen(!isOpen)}
         onKeyDown={handleKeyDown}
         aria-expanded={isOpen}
         aria-haspopup="listbox"
-        title="Nhấp để chuyển đổi không gian làm việc"
+        title="Chuyển đổi không gian làm việc"
       >
-        <div
-          className="ws-switcher-icon"
-          style={{
-            backgroundColor:
-              currentWorkspace.type === 'PERSONAL'
-                ? 'rgba(59, 130, 246, 0.12)'
-                : currentWorkspace.type === 'SUBJECT'
-                ? 'rgba(16, 185, 129, 0.12)'
-                : 'rgba(168, 85, 247, 0.12)',
-            color:
-              currentWorkspace.type === 'PERSONAL'
-                ? '#2563eb'
-                : currentWorkspace.type === 'SUBJECT'
-                ? '#059669'
-                : '#7c3aed'
-          }}
-        >
-          {getWorkspaceIcon(currentWorkspace.type)}
+        <div className={`ws-switcher-type-mark ${currentWorkspace.type.toLowerCase()}`}>
+          {getWorkspaceTypeIcon(currentWorkspace.type)}
         </div>
 
-        <div className="ws-switcher-meta">
-          <div className="ws-switcher-name">{currentWorkspace.name}</div>
-          <div className="ws-switcher-badge">
-            <span>
+        <div className="ws-switcher-text-block">
+          <div className="ws-switcher-active-name">{currentWorkspace.name}</div>
+          <div className="ws-switcher-sub-meta">
+            {currentWorkspace.code && (
+              <span className="ws-academic-code">{currentWorkspace.code}</span>
+            )}
+            <span className="ws-type-name">
               {currentWorkspace.type === 'PERSONAL'
-                ? 'Cá nhân'
+                ? 'Không gian cá nhân'
                 : currentWorkspace.type === 'SUBJECT'
-                ? `Môn [${currentWorkspace.code || 'Học'}]`
-                : 'Dự án / BTL'}
+                ? 'Môn học'
+                : 'Đồ án nhóm'}
             </span>
-            <span>•</span>
-            {getRoleBadge(currentWorkspace.role)}
           </div>
         </div>
 
         <ChevronDown
-          size={16}
-          style={{
-            color: 'var(--text-muted)',
-            transform: isOpen ? 'rotate(180deg)' : 'none',
-            transition: 'transform 0.15s ease'
-          }}
+          size={14}
+          className={`ws-switcher-chevron ${isOpen ? 'rotated' : ''}`}
         />
       </button>
 
-      {/* Switcher Popover Menu */}
+      {/* Switcher Dropdown Popover */}
       {isOpen && (
-        <div className="ws-switcher-dropdown">
-          {/* Quick Search Input */}
-          <div className="ws-switcher-search">
-            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-              <Search
-                size={14}
-                style={{ position: 'absolute', left: '8px', color: 'var(--text-muted)' }}
-              />
-              <input
-                ref={searchInputRef}
-                type="text"
-                placeholder="Tìm không gian (Tên, mã môn)..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                onKeyDown={handleKeyDown}
-                style={{ paddingLeft: '28px' }}
-              />
-            </div>
+        <div className="ws-switcher-popover" role="dialog">
+          {/* Top Search & Filter Bar */}
+          <div className="ws-popover-search-wrap">
+            <Search size={14} className="ws-search-icon" />
+            <input
+              ref={searchInputRef}
+              type="text"
+              className="ws-popover-search-input"
+              placeholder="Tìm theo tên môn, mã học phần (INT)..."
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setFocusedIndex(0);
+              }}
+              onKeyDown={handleKeyDown}
+            />
           </div>
 
-          {/* Grouped Lists */}
-          <div className="ws-switcher-list" role="listbox">
-            {flattenedList.length === 0 ? (
-              <div style={{ padding: '16px 12px', textAlign: 'center', fontSize: '12px', color: 'var(--text-muted)' }}>
-                Không tìm thấy không gian phù hợp
+          {/* Category Tabs */}
+          <div className="ws-category-tabs">
+            <button
+              type="button"
+              className={`ws-cat-tab ${categoryFilter === 'ALL' ? 'active' : ''}`}
+              onClick={() => setCategoryFilter('ALL')}
+            >
+              Tất cả ({workspaces.length})
+            </button>
+            <button
+              type="button"
+              className={`ws-cat-tab ${categoryFilter === 'SUBJECT' ? 'active' : ''}`}
+              onClick={() => setCategoryFilter('SUBJECT')}
+            >
+              Môn học ({workspaces.filter((w) => w.type === 'SUBJECT').length})
+            </button>
+            <button
+              type="button"
+              className={`ws-cat-tab ${categoryFilter === 'PROJECT' ? 'active' : ''}`}
+              onClick={() => setCategoryFilter('PROJECT')}
+            >
+              Đồ án ({workspaces.filter((w) => w.type === 'PROJECT').length})
+            </button>
+          </div>
+
+          {/* Workspaces List */}
+          <div className="ws-popover-list" role="listbox">
+            {filtered.length === 0 ? (
+              <div className="ws-popover-empty">
+                Không tìm thấy không gian làm việc phù hợp.
               </div>
             ) : (
-              <>
-                {/* 1. Personal Workspace */}
-                {personals.length > 0 && (
-                  <div style={{ marginBottom: '8px' }}>
-                    <div className="ws-group-title">
-                      <span>Cá nhân</span>
-                      <span>{personals.length}</span>
+              filtered.map((ws, idx) => {
+                const isSelected = ws.id === currentWorkspace.id;
+                const isFocused = idx === focusedIndex;
+                return (
+                  <button
+                    key={ws.id}
+                    type="button"
+                    className={`ws-popover-item ${isSelected ? 'selected' : ''} ${isFocused ? 'focused' : ''}`}
+                    onClick={() => {
+                      onSelectWorkspace(ws);
+                      setIsOpen(false);
+                      triggerRef.current?.focus();
+                    }}
+                    onMouseEnter={() => setFocusedIndex(idx)}
+                  >
+                    <div className={`ws-item-type-icon ${ws.type.toLowerCase()}`}>
+                      {getWorkspaceTypeIcon(ws.type)}
                     </div>
-                    {personals.map((ws) => (
-                      <button
-                        key={ws.id}
-                        type="button"
-                        className={`ws-item-btn ${ws.id === currentWorkspace.id ? 'active' : ''}`}
-                        onClick={() => {
-                          onSelectWorkspace(ws);
-                          setIsOpen(false);
-                        }}
-                      >
-                        <User size={14} style={{ color: '#2563eb' }} />
-                        <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: '13px' }}>
-                          {ws.name}
-                        </span>
-                        {ws.id === currentWorkspace.id && <Check size={14} style={{ color: '#2563eb' }} />}
-                      </button>
-                    ))}
-                  </div>
-                )}
 
-                {/* 2. Subject Workspaces */}
-                {subjects.length > 0 && (
-                  <div style={{ marginBottom: '8px' }}>
-                    <div className="ws-group-title">
-                      <span>Môn học đang theo</span>
-                      <span>{subjects.length}</span>
+                    <div className="ws-item-content">
+                      <div className="ws-item-top-row">
+                        <span className="ws-item-title">{ws.name}</span>
+                        {ws.code && <span className="ws-academic-code-mono">{ws.code}</span>}
+                      </div>
+                      <div className="ws-item-meta-row">
+                        {getRoleTag(ws.role)}
+                        {ws.memberCount && ws.memberCount > 1 && (
+                          <span className="ws-item-members-count">
+                            {ws.memberCount} thành viên
+                          </span>
+                        )}
+                        {ws.status === 'ARCHIVED' && (
+                          <span className="ws-archived-tag">Đã lưu trữ</span>
+                        )}
+                      </div>
                     </div>
-                    {subjects.map((ws) => (
-                      <button
-                        key={ws.id}
-                        type="button"
-                        className={`ws-item-btn ${ws.id === currentWorkspace.id ? 'active' : ''}`}
-                        onClick={() => {
-                          onSelectWorkspace(ws);
-                          setIsOpen(false);
-                        }}
-                      >
-                        <BookOpen size={14} style={{ color: '#059669' }} />
-                        <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: '13px' }}>
-                          {ws.code ? `[${ws.code}] ` : ''}{ws.name}
-                        </span>
-                        {getRoleBadge(ws.role)}
-                        {ws.id === currentWorkspace.id && <Check size={14} style={{ color: '#059669', marginLeft: '4px' }} />}
-                      </button>
-                    ))}
-                  </div>
-                )}
 
-                {/* 3. Project Workspaces */}
-                {projects.length > 0 && (
-                  <div>
-                    <div className="ws-group-title">
-                      <span>Dự án & Đồ án nhóm</span>
-                      <span>{projects.length}</span>
-                    </div>
-                    {projects.map((ws) => (
-                      <button
-                        key={ws.id}
-                        type="button"
-                        className={`ws-item-btn ${ws.id === currentWorkspace.id ? 'active' : ''}`}
-                        onClick={() => {
-                          onSelectWorkspace(ws);
-                          setIsOpen(false);
-                        }}
-                      >
-                        <FolderKanban size={14} style={{ color: '#7c3aed' }} />
-                        <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: '13px' }}>
-                          {ws.name}
-                        </span>
-                        {getRoleBadge(ws.role)}
-                        {ws.id === currentWorkspace.id && <Check size={14} style={{ color: '#7c3aed', marginLeft: '4px' }} />}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </>
+                    {isSelected && (
+                      <Check size={14} className="ws-item-check" />
+                    )}
+                  </button>
+                );
+              })
             )}
           </div>
 
-          {/* Switcher Footer */}
+          {/* Footer Action */}
           {onCreateWorkspace && (
-            <div className="ws-switcher-footer">
+            <div className="ws-popover-footer">
               <button
                 type="button"
-                className="ws-new-btn"
+                className="ws-create-ws-btn"
                 onClick={() => {
                   setIsOpen(false);
                   onCreateWorkspace();
                 }}
               >
                 <Plus size={14} />
-                <span>Tạo không gian làm việc mới</span>
+                <span>Khởi tạo Không gian mới</span>
               </button>
             </div>
           )}
