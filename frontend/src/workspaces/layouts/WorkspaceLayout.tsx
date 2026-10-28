@@ -184,7 +184,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
 
   return (
     <div className={`ws-shell theme-${theme} ${isZenMode ? 'zen-mode' : ''}`}>
-      {/* 1. Academic Bookshelf Sidebar */}
+      {/* 1. Icon-Only Rail Navigation */}
       <WorkspaceSidebar
         currentWorkspace={currentWorkspace}
         workspaces={workspaces}
@@ -198,6 +198,8 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
         onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
         onToggleZenMode={() => setIsZenMode(!isZenMode)}
         isZenMode={isZenMode}
+        theme={theme}
+        onToggleTheme={toggleTheme}
       />
 
       {/* 2. Main Workstation Arena */}
@@ -384,10 +386,10 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
 
                 <div className="ws-canvas-badge">
                   {currentWorkspace.type === 'PERSONAL'
-                    ? '🏠 Cá nhân'
+                    ? 'Cá nhân'
                     : currentWorkspace.type === 'SUBJECT'
-                    ? `📚 Môn [${currentWorkspace.code || 'INT'}]`
-                    : '🚀 Đồ án nhóm'}
+                    ? `Môn [${currentWorkspace.code || 'INT'}]`
+                    : 'Đồ án nhóm'}
                 </div>
               </div>
 
@@ -419,7 +421,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
               ) : activeNavId === 'gantt' ? (
                 <div className="ws-bento-card" style={{ textAlign: 'center', padding: '36px' }}>
                   <h3 style={{ fontSize: '16px', fontWeight: 700, margin: '0 0 8px 0', letterSpacing: '-0.02em' }}>
-                    📈 Dòng Thời Gian Tiến Độ Gantt Chart
+                    Dòng Thời Gian Tiến Độ Gantt Chart
                   </h3>
                   <p style={{ fontSize: '13px', color: 'var(--ws-text-muted)', maxWidth: '540px', margin: '0 auto 20px' }}>
                     Biểu đồ Gantt trực quan được đồng bộ trực tiếp với danh sách nhiệm vụ của dự án theo ranh giới thẻ A06.
@@ -448,7 +450,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                     {/* Active Tasks & Deadlines Bento */}
                     <div className="ws-bento-card">
                       <div className="ws-bento-card-title">
-                        <span>🎯 Bài tập & Việc cần nộp cận kề</span>
+                        <span>Bài tập & Việc cần nộp cận kề</span>
                         <button
                           type="button"
                           className="ws-card-action-link"
@@ -485,7 +487,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                     {/* Recent Lecture Notes Bento */}
                     <div className="ws-bento-card">
                       <div className="ws-bento-card-title">
-                        <span>📖 Ghi chú & Bài giảng gần đây</span>
+                        <span>Ghi chú & Bài giảng gần đây</span>
                         <button
                           type="button"
                           className="ws-card-action-link"
@@ -528,7 +530,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                     {/* Progress Metric Card */}
                     <div className="ws-bento-card">
                       <div className="ws-bento-card-title">
-                        <span>📊 Tiến độ học tập tuần</span>
+                        <span>Tiến độ học tập tuần</span>
                       </div>
 
                       <div className="ws-progress-metric">
@@ -556,7 +558,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                     {/* Quick Course / Project Meta Bento */}
                     <div className="ws-bento-card">
                       <div className="ws-bento-card-title">
-                        <span>ℹ️ Thông tin môn / Dự án</span>
+                        <span>Thông tin môn / Dự án</span>
                       </div>
                       <div style={{ fontSize: '11.5px', color: 'var(--ws-text-muted)', lineHeight: 1.7 }}>
                         {currentWorkspace.code && (

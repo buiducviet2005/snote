@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { WorkspaceSummary, WorkspaceType } from './types';
 import {
-  ChevronDown,
   Check,
   Plus,
   Search,
@@ -10,8 +9,7 @@ import {
   FolderGit2,
   Crown,
   Shield,
-  Users,
-  Compass
+  Users
 } from 'lucide-react';
 
 interface WorkspaceSwitcherProps {
@@ -98,70 +96,55 @@ export const WorkspaceSwitcher: React.FC<WorkspaceSwitcherProps> = ({
   const getWorkspaceTypeIcon = (type: WorkspaceType) => {
     switch (type) {
       case 'PERSONAL':
-        return <User size={15} />;
+        return <User size={16} />;
       case 'SUBJECT':
-        return <GraduationCap size={15} />;
+        return <GraduationCap size={16} />;
       case 'PROJECT':
-        return <FolderGit2 size={15} />;
+        return <FolderGit2 size={16} />;
     }
   };
 
-  const getRoleTag = (role: string) => {
-    if (role === 'OWNER') return <span className="ws-role-pill owner" title="Chủ sở hữu"><Crown size={11} /> Sở hữu</span>;
-    if (role === 'MANAGER') return <span className="ws-role-pill manager" title="Quản lý"><Shield size={11} /> Quản lý</span>;
-    return <span className="ws-role-pill member" title="Thành viên"><Users size={11} /> Thành viên</span>;
+  // Get brief monogram for the rail trigger mark
+  const getTriggerMonogram = () => {
+    if (currentWorkspace.code) {
+      return currentWorkspace.code.replace(/[^A-Za-z0-9]/g, '').slice(0, 3);
+    }
+    return currentWorkspace.name.trim().charAt(0).toUpperCase();
   };
 
   return (
-    <div ref={dropdownRef} className="ws-switcher-wrapper">
-      {/* Trigger Button */}
+    <div ref={dropdownRef} className="ws-switcher-rail-wrapper">
+      {/* Compact Rail Trigger Icon */}
       <button
         ref={triggerRef}
         type="button"
-        className="ws-switcher-trigger"
+        className="ws-switcher-rail-btn"
         onClick={() => setIsOpen(!isOpen)}
         onKeyDown={handleKeyDown}
         aria-expanded={isOpen}
         aria-haspopup="listbox"
-        title="Chuyển đổi không gian làm việc"
+        aria-label="Chuyển đổi không gian làm việc"
       >
-        <div className={`ws-switcher-type-mark ${currentWorkspace.type.toLowerCase()}`}>
-          {getWorkspaceTypeIcon(currentWorkspace.type)}
+        <span className="ws-switcher-monogram">{getTriggerMonogram()}</span>
+        <div className="ws-rail-tooltip" role="tooltip">
+          <span className="ws-tooltip-text">
+            {currentWorkspace.name} ({currentWorkspace.code || currentWorkspace.type})
+          </span>
+          <span className="ws-tooltip-badge">Đổi</span>
         </div>
-
-        <div className="ws-switcher-text-block">
-          <div className="ws-switcher-active-name">{currentWorkspace.name}</div>
-          <div className="ws-switcher-sub-meta">
-            {currentWorkspace.code && (
-              <span className="ws-academic-code">{currentWorkspace.code}</span>
-            )}
-            <span className="ws-type-name">
-              {currentWorkspace.type === 'PERSONAL'
-                ? 'Không gian cá nhân'
-                : currentWorkspace.type === 'SUBJECT'
-                ? 'Môn học'
-                : 'Đồ án nhóm'}
-            </span>
-          </div>
-        </div>
-
-        <ChevronDown
-          size={14}
-          className={`ws-switcher-chevron ${isOpen ? 'rotated' : ''}`}
-        />
       </button>
 
-      {/* Switcher Dropdown Popover */}
+      {/* Flyout Popover Menu to the right of the rail */}
       {isOpen && (
-        <div className="ws-switcher-popover" role="dialog">
-          {/* Top Search & Filter Bar */}
-          <div className="ws-popover-search-wrap">
+        <div className="ws-switcher-flyout" role="dialog">
+          {/* Top Search Bar */}
+          <div className="ws-flyout-search-wrap">
             <Search size={14} className="ws-search-icon" />
             <input
               ref={searchInputRef}
               type="text"
-              className="ws-popover-search-input"
-              placeholder="Tìm theo tên môn, mã học phần (INT)..."
+              className="ws-flyout-search-input"
+              placeholder="Tìm theo tên hoặc mã môn..."
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
@@ -171,36 +154,36 @@ export const WorkspaceSwitcher: React.FC<WorkspaceSwitcherProps> = ({
             />
           </div>
 
-          {/* Category Tabs */}
-          <div className="ws-category-tabs">
+          {/* Category Filter Pills (Monochrome) */}
+          <div className="ws-flyout-tabs">
             <button
               type="button"
-              className={`ws-cat-tab ${categoryFilter === 'ALL' ? 'active' : ''}`}
+              className={`ws-flyout-tab ${categoryFilter === 'ALL' ? 'active' : ''}`}
               onClick={() => setCategoryFilter('ALL')}
             >
               Tất cả ({workspaces.length})
             </button>
             <button
               type="button"
-              className={`ws-cat-tab ${categoryFilter === 'SUBJECT' ? 'active' : ''}`}
+              className={`ws-flyout-tab ${categoryFilter === 'SUBJECT' ? 'active' : ''}`}
               onClick={() => setCategoryFilter('SUBJECT')}
             >
               Môn học ({workspaces.filter((w) => w.type === 'SUBJECT').length})
             </button>
             <button
               type="button"
-              className={`ws-cat-tab ${categoryFilter === 'PROJECT' ? 'active' : ''}`}
+              className={`ws-flyout-tab ${categoryFilter === 'PROJECT' ? 'active' : ''}`}
               onClick={() => setCategoryFilter('PROJECT')}
             >
               Đồ án ({workspaces.filter((w) => w.type === 'PROJECT').length})
             </button>
           </div>
 
-          {/* Workspaces List */}
-          <div className="ws-popover-list" role="listbox">
+          {/* Workspaces List (Monochrome) */}
+          <div className="ws-flyout-list" role="listbox">
             {filtered.length === 0 ? (
-              <div className="ws-popover-empty">
-                Không tìm thấy không gian làm việc phù hợp.
+              <div className="ws-flyout-empty">
+                Không tìm thấy không gian phù hợp.
               </div>
             ) : (
               filtered.map((ws, idx) => {
@@ -210,7 +193,7 @@ export const WorkspaceSwitcher: React.FC<WorkspaceSwitcherProps> = ({
                   <button
                     key={ws.id}
                     type="button"
-                    className={`ws-popover-item ${isSelected ? 'selected' : ''} ${isFocused ? 'focused' : ''}`}
+                    className={`ws-flyout-item ${isSelected ? 'selected' : ''} ${isFocused ? 'focused' : ''}`}
                     onClick={() => {
                       onSelectWorkspace(ws);
                       setIsOpen(false);
@@ -218,30 +201,32 @@ export const WorkspaceSwitcher: React.FC<WorkspaceSwitcherProps> = ({
                     }}
                     onMouseEnter={() => setFocusedIndex(idx)}
                   >
-                    <div className={`ws-item-type-icon ${ws.type.toLowerCase()}`}>
+                    <div className="ws-item-monochrome-icon">
                       {getWorkspaceTypeIcon(ws.type)}
                     </div>
 
-                    <div className="ws-item-content">
-                      <div className="ws-item-top-row">
-                        <span className="ws-item-title">{ws.name}</span>
-                        {ws.code && <span className="ws-academic-code-mono">{ws.code}</span>}
+                    <div className="ws-item-info">
+                      <div className="ws-item-title-row">
+                        <span className="ws-item-name">{ws.name}</span>
+                        {ws.code && <span className="ws-mono-tag">{ws.code}</span>}
                       </div>
-                      <div className="ws-item-meta-row">
-                        {getRoleTag(ws.role)}
+                      <div className="ws-item-sub-row">
+                        <span className="ws-role-text">
+                          {ws.role === 'OWNER' ? 'Sở hữu' : 'Thành viên'}
+                        </span>
                         {ws.memberCount && ws.memberCount > 1 && (
-                          <span className="ws-item-members-count">
-                            {ws.memberCount} thành viên
+                          <span className="ws-member-text">
+                            • {ws.memberCount} thành viên
                           </span>
                         )}
                         {ws.status === 'ARCHIVED' && (
-                          <span className="ws-archived-tag">Đã lưu trữ</span>
+                          <span className="ws-archived-pill">Lưu trữ</span>
                         )}
                       </div>
                     </div>
 
                     {isSelected && (
-                      <Check size={14} className="ws-item-check" />
+                      <Check size={14} className="ws-item-check-icon" />
                     )}
                   </button>
                 );
@@ -251,16 +236,16 @@ export const WorkspaceSwitcher: React.FC<WorkspaceSwitcherProps> = ({
 
           {/* Footer Action */}
           {onCreateWorkspace && (
-            <div className="ws-popover-footer">
+            <div className="ws-flyout-footer">
               <button
                 type="button"
-                className="ws-create-ws-btn"
+                className="ws-create-btn"
                 onClick={() => {
                   setIsOpen(false);
                   onCreateWorkspace();
                 }}
               >
-                <Plus size={14} />
+                <Plus size={13} />
                 <span>Khởi tạo Không gian mới</span>
               </button>
             </div>
