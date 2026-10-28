@@ -23,6 +23,7 @@ export const NotesListPage: React.FC = () => {
   const { showToast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
   const deepNoteId = searchParams.get('noteId');
+  const actionParam = searchParams.get('action');
 
   // Deep link note loading
   useEffect(() => {
@@ -162,6 +163,23 @@ export const NotesListPage: React.FC = () => {
       handleOpenCreate();
     }
   };
+
+  // Handle ?action=new from topbar
+  useEffect(() => {
+    if (actionParam === 'new') {
+      handleCreateObsidianNote();
+      const next = new URLSearchParams(searchParams);
+      next.delete('action');
+      setSearchParams(next, { replace: true });
+    }
+  }, [actionParam]);
+
+  // Listen for refresh events (from QuickCapture or other components)
+  useEffect(() => {
+    const handleRefresh = () => fetchNotes();
+    window.addEventListener('snote_refresh_notes', handleRefresh);
+    return () => window.removeEventListener('snote_refresh_notes', handleRefresh);
+  }, [fetchNotes]);
 
   const handleUpdateNote = async (id: string, payload: { title?: string; content?: string }) => {
     try {

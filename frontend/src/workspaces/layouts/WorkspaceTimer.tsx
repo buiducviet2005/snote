@@ -52,6 +52,15 @@ export const WorkspaceTimer: React.FC<WorkspaceTimerProps> = ({ onSessionComplet
     return () => document.removeEventListener('mousedown', handleOutside);
   }, [isPopoverOpen]);
 
+  // Command palette toggle event listener
+  useEffect(() => {
+    const handleToggleEvent = () => {
+      setIsRunning((prev) => !prev);
+    };
+    window.addEventListener('snote_toggle_timer', handleToggleEvent);
+    return () => window.removeEventListener('snote_toggle_timer', handleToggleEvent);
+  }, []);
+
   const toggleRun = () => setIsRunning(!isRunning);
 
   const resetTimer = (newMode?: 'FOCUS' | 'BREAK') => {

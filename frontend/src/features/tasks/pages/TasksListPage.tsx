@@ -46,6 +46,17 @@ export const TasksListPage: React.FC = () => {
   const { showToast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
   const deepTaskId = searchParams.get('taskId');
+  const actionParam = searchParams.get('action');
+
+  // Handle ?action=new from topbar
+  useEffect(() => {
+    if (actionParam === 'new') {
+      handleOpenCreate();
+      const next = new URLSearchParams(searchParams);
+      next.delete('action');
+      setSearchParams(next, { replace: true });
+    }
+  }, [actionParam]);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
   const filterRef = useRef<HTMLDivElement>(null);

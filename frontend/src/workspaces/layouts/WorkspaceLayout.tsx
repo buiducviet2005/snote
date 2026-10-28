@@ -9,6 +9,7 @@ import { WorkspaceTimer } from './WorkspaceTimer';
 import { WorkspaceQuickCapture } from './WorkspaceQuickCapture';
 import { WorkspaceArchivedBanner } from './WorkspaceStates';
 import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '../../contexts/ToastContext';
 import { api } from '../../services/api';
 import {
   Menu,
@@ -86,6 +87,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
   onLogout: propLogout
 }) => {
   const { user: authUser, logout: authLogout, isAdmin } = useAuth();
+  const { showToast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -374,23 +376,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
               <PenTool size={14} />
             </button>
 
-            <button
-              type="button"
-              className="ws-tool-btn"
-              onClick={toggleTheme}
-              title={theme === 'dark' ? 'Chuyển sang Giao diện Sáng' : 'Chuyển sang Giao diện Tối'}
-            >
-              {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
-            </button>
-
-            <button
-              type="button"
-              className={`ws-tool-btn ${isZenMode ? 'active' : ''}`}
-              onClick={() => setIsZenMode(!isZenMode)}
-              title={isZenMode ? 'Thoát Zen Mode (Z)' : 'Bật Zen Mode (Z)'}
-            >
-              {isZenMode ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
-            </button>
+            
 
             {currentWorkspace.status === 'ACTIVE' && (
               <div className="ws-new-item-wrap">
@@ -452,7 +438,8 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
         onSelectNav={(navId) => {
           setIsCommandPaletteOpen(false);
           if (navId === 'notes') navigate('/notes');
-          else if (navId === 'tasks') navigate('/tasks');
+          else if (navId === 'tasks' || navId === 'kanban' || navId === 'gantt') navigate('/tasks');
+          else if (navId === 'overview') navigate('/notes');
           else if (navId === 'calendar') navigate('/schedule');
           else if (navId === 'classes') navigate('/classes');
           else if (navId === 'semesters') navigate('/semesters');
@@ -462,13 +449,28 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
         onOpenCreateTask={handleCreateTask}
         isZenMode={isZenMode}
         onToggleZenMode={() => setIsZenMode(!isZenMode)}
-        onToggleTimer={() => {}}
+        onToggleTimer={() => { window.dispatchEvent(new CustomEvent('snote_toggle_timer')); }}
       />
 
       {/* Global Quick Capture Scratchpad (Q) */}
       <WorkspaceQuickCapture
         isOpen={isQuickCaptureOpen}
         onClose={() => setIsQuickCaptureOpen(false)}
+        onSaveToPersonalNotes={async (noteContent) => {
+          try {
+            const firstLine = noteContent.trim().split('\n')[0].replace(/^[#*`_\-\s]+/, '').slice(0, 50);
+            await api.post('/notes', {
+              title: firstLine || 'Ghi chép nhanh',
+              content: noteContent,
+              noteType: 'GENERAL'
+            });
+            showToast('Đã lưu bài ghi vào Kho ghi chú!', 'success');
+            setIsQuickCaptureOpen(false);
+            window.dispatchEvent(new CustomEvent('snote_refresh_notes'));
+          } catch (err: any) {
+            showToast(err.message || 'Lỗi lưu ghi chú', 'error');
+          }
+        }}
       />
     </div>
   );
