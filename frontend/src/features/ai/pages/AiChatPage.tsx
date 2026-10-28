@@ -136,8 +136,15 @@ export const AiChatPage: React.FC = () => {
     }
   };
 
-  const handleCopyContent = (content: string, idx: number) => {
-    navigator.clipboard.writeText(content);
+  const handleCopyContent = async (content: string, idx: number) => {
+    try {
+      if (!navigator.clipboard?.writeText) throw new Error('Clipboard API unavailable');
+      await navigator.clipboard.writeText(content);
+    } catch {
+      showToast('Không thể sao chép phản hồi của AI. Vui lòng thử lại.', 'error');
+      return;
+    }
+
     setCopiedIndex(idx);
     showToast('Đã sao chép phản hồi của AI!', 'info');
     setTimeout(() => setCopiedIndex(null), 2500);

@@ -219,9 +219,16 @@ export const SettingsPage: React.FC = () => {
     }
   };
 
-  const handleCopyId = () => {
+  const handleCopyId = async () => {
     if (user?.id) {
-      navigator.clipboard.writeText(user.id);
+      try {
+        if (!navigator.clipboard?.writeText) throw new Error('Clipboard API unavailable');
+        await navigator.clipboard.writeText(user.id);
+      } catch {
+        showToast('Không thể sao chép Mã tài khoản sinh viên. Vui lòng thử lại.', 'error');
+        return;
+      }
+
       setCopiedId(true);
       showToast('Đã sao chép Mã tài khoản sinh viên!', 'info');
       setTimeout(() => setCopiedId(false), 2500);
