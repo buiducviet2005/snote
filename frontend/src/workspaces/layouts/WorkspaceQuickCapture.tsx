@@ -147,3 +147,4 @@ export const WorkspaceQuickCapture: React.FC<WorkspaceQuickCaptureProps> = ({
     </>
   );
 };
+

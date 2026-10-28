@@ -17,15 +17,12 @@ import {
   PenTool,
   Maximize2,
   Minimize2,
-  CheckCircle2,
-  Clock,
-  BookOpen,
-  Calendar,
-  Layers,
+  Moon,
+  Sun,
   FileText,
   CheckSquare,
-  ArrowRight,
-  ExternalLink
+  Sparkles,
+  Layers
 } from 'lucide-react';
 
 interface WorkspaceLayoutProps {
@@ -56,7 +53,7 @@ const DEFAULT_WORKSPACES: WorkspaceSummary[] = [
     status: 'ACTIVE',
     role: 'MEMBER',
     memberCount: 48,
-    color: '#235f74'
+    color: '#6366f1'
   },
   {
     id: 'ws-sub-db',
@@ -67,7 +64,7 @@ const DEFAULT_WORKSPACES: WorkspaceSummary[] = [
     status: 'ACTIVE',
     role: 'MEMBER',
     memberCount: 52,
-    color: '#2d6a4f'
+    color: '#10b981'
   },
   {
     id: 'ws-proj-snote',
@@ -77,7 +74,7 @@ const DEFAULT_WORKSPACES: WorkspaceSummary[] = [
     status: 'ACTIVE',
     role: 'OWNER',
     memberCount: 4,
-    color: '#4338ca'
+    color: '#f59e0b'
   },
   {
     id: 'ws-proj-rag',
@@ -87,7 +84,7 @@ const DEFAULT_WORKSPACES: WorkspaceSummary[] = [
     status: 'ACTIVE',
     role: 'OWNER',
     memberCount: 2,
-    color: '#b45309'
+    color: '#f43f5e'
   },
   {
     id: 'ws-proj-archive-sample',
@@ -97,7 +94,7 @@ const DEFAULT_WORKSPACES: WorkspaceSummary[] = [
     status: 'ARCHIVED',
     role: 'OWNER',
     memberCount: 3,
-    color: '#8a9691'
+    color: '#64748b'
   }
 ];
 
@@ -120,9 +117,18 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
   const [isZenMode, setIsZenMode] = useState(false);
   const [isActionMenuOpen, setIsActionMenuOpen] = useState(false);
 
+  // Theme state: defaults to dark carbon mode (Linear style), toggleable to light
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    return (localStorage.getItem('snote_theme') as 'dark' | 'light') || 'dark';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('snote_theme', theme);
+  }, [theme]);
+
   // Sample interactive task states in overview
   const [sampleTasks, setSampleTasks] = useState([
-    { id: 't1', title: 'Hoàn thiện giao diện WorkspaceLayout & Switcher', deadline: 'Hôm nay', urgent: true, done: true },
+    { id: 't1', title: 'Hoàn thiện kiến trúc WorkspaceLayout & Switcher', deadline: 'Hôm nay', urgent: true, done: true },
     { id: 't2', title: 'Soạn slide báo cáo tiến độ Sprint 1 môn Web', deadline: 'Mai, 23:59', urgent: true, done: false },
     { id: 't3', title: 'Luyện tập đề thi giữa kỳ CSDL (Chương 3 & 4)', deadline: '30/10/2026', urgent: false, done: false },
     { id: 't4', title: 'Đọc tài liệu React 19 Server Components', deadline: '02/11/2026', urgent: false, done: false }
@@ -130,10 +136,9 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
 
   const currentWorkspace = workspaces.find((w) => w.id === activeWorkspaceId) || workspaces[0];
 
-  // Global Keyboard Shortcuts (Ctrl+K for command menu, Z for Zen mode, Q for Quick capture)
+  // Global Keyboard Shortcuts (Ctrl+K, Z, Q)
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
-      // Don't intercept when user is typing inside an input/textarea
       const targetTag = (e.target as HTMLElement)?.tagName?.toLowerCase();
       const isInput = targetTag === 'input' || targetTag === 'textarea';
 
@@ -170,11 +175,15 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
     );
   };
 
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+  };
+
   const completedCount = sampleTasks.filter((t) => t.done).length;
   const progressPercent = Math.round((completedCount / sampleTasks.length) * 100);
 
   return (
-    <div className={`ws-shell ${isZenMode ? 'zen-mode' : ''}`}>
+    <div className={`ws-shell theme-${theme} ${isZenMode ? 'zen-mode' : ''}`}>
       {/* 1. Academic Bookshelf Sidebar */}
       <WorkspaceSidebar
         currentWorkspace={currentWorkspace}
@@ -243,7 +252,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
             </div>
           </div>
 
-          {/* Topbar Tools: Command Search, Pomodoro Timer, Quick Capture, New Item */}
+          {/* Topbar Tools: Command Search, Pomodoro Timer, Quick Capture, Theme Toggle, New Item */}
           <div className="ws-topbar-tools">
             {/* Quick Command Trigger Pill */}
             <button
@@ -267,7 +276,17 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
               onClick={() => setIsQuickCaptureOpen(!isQuickCaptureOpen)}
               title="Bàn ghi nháp siêu tốc (Phím tắt: Q)"
             >
-              <PenTool size={15} />
+              <PenTool size={14} />
+            </button>
+
+            {/* Theme Toggle (Dark / Light) */}
+            <button
+              type="button"
+              className="ws-tool-btn"
+              onClick={toggleTheme}
+              title={theme === 'dark' ? 'Chuyển sang Giao diện Sáng (Light)' : 'Chuyển sang Giao diện Tối (Dark)'}
+            >
+              {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
             </button>
 
             {/* Zen Mode Toggle */}
@@ -277,7 +296,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
               onClick={() => setIsZenMode(!isZenMode)}
               title={isZenMode ? 'Thoát Zen Mode (Z)' : 'Bật Zen Mode toàn màn hình (Z)'}
             >
-              {isZenMode ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
+              {isZenMode ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
             </button>
 
             {/* Quick Create Action Menu */}
@@ -288,7 +307,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                   className="ws-new-item-btn"
                   onClick={() => setIsActionMenuOpen(!isActionMenuOpen)}
                 >
-                  <Plus size={14} />
+                  <Plus size={13} />
                   <span>Tạo mới</span>
                 </button>
 
@@ -302,7 +321,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                         if (onOpenCreateNote) onOpenCreateNote(currentWorkspace);
                       }}
                     >
-                      <FileText size={14} />
+                      <FileText size={13} />
                       <span>Ghi chú bài học mới</span>
                     </button>
                     <button
@@ -313,7 +332,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                         if (onOpenCreateTask) onOpenCreateTask(currentWorkspace);
                       }}
                     >
-                      <CheckSquare size={14} />
+                      <CheckSquare size={13} />
                       <span>Bài tập / Nhiệm vụ mới</span>
                     </button>
                   </div>
@@ -365,9 +384,9 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
 
                 <div className="ws-canvas-badge">
                   {currentWorkspace.type === 'PERSONAL'
-                    ? '🏠 Không gian Cá nhân'
+                    ? '🏠 Cá nhân'
                     : currentWorkspace.type === 'SUBJECT'
-                    ? `📚 Môn học [${currentWorkspace.code || 'INT'}]`
+                    ? `📚 Môn [${currentWorkspace.code || 'INT'}]`
                     : '🚀 Đồ án nhóm'}
                 </div>
               </div>
@@ -383,7 +402,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                     >
                       <div className="ws-bento-card-title">
                         <span>{col}</span>
-                        <span style={{ fontSize: '11px', color: 'var(--ws-ink-faint)' }}>
+                        <span style={{ fontSize: '11px', color: 'var(--ws-text-faint)' }}>
                           {idx === 0 ? '2' : idx === 1 ? '1' : '3'}
                         </span>
                       </div>
@@ -399,23 +418,23 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                 </div>
               ) : activeNavId === 'gantt' ? (
                 <div className="ws-bento-card" style={{ textAlign: 'center', padding: '36px' }}>
-                  <h3 style={{ fontSize: '16px', fontWeight: 700, margin: '0 0 8px 0' }}>
+                  <h3 style={{ fontSize: '16px', fontWeight: 700, margin: '0 0 8px 0', letterSpacing: '-0.02em' }}>
                     📈 Dòng Thời Gian Tiến Độ Gantt Chart
                   </h3>
-                  <p style={{ fontSize: '13px', color: 'var(--ws-ink-muted)', maxWidth: '540px', margin: '0 auto 20px' }}>
+                  <p style={{ fontSize: '13px', color: 'var(--ws-text-muted)', maxWidth: '540px', margin: '0 auto 20px' }}>
                     Biểu đồ Gantt trực quan được đồng bộ trực tiếp với danh sách nhiệm vụ của dự án theo ranh giới thẻ A06.
                   </p>
                   <div
                     style={{
                       height: '160px',
-                      background: 'var(--ws-canvas)',
-                      border: '1px dashed var(--ws-line)',
-                      borderRadius: 'var(--ws-radius-md)',
+                      background: 'var(--ws-bg-app)',
+                      border: '1px dashed var(--ws-border-hairline)',
+                      borderRadius: '6px',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      color: 'var(--ws-ink-muted)',
-                      fontSize: '13px'
+                      color: 'var(--ws-text-muted)',
+                      fontSize: '12.5px'
                     }}
                   >
                     <span>Lộ trình công việc sẵn sàng tiếp nhận dữ liệu thời gian</span>
@@ -425,7 +444,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                 /* Overview Bento Grid */
                 <div className="ws-bento-grid">
                   {/* Left Column: Deadlines & Tasks */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
                     {/* Active Tasks & Deadlines Bento */}
                     <div className="ws-bento-card">
                       <div className="ws-bento-card-title">
@@ -505,7 +524,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                   </div>
 
                   {/* Right Column: Academic Progress & Study Session */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
                     {/* Progress Metric Card */}
                     <div className="ws-bento-card">
                       <div className="ws-bento-card-title">
@@ -527,7 +546,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                         </div>
                       </div>
 
-                      <div style={{ fontSize: '12px', color: 'var(--ws-ink-muted)', lineHeight: 1.6 }}>
+                      <div style={{ fontSize: '11.5px', color: 'var(--ws-text-muted)', lineHeight: 1.6 }}>
                         <div>• Đã hoàn thành: <b>{completedCount}/{sampleTasks.length}</b> mục</div>
                         <div>• Hạn chót kế tiếp: <b>Mai, 23:59</b></div>
                         <div>• Phiên tập trung hôm nay: <b>3 phiên Pomodoro</b></div>
@@ -535,13 +554,13 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                     </div>
 
                     {/* Quick Course / Project Meta Bento */}
-                    <div className="ws-bento-card" style={{ background: '#fbfbf9' }}>
+                    <div className="ws-bento-card">
                       <div className="ws-bento-card-title">
                         <span>ℹ️ Thông tin môn / Dự án</span>
                       </div>
-                      <div style={{ fontSize: '12px', color: 'var(--ws-ink-muted)', lineHeight: 1.7 }}>
+                      <div style={{ fontSize: '11.5px', color: 'var(--ws-text-muted)', lineHeight: 1.7 }}>
                         {currentWorkspace.code && (
-                          <div><b>Mã học phần:</b> <code style={{ fontFamily: 'var(--ws-font-mono)' }}>{currentWorkspace.code}</code></div>
+                          <div><b>Mã học phần:</b> <code className="ws-academic-code-mono">{currentWorkspace.code}</code></div>
                         )}
                         <div><b>Vai trò:</b> {currentWorkspace.role === 'OWNER' ? 'Chủ sở hữu' : 'Thành viên'}</div>
                         <div><b>Quy mô:</b> {currentWorkspace.memberCount || 1} thành viên</div>

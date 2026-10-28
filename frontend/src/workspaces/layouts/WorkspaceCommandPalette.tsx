@@ -356,3 +356,4 @@ export const WorkspaceCommandPalette: React.FC<WorkspaceCommandPaletteProps> = (
     </div>
   );
 };
+
