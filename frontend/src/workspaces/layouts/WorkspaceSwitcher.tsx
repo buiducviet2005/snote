@@ -6,10 +6,7 @@ import {
   Search,
   User,
   GraduationCap,
-  FolderGit2,
-  Crown,
-  Shield,
-  Users
+  FolderGit2
 } from 'lucide-react';
 
 interface WorkspaceSwitcherProps {
@@ -121,18 +118,23 @@ export const WorkspaceSwitcher: React.FC<WorkspaceSwitcherProps> = ({
         className="ws-switcher-rail-btn"
         onClick={() => setIsOpen(!isOpen)}
         onKeyDown={handleKeyDown}
+        title={`Không gian hiện tại: ${currentWorkspace.name} (Nhấp để đổi)`}
         aria-expanded={isOpen}
         aria-haspopup="listbox"
         aria-label="Chuyển đổi không gian làm việc"
       >
         <span className="ws-switcher-monogram">{getTriggerMonogram()}</span>
+      </button>
+
+      {/* Floating Tooltip next to Switcher Mark */}
+      {!isOpen && (
         <div className="ws-rail-tooltip" role="tooltip">
           <span className="ws-tooltip-text">
-            {currentWorkspace.name} ({currentWorkspace.code || currentWorkspace.type})
+            {currentWorkspace.name} {currentWorkspace.code ? `[${currentWorkspace.code}]` : ''}
           </span>
           <span className="ws-tooltip-badge">Đổi</span>
         </div>
-      </button>
+      )}
 
       {/* Flyout Popover Menu to the right of the rail */}
       {isOpen && (

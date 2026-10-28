@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { WorkspaceSummary, NavItemDef } from './types';
 import { WorkspaceSwitcher } from './WorkspaceSwitcher';
 import {
@@ -122,7 +122,7 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
       {/* Mobile backdrop */}
       {isMobileOpen && <div className="ws-sidebar-backdrop" onClick={onCloseMobile} />}
 
-      <aside className={`ws-icon-rail ${isMobileOpen ? 'open' : ''}`} aria-label="Thanh công cụ thu gọn">
+      <aside className={`ws-icon-rail ${isMobileOpen ? 'open' : ''}`} aria-label="Thanh điều hướng thu gọn">
         {/* Top: Workspace Switcher Mark */}
         <div className="ws-rail-top">
           <WorkspaceSwitcher
@@ -138,7 +138,7 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
 
         <div className="ws-rail-divider" />
 
-        {/* Center: Main Navigation Icons with Rounded Tooltips */}
+        {/* Center: Main Navigation Icons with Rounded Floating Tooltips */}
         <nav className="ws-rail-nav">
           {navItems.map((item) => {
             const isActive = activeNavId === item.id;
@@ -151,20 +151,22 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
                     onSelectNav(item.id);
                     if (onCloseMobile) onCloseMobile();
                   }}
+                  title={item.label}
                   aria-label={item.label}
                 >
                   <span className="ws-rail-icon">{renderNavIcon(item.iconName)}</span>
                   {item.badge !== undefined && (
                     <span className="ws-rail-badge-dot" />
                   )}
-                  {/* Floating Rounded Tooltip on Hover */}
-                  <div className="ws-rail-tooltip" role="tooltip">
-                    <span className="ws-tooltip-text">{item.label}</span>
-                    {item.badge !== undefined && (
-                      <span className="ws-tooltip-badge">{item.badge}</span>
-                    )}
-                  </div>
                 </button>
+
+                {/* Floating Rounded Tooltip on Hover (Direct sibling of button) */}
+                <div className="ws-rail-tooltip" role="tooltip">
+                  <span className="ws-tooltip-text">{item.label}</span>
+                  {item.badge !== undefined && (
+                    <span className="ws-tooltip-badge">{item.badge}</span>
+                  )}
+                </div>
               </div>
             );
           })}
@@ -172,7 +174,7 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
 
         <div className="ws-rail-divider" />
 
-        {/* Bottom Utility Icons: Command Palette, Zen Mode, Theme Toggle, User */}
+        {/* Bottom Utility Icons: Command Palette, AI, Zen, Theme, User */}
         <div className="ws-rail-bottom">
           {/* Command Palette Trigger */}
           <div className="ws-rail-item-wrapper">
@@ -180,14 +182,15 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
               type="button"
               className="ws-rail-btn"
               onClick={onOpenCommandPalette}
+              title="Tìm kiếm & Bảng lệnh (Ctrl + K)"
               aria-label="Tìm kiếm và lệnh nhanh"
             >
               <Command size={18} />
-              <div className="ws-rail-tooltip" role="tooltip">
-                <span className="ws-tooltip-text">Tìm kiếm & Lệnh</span>
-                <kbd className="ws-tooltip-kbd">Ctrl K</kbd>
-              </div>
             </button>
+            <div className="ws-rail-tooltip" role="tooltip">
+              <span className="ws-tooltip-text">Tìm kiếm & Bảng lệnh</span>
+              <kbd className="ws-tooltip-kbd">Ctrl K</kbd>
+            </div>
           </div>
 
           {/* AI Assistant */}
@@ -196,13 +199,14 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
               type="button"
               className="ws-rail-btn"
               onClick={() => onSelectNav('ai-assistant')}
+              title="Gia sư AI học thuật"
               aria-label="Gia sư AI học thuật"
             >
               <Sparkles size={18} />
-              <div className="ws-rail-tooltip" role="tooltip">
-                <span className="ws-tooltip-text">Gia sư AI học thuật</span>
-              </div>
             </button>
+            <div className="ws-rail-tooltip" role="tooltip">
+              <span className="ws-tooltip-text">Gia sư AI học thuật</span>
+            </div>
           </div>
 
           {/* Zen Focus Mode */}
@@ -211,14 +215,15 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
               type="button"
               className={`ws-rail-btn ${isZenMode ? 'active' : ''}`}
               onClick={onToggleZenMode}
+              title={isZenMode ? 'Thoát Chế độ tập trung (Z)' : 'Chế độ tập trung (Z)'}
               aria-label="Chế độ tập trung"
             >
               {isZenMode ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
-              <div className="ws-rail-tooltip" role="tooltip">
-                <span className="ws-tooltip-text">{isZenMode ? 'Thoát Zen Mode' : 'Chế độ tập trung'}</span>
-                <kbd className="ws-tooltip-kbd">Z</kbd>
-              </div>
             </button>
+            <div className="ws-rail-tooltip" role="tooltip">
+              <span className="ws-tooltip-text">{isZenMode ? 'Thoát Chế độ tập trung' : 'Chế độ tập trung (Zen)'}</span>
+              <kbd className="ws-tooltip-kbd">Z</kbd>
+            </div>
           </div>
 
           {/* Dark / Light Theme Toggle */}
@@ -228,15 +233,16 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
                 type="button"
                 className="ws-rail-btn"
                 onClick={onToggleTheme}
+                title={theme === 'dark' ? 'Chuyển sang Giao diện Sáng' : 'Chuyển sang Giao diện Tối'}
                 aria-label="Đổi giao diện sáng/tối"
               >
                 {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-                <div className="ws-rail-tooltip" role="tooltip">
-                  <span className="ws-tooltip-text">
-                    {theme === 'dark' ? 'Chuyển sang Giao diện Sáng' : 'Chuyển sang Giao diện Tối'}
-                  </span>
-                </div>
               </button>
+              <div className="ws-rail-tooltip" role="tooltip">
+                <span className="ws-tooltip-text">
+                  {theme === 'dark' ? 'Chuyển sang Giao diện Sáng' : 'Chuyển sang Giao diện Tối'}
+                </span>
+              </div>
             </div>
           )}
 
@@ -244,25 +250,28 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
 
           {/* User Avatar with Tooltip & Logout Action */}
           <div className="ws-rail-item-wrapper">
-            <div className="ws-rail-user-avatar">
+            <div
+              className="ws-rail-user-avatar"
+              title={currentUser?.fullName || 'Sinh viên'}
+            >
               {currentUser?.fullName ? currentUser.fullName.charAt(0).toUpperCase() : 'S'}
-              <div className="ws-rail-tooltip user-tooltip" role="tooltip">
-                <div className="ws-tooltip-user-meta">
-                  <div className="ws-tooltip-user-name">{currentUser?.fullName || 'Sinh viên SNOTE'}</div>
-                  <div className="ws-tooltip-user-email">{currentUser?.email || 'sinhvien@snote.edu.vn'}</div>
-                </div>
-                {onLogout && (
-                  <button
-                    type="button"
-                    className="ws-tooltip-logout-btn"
-                    onClick={onLogout}
-                    title="Đăng xuất"
-                  >
-                    <LogOut size={13} />
-                    <span>Đăng xuất</span>
-                  </button>
-                )}
+            </div>
+            <div className="ws-rail-tooltip user-tooltip" role="tooltip">
+              <div className="ws-tooltip-user-meta">
+                <div className="ws-tooltip-user-name">{currentUser?.fullName || 'Sinh viên SNOTE'}</div>
+                <div className="ws-tooltip-user-email">{currentUser?.email || 'sinhvien@snote.edu.vn'}</div>
               </div>
+              {onLogout && (
+                <button
+                  type="button"
+                  className="ws-tooltip-logout-btn"
+                  onClick={onLogout}
+                  title="Đăng xuất khỏi tài khoản"
+                >
+                  <LogOut size={13} />
+                  <span>Đăng xuất</span>
+                </button>
+              )}
             </div>
           </div>
         </div>

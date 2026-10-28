@@ -92,8 +92,9 @@
   border-right: 1px solid var(--ws-border-hairline);
   padding: 12px 0;
   transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), margin-left 0.22s cubic-bezier(0.16, 1, 0.3, 1);
-  z-index: 50;
+  z-index: 100;
   user-select: none;
+  overflow: visible !important;
 }
 
 .ws-shell.zen-mode .ws-icon-rail {
@@ -105,6 +106,7 @@
   display: flex;
   justify-content: center;
   padding-bottom: 6px;
+  overflow: visible !important;
 }
 
 .ws-rail-divider {
@@ -122,8 +124,7 @@
   flex-direction: column;
   align-items: center;
   gap: 6px;
-  overflow-y: auto;
-  overflow-x: visible;
+  overflow: visible !important;
   padding: 4px 0;
 }
 
@@ -134,6 +135,7 @@
   align-items: center;
   gap: 6px;
   margin-top: auto;
+  overflow: visible !important;
 }
 
 /* Rail Item Wrapper for relative tooltip anchor */
@@ -143,6 +145,7 @@
   justify-content: center;
   align-items: center;
   width: 100%;
+  overflow: visible !important;
 }
 
 .ws-rail-btn {
@@ -215,32 +218,47 @@
    ========================================================================== */
 .ws-rail-tooltip {
   position: absolute;
-  left: calc(100% + 12px);
+  left: 56px;
   top: 50%;
   transform: translateY(-50%) translateX(-6px);
   background: var(--ws-bg-surface-elevated);
   color: var(--ws-text-main);
   border: 1px solid var(--ws-border-strong);
   border-radius: 8px; /* Bo tròn các góc */
-  padding: 6px 11px;
+  padding: 7px 12px;
   font-size: 12px;
   font-weight: 600;
   white-space: nowrap;
   pointer-events: none;
   opacity: 0;
   visibility: hidden;
-  box-shadow: var(--ws-shadow-lg);
-  transition: opacity 0.14s ease, transform 0.14s ease;
-  z-index: 1000;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  transition: opacity 0.14s cubic-bezier(0.16, 1, 0.3, 1), transform 0.14s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 999999 !important;
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-.ws-rail-item-wrapper:hover .ws-rail-tooltip {
-  opacity: 1;
-  visibility: visible;
-  transform: translateY(-50%) translateX(0);
+/* Arrow indicator pointing to icon */
+.ws-rail-tooltip::before {
+  content: '';
+  position: absolute;
+  left: -5px;
+  top: 50%;
+  transform: translateY(-50%) rotate(45deg);
+  width: 8px;
+  height: 8px;
+  background: var(--ws-bg-surface-elevated);
+  border-left: 1px solid var(--ws-border-strong);
+  border-bottom: 1px solid var(--ws-border-strong);
+}
+
+.ws-rail-item-wrapper:hover .ws-rail-tooltip,
+.ws-switcher-rail-wrapper:hover .ws-rail-tooltip {
+  opacity: 1 !important;
+  visibility: visible !important;
+  transform: translateY(-50%) translateX(0) !important;
 }
 
 .ws-tooltip-text {
