@@ -11,51 +11,51 @@
    ========================================================================== */
 :root,
 .ws-shell.theme-dark {
-  --ws-bg-app: #090a0f;
-  --ws-bg-rail: #0e1017;
-  --ws-bg-surface: #141721;
-  --ws-bg-surface-elevated: #1a1e2b;
-  --ws-bg-surface-hover: #222736;
-  --ws-bg-surface-active: #2a3144;
+  --ws-bg-app: #070b12;
+  --ws-bg-rail: #070b12;
+  --ws-bg-surface: #0e1726;
+  --ws-bg-surface-elevated: #121b2b;
+  --ws-bg-surface-hover: #162032;
+  --ws-bg-surface-active: #1e293b;
   
-  --ws-border-hairline: rgba(255, 255, 255, 0.08);
-  --ws-border-strong: rgba(255, 255, 255, 0.16);
+  --ws-border-hairline: #223147;
+  --ws-border-strong: #3b506e;
   
   --ws-text-main: #f8fafc;
   --ws-text-muted: #94a3b8;
-  --ws-text-faint: #526075;
+  --ws-text-faint: #64748b;
   
-  --ws-accent: #6366f1;
-  --ws-accent-soft: rgba(99, 102, 241, 0.14);
-  --ws-accent-border: rgba(99, 102, 241, 0.35);
+  --ws-accent: #3b82f6;
+  --ws-accent-soft: rgba(59, 130, 246, 0.14);
+  --ws-accent-border: rgba(59, 130, 246, 0.35);
   
-  --ws-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
-  --ws-shadow-md: 0 4px 16px rgba(0, 0, 0, 0.45);
-  --ws-shadow-lg: 0 12px 36px rgba(0, 0, 0, 0.6);
+  --ws-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.25);
+  --ws-shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
+  --ws-shadow-lg: 0 20px 30px -10px rgba(0, 0, 0, 0.6);
 }
 
 .ws-shell.theme-light {
-  --ws-bg-app: #f8f9fa;
+  --ws-bg-app: #edf2f7;
   --ws-bg-rail: #ffffff;
   --ws-bg-surface: #ffffff;
-  --ws-bg-surface-elevated: #f1f3f5;
-  --ws-bg-surface-hover: #f1f5f9;
-  --ws-bg-surface-active: #e2e8f0;
+  --ws-bg-surface-elevated: #f8fafc;
+  --ws-bg-surface-hover: #e2e8f0;
+  --ws-bg-surface-active: #cbd5e1;
   
-  --ws-border-hairline: rgba(0, 0, 0, 0.08);
-  --ws-border-strong: rgba(0, 0, 0, 0.18);
+  --ws-border-hairline: #cbd5e1;
+  --ws-border-strong: #94a3b8;
   
-  --ws-text-main: #09090b;
+  --ws-text-main: #0f172a;
   --ws-text-muted: #64748b;
   --ws-text-faint: #94a3b8;
   
-  --ws-accent: #4f46e5;
-  --ws-accent-soft: rgba(79, 70, 229, 0.08);
-  --ws-accent-border: rgba(79, 70, 229, 0.25);
+  --ws-accent: #2563eb;
+  --ws-accent-soft: #eff6ff;
+  --ws-accent-border: rgba(37, 99, 235, 0.3);
   
   --ws-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
-  --ws-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.06);
-  --ws-shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.09);
+  --ws-shadow-md: 0 4px 12px rgba(15, 23, 42, 0.06);
+  --ws-shadow-lg: 0 10px 25px -5px rgba(15, 23, 42, 0.1);
 }
 
 /* ==========================================================================
@@ -68,7 +68,7 @@
   overflow: hidden;
   background-color: var(--ws-bg-app);
   color: var(--ws-text-main);
-  font-family: 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Inter', 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;

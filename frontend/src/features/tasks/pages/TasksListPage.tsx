@@ -8,6 +8,7 @@ import { TaskModal } from '../components/TaskModal';
 import { QuickTaskBar } from '../components/QuickTaskBar';
 import { TasksListView } from '../components/TasksListView';
 import { TasksEisenhowerView } from '../components/TasksEisenhowerView';
+import { TasksGanttView } from '../components/TasksGanttView';
 import { TaskStatus, TaskPriority } from '@snote/shared';
 import {
   CheckSquare,
@@ -25,13 +26,14 @@ import {
   ListFilter,
   LayoutGrid,
   AlertTriangle,
-  Clock
+  Clock,
+  TrendingUp
 } from 'lucide-react';
 
 export const TasksListPage: React.FC = () => {
   const { selectedSubjectId, selectedSemesterId, subjects } = useAppFilter();
-  const [viewMode, setViewMode] = useState<'KANBAN' | 'LIST' | 'EISENHOWER'>(() => {
-    return (localStorage.getItem('snote_tasks_view_mode') as any) || 'KANBAN';
+  const [viewMode, setViewMode] = useState<'GANTT' | 'KANBAN' | 'LIST' | 'EISENHOWER'>(() => {
+    return (localStorage.getItem('snote_tasks_view_mode') as any) || 'GANTT';
   });
   const [tasks, setTasks] = useState<any[]>([]);
   const [projects, setProjects] = useState<any[]>([]);
@@ -59,7 +61,7 @@ export const TasksListPage: React.FC = () => {
       });
   }, [deepTaskId, showToast]);
 
-  const handleSelectViewMode = (mode: 'KANBAN' | 'LIST' | 'EISENHOWER') => {
+  const handleSelectViewMode = (mode: 'GANTT' | 'KANBAN' | 'LIST' | 'EISENHOWER') => {
     setViewMode(mode);
     localStorage.setItem('snote_tasks_view_mode', mode);
   };
@@ -217,6 +219,25 @@ export const TasksListPage: React.FC = () => {
             gap: '3px'
           }}
         >
+          <button
+            onClick={() => handleSelectViewMode('GANTT')}
+            className={`btn btn-sm ${viewMode === 'GANTT' ? 'btn-primary' : 'btn-ghost'}`}
+            style={{
+              fontSize: '12.5px',
+              fontWeight: viewMode === 'GANTT' ? 700 : 500,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '6px 14px',
+              borderRadius: '6px',
+              backgroundColor: viewMode === 'GANTT' ? 'var(--accent-primary)' : 'transparent',
+              color: viewMode === 'GANTT' ? '#ffffff' : 'var(--text-secondary)'
+            }}
+          >
+            <TrendingUp size={15} />
+            <span>Sơ đồ Gantt (7 Tuần)</span>
+          </button>
+
           <button
             onClick={() => handleSelectViewMode('KANBAN')}
             className={`btn btn-sm ${viewMode === 'KANBAN' ? 'btn-primary' : 'btn-ghost'}`}
@@ -400,6 +421,12 @@ export const TasksListPage: React.FC = () => {
             <span>Đang đồng bộ danh sách công việc...</span>
           </div>
         </div>
+      ) : viewMode === 'GANTT' ? (
+        <TasksGanttView
+          tasks={tasks}
+          onSelectTask={handleOpenEdit}
+          onToggleStatus={handleToggleStatus}
+        />
       ) : viewMode === 'LIST' ? (
         <TasksListView
           tasks={tasks}
