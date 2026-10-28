@@ -40,10 +40,12 @@ import {
   SlidersHorizontal,
   ChevronDown,
   ChevronUp,
-  Network
+  Network,
+  Layers
 } from 'lucide-react';
+import { NotesObsidianWorkbench } from '../components/NotesObsidianWorkbench';
 
-export type NoteViewDensity = 'GRID' | 'COMPACT' | 'LIST' | 'SPLIT' | 'GRAPH' | 'KANBAN';
+export type NoteViewDensity = 'WORKBENCH' | 'GRID' | 'COMPACT' | 'LIST' | 'SPLIT' | 'GRAPH' | 'KANBAN';
 
 export const NotesListPage: React.FC = () => {
   const { selectedSubjectId, selectedSemesterId, subjects } = useAppFilter();
@@ -67,7 +69,7 @@ export const NotesListPage: React.FC = () => {
   const [selectedTypeFilter, setSelectedTypeFilter] = useState<string>('ALL'); // 'ALL' | NoteType
   const [activeTab, setActiveTab] = useState<'ALL' | 'PINNED' | 'ARCHIVED'>('ALL');
   const [sortBy, setSortBy] = useState<'PINNED_FIRST' | 'NEWEST' | 'OLDEST' | 'TITLE'>('PINNED_FIRST');
-  const [viewDensity, setViewDensity] = useState<NoteViewDensity>('GRID');
+  const [viewDensity, setViewDensity] = useState<NoteViewDensity>('WORKBENCH');
   const [selectedNoteForSplit, setSelectedNoteForSplit] = useState<any | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
@@ -223,7 +225,7 @@ export const NotesListPage: React.FC = () => {
   };
 
   const handleOpenView = (note: any) => {
-    if (viewDensity === 'SPLIT') {
+    if (viewDensity === 'SPLIT' || viewDensity === 'WORKBENCH') {
       setSelectedNoteForSplit(note);
     } else {
       setNoteToEdit(note);
@@ -538,7 +540,27 @@ export const NotesListPage: React.FC = () => {
               gap: '2px'
             }}
           >
-            <button
+                        <button
+              type="button"
+              onClick={() => setViewDensity('WORKBENCH')}
+              className={`btn btn-sm ${viewDensity === 'WORKBENCH' ? 'btn-primary' : 'btn-ghost'}`}
+              style={{
+                padding: '4px 10px',
+                fontSize: '12px',
+                fontWeight: viewDensity === 'WORKBENCH' ? 700 : 500,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px',
+                borderRadius: 'var(--radius-sm)',
+                color: viewDensity === 'WORKBENCH' ? '#ffffff' : '#38bdf8'
+              }}
+              title="Chế độ xem Bàn làm việc Obsidian (Workbench 3-Pane)"
+            >
+              <Layers size={13} />
+              <span>Bàn làm việc Obsidian</span>
+            </button>
+
+<button
               type="button"
               onClick={() => setViewDensity('GRID')}
               className={`btn btn-sm ${viewDensity === 'GRID' ? 'btn-primary' : 'btn-ghost'}`}
@@ -667,6 +689,7 @@ export const NotesListPage: React.FC = () => {
       </div>
 
       {/* 2. Quick Capture Bar (Google Keep / Apple Notes Style) */}
+      {viewDensity !== 'WORKBENCH' && (
       <div
         className="snote-card"
         style={{
@@ -798,8 +821,10 @@ export const NotesListPage: React.FC = () => {
           )}
         </form>
       </div>
+      )}
 
       {/* 3. Horizontal Scroll Tab Bar: Sources + Status Tabs + Sort Dropdown */}
+      {viewDensity !== 'WORKBENCH' && (
       <div
         style={{
           display: 'flex',
@@ -888,6 +913,7 @@ export const NotesListPage: React.FC = () => {
           </select>
         </div>
       </div>
+      )}
 
       {/* 3. Main Notes Content Area (Tập trung toàn bộ không gian cho bài ghi) */}
       {loading ? (
@@ -897,6 +923,35 @@ export const NotesListPage: React.FC = () => {
             <span>Đang tải các bài ghi chép...</span>
           </div>
         </div>
+      ) : viewDensity === 'WORKBENCH' ? (
+        <NotesObsidianWorkbench
+          notes={notes}
+          subjects={subjects}
+          projects={projects}
+          activeNoteId={selectedNoteForSplit?.id}
+          onSelectNote={(note) => {
+            setSelectedNoteForSplit(note);
+          }}
+          onUpdateNote={async (id, payload) => {
+            try {
+              await api.put(`/notes/${id}`, payload);
+              setNotes((prev) => prev.map((n) => (n.id === id ? { ...n, ...payload } : n)));
+              showToast('Đã lưu bài ghi thành công!', 'success');
+            } catch (err: any) {
+              showToast(err.message || 'Lỗi khi lưu bài ghi', 'error');
+            }
+          }}
+          onCreateNote={handleOpenCreate}
+          onDeleteNote={async (id) => {
+            const target = notes.find((n) => n.id === id);
+            if (target) handleDelete(id, target.title);
+          }}
+          onTogglePin={handleTogglePin}
+          onConvertToTask={handleConvertToTask}
+          onShareNote={(note) => {
+            handleCopyContent(note);
+          }}
+        />
       ) : filteredNotes.length === 0 ? (
         /* Empty State */
         <div
