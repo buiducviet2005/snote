@@ -1180,13 +1180,17 @@
 .ws-content-scroll {
   flex: 1;
   overflow-y: auto;
-  padding: 20px 26px 40px;
+  padding: 18px 24px 36px;
+  background-color: var(--ws-bg-app);
 }
 
 .ws-content-inner {
   width: 100%;
-  max-width: 100%; /* Full screen utilization without artificial 1080px constriction */
+  max-width: 100%; /* 100% full-width fluid layout */
   margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
 }
 
 /* Academic Header Block */
@@ -1194,20 +1198,19 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 20px;
+  gap: 16px;
   padding-bottom: 14px;
-  margin-bottom: 18px;
   border-bottom: 1px solid var(--ws-border-hairline);
 }
 
 .ws-canvas-title-group {
   display: flex;
-  align-items: center;
-  gap: 12px;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .ws-canvas-title {
-  font-size: 20px;
+  font-size: 21px;
   font-weight: 800;
   letter-spacing: -0.025em;
   margin: 0;
@@ -1216,18 +1219,24 @@
 }
 
 .ws-canvas-desc {
-  margin: 3px 0 0;
-  font-size: 12px;
+  margin: 0;
+  font-size: 12.5px;
   color: var(--ws-text-muted);
+}
+
+.ws-canvas-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .ws-canvas-badge {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 3px 9px;
-  border-radius: 99px;
-  font-size: 10.5px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11px;
   font-weight: 700;
   background: var(--ws-bg-surface);
   border: 1px solid var(--ws-border-hairline);
@@ -1235,104 +1244,220 @@
   white-space: nowrap;
 }
 
-/* 3-Column Ergonomic Academic Cockpit Grid */
-.ws-cockpit-grid {
+.ws-canvas-badge.accent {
+  background: var(--ws-accent-soft);
+  color: var(--ws-accent);
+  border-color: var(--ws-accent-border);
+}
+
+/* Linear-Style View Tabs Directly on Canvas */
+.ws-view-tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--ws-bg-surface);
+  border: 1px solid var(--ws-border-hairline);
+  padding: 3px;
+  border-radius: 7px;
+  width: fit-content;
+}
+
+.ws-view-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  font-size: 11.5px;
+  font-weight: 600;
+  border-radius: 5px;
+  background: transparent;
+  border: none;
+  color: var(--ws-text-muted);
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.ws-view-tab-btn:hover {
+  color: var(--ws-text-main);
+  background: var(--ws-bg-surface-hover);
+}
+
+.ws-view-tab-btn.active {
+  background: var(--ws-bg-surface-active);
+  color: var(--ws-text-main);
+  font-weight: 700;
+}
+
+/* ==========================================================================
+   9. TOP METRIC CARDS (SHADCN DASHBOARD-01 SECTION-CARDS)
+   ========================================================================== */
+.ws-kpi-grid {
   display: grid;
-  grid-template-columns: 1.15fr 1.35fr 0.95fr;
-  gap: 18px;
-  align-items: start;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  width: 100%;
 }
 
-@media (max-width: 1350px) {
-  .ws-cockpit-grid {
-    grid-template-columns: 1.2fr 1fr;
-  }
-}
-
-@media (max-width: 900px) {
-  .ws-cockpit-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* Cockpit Cards */
-.ws-cockpit-card {
+.ws-kpi-card {
   background: var(--ws-bg-surface);
   border: 1px solid var(--ws-border-hairline);
   border-radius: 8px;
-  padding: 16px;
-  box-shadow: var(--ws-shadow-sm);
+  padding: 14px 16px;
   display: flex;
   flex-direction: column;
-  transition: border-color 0.15s ease;
+  gap: 8px;
+  box-shadow: var(--ws-shadow-sm);
+  transition: border-color 0.15s ease, transform 0.12s ease;
 }
 
-.ws-cockpit-card:hover {
+.ws-kpi-card:hover {
   border-color: var(--ws-border-strong);
 }
 
-.ws-card-header-row {
+.ws-kpi-top {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 12px;
 }
 
-.ws-card-heading {
-  font-size: 13px;
+.ws-kpi-title {
+  font-size: 11px;
   font-weight: 700;
-  letter-spacing: -0.01em;
-  margin: 0;
-  color: var(--ws-text-main);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ws-text-muted);
+}
+
+.ws-kpi-icon {
+  color: var(--ws-text-faint);
   display: flex;
   align-items: center;
-  gap: 7px;
 }
 
-.ws-card-heading-count {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
-  padding: 1px 5px;
-  border-radius: 4px;
-  background: var(--ws-bg-surface-elevated);
-  border: 1px solid var(--ws-border-hairline);
-  color: var(--ws-accent);
-}
-
-/* Inline Quick-Add Task Box */
-.ws-quick-add-task-wrap {
-  margin-bottom: 10px;
-}
-
-.ws-quick-add-input {
-  width: 100%;
-  padding: 7px 10px;
-  font-size: 12px;
-  border-radius: 6px;
-  border: 1px dashed var(--ws-border-hairline);
-  background: var(--ws-bg-app);
-  color: var(--ws-text-main);
-  outline: none;
-  transition: border-color 0.14s ease, background 0.14s ease;
-}
-
-.ws-quick-add-input:focus {
-  border-color: var(--ws-accent);
-  background: var(--ws-bg-surface);
-}
-
-/* Filter Chips */
-.ws-filter-chip-row {
+.ws-kpi-value-row {
   display: flex;
-  gap: 5px;
-  margin-bottom: 10px;
+  align-items: baseline;
+  gap: 6px;
 }
 
-.ws-filter-chip {
-  padding: 3px 8px;
-  font-size: 10.5px;
+.ws-kpi-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--ws-text-main);
+  line-height: 1;
+}
+
+.ws-kpi-unit {
+  font-size: 12px;
+  color: var(--ws-text-muted);
+  font-weight: 500;
+}
+
+.ws-kpi-footer {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--ws-text-faint);
+}
+
+.ws-kpi-footer.urgent {
+  color: #f43f5e;
   font-weight: 600;
-  border-radius: 4px;
+}
+
+.ws-kpi-footer.success {
+  color: #10b981;
+  font-weight: 600;
+}
+
+.ws-kpi-progress-bar {
+  width: 100%;
+  height: 4px;
+  background: var(--ws-bg-surface-elevated);
+  border-radius: 99px;
+  overflow: hidden;
+  margin-top: 2px;
+}
+
+.ws-kpi-progress-fill {
+  height: 100%;
+  background: var(--ws-accent);
+  border-radius: 99px;
+  transition: width 0.3s ease;
+}
+
+/* ==========================================================================
+   10. FULL-WIDTH ACADEMIC DATA TABLE (SHADCN TANSTACK PATTERN)
+   ========================================================================== */
+.ws-table-container {
+  background: var(--ws-bg-surface);
+  border: 1px solid var(--ws-border-hairline);
+  border-radius: 8px;
+  box-shadow: var(--ws-shadow-sm);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Table Toolbar */
+.ws-table-toolbar {
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid var(--ws-border-hairline);
+  background: var(--ws-bg-surface);
+  flex-wrap: wrap;
+}
+
+.ws-table-toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 280px;
+}
+
+.ws-table-search-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: var(--ws-bg-app);
+  border: 1px solid var(--ws-border-hairline);
+  border-radius: 6px;
+  flex: 1;
+  max-width: 380px;
+}
+
+.ws-table-search-wrap input {
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 12px;
+  color: var(--ws-text-main);
+  width: 100%;
+}
+
+.ws-table-search-wrap input::placeholder {
+  color: var(--ws-text-faint);
+}
+
+.ws-table-facet-tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ws-facet-pill {
+  padding: 4px 9px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 5px;
   background: transparent;
   border: 1px solid transparent;
   color: var(--ws-text-muted);
@@ -1340,302 +1465,865 @@
   transition: all 0.12s ease;
 }
 
-.ws-filter-chip:hover {
+.ws-facet-pill:hover {
   background: var(--ws-bg-surface-hover);
   color: var(--ws-text-main);
 }
 
-.ws-filter-chip.active {
+.ws-facet-pill.active {
   background: var(--ws-bg-surface-elevated);
-  color: var(--ws-text-main);
   border-color: var(--ws-border-hairline);
-}
-
-/* High-Density Task Items */
-.ws-task-strip {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.ws-task-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 9px;
-  padding: 9px 11px;
-  border-radius: 6px;
-  background: var(--ws-bg-app);
-  border: 1px solid var(--ws-border-hairline);
-  transition: all 0.12s ease;
-}
-
-.ws-task-item:hover {
-  background: var(--ws-bg-surface-elevated);
-  border-color: var(--ws-border-strong);
-}
-
-.ws-task-item.done {
-  opacity: 0.55;
-}
-
-.ws-task-checkbox {
-  width: 15px;
-  height: 15px;
-  margin-top: 2px;
-  cursor: pointer;
-  accent-color: var(--ws-accent);
-  flex-shrink: 0;
-}
-
-.ws-task-content {
-  flex: 1;
-  min-width: 0;
-}
-
-.ws-task-label {
-  font-size: 12.5px;
-  font-weight: 600;
   color: var(--ws-text-main);
-  line-height: 1.35;
-  margin-bottom: 4px;
+  font-weight: 700;
 }
 
-.ws-task-item.done .ws-task-label {
-  text-decoration: line-through;
-}
-
-.ws-task-sub-row {
+.ws-table-toolbar-right {
   display: flex;
   align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-.ws-task-subject-tag {
-  font-size: 9.5px;
-  font-weight: 600;
-  padding: 1px 5px;
-  border-radius: 3px;
-  background: var(--ws-bg-surface);
-  border: 1px solid var(--ws-border-hairline);
-  color: var(--ws-text-muted);
-}
-
-.ws-task-priority-tag {
-  font-size: 9px;
-  font-weight: 700;
-  padding: 1px 5px;
-  border-radius: 3px;
-  text-transform: uppercase;
-}
-
-.ws-task-priority-tag.urgent {
-  background: rgba(244, 63, 94, 0.12);
-  color: #f43f5e;
-}
-
-.ws-task-priority-tag.high {
-  background: rgba(245, 158, 11, 0.12);
-  color: #f59e0b;
-}
-
-.ws-task-priority-tag.normal {
-  background: var(--ws-bg-surface);
-  color: var(--ws-text-faint);
-}
-
-.ws-task-deadline {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 9.5px;
-  padding: 1px 5px;
-  border-radius: 3px;
-  background: var(--ws-bg-surface);
-  border: 1px solid var(--ws-border-hairline);
-  color: var(--ws-text-muted);
-  margin-left: auto;
-}
-
-/* High-Density Lecture Notes Studio */
-.ws-notes-studio-list {
-  display: flex;
-  flex-direction: column;
   gap: 8px;
 }
 
-.ws-note-studio-item {
-  padding: 12px 14px;
-  border-radius: 6px;
-  border: 1px solid var(--ws-border-hairline);
+.ws-table-select-filter {
+  padding: 5px 8px;
+  font-size: 11px;
+  border-radius: 5px;
   background: var(--ws-bg-app);
+  border: 1px solid var(--ws-border-hairline);
+  color: var(--ws-text-muted);
+  outline: none;
   cursor: pointer;
-  transition: all 0.12s ease;
+}
+
+/* Data Table Structure */
+.ws-table-responsive {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.ws-data-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.ws-data-table th {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ws-text-muted);
+  background: var(--ws-bg-surface-elevated);
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--ws-border-hairline);
+  white-space: nowrap;
+}
+
+.ws-data-table td {
+  font-size: 12.5px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--ws-border-hairline);
+  color: var(--ws-text-main);
+  vertical-align: middle;
+}
+
+.ws-data-table tr.ws-row-item {
+  transition: background-color 0.1s ease;
+  cursor: pointer;
+}
+
+.ws-data-table tr.ws-row-item:hover {
+  background-color: var(--ws-bg-surface-hover);
+}
+
+.ws-data-table tr.ws-row-item.done {
+  opacity: 0.6;
+}
+
+.ws-data-table tr.ws-row-item.done .ws-task-title-cell {
+  text-decoration: line-through;
+  color: var(--ws-text-muted);
+}
+
+.ws-task-key-tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--ws-bg-app);
+  border: 1px solid var(--ws-border-hairline);
+  color: var(--ws-accent);
+  white-space: nowrap;
+}
+
+.ws-task-title-cell {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ws-text-main);
+  line-height: 1.4;
+}
+
+.ws-course-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--ws-bg-surface-elevated);
+  border: 1px solid var(--ws-border-hairline);
+  color: var(--ws-text-muted);
+  white-space: nowrap;
+}
+
+.ws-priority-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.ws-priority-badge.urgent {
+  background: rgba(244, 63, 94, 0.12);
+  color: #f43f5e;
+  border: 1px solid rgba(244, 63, 94, 0.25);
+}
+
+.ws-priority-badge.high {
+  background: rgba(245, 158, 11, 0.12);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.25);
+}
+
+.ws-priority-badge.normal {
+  background: var(--ws-bg-app);
+  color: var(--ws-text-muted);
+  border: 1px solid var(--ws-border-hairline);
+}
+
+.ws-priority-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.ws-deadline-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--ws-text-muted);
+  white-space: nowrap;
+}
+
+.ws-status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.ws-status-chip.todo {
+  background: var(--ws-bg-app);
+  color: var(--ws-text-muted);
+  border: 1px solid var(--ws-border-hairline);
+}
+
+.ws-status-chip.in-progress {
+  background: var(--ws-accent-soft);
+  color: var(--ws-accent);
+  border: 1px solid var(--ws-accent-border);
+}
+
+.ws-status-chip.done {
+  background: rgba(16, 185, 129, 0.12);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+/* Inline Quick-Add Task Row in Table */
+.ws-table-quick-add-row {
+  background: var(--ws-bg-app);
+  border-top: 1px dashed var(--ws-border-hairline);
+}
+
+.ws-table-quick-add-cell {
+  padding: 8px 12px;
+}
+
+.ws-table-quick-add-input {
+  width: 100%;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 12px;
+  color: var(--ws-text-main);
+  padding: 4px 0;
+}
+
+.ws-table-quick-add-input::placeholder {
+  color: var(--ws-text-faint);
+  font-style: italic;
+}
+
+/* Table Summary Footer */
+.ws-table-footer {
+  padding: 9px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid var(--ws-border-hairline);
+  background: var(--ws-bg-surface);
+  font-size: 11px;
+  color: var(--ws-text-muted);
+}
+
+.ws-table-footer strong {
+  color: var(--ws-text-main);
+}
+
+/* ==========================================================================
+   11. RECENT LECTURE NOTES & KNOWLEDGE CARDS STRIP
+   ========================================================================== */
+.ws-recent-notes-section {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 12px;
 }
 
-.ws-note-studio-item:hover {
+.ws-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ws-section-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--ws-text-main);
+  letter-spacing: -0.01em;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ws-section-action-btn {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--ws-accent);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: opacity 0.12s ease;
+}
+
+.ws-section-action-btn:hover {
+  text-decoration: underline;
+}
+
+.ws-notes-card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.ws-note-grid-card {
+  background: var(--ws-bg-surface);
+  border: 1px solid var(--ws-border-hairline);
+  border-radius: 8px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: var(--ws-shadow-sm);
+  cursor: pointer;
+  transition: all 0.14s ease;
+}
+
+.ws-note-grid-card:hover {
   border-color: var(--ws-accent);
-  background: var(--ws-accent-soft);
+  transform: translateY(-1px);
+  background: var(--ws-bg-surface-hover);
 }
 
-.ws-note-studio-top {
+.ws-note-card-top {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
 }
 
-.ws-note-studio-title {
+.ws-note-card-tag {
+  font-size: 9.5px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--ws-accent-soft);
+  color: var(--ws-accent);
+  border: 1px solid var(--ws-accent-border);
+}
+
+.ws-note-card-updated {
+  font-size: 10px;
+  color: var(--ws-text-faint);
+}
+
+.ws-note-card-title {
   font-size: 13px;
   font-weight: 700;
   color: var(--ws-text-main);
-  line-height: 1.3;
+  line-height: 1.35;
 }
 
-.ws-note-studio-tag {
-  font-size: 9.5px;
-  padding: 1px 5px;
-  border-radius: 3px;
-  background: var(--ws-bg-surface);
-  border: 1px solid var(--ws-border-hairline);
-  color: var(--ws-accent);
-  white-space: nowrap;
-}
-
-.ws-note-studio-excerpt {
+.ws-note-card-excerpt {
   font-size: 11.5px;
   color: var(--ws-text-muted);
-  line-height: 1.55;
+  line-height: 1.5;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 
-.ws-note-studio-meta {
+.ws-note-card-meta {
   display: flex;
   align-items: center;
   gap: 8px;
   font-size: 10px;
   color: var(--ws-text-faint);
-  margin-top: 2px;
+  margin-top: auto;
+  padding-top: 6px;
+  border-top: 1px solid var(--ws-border-hairline);
 }
 
-/* Weekly Deadline Strip */
-.ws-week-strip {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 4px;
-  margin-bottom: 12px;
+/* ==========================================================================
+   12. MASTER-DETAIL DUAL PANE NOTE READER (SHADCN MAIL PATTERN)
+   ========================================================================== */
+.ws-master-detail {
+  display: flex;
+  height: calc(100vh - 120px);
+  border: 1px solid var(--ws-border-hairline);
+  border-radius: 8px;
+  background: var(--ws-bg-surface);
+  box-shadow: var(--ws-shadow-sm);
+  overflow: hidden;
 }
 
-.ws-week-day-pill {
+.ws-md-sidebar {
+  width: 340px;
+  min-width: 300px;
+  max-width: 380px;
+  border-right: 1px solid var(--ws-border-hairline);
   display: flex;
   flex-direction: column;
-  align-items: center;
-  padding: 6px 3px;
-  border-radius: 5px;
-  border: 1px solid var(--ws-border-hairline);
-  background: var(--ws-bg-app);
-  font-size: 10px;
-  color: var(--ws-text-muted);
-  position: relative;
+  background: var(--ws-bg-surface);
 }
 
-.ws-week-day-pill.today {
-  border-color: var(--ws-accent);
-  background: var(--ws-accent-soft);
-  color: var(--ws-accent);
-  font-weight: 700;
-}
-
-.ws-week-day-pill strong {
-  font-size: 13px;
-  color: var(--ws-text-main);
-  margin-top: 2px;
-}
-
-.ws-week-dot {
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: var(--ws-accent);
-  margin-top: 3px;
-}
-
-/* Embedded Desk Scratchpad */
-.ws-desk-scratchpad {
-  margin-top: 14px;
-  border-top: 1px solid var(--ws-border-hairline);
-  padding-top: 12px;
-}
-
-.ws-scratchpad-title-bar {
+.ws-md-sidebar-header {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--ws-border-hairline);
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 6px;
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--ws-text-muted);
+  flex-direction: column;
+  gap: 8px;
 }
 
-.ws-desk-textarea {
+.ws-md-search-input {
   width: 100%;
-  height: 90px;
-  padding: 8px 10px;
-  border-radius: 6px;
+  padding: 6px 10px;
+  border-radius: 5px;
   border: 1px solid var(--ws-border-hairline);
   background: var(--ws-bg-app);
   color: var(--ws-text-main);
   font-size: 11.5px;
-  line-height: 1.5;
-  resize: vertical;
   outline: none;
-  font-family: inherit;
 }
 
-.ws-desk-textarea:focus {
-  border-color: var(--ws-accent);
+.ws-md-filter-row {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
 }
 
-/* Attached Resources / Syllabus Links */
-.ws-resource-list {
+.ws-md-filter-btn {
+  padding: 2px 7px;
+  font-size: 10px;
+  font-weight: 600;
+  border-radius: 4px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--ws-text-muted);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.ws-md-filter-btn.active {
+  background: var(--ws-bg-surface-elevated);
+  border-color: var(--ws-border-hairline);
+  color: var(--ws-text-main);
+}
+
+.ws-md-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 6px;
   display: flex;
   flex-direction: column;
-  gap: 5px;
-  margin-top: 12px;
-  border-top: 1px solid var(--ws-border-hairline);
-  padding-top: 12px;
+  gap: 4px;
 }
 
-.ws-resource-item {
+.ws-md-item {
+  padding: 10px 12px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: all 0.1s ease;
+}
+
+.ws-md-item:hover {
+  background: var(--ws-bg-surface-hover);
+}
+
+.ws-md-item.active {
+  background: var(--ws-accent-soft);
+  border-color: var(--ws-accent-border);
+}
+
+.ws-md-item-top {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 6px 8px;
-  border-radius: 5px;
-  background: var(--ws-bg-app);
-  border: 1px solid var(--ws-border-hairline);
-  font-size: 11px;
+}
+
+.ws-md-item-title {
+  font-size: 12.5px;
+  font-weight: 700;
   color: var(--ws-text-main);
+  line-height: 1.3;
+}
+
+.ws-md-item-tag {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: var(--ws-bg-surface-elevated);
+  color: var(--ws-text-muted);
+}
+
+.ws-md-item-excerpt {
+  font-size: 11px;
+  color: var(--ws-text-muted);
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.ws-md-item-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 9.5px;
+  color: var(--ws-text-faint);
+  margin-top: 2px;
+}
+
+/* Reader Panel */
+.ws-md-reader {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  background: var(--ws-bg-app);
+}
+
+.ws-reader-header {
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--ws-border-hairline);
+  background: var(--ws-bg-surface);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.ws-reader-title-area {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ws-reader-title {
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--ws-text-main);
+  margin: 0;
+  line-height: 1.3;
+}
+
+.ws-reader-meta-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 11px;
+  color: var(--ws-text-muted);
+  flex-wrap: wrap;
+}
+
+.ws-reader-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ws-reader-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 9px;
+  border-radius: 5px;
+  border: 1px solid var(--ws-border-hairline);
+  background: var(--ws-bg-surface);
+  color: var(--ws-text-muted);
+  font-size: 11px;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.12s ease;
 }
 
-.ws-resource-item:hover {
+.ws-reader-btn:hover {
+  background: var(--ws-bg-surface-hover);
+  color: var(--ws-text-main);
+  border-color: var(--ws-border-strong);
+}
+
+.ws-reader-body {
+  padding: 24px 32px;
+  max-width: 860px;
+  line-height: 1.7;
+  color: var(--ws-text-main);
+}
+
+.ws-reader-body h2 {
+  font-size: 16px;
+  font-weight: 800;
+  margin: 24px 0 10px;
+  color: var(--ws-text-main);
+  letter-spacing: -0.015em;
+  border-bottom: 1px solid var(--ws-border-hairline);
+  padding-bottom: 6px;
+}
+
+.ws-reader-body h3 {
+  font-size: 14px;
+  font-weight: 700;
+  margin: 18px 0 8px;
+  color: var(--ws-text-main);
+}
+
+.ws-reader-body p {
+  margin: 0 0 12px;
+  font-size: 13px;
+  color: var(--ws-text-main);
+}
+
+.ws-reader-body ul,
+.ws-reader-body ol {
+  margin: 0 0 14px;
+  padding-left: 20px;
+  font-size: 13px;
+}
+
+.ws-reader-body li {
+  margin-bottom: 4px;
+}
+
+.ws-callout-note {
+  margin: 16px 0;
+  padding: 12px 16px;
+  border-radius: 6px;
+  border-left: 3px solid var(--ws-accent);
+  background: var(--ws-accent-soft);
+  font-size: 12.5px;
+  color: var(--ws-text-main);
+}
+
+.ws-code-block-wrap {
+  margin: 16px 0;
   background: var(--ws-bg-surface-elevated);
-  border-color: var(--ws-accent);
+  border: 1px solid var(--ws-border-hairline);
+  border-radius: 6px;
+  overflow: hidden;
 }
 
-.ws-resource-meta {
+.ws-code-block-header {
+  padding: 6px 12px;
+  background: var(--ws-bg-surface);
+  border-bottom: 1px solid var(--ws-border-hairline);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 9.5px;
-  color: var(--ws-text-faint);
+  font-size: 10.5px;
+  color: var(--ws-text-muted);
 }
 
-/* Responsive Overrides */
+.ws-code-pre {
+  margin: 0;
+  padding: 14px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--ws-text-main);
+  overflow-x: auto;
+}
+
+/* ==========================================================================
+   13. KANBAN 4-COLUMN BOARD
+   ========================================================================== */
+.ws-kanban-board {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.ws-kanban-col {
+  background: var(--ws-bg-surface);
+  border: 1px solid var(--ws-border-hairline);
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 480px;
+}
+
+.ws-kanban-col-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--ws-border-hairline);
+}
+
+.ws-kanban-col-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ws-text-main);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ws-kanban-col-count {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: var(--ws-bg-surface-elevated);
+  color: var(--ws-text-muted);
+}
+
+.ws-kanban-card {
+  background: var(--ws-bg-app);
+  border: 1px solid var(--ws-border-hairline);
+  border-radius: 6px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.ws-kanban-card:hover {
+  border-color: var(--ws-border-strong);
+  background: var(--ws-bg-surface-hover);
+}
+
+.ws-kanban-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ws-kanban-card-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ws-text-main);
+  line-height: 1.35;
+}
+
+.ws-kanban-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 4px;
+}
+
+/* ==========================================================================
+   14. GANTT ROADMAP & SEMESTER TIMELINE
+   ========================================================================== */
+.ws-gantt-board {
+  background: var(--ws-bg-surface);
+  border: 1px solid var(--ws-border-hairline);
+  border-radius: 8px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ws-gantt-timeline-track {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ws-gantt-row {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: 16px;
+  align-items: center;
+}
+
+.ws-gantt-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ws-text-main);
+}
+
+.ws-gantt-bar-wrap {
+  background: var(--ws-bg-app);
+  border: 1px solid var(--ws-border-hairline);
+  border-radius: 6px;
+  height: 28px;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+}
+
+.ws-gantt-bar {
+  position: absolute;
+  height: 20px;
+  border-radius: 4px;
+  background: var(--ws-accent-soft);
+  border: 1px solid var(--ws-accent-border);
+  color: var(--ws-accent);
+  font-size: 10px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  white-space: nowrap;
+}
+
+/* ==========================================================================
+   15. DOCUMENTS REPOSITORY & MEMBER DIRECTORY
+   ========================================================================== */
+.ws-docs-view,
+.ws-members-view {
+  background: var(--ws-bg-surface);
+  border: 1px solid var(--ws-border-hairline);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.ws-members-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  padding: 16px;
+}
+
+.ws-member-card {
+  background: var(--ws-bg-app);
+  border: 1px solid var(--ws-border-hairline);
+  border-radius: 6px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ws-member-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--ws-accent-soft);
+  color: var(--ws-accent);
+  font-weight: 800;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.ws-member-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.ws-member-name {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--ws-text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ws-member-role {
+  font-size: 11px;
+  color: var(--ws-text-muted);
+}
+
+.ws-member-email {
+  font-size: 10px;
+  color: var(--ws-text-faint);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* ==========================================================================
+   16. RESPONSIVE OVERRIDES
+   ========================================================================== */
+@media (max-width: 1200px) {
+  .ws-kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .ws-notes-card-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .ws-kanban-board {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .ws-members-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
 @media (max-width: 768px) {
   .ws-icon-rail {
     position: fixed;
@@ -1658,7 +2346,7 @@
   }
 
   .ws-content-scroll {
-    padding: 16px;
+    padding: 14px;
   }
 
   .ws-topbar {
@@ -1668,5 +2356,34 @@
   .ws-quick-search-pill span,
   .ws-quick-search-pill kbd {
     display: none;
+  }
+
+  .ws-kpi-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ws-notes-card-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ws-kanban-board {
+    grid-template-columns: 1fr;
+  }
+
+  .ws-members-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ws-master-detail {
+    flex-direction: column;
+    height: auto;
+  }
+
+  .ws-md-sidebar {
+    width: 100%;
+    max-width: 100%;
+    height: 300px;
+    border-right: none;
+    border-bottom: 1px solid var(--ws-border-hairline);
   }
 }
