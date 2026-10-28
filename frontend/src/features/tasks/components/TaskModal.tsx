@@ -66,7 +66,11 @@ export const TaskModal: React.FC<TaskModalProps> = ({
   const [mode, setMode] = useState<'VIEW' | 'EDIT'>('VIEW');
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [loadingMembers, setLoadingMembers] = useState(false);
   const isSavedRef = useRef(false);
+  const wasOpenRef = useRef(false);
+  const lastTaskIdRef = useRef<string | null | undefined>(undefined);
+  const workspaceGenRef = useRef(0);
   const { showToast } = useToast();
 
   const initialValuesRef = useRef({
@@ -90,11 +94,18 @@ export const TaskModal: React.FC<TaskModalProps> = ({
     }
   }, [isOpen]);
 
-  // When project changes, load its members for assignment & filter out invalid assignees
+  // When project changes, load its members for assignment & filter out invalid assignees (generation-gated)
   useEffect(() => {
+    if (!isOpen) return;
+
     if (projectId) {
+      const gen = ++workspaceGenRef.current;
+      setLoadingMembers(true);
+
       api.get<ApiResponse<any>>(`/projects/${projectId}/workspace`)
         .then((res) => {
+          if (gen !== workspaceGenRef.current) return;
+          setLoadingMembers(false);
           const members = res.data?.members || [];
           setProjectMembers(members);
           const memberUserIds = new Set(members.map((m: any) => m.userId));
@@ -125,9 +136,15 @@ export const TaskModal: React.FC<TaskModalProps> = ({
           });
         })
         .catch(() => {
+          if (gen !== workspaceGenRef.current) return;
+          setLoadingMembers(false);
           setProjectMembers([]);
+          // Clear assignees on failure to prevent submitting orphaned assignees
+          setSelectedAssigneeIds([]);
         });
     } else {
+      workspaceGenRef.current++;
+      setLoadingMembers(false);
       setProjectMembers([]);
       // When projectId is empty (personal task), default to current user if not set
       setSelectedAssigneeIds((prev) => {
@@ -135,12 +152,27 @@ export const TaskModal: React.FC<TaskModalProps> = ({
         return next;
       });
     }
-  }, [projectId, currentUser]);
+  }, [isOpen, projectId, currentUser]);
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {
+      wasOpenRef.current = false;
+      lastTaskIdRef.current = undefined;
+      return;
+    }
 
+    const taskId = taskToEdit?.id ?? null;
+    const isNewOpen = !wasOpenRef.current;
+    const isTaskChanged = taskId !== lastTaskIdRef.current;
+
+    if (!isNewOpen && !isTaskChanged) {
+      return;
+    }
+
+    wasOpenRef.current = true;
+    lastTaskIdRef.current = taskId;
     isSavedRef.current = false;
+
     if (taskToEdit) {
       const initTitle = taskToEdit.title || '';
       const initDescription = taskToEdit.description || '';
@@ -323,6 +355,11 @@ export const TaskModal: React.FC<TaskModalProps> = ({
 
     if (!title.trim()) {
       showToast('Vui lòng nhập tên công việc', 'error');
+      return;
+    }
+
+    if (projectId && loadingMembers) {
+      showToast('Đang tải danh sách thành viên dự án, vui lòng đợi', 'warning');
       return;
     }
 
@@ -593,7 +630,13 @@ export const TaskModal: React.FC<TaskModalProps> = ({
             </div>
 
             {/* Multi-Assignee Selection */}
-            {projectId && projectMembers.length > 0 && (
+            {projectId && loadingMembers && (
+              <div style={{ backgroundColor: 'var(--accent-subtle)', padding: '10px 14px', borderRadius: 'var(--radius-md)', border: '1px solid var(--accent-border)', fontSize: '12.5px', color: 'var(--text-muted)' }}>
+                ⏳ Đang tải danh sách thành viên dự án...
+              </div>
+            )}
+
+            {projectId && !loadingMembers && projectMembers.length > 0 && (
               <div style={{ backgroundColor: 'var(--accent-subtle)', padding: '14px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--accent-border)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
                   <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 700, color: 'var(--accent-primary)', margin: 0 }}>
@@ -802,12 +845,12 @@ export const TaskModal: React.FC<TaskModalProps> = ({
             {mode === 'EDIT' && (
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || (Boolean(projectId) && loadingMembers)}
                 className="btn btn-primary"
                 style={{ fontWeight: 700 }}
               >
                 <Save size={15} />
-                <span>{loading ? 'Đang lưu trữ...' : taskToEdit ? 'Lưu Thay Đổi' : 'Tạo Nhiệm Vụ'}</span>
+                <span>{loading ? 'Đang lưu trữ...' : (Boolean(projectId) && loadingMembers) ? 'Đang tải thành viên...' : taskToEdit ? 'Lưu Thay Đổi' : 'Tạo Nhiệm Vụ'}</span>
               </button>
             )}
           </div>
