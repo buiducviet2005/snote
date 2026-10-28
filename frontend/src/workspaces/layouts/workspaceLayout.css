@@ -2824,3 +2824,21 @@
   background: var(--ws-bg-surface-hover);
   color: var(--ws-text-main);
 }
+
+.ws-topbar-ws-tag.tag-subject {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.ws-topbar-ws-tag.tag-project {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+.ws-topbar-ws-tag.tag-personal {
+  background: rgba(99, 102, 241, 0.15);
+  color: #6366f1;
+  border-color: rgba(99, 102, 241, 0.3);
+}

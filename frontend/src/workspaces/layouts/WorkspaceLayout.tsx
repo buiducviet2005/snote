@@ -10,6 +10,7 @@ import { WorkspaceQuickCapture } from './WorkspaceQuickCapture';
 import { WorkspaceArchivedBanner } from './WorkspaceStates';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
+import { useAppFilter } from '../../contexts/AppFilterContext';
 import { api } from '../../services/api';
 import {
   Menu,
@@ -88,6 +89,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
 }) => {
   const { user: authUser, logout: authLogout, isAdmin } = useAuth();
   const { showToast } = useToast();
+  const { subjects, setSelectedSubjectId } = useAppFilter();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -191,6 +193,14 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
 
   const handleSelectWorkspace = (ws: WorkspaceSummary) => {
     setActiveWorkspaceId(ws.id);
+    if (ws.type === 'SUBJECT') {
+      const matched = subjects.find((s) => (ws.code && s.code === ws.code) || s.name === ws.name || s.id === ws.id);
+      if (matched) {
+        setSelectedSubjectId(matched.id);
+      }
+    } else if (ws.type === 'PERSONAL') {
+      setSelectedSubjectId(null);
+    }
   };
 
   const handleReopenWorkspace = () => {
@@ -313,7 +323,9 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                 aria-haspopup="true"
                 aria-expanded={isTopbarWorkspaceOpen}
               >
-                <span className="ws-topbar-ws-tag">WORKSPACE</span>
+                <span className={`ws-topbar-ws-tag tag-${currentWorkspace.type.toLowerCase()}`}>
+                  {currentWorkspace.type === 'SUBJECT' ? 'LỚP HỌC' : currentWorkspace.type === 'PROJECT' ? 'ĐỒ ÁN' : 'CÁ NHÂN'}
+                </span>
                 <span className="ws-topbar-ws-name">{currentWorkspace.name}</span>
                 {invitationsCount > 0 && (
                   <span className="ws-topbar-ws-badge">{invitationsCount} lời mời</span>
@@ -397,16 +409,18 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                       onClick={handleCreateNote}
                     >
                       <FileText size={13} />
-                      <span>Ghi chú bài học mới</span>
+                      <span>{currentWorkspace.type === 'SUBJECT' ? 'Ghi chép bài giảng môn' : 'Ghi chú mới'}</span>
                     </button>
-                    <button
-                      type="button"
-                      className="ws-new-menu-opt"
-                      onClick={handleCreateTask}
-                    >
-                      <CheckSquare size={13} />
-                      <span>Bài tập / Nhiệm vụ mới</span>
-                    </button>
+                    {(currentWorkspace.type !== 'SUBJECT' || currentWorkspace.role === 'OWNER' || currentWorkspace.role === 'MANAGER') && (
+                      <button
+                        type="button"
+                        className="ws-new-menu-opt"
+                        onClick={handleCreateTask}
+                      >
+                        <CheckSquare size={13} />
+                        <span>{currentWorkspace.type === 'SUBJECT' ? 'Ra đề bài tập môn' : 'Bài tập / Nhiệm vụ mới'}</span>
+                      </button>
+                    )}
                   </div>
                 )}
               </div>

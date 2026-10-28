@@ -74,8 +74,8 @@ export class WorkspacesService {
     return {
       workspace: this.mapWorkspace(workspace),
       membership: this.mapMember(membership),
-      effectivePermissions: workspacePermissions(membership.role, workspace.status),
-      capabilities: workspaceCapabilities(membership.role),
+      effectivePermissions: workspacePermissions(membership.role, workspace.status, workspace.type),
+      capabilities: workspaceCapabilities(membership.role, workspace.type),
       policy: {
         reviewRequired: false,
         selfReviewAllowed: false,
@@ -232,7 +232,7 @@ export class WorkspacesService {
     if (!membership) {
       throw new NotFoundError('Không tìm thấy workspace hoặc bạn chưa là thành viên');
     }
-    if (!canPerformWorkspaceAction(membership.role, workspace.status, action)) {
+    if (!canPerformWorkspaceAction(membership.role, workspace.status, action, workspace.type)) {
       throw new ForbiddenError('Bạn không có quyền thực hiện thao tác workspace này');
     }
   }

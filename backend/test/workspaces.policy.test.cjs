@@ -61,3 +61,14 @@ test('timezone validation accepts IANA zones and rejects arbitrary offsets', () 
   assert.equal(isValidTimeZone('Asia/Invalid_Zone'), false);
   assert.equal(isValidTimeZone('UTC+7'), false);
 });
+
+test('workspace policy differentiates between SUBJECT (classroom) and PROJECT (team)', () => {
+  // In a Classroom (SUBJECT): Student MEMBER cannot create class tasks
+  assert.equal(canPerformWorkspaceAction('MEMBER', 'ACTIVE', 'task.create', 'SUBJECT'), false);
+  assert.equal(canPerformWorkspaceAction('MEMBER', 'ACTIVE', 'task.submit', 'SUBJECT'), true);
+  assert.equal(canPerformWorkspaceAction('MEMBER', 'ACTIVE', 'note.create', 'SUBJECT'), true);
+
+  // In a Project (PROJECT): Team MEMBER can create tasks, update their assigned tasks, and write docs
+  assert.equal(canPerformWorkspaceAction('MEMBER', 'ACTIVE', 'task.create', 'PROJECT'), true);
+  assert.equal(canPerformWorkspaceAction('MEMBER', 'ACTIVE', 'task.update.assigned', 'PROJECT'), true);
+});
