@@ -10,8 +10,7 @@ import {
   BookOpen,
   FolderKanban,
   User,
-  ArrowRight,
-  Sparkles,
+  ArrowRight,
   Command as CommandIcon,
   X
 } from 'lucide-react';

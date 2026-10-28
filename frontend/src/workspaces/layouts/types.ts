@@ -25,6 +25,20 @@ export interface WorkspaceContextData {
   isArchived: boolean;
 }
 
+export interface WorkspaceInvitation {
+  id: string;
+  workspaceId: string;
+  workspace: WorkspaceSummary;
+  role: WorkspaceRole;
+  status: 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'REMOVED';
+  invitedAt: string;
+  invitedBy?: {
+    id: string;
+    fullName: string;
+    avatarUrl?: string | null;
+  };
+}
+
 export interface NavItemDef {
   id: string;
   label: string;
@@ -33,4 +47,3 @@ export interface NavItemDef {
   viewType?: string;
   isExternal?: boolean;
 }
-

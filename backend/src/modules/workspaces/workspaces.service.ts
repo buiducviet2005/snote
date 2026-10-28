@@ -247,4 +247,51 @@ export class WorkspacesService {
       throw error;
     }
   }
+
+  async addMember(
+    workspaceId: string,
+    actorId: string,
+    email: string,
+    role?: import('@prisma/client').WorkspaceRole
+  ): Promise<WorkspaceMemberDto> {
+    const workspace = await this.repo.findAcceptedContext(workspaceId, actorId);
+    if (!workspace) {
+      throw new NotFoundError('Không tìm thấy workspace hoặc bạn chưa là thành viên');
+    }
+    this.assertAction(workspace, 'member.invite');
+    const member = await this.repo.addMember(
+      workspaceId,
+      actorId,
+      email,
+      role ?? 'MEMBER'
+    );
+    return this.mapMember(member);
+  }
+
+  async listInvitations(userId: string): Promise<any[]> {
+    const rows = await this.repo.listInvitations(userId);
+    return rows.map((row: any) => ({
+      id: row.id,
+      workspaceId: row.workspaceId,
+      workspace: this.mapWorkspace(row.workspace),
+      role: row.role,
+      status: row.status,
+      invitedAt: row.invitedAt,
+      invitedBy: row.invitedBy
+    }));
+  }
+
+  async acceptInvitation(memberId: string, userId: string): Promise<WorkspaceContextDto> {
+    const workspaceId = await this.repo.acceptInvitation(memberId, userId);
+    return this.getContext(workspaceId, userId);
+  }
+
+  async declineInvitation(memberId: string, userId: string): Promise<void> {
+    await this.repo.declineInvitation(memberId, userId);
+  }
+
+  async join(userId: string, codeOrId: string): Promise<WorkspaceContextDto> {
+    const workspaceId = await this.repo.joinWorkspace(userId, codeOrId.trim());
+    return this.getContext(workspaceId, userId);
+  }
 }

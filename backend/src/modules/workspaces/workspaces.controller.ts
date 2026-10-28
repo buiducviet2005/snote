@@ -1,5 +1,11 @@
 import type { Request, Response } from 'express';
-import { listMembersSchema, listWorkspacesSchema, createWorkspaceSchema } from './workspaces.schemas';
+import {
+  listMembersSchema,
+  listWorkspacesSchema,
+  createWorkspaceSchema,
+  addWorkspaceMemberSchema,
+  joinWorkspaceSchema
+} from './workspaces.schemas';
 import { WorkspacesService } from './workspaces.service';
 
 export class WorkspacesController {
@@ -31,5 +37,37 @@ export class WorkspacesController {
       query.limit
     );
     res.status(200).json({ success: true, ...result });
+  };
+
+  addMember = async (req: Request, res: Response): Promise<void> => {
+    const input = addWorkspaceMemberSchema.parse(req.body);
+    const data = await this.service.addMember(
+      req.params.workspaceId as string,
+      req.user!.id,
+      input.email,
+      input.role
+    );
+    res.status(201).json({ success: true, data });
+  };
+
+  listInvitations = async (req: Request, res: Response): Promise<void> => {
+    const data = await this.service.listInvitations(req.user!.id);
+    res.status(200).json({ success: true, data });
+  };
+
+  acceptInvitation = async (req: Request, res: Response): Promise<void> => {
+    const data = await this.service.acceptInvitation(req.params.memberId as string, req.user!.id);
+    res.status(200).json({ success: true, data });
+  };
+
+  declineInvitation = async (req: Request, res: Response): Promise<void> => {
+    await this.service.declineInvitation(req.params.memberId as string, req.user!.id);
+    res.status(200).json({ success: true, message: 'Đã từ chối lời mời tham gia không gian' });
+  };
+
+  join = async (req: Request, res: Response): Promise<void> => {
+    const input = joinWorkspaceSchema.parse(req.body);
+    const data = await this.service.join(req.user!.id, input.codeOrId);
+    res.status(200).json({ success: true, data });
   };
 }

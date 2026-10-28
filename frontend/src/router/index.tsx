@@ -12,7 +12,6 @@ import { ProjectsListPage } from '../features/projects';
 import { ProgressDashboardPage } from '../features/progress';
 import { SettingsPage } from '../features/settings';
 import { SystemStatusPage } from '../features/status';
-import { AiChatPage } from '../features/ai';
 import { ClassesPage } from '../features/classes/pages/ClassesPage';
 import { WorkspaceLayout } from '../workspaces/layouts';
 
@@ -36,7 +35,6 @@ export const AppRouter: React.FC = () => {
           <Route path="/classes" element={<ClassesPage />} />
           <Route path="/semesters" element={<SemesterOverviewPage />} />
           <Route path="/projects" element={<ProjectsListPage />} />
-          <Route path="/ai-chat" element={<AiChatPage />} />
           <Route path="/progress" element={<ProgressDashboardPage />} />
           <Route path="/settings" element={<SettingsPage />} />
 

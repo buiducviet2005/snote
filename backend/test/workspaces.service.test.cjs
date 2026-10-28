@@ -21,6 +21,11 @@ function createRepo(overrides = {}) {
     createPersonal: async () => null,
     createSubject: async () => null,
     createProject: async () => null,
+    addMember: async () => null,
+    listInvitations: async () => [],
+    acceptInvitation: async () => 'workspace-a',
+    declineInvitation: async () => {},
+    joinWorkspace: async () => 'workspace-a',
     ...overrides
   };
 }
@@ -134,4 +139,46 @@ test('project workspace rejects an invalid date range before creating rows', asy
     code: 'VALIDATION_ERROR',
     statusCode: 400
   });
+});
+
+test('addMember verifies member.invite permission and delegates to repo', async () => {
+  let called = false;
+  const service = new WorkspacesService(createRepo({
+    findAcceptedContext: async () => acceptedContext('OWNER'),
+    addMember: async (wsId, actorId, email, role) => {
+      called = true;
+      assert.equal(wsId, 'workspace-a');
+      assert.equal(actorId, 'user-a');
+      assert.equal(email, 'test@example.com');
+      return {
+        id: 'member-b',
+        workspaceId: wsId,
+        userId: 'user-b',
+        role: 'MEMBER',
+        status: 'PENDING',
+        version: 1,
+        joinedAt: null,
+        user: { id: 'user-b', fullName: 'User B', avatarUrl: null }
+      };
+    }
+  }));
+
+  const res = await service.addMember('workspace-a', 'user-a', 'test@example.com', 'MEMBER');
+  assert.equal(called, true);
+  assert.equal(res.id, 'member-b');
+});
+
+test('join delegates to repo and returns accepted context', async () => {
+  const service = new WorkspacesService(createRepo({
+    joinWorkspace: async (userId, codeOrId) => {
+      assert.equal(userId, 'user-a');
+      assert.equal(codeOrId, 'INT3306');
+      return 'workspace-a';
+    },
+    findAcceptedContext: async () => acceptedContext('MEMBER')
+  }));
+
+  const res = await service.join('user-a', 'INT3306');
+  assert.equal(res.workspace.id, 'workspace-a');
+  assert.equal(res.membership.role, 'MEMBER');
 });

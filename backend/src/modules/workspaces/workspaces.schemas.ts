@@ -80,4 +80,19 @@ export const listMembersSchema = z
   })
   .strict();
 
+export const addWorkspaceMemberSchema = z
+  .object({
+    email: z.string().trim().email('Email không hợp lệ'),
+    role: z.enum(['MANAGER', 'MEMBER', 'VIEWER']).default('MEMBER')
+  })
+  .strict();
+
+export const joinWorkspaceSchema = z
+  .object({
+    codeOrId: z.string().trim().min(1, 'Mã hoặc ID không gian là bắt buộc')
+  })
+  .strict();
+
 export type CreateWorkspaceSchemaInput = z.infer<typeof createWorkspaceSchema>;
+export type AddWorkspaceMemberInput = z.infer<typeof addWorkspaceMemberSchema>;
+export type JoinWorkspaceInput = z.infer<typeof joinWorkspaceSchema>;

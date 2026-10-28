@@ -6,11 +6,8 @@ import {
   FileText,
   CheckSquare,
   Calendar,
-  BookOpen,
   Layers,
-  FolderOpen,
   Settings,
-  Sparkles,
   Command,
   Maximize2,
   Minimize2,
@@ -26,7 +23,7 @@ interface WorkspaceSidebarProps {
   activeNavId?: string;
   onSelectNav?: (navId: string) => void;
   onSelectWorkspace: (ws: WorkspaceSummary) => void;
-  onCreateWorkspace?: () => void;
+  onRefreshWorkspaces?: () => void;
   currentUser?: { fullName?: string; email?: string } | null;
   isAdmin?: boolean;
   onLogout?: () => void;
@@ -43,7 +40,7 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
   currentWorkspace,
   workspaces,
   onSelectWorkspace,
-  onCreateWorkspace,
+  onRefreshWorkspaces,
   currentUser,
   isAdmin = false,
   onLogout,
@@ -60,13 +57,12 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
   const currentPath = location.pathname;
 
   // Academic Core Navigation Items (Pure Monochromatic Icons & Clear Vietnamese Tooltips)
+  // Quy tắc người dùng: "Dự án và lớp học nằm ở workspace, không nằm thừa thãi ở bên menu"
   const navItems = [
     { id: 'notes', label: 'Kho Ghi Chú & Bài Giảng', icon: FileText, path: '/notes' },
     { id: 'tasks', label: 'Việc Cần Làm & Bài Tập', icon: CheckSquare, path: '/tasks' },
     { id: 'schedule', label: 'Thời Khóa Biểu & Lịch Thi', icon: Calendar, path: '/schedule' },
-    { id: 'classes', label: 'Lớp Học Học Phần', icon: BookOpen, path: '/classes' },
-    { id: 'semesters', label: 'Kế Hoạch Học Kỳ', icon: Layers, path: '/semesters' },
-    { id: 'projects', label: 'Đồ Án & Dự Án', icon: FolderOpen, path: '/projects' }
+    { id: 'semesters', label: 'Kế Hoạch Học Kỳ', icon: Layers, path: '/semesters' }
   ];
 
   const handleNavClick = (path: string) => {
@@ -96,7 +92,7 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
       {isMobileOpen && <div className="ws-sidebar-backdrop" onClick={onCloseMobile} />}
 
       <aside className={`ws-icon-rail ${isMobileOpen ? 'open' : ''}`} aria-label="Thanh điều hướng thu gọn">
-        {/* Top: Workspace Switcher Mark */}
+        {/* Top: Workspace Switcher Mark with Monogram & Arrow */}
         <div className="ws-rail-top">
           <WorkspaceSwitcher
             currentWorkspace={currentWorkspace}
@@ -105,7 +101,8 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
               onSelectWorkspace(ws);
               if (onCloseMobile) onCloseMobile();
             }}
-            onCreateWorkspace={onCreateWorkspace}
+            onRefreshWorkspaces={onRefreshWorkspaces}
+            triggerMode="rail"
           />
         </div>
 
@@ -130,7 +127,7 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
                   </span>
                 </button>
 
-                {/* Floating Rounded Tooltip on Hover (Bo tròn các góc) */}
+                {/* Floating Rounded Tooltip on Hover */}
                 <div className="ws-rail-tooltip" role="tooltip">
                   <span className="ws-tooltip-text">{item.label}</span>
                 </div>
@@ -141,7 +138,7 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
 
         <div className="ws-rail-divider" />
 
-        {/* Bottom Utility Icons: Command Palette, AI, Zen, Theme, Admin, Settings, User */}
+        {/* Bottom Utility Icons: Command Palette, Zen, Theme, Admin, Settings, User (KHÔNG CÓ AI) */}
         <div className="ws-rail-bottom">
           {/* Command Palette Trigger */}
           <div className="ws-rail-item-wrapper">
@@ -157,22 +154,6 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
             <div className="ws-rail-tooltip" role="tooltip">
               <span className="ws-tooltip-text">Tìm kiếm & Bảng lệnh</span>
               <kbd className="ws-tooltip-kbd">Ctrl K</kbd>
-            </div>
-          </div>
-
-          {/* AI Assistant */}
-          <div className="ws-rail-item-wrapper">
-            <button
-              type="button"
-              className={`ws-rail-btn ${currentPath.startsWith('/ai-chat') ? 'active' : ''}`}
-              onClick={() => handleNavClick('/ai-chat')}
-              title="Gia sư AI học thuật"
-              aria-label="Gia sư AI học thuật"
-            >
-              <Sparkles size={18} strokeWidth={1.8} />
-            </button>
-            <div className="ws-rail-tooltip" role="tooltip">
-              <span className="ws-tooltip-text">Gia sư AI học thuật</span>
             </div>
           </div>
 

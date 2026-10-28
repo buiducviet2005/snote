@@ -1,14 +1,14 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import './workspaceLayout.css';
 import { WorkspaceSummary } from './types';
 import { WorkspaceSidebar } from './WorkspaceSidebar';
+import { WorkspaceSwitcher } from './WorkspaceSwitcher';
 import { WorkspaceCommandPalette } from './WorkspaceCommandPalette';
 import { WorkspaceTimer } from './WorkspaceTimer';
 import { WorkspaceQuickCapture } from './WorkspaceQuickCapture';
 import { WorkspaceArchivedBanner } from './WorkspaceStates';
 import { useAuth } from '../../contexts/AuthContext';
-import { FloatingAiChatbot } from '../../features/ai';
 import { api } from '../../services/api';
 import {
   Menu,
@@ -20,7 +20,8 @@ import {
   Moon,
   Sun,
   FileText,
-  CheckSquare
+  CheckSquare,
+  ChevronDown
 } from 'lucide-react';
 
 interface WorkspaceLayoutProps {
@@ -111,6 +112,10 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
   const [isQuickCaptureOpen, setIsQuickCaptureOpen] = useState(false);
   const [isZenMode, setIsZenMode] = useState(false);
   const [isActionMenuOpen, setIsActionMenuOpen] = useState(false);
+  const [isTopbarWorkspaceOpen, setIsTopbarWorkspaceOpen] = useState(false);
+  const [invitationsCount, setInvitationsCount] = useState(0);
+
+  const topbarDropdownRef = useRef<HTMLDivElement>(null);
 
   // Theme state: defaults to dark carbon mode (Linear / Vercel style), toggleable to light
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
@@ -127,26 +132,52 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
   };
 
   // Fetch workspaces from API on mount
-  useEffect(() => {
-    let isMounted = true;
-    api.get<any>('/workspaces')
-      .then((res) => {
-        if (!isMounted) return;
-        const list = res.data?.data || res.data;
-        if (Array.isArray(list) && list.length > 0) {
-          setWorkspaces(list);
-          if (!list.some((w: WorkspaceSummary) => w.id === activeWorkspaceId)) {
-            setActiveWorkspaceId(list[0].id);
-          }
+  const refreshWorkspaces = useCallback(async () => {
+    try {
+      const res = await api.get<any>('/workspaces');
+      const list = res.data?.data || res.data;
+      if (Array.isArray(list) && list.length > 0) {
+        setWorkspaces(list);
+        if (!list.some((w: WorkspaceSummary) => w.id === activeWorkspaceId)) {
+          setActiveWorkspaceId(list[0].id);
         }
-      })
-      .catch(() => {
-        // Keep default workspaces on fallback
-      });
-    return () => {
-      isMounted = false;
-    };
+      }
+    } catch {
+      // Keep default workspaces on fallback
+    }
+  }, [activeWorkspaceId]);
+
+  const fetchInvitationsCount = useCallback(async () => {
+    try {
+      const res = await api.get<any>('/workspaces/invitations');
+      const list = res.data?.data || res.data || [];
+      if (Array.isArray(list)) {
+        setInvitationsCount(list.length);
+      }
+    } catch {
+      // Non-blocking
+    }
   }, []);
+
+  useEffect(() => {
+    refreshWorkspaces();
+    fetchInvitationsCount();
+  }, [refreshWorkspaces, fetchInvitationsCount]);
+
+  // Close topbar dropdown when clicking outside
+  useEffect(() => {
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (topbarDropdownRef.current && !topbarDropdownRef.current.contains(e.target as Node)) {
+        setIsTopbarWorkspaceOpen(false);
+      }
+    };
+    if (isTopbarWorkspaceOpen) {
+      document.addEventListener('mousedown', handleOutsideClick);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick);
+    };
+  }, [isTopbarWorkspaceOpen]);
 
   const currentWorkspace = useMemo(() => {
     return (
@@ -169,7 +200,6 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
   // Keyboard Shortcuts (Ctrl+K: Command, Z: Zen, Q: Quick Capture)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't trigger if user is typing in an input/textarea
       const target = e.target as HTMLElement;
       const isInput = target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable);
 
@@ -197,7 +227,6 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
     if (path.startsWith('/classes')) return 'Lớp Học Học Phần';
     if (path.startsWith('/semesters')) return 'Kế Hoạch Học Kỳ';
     if (path.startsWith('/projects')) return 'Đồ Án & Dự Án';
-    if (path.startsWith('/ai-chat')) return 'Trợ Lý AI Học Thuật';
     if (path.startsWith('/progress')) return 'Tiến Độ Học Tập';
     if (path.startsWith('/settings')) return 'Cài Đặt Hệ Thống';
     if (path.startsWith('/status')) return 'Trạng Thái Máy Chủ';
@@ -229,6 +258,10 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
         currentWorkspace={currentWorkspace}
         workspaces={workspaces}
         onSelectWorkspace={handleSelectWorkspace}
+        onRefreshWorkspaces={() => {
+          refreshWorkspaces();
+          fetchInvitationsCount();
+        }}
         currentUser={currentUser}
         isAdmin={isAdmin}
         onLogout={handleLogout}
@@ -268,9 +301,48 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
               </button>
             )}
 
+            {/* Prominent Workspace Selector with Word 'WORKSPACE' and Dropdown Arrow */}
+            <div className="ws-topbar-selector-wrap" ref={topbarDropdownRef}>
+              <button
+                type="button"
+                className={`ws-topbar-workspace-btn ${isTopbarWorkspaceOpen ? 'active' : ''}`}
+                onClick={() => setIsTopbarWorkspaceOpen(!isTopbarWorkspaceOpen)}
+                title="Chọn và quản lý Không gian làm việc (Workspace)"
+                aria-haspopup="true"
+                aria-expanded={isTopbarWorkspaceOpen}
+              >
+                <span className="ws-topbar-ws-tag">WORKSPACE</span>
+                <span className="ws-topbar-ws-name">{currentWorkspace.name}</span>
+                {invitationsCount > 0 && (
+                  <span className="ws-topbar-ws-badge">{invitationsCount} lời mời</span>
+                )}
+                <ChevronDown size={14} className={`ws-topbar-ws-arrow ${isTopbarWorkspaceOpen ? 'open' : ''}`} />
+              </button>
+
+              {/* Dropdown Popover */}
+              {isTopbarWorkspaceOpen && (
+                <div className="ws-topbar-dropdown-popover">
+                  <WorkspaceSwitcher
+                    currentWorkspace={currentWorkspace}
+                    workspaces={workspaces}
+                    onSelectWorkspace={(ws) => {
+                      handleSelectWorkspace(ws);
+                      setIsTopbarWorkspaceOpen(false);
+                    }}
+                    onRefreshWorkspaces={() => {
+                      refreshWorkspaces();
+                      fetchInvitationsCount();
+                    }}
+                    isOpen={true}
+                    onOpenChange={(open) => setIsTopbarWorkspaceOpen(open)}
+                    triggerMode="none"
+                  />
+                </div>
+              )}
+            </div>
+
             {/* Breadcrumb Hierarchy */}
             <div className="ws-breadcrumbs">
-              <span className="ws-breadcrumb-parent">{currentWorkspace.name}</span>
               <span>/</span>
               <span className="ws-breadcrumb-current">
                 {getBreadcrumbTitle(location.pathname)}
@@ -385,7 +457,6 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
           else if (navId === 'classes') navigate('/classes');
           else if (navId === 'semesters') navigate('/semesters');
           else if (navId === 'projects') navigate('/projects');
-          else if (navId === 'ai-assistant') navigate('/ai-chat');
         }}
         onOpenCreateNote={handleCreateNote}
         onOpenCreateTask={handleCreateTask}
@@ -399,9 +470,6 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
         isOpen={isQuickCaptureOpen}
         onClose={() => setIsQuickCaptureOpen(false)}
       />
-
-      {/* Global Floating AI Copilot */}
-      <FloatingAiChatbot />
     </div>
   );
 };

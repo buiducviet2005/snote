@@ -1,4 +1,5 @@
-import type { Prisma } from '@prisma/client';
+import type { Prisma, WorkspaceRole } from '@prisma/client';
+import { NotFoundError, ConflictError } from '../../shared/errors/appErrors';
 import { prisma } from '../../shared/db/prismaClient';
 import type {
   CreateWorkspaceInput,
@@ -88,6 +89,16 @@ export interface WorkspaceRepositoryPort {
     timezone: string,
     input: NonNullable<CreateWorkspaceInput['project']>
   ): Promise<ContextRecord>;
+  addMember(
+    workspaceId: string,
+    actorId: string,
+    email: string,
+    role: WorkspaceRole
+  ): Promise<WorkspaceMemberRecord>;
+  listInvitations(userId: string): Promise<any[]>;
+  acceptInvitation(memberId: string, userId: string): Promise<string>;
+  declineInvitation(memberId: string, userId: string): Promise<void>;
+  joinWorkspace(userId: string, codeOrId: string): Promise<string>;
 }
 
 const contextInclude = {
@@ -296,5 +307,162 @@ export class WorkspaceRepository implements WorkspaceRepositoryPort {
         include: contextInclude
       });
     });
+  }
+
+  async addMember(
+    workspaceId: string,
+    actorId: string,
+    email: string,
+    role: WorkspaceRole
+  ): Promise<WorkspaceMemberRecord> {
+    const targetUser = await prisma.user.findFirst({
+      where: { email: email.toLowerCase().trim(), status: 'ACTIVE', deletedAt: null },
+      select: { id: true }
+    });
+    if (!targetUser) {
+      throw new NotFoundError('Không tìm thấy tài khoản người dùng với email này');
+    }
+
+    const existing = await prisma.workspaceMember.findUnique({
+      where: {
+        workspaceId_userId: {
+          workspaceId,
+          userId: targetUser.id
+        }
+      },
+      select: memberSelect
+    });
+
+    if (existing && existing.status === 'ACCEPTED') {
+      throw new ConflictError('Người dùng này đã là thành viên của Không gian làm việc');
+    }
+
+    if (existing) {
+      return prisma.workspaceMember.update({
+        where: { id: existing.id },
+        data: {
+          role,
+          status: 'PENDING',
+          invitedById: actorId,
+          invitedAt: new Date()
+        },
+        select: memberSelect
+      });
+    }
+
+    return prisma.workspaceMember.create({
+      data: {
+        workspaceId,
+        userId: targetUser.id,
+        invitedById: actorId,
+        role,
+        status: 'PENDING'
+      },
+      select: memberSelect
+    });
+  }
+
+  async listInvitations(userId: string): Promise<any[]> {
+    return prisma.workspaceMember.findMany({
+      where: {
+        userId,
+        status: 'PENDING',
+        workspace: { deletedAt: null, status: 'ACTIVE' }
+      },
+      include: {
+        workspace: {
+          include: workspaceRelations
+        },
+        invitedBy: {
+          select: { id: true, fullName: true, avatarUrl: true }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+  }
+
+  async acceptInvitation(memberId: string, userId: string): Promise<string> {
+    const membership = await prisma.workspaceMember.findFirst({
+      where: { id: memberId, userId, status: 'PENDING' }
+    });
+    if (!membership) {
+      throw new NotFoundError('Không tìm thấy lời mời tham gia hoặc lời mời đã được xử lý');
+    }
+    await prisma.workspaceMember.update({
+      where: { id: memberId },
+      data: {
+        status: 'ACCEPTED',
+        joinedAt: new Date()
+      }
+    });
+    return membership.workspaceId;
+  }
+
+  async declineInvitation(memberId: string, userId: string): Promise<void> {
+    const membership = await prisma.workspaceMember.findFirst({
+      where: { id: memberId, userId, status: 'PENDING' }
+    });
+    if (!membership) {
+      throw new NotFoundError('Không tìm thấy lời mời tham gia hoặc lời mời đã được xử lý');
+    }
+    await prisma.workspaceMember.update({
+      where: { id: memberId },
+      data: {
+        status: 'DECLINED'
+      }
+    });
+  }
+
+  async joinWorkspace(userId: string, codeOrId: string): Promise<string> {
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(codeOrId);
+    const workspace = await prisma.workspace.findFirst({
+      where: {
+        deletedAt: null,
+        status: 'ACTIVE',
+        OR: [
+          ...(isUuid ? [{ id: codeOrId }] : []),
+          { subject: { code: { equals: codeOrId, mode: 'insensitive' } } },
+          { name: { equals: codeOrId, mode: 'insensitive' } }
+        ]
+      }
+    });
+
+    if (!workspace) {
+      throw new NotFoundError('Không tìm thấy Không gian làm việc với mã hoặc ID này');
+    }
+
+    const existing = await prisma.workspaceMember.findUnique({
+      where: {
+        workspaceId_userId: {
+          workspaceId: workspace.id,
+          userId
+        }
+      }
+    });
+
+    if (existing) {
+      if (existing.status === 'ACCEPTED') {
+        return workspace.id;
+      }
+      await prisma.workspaceMember.update({
+        where: { id: existing.id },
+        data: {
+          status: 'ACCEPTED',
+          joinedAt: new Date()
+        }
+      });
+      return workspace.id;
+    }
+
+    await prisma.workspaceMember.create({
+      data: {
+        workspaceId: workspace.id,
+        userId,
+        role: 'MEMBER',
+        status: 'ACCEPTED',
+        joinedAt: new Date()
+      }
+    });
+    return workspace.id;
   }
 }
