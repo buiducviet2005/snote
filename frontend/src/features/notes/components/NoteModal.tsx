@@ -6,7 +6,7 @@ import { api, ApiResponse } from '../../../services/api';
 import { useToast } from '../../../contexts/ToastContext';
 import { useAppFilter } from '../../../contexts/AppFilterContext';
 import { NoteType } from '@snote/shared';
-import { autoFormatPlainTextToMarkdown, detectNoteType, extractNoteFeatures, toggleChecklistItem } from '../utils/smartNoteParser';
+import { autoFormatPlainTextToMarkdown, detectNoteType, extractNoteFeatures, toggleChecklistItem, extractWikiLinks, extractTags, extractOutline } from '../utils/smartNoteParser';
 import { handleSmartListKeyDown } from '../utils/smartKeyboard';
 import {
   BookOpen,
@@ -32,6 +32,8 @@ interface NoteModalProps {
   defaultProjectId?: string | null;
   defaultSubjectId?: string | null;
   onConvertToTask?: (note: any) => void;
+  allNotes?: any[];
+  onOpenNote?: (note: any) => void;
 }
 
 export const NoteModal: React.FC<NoteModalProps> = ({
@@ -42,7 +44,9 @@ export const NoteModal: React.FC<NoteModalProps> = ({
   initialMode,
   defaultProjectId,
   defaultSubjectId,
-  onConvertToTask
+  onConvertToTask,
+  allNotes,
+  onOpenNote
 }) => {
   const { subjects, selectedSubjectId } = useAppFilter();
   const [projects, setProjects] = useState<any[]>([]);
@@ -60,6 +64,43 @@ export const NoteModal: React.FC<NoteModalProps> = ({
   const wasOpenRef = useRef(false);
   const lastNoteIdRef = useRef<string | null | undefined>(undefined);
   const { showToast } = useToast();
+  const [obsidianTab, setObsidianTab] = useState<'PREVIEW' | 'LINKS' | 'OUTLINE' | 'TAGS'>('PREVIEW');
+
+  const backlinks = useMemo(() => {
+    if (!noteToEdit?.title || !allNotes) return [];
+    const targetTitle = noteToEdit.title.trim().toLowerCase();
+    return allNotes.filter((other) => {
+      if (other.id === noteToEdit.id) return false;
+      const links = extractWikiLinks(other.content || '');
+      return links.some((l) => l.target.toLowerCase() === targetTitle || l.target === noteToEdit.id);
+    });
+  }, [noteToEdit, allNotes]);
+
+  const outgoingLinks = useMemo(() => {
+    return extractWikiLinks(content || '');
+  }, [content]);
+
+  const tagsList = useMemo(() => {
+    return extractTags(content || '');
+  }, [content]);
+
+  const outlineList = useMemo(() => {
+    return extractOutline(content || '');
+  }, [content]);
+
+  const handleNavigateWiki = (target: string) => {
+    if (!allNotes || !onOpenNote) {
+      showToast(`Liên kết tới: ${target}`, 'info');
+      return;
+    }
+    const targetLower = target.trim().toLowerCase();
+    const found = allNotes.find((n) => n.title?.trim().toLowerCase() === targetLower || n.id === target);
+    if (found) {
+      onOpenNote(found);
+    } else {
+      showToast(`Chưa tìm thấy ghi chú "${target}" trong kho`, 'info');
+    }
+  };
 
   const initialValuesRef = useRef({
     title: '',
@@ -650,7 +691,7 @@ export const NoteModal: React.FC<NoteModalProps> = ({
                     }}
                     title="Tự động nhận diện thụt lề, danh sách, checklist, liên kết từ văn bản thuần túy"
                   >
-                    <Sparkles size={12} />
+                    <List size={12} />
                     <span>Tự nhận diện</span>
                   </button>
                 </div>

@@ -1,3 +1,4 @@
+import { extractWikiLinks } from '../utils/smartNoteParser';
 import React, { useRef, useEffect, useState, useMemo, useCallback } from 'react';
 import { NoteType } from '@snote/shared';
 import {
@@ -214,6 +215,30 @@ export const NotesGraphView: React.FC<NotesGraphViewProps> = ({
           }
         }
       }
+    });
+
+    // 6. Connect notes directly via Obsidian [[Wiki Links]]
+    activeNotes.forEach((n) => {
+      const links = extractWikiLinks(n.content || '');
+      links.forEach((link) => {
+        const targetLower = link.target.toLowerCase();
+        const targetNote = activeNotes.find(
+          (other) =>
+            other.id !== n.id &&
+            (other.title?.trim().toLowerCase() === targetLower || other.id === link.target)
+        );
+        if (targetNote && nodeMap.has(targetNote.id)) {
+          rawLinks.push({
+            source: n.id,
+            target: targetNote.id,
+            color: '#38bdf8' // Obsidian electric cyan link
+          });
+          const sourceNode = nodeMap.get(n.id);
+          const destNode = nodeMap.get(targetNote.id);
+          if (sourceNode) sourceNode.connectionsCount++;
+          if (destNode) destNode.connectionsCount++;
+        }
+      });
     });
 
     return { initialNodes: rawNodes, initialLinks: rawLinks };

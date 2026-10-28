@@ -1095,6 +1095,18 @@ export const NotesListPage: React.FC = () => {
                       const newContent = toggleChecklistItem(selectedNoteForSplit.content || '', todoIndex);
                       handleToggleNoteTodo(selectedNoteForSplit.id, todoIndex, newContent);
                     }}
+                    onNavigateWikiLink={(target) => {
+                      const targetLower = target.trim().toLowerCase();
+                      const found = notes.find((n) => n.title?.trim().toLowerCase() === targetLower || n.id === target);
+                      if (found) {
+                        setSelectedNoteForSplit(found);
+                      } else {
+                        showToast(`Chưa tìm thấy bài ghi "${target}"`, 'info');
+                      }
+                    }}
+                    onSelectTag={(tag) => {
+                      setSearch(`#${tag}`);
+                    }}
                   />
                 </div>
               </div>
@@ -1549,6 +1561,12 @@ export const NotesListPage: React.FC = () => {
         }}
         noteToEdit={noteToEdit}
         initialMode={modalMode}
+        allNotes={notes}
+        onOpenNote={(n: any) => {
+          setNoteToEdit(n);
+          setModalMode('PREVIEW');
+          setIsModalOpen(true);
+        }}
       />
 
       {/* Convert Note to Task Modal */}
