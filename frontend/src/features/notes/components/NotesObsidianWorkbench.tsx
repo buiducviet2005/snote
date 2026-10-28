@@ -874,3 +874,4 @@ export const NotesObsidianWorkbench: React.FC<NotesObsidianWorkbenchProps> = ({
     </div>
   );
 };
+

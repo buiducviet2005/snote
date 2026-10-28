@@ -4,7 +4,7 @@
 
 .obs-workbench {
   display: flex;
-  height: calc(100vh - 110px);
+  height: 100%;
   min-height: 580px;
   background-color: var(--ws-bg-surface);
   border: 1px solid var(--ws-border-hairline);
@@ -564,3 +564,4 @@
   align-items: center;
   gap: 12px;
 }
+
