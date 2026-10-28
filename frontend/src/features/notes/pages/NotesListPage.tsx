@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { api, ApiResponse } from '../../../services/api';
 import { useAppFilter } from '../../../contexts/AppFilterContext';
 import { useToast } from '../../../contexts/ToastContext';
@@ -78,6 +79,23 @@ export const NotesListPage: React.FC = () => {
   const [selectedNoteIds, setSelectedNoteIds] = useState<string[]>([]);
   const [isSelectionMode, setIsSelectionMode] = useState<boolean>(false);
   const { showToast } = useToast();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const deepNoteId = searchParams.get('noteId');
+
+  useEffect(() => {
+    if (!deepNoteId) return;
+    api.get<ApiResponse<any>>(`/notes/${deepNoteId}`)
+      .then((res) => {
+        if (res.data) {
+          setNoteToEdit(res.data);
+          setModalMode('PREVIEW');
+          setIsModalOpen(true);
+        }
+      })
+      .catch(() => {
+        showToast('Không tìm thấy bài ghi hoặc bạn không có quyền truy cập', 'error');
+      });
+  }, [deepNoteId, showToast]);
 
   // Keyboard shortcuts: '/' for Search, 'N' for Quick Capture
   useEffect(() => {
@@ -1520,6 +1538,11 @@ export const NotesListPage: React.FC = () => {
         onClose={() => {
           setIsModalOpen(false);
           setNoteToEdit(null);
+          if (searchParams.has('noteId')) {
+            const nextParams = new URLSearchParams(searchParams);
+            nextParams.delete('noteId');
+            setSearchParams(nextParams, { replace: true });
+          }
         }}
         onSuccess={() => {
           fetchNotes();

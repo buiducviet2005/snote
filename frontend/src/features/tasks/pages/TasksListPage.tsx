@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { api, ApiResponse } from '../../../services/api';
 import { useAppFilter } from '../../../contexts/AppFilterContext';
 import { useToast } from '../../../contexts/ToastContext';
@@ -41,6 +42,22 @@ export const TasksListPage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<any | null>(null);
   const { showToast } = useToast();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const deepTaskId = searchParams.get('taskId');
+
+  useEffect(() => {
+    if (!deepTaskId) return;
+    api.get<ApiResponse<any>>(`/tasks/${deepTaskId}`)
+      .then((res) => {
+        if (res.data) {
+          setTaskToEdit(res.data);
+          setIsModalOpen(true);
+        }
+      })
+      .catch(() => {
+        showToast('Không tìm thấy công việc hoặc bạn không có quyền truy cập', 'error');
+      });
+  }, [deepTaskId, showToast]);
 
   const handleSelectViewMode = (mode: 'KANBAN' | 'LIST' | 'EISENHOWER') => {
     setViewMode(mode);
@@ -480,7 +497,15 @@ export const TasksListPage: React.FC = () => {
       {/* Modal Form */}
       <TaskModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={() => {
+          setIsModalOpen(false);
+          setTaskToEdit(null);
+          if (searchParams.has('taskId')) {
+            const nextParams = new URLSearchParams(searchParams);
+            nextParams.delete('taskId');
+            setSearchParams(nextParams, { replace: true });
+          }
+        }}
         onSuccess={fetchTasks}
         taskToEdit={taskToEdit}
       />

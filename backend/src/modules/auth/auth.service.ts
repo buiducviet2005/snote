@@ -106,6 +106,10 @@ export class AuthService {
       throw new AuthError('Email hoặc mật khẩu không chính xác');
     }
 
+    if (user.status === 'SUSPENDED') {
+      throw new AuthError('Tài khoản của bạn đã bị tạm khóa, vui lòng liên hệ quản trị viên');
+    }
+
     const { accessToken, refreshToken } = this.generateTokens({
       sub: user.id,
       email: user.email,
@@ -239,30 +243,20 @@ export class AuthService {
     }
 
     const oldHash = this.hashToken(oldRefreshToken);
-    const existingToken = await this.authRepo.findRefreshToken(oldHash);
-    if (!existingToken) {
-      throw new AuthError('Refresh token đã bị thu hồi hoặc không tồn tại');
-    }
-
-    // Thu hồi token cũ (Token Rotation)
-    await this.authRepo.revokeRefreshToken(existingToken.id);
-
-    const user = await this.authRepo.findUserById(payload.sub);
-    if (!user) {
-      throw new NotFoundError('Không tìm thấy tài khoản người dùng');
-    }
-
-    const { accessToken, refreshToken: newRefreshToken } = this.generateTokens({
-      sub: user.id,
-      email: user.email,
-      role: (user.role as UserRole) || UserRole.STUDENT
-    });
-
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7);
-    await this.authRepo.saveRefreshToken({
-      userId: user.id,
-      tokenHash: this.hashToken(newRefreshToken),
+
+    const tokenPayload: TokenPayload = {
+      sub: payload.sub,
+      email: payload.email,
+      role: (payload.role as UserRole) || UserRole.STUDENT
+    };
+    const { accessToken, refreshToken: newRefreshToken } = this.generateTokens(tokenPayload);
+    const newHash = this.hashToken(newRefreshToken);
+
+    const { user } = await this.authRepo.rotateRefreshTokenAtomic(oldHash, {
+      userId: payload.sub,
+      tokenHash: newHash,
       expiresAt
     });
 

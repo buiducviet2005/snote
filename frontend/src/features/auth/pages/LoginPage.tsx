@@ -203,7 +203,8 @@ export const LoginPage: React.FC = () => {
         {/* Google Sign-In */}
         <GoogleSignInButton onSuccess={() => navigate('/notes')} text="Đăng nhập bằng Google" />
 
-        {/* Demo Quick Fills */}
+        {/* Demo Quick Fills (Chỉ hiển thị trên môi trường phát triển cục bộ) */}
+        {process.env.NODE_ENV !== 'production' && (
         <div style={{ marginTop: '22px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
           <div style={{ fontSize: '11.5px', color: 'var(--text-muted)', textAlign: 'center', fontWeight: 600 }}>
             TÀI KHOẢN TRẢI NGHIỆM MẪU (1-CLICK FILL):
@@ -229,6 +230,8 @@ export const LoginPage: React.FC = () => {
             </button>
           </div>
         </div>
+
+        )}
 
         {/* Register Link */}
         <div style={{ marginTop: '20px', paddingTop: '18px', borderTop: '1px solid var(--border-color)', textAlign: 'center', fontSize: '13.5px', color: 'var(--text-secondary)' }}>

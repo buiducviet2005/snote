@@ -2,15 +2,21 @@ import { prisma } from '../src/shared/db/prismaClient';
 import bcrypt from 'bcryptjs';
 
 async function main() {
+  // P0 Safeguard: Tuyệt đối không cho phép chạy seed mẫu trên production trừ khi có cờ tường minh
+  if (process.env.NODE_ENV === 'production' && !process.env.ALLOW_PRODUCTION_SEED) {
+    throw new Error('❌ BẢO VỆ AN TOÀN: Không được chạy seed dữ liệu demo trên môi trường Production! Vui lòng dùng lệnh "npm run admin:create" để khởi tạo tài khoản quản trị viên.');
+  }
+
   console.log('🌱 Đang khởi tạo dữ liệu mẫu (Seeding SNOTE database)...');
 
-  // 1. Tạo User Admin mẫu
-  const adminPasswordHash = await bcrypt.hash('Admin@123456', 12);
+  // 1. Tạo User Admin mẫu (KHÔNG ghi đè mật khẩu nếu đã tồn tại)
+  const defaultAdminPassword = process.env.DEFAULT_ADMIN_PASSWORD || 'Admin@123456';
+  const adminPasswordHash = await bcrypt.hash(defaultAdminPassword, 12);
   const adminUser = await prisma.user.upsert({
     where: { email: 'admin@snote.edu.vn' },
     update: {
-      role: 'ADMIN',
-      passwordHash: adminPasswordHash
+      role: 'ADMIN'
+      // Không ghi đè passwordHash khi update để bảo vệ mật khẩu của người quản trị thực tế
     },
     create: {
       email: 'admin@snote.edu.vn',
@@ -20,15 +26,15 @@ async function main() {
       timezone: 'Asia/Ho_Chi_Minh'
     }
   });
-  console.log(`👑 Đã tạo/cập nhật user Admin: ${adminUser.email} (${adminUser.id})`);
+  console.log(`👑 Đã kiểm tra/khởi tạo user Admin: ${adminUser.email} (${adminUser.id})`);
 
-  // 2. Tạo User sinh viên mẫu
+  // 2. Tạo User sinh viên mẫu (KHÔNG ghi đè mật khẩu nếu đã tồn tại)
   const studentPasswordHash = await bcrypt.hash('Student@123456', 12);
   const user = await prisma.user.upsert({
     where: { email: 'sinhvien@snote.edu.vn' },
     update: {
-      role: 'STUDENT',
-      passwordHash: studentPasswordHash
+      role: 'STUDENT'
+      // Không ghi đè passwordHash khi update
     },
     create: {
       email: 'sinhvien@snote.edu.vn',
@@ -38,7 +44,7 @@ async function main() {
       timezone: 'Asia/Ho_Chi_Minh'
     }
   });
-  console.log(`✅ Đã tạo user sinh viên mẫu: ${user.email} (${user.id})`);
+  console.log(`✅ Đã kiểm tra/khởi tạo user sinh viên mẫu: ${user.email} (${user.id})`);
 
   // 3. Tạo Học kỳ mẫu nếu chưa có
   let semester = await prisma.semester.findFirst({
