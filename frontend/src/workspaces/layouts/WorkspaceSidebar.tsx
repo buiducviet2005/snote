@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { WorkspaceSummary } from './types';
 import { WorkspaceSwitcher } from './WorkspaceSwitcher';
+import { useLanguage } from '../../contexts/LanguageContext';
 import {
   FileText,
   CheckSquare,
@@ -15,7 +16,8 @@ import {
   Sun,
   LogOut,
   Shield,
-  GraduationCap
+  GraduationCap,
+  Globe
 } from 'lucide-react';
 
 interface WorkspaceSidebarProps {
@@ -56,17 +58,16 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
   const navigate = useNavigate();
   const location = useLocation();
   const currentPath = location.pathname;
+  const { t, language, toggleLanguage } = useLanguage();
 
-  // Academic Core Navigation Items (Pure Monochromatic Icons & Clear Vietnamese Tooltips)
-  // Quy tắc người dùng: "Dự án và lớp học nằm ở workspace, không nằm thừa thãi ở bên menu"
   const isTeacher = (currentUser as any)?.role === 'TEACHER';
   const navItems = [
-    { id: 'notes', label: 'Ghi Chú Học Tập', icon: FileText, path: '/notes' },
-    { id: 'tasks', label: 'Công Việc & Bài Tập', icon: CheckSquare, path: '/tasks' },
-    { id: 'schedule', label: 'Thời Khóa Biểu', icon: Calendar, path: '/schedule' },
+    { id: 'notes', label: t('nav.notes'), icon: FileText, path: '/notes' },
+    { id: 'tasks', label: t('nav.tasks'), icon: CheckSquare, path: '/tasks' },
+    { id: 'schedule', label: t('nav.schedule'), icon: Calendar, path: '/schedule' },
     {
       id: 'classes',
-      label: isTeacher ? 'Quản Lý Lớp Học' : 'Lớp Học Phần',
+      label: isTeacher ? (language === 'vi' ? 'Quản Lý Lớp Học' : 'Manage Classes') : t('nav.classes'),
       icon: GraduationCap,
       path: '/classes'
     }
@@ -98,21 +99,24 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
       {/* Mobile backdrop */}
       {isMobileOpen && <div className="ws-sidebar-backdrop" onClick={onCloseMobile} />}
 
-      <aside className={`ws-icon-rail ${isMobileOpen ? 'open' : ''}`} aria-label="Thanh điều hướng thu gọn">
-        {/* Top: SNOTE Brand Mark */}
-        <div className="ws-rail-top">
-          <div className="ws-rail-brand-mark" title="SNOTE Academic Precision System">
-            <span className="ws-brand-mono">S</span>
+      <aside className={`ws-sidebar ${isMobileOpen ? 'mobile-open' : ''}`}>
+        {/* Top: Minimal Brand Icon */}
+        <div className="ws-sidebar-header">
+          <div
+            className="ws-logo-mark"
+            onClick={() => handleNavClick('/notes')}
+            title="SNOTE Workspace"
+          >
+            <span>S</span>
           </div>
         </div>
 
-        <div className="ws-rail-divider" />
-
-        {/* Center: Main Academic Navigation Icons with Rounded Floating Tooltips */}
+        {/* Rail Navigation Icon Items */}
         <nav className="ws-rail-nav">
           {navItems.map((item) => {
-            const active = isItemActive(item.path);
             const Icon = item.icon;
+            const active = isItemActive(item.path);
+
             return (
               <div key={item.id} className="ws-rail-item-wrapper">
                 <button
@@ -122,12 +126,9 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
                   title={item.label}
                   aria-label={item.label}
                 >
-                  <span className="ws-rail-icon">
-                    <Icon size={19} strokeWidth={1.8} />
-                  </span>
+                  <Icon size={18} strokeWidth={1.8} />
                 </button>
-
-                {/* Floating Rounded Tooltip on Hover */}
+                {/* Floating Tooltip */}
                 <div className="ws-rail-tooltip" role="tooltip">
                   <span className="ws-tooltip-text">{item.label}</span>
                 </div>
@@ -136,26 +137,64 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
           })}
         </nav>
 
-        <div className="ws-rail-divider" />
-
-        {/* Bottom Utility Icons: Command Palette, Zen, Theme, Admin, Settings, User (KHÔNG CÓ AI) */}
-        <div className="ws-rail-bottom">
-          {/* Zen Focus Mode */}
+        {/* Rail Footer Controls (Command Palette, Language, Theme, Settings, User) */}
+        <div className="ws-rail-footer">
+          {/* Language Switcher */}
           <div className="ws-rail-item-wrapper">
             <button
               type="button"
-              className={`ws-rail-btn ${isZenMode ? 'active' : ''}`}
-              onClick={onToggleZenMode}
-              title={isZenMode ? 'Thoát Chế độ tập trung (Z)' : 'Chế độ tập trung (Z)'}
-              aria-label="Chế độ tập trung"
+              className="ws-rail-btn"
+              onClick={toggleLanguage}
+              title={language === 'vi' ? 'Switch to English' : 'Chuyển sang Tiếng Việt'}
+              aria-label="Language Toggle"
+              style={{ fontSize: '10.5px', fontWeight: 800, fontFamily: 'var(--font-mono)' }}
             >
-              {isZenMode ? <Minimize2 size={18} strokeWidth={1.8} /> : <Maximize2 size={18} strokeWidth={1.8} />}
+              {language.toUpperCase()}
             </button>
             <div className="ws-rail-tooltip" role="tooltip">
-              <span className="ws-tooltip-text">{isZenMode ? 'Thoát Chế độ tập trung' : 'Chế độ tập trung (Zen)'}</span>
-              <kbd className="ws-tooltip-kbd">Z</kbd>
+              <span className="ws-tooltip-text">
+                {language === 'vi' ? 'Đổi sang English' : 'Switch to Tiếng Việt'}
+              </span>
             </div>
           </div>
+
+          {/* Quick Command Palette Launcher */}
+          {onOpenCommandPalette && (
+            <div className="ws-rail-item-wrapper">
+              <button
+                type="button"
+                className="ws-rail-btn"
+                onClick={onOpenCommandPalette}
+                title={t('nav.command_palette')}
+                aria-label="Command Palette"
+              >
+                <Command size={18} strokeWidth={1.8} />
+              </button>
+              <div className="ws-rail-tooltip" role="tooltip">
+                <span className="ws-tooltip-text">{t('nav.command_palette')}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Zen Mode Toggle */}
+          {onToggleZenMode && (
+            <div className="ws-rail-item-wrapper">
+              <button
+                type="button"
+                className={`ws-rail-btn ${isZenMode ? 'active' : ''}`}
+                onClick={onToggleZenMode}
+                title={isZenMode ? 'Thoát Zen Mode (Z)' : 'Bật Zen Mode tập trung (Z)'}
+                aria-label="Zen Mode"
+              >
+                {isZenMode ? <Minimize2 size={18} strokeWidth={1.8} /> : <Maximize2 size={18} strokeWidth={1.8} />}
+              </button>
+              <div className="ws-rail-tooltip" role="tooltip">
+                <span className="ws-tooltip-text">
+                  {isZenMode ? 'Thoát Zen Mode' : 'Chế độ Tập Trung (Zen)'}
+                </span>
+              </div>
+            </div>
+          )}
 
           {/* Dark / Light Theme Toggle */}
           {onToggleTheme && (
@@ -171,7 +210,7 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
               </button>
               <div className="ws-rail-tooltip" role="tooltip">
                 <span className="ws-tooltip-text">
-                  {theme === 'dark' ? 'Chuyển sang Giao diện Sáng' : 'Chuyển sang Giao diện Tối'}
+                  {theme === 'dark' ? 'Giao diện Sáng' : 'Giao diện Tối'}
                 </span>
               </div>
             </div>
@@ -190,7 +229,7 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
                 <Shield size={18} strokeWidth={1.8} />
               </button>
               <div className="ws-rail-tooltip" role="tooltip">
-                <span className="ws-tooltip-text">Trạng thái Hệ thống & Máy chủ</span>
+                <span className="ws-tooltip-text">Hệ Thống</span>
               </div>
             </div>
           )}
@@ -201,13 +240,13 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
               type="button"
               className={`ws-rail-btn ${currentPath.startsWith('/settings') ? 'active' : ''}`}
               onClick={() => handleNavClick('/settings')}
-              title="Cài đặt tài khoản"
-              aria-label="Cài đặt"
+              title={t('nav.settings')}
+              aria-label="Settings"
             >
               <Settings size={18} strokeWidth={1.8} />
             </button>
             <div className="ws-rail-tooltip" role="tooltip">
-              <span className="ws-tooltip-text">Cài đặt Tài khoản</span>
+              <span className="ws-tooltip-text">{t('nav.settings')}</span>
             </div>
           </div>
 
@@ -217,13 +256,13 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
           <div className="ws-rail-item-wrapper">
             <div
               className="ws-rail-user-avatar"
-              title={currentUser?.fullName || 'Sinh viên'}
+              title={currentUser?.fullName || (isTeacher ? t('classes.role_teacher') : t('classes.role_student'))}
             >
               {getUserInitial()}
             </div>
             <div className="ws-rail-tooltip user-tooltip" role="tooltip">
               <div className="ws-tooltip-user-meta">
-                <div className="ws-tooltip-user-name">{currentUser?.fullName || 'Sinh viên SNOTE'}</div>
+                <div className="ws-tooltip-user-name">{currentUser?.fullName || 'SNOTE User'}</div>
                 <div className="ws-tooltip-user-email">{currentUser?.email || ''}</div>
                 {isAdmin && (
                   <span style={{ fontSize: '9.5px', color: 'var(--ws-accent-blue)', marginTop: '2px', fontWeight: 600 }}>
@@ -236,10 +275,10 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
                   type="button"
                   className="ws-tooltip-logout-btn"
                   onClick={onLogout}
-                  title="Đăng xuất khỏi tài khoản"
+                  title={t('auth.logout')}
                 >
                   <LogOut size={13} strokeWidth={1.8} />
-                  <span>Đăng xuất</span>
+                  <span>{t('auth.logout')}</span>
                 </button>
               )}
             </div>

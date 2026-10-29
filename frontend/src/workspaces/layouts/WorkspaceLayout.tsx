@@ -12,6 +12,7 @@ import { WorkspaceArchivedBanner } from './WorkspaceStates';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { useAppFilter } from '../../contexts/AppFilterContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 import { api } from '../../services/api';
 import {
   Menu,
@@ -24,7 +25,8 @@ import {
   Sun,
   FileText,
   CheckSquare,
-  ChevronDown
+  ChevronDown,
+  Globe
 } from 'lucide-react';
 
 interface WorkspaceLayoutProps {
@@ -91,6 +93,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
   const { user: authUser, logout: authLogout, isAdmin } = useAuth();
   const { showToast } = useToast();
   const { subjects, setSelectedSubjectId } = useAppFilter();
+  const { t, language, toggleLanguage } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -382,6 +385,26 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
             </button>
 
             <WorkspaceTimer />
+
+            {/* Language Toggle (VI / EN) */}
+            <button
+              type="button"
+              className="ws-tool-btn ws-lang-toggle-btn"
+              onClick={toggleLanguage}
+              title={language === 'vi' ? 'Chuyển sang Tiếng Anh (English)' : 'Switch to Vietnamese (Tiếng Việt)'}
+              style={{
+                fontSize: '11px',
+                fontWeight: 700,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                padding: '0 8px',
+                fontFamily: 'var(--font-mono)'
+              }}
+            >
+              <Globe size={13} />
+              <span>{language.toUpperCase()}</span>
+            </button>
 
             <button
               type="button"

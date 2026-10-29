@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import './TasksGanttView.css';
 import { TaskStatus, TaskPriority } from '@snote/shared';
+import { useLanguage } from '../../../contexts/LanguageContext';
 import {
   TrendingUp,
   ChevronLeft,
@@ -23,6 +24,7 @@ export const TasksGanttView: React.FC<TasksGanttViewProps> = ({
   onSelectTask,
   onToggleStatus
 }) => {
+  const { t, language } = useLanguage();
   const [ganttWeekOffset, setGanttWeekOffset] = useState<number>(0);
 
   // 1. Calculate 7 weeks (49 days) base window
@@ -47,7 +49,7 @@ export const TasksGanttView: React.FC<TasksGanttViewProps> = ({
         weeksArr.push({
           number: weekNum,
           start: new Date(d.getTime()),
-          label: `Tuần ${weekNum}`
+          label: `${t('gantt.week_prefix')} ${weekNum}`
         });
       }
       tempDate.setDate(tempDate.getDate() + 1);
@@ -63,9 +65,13 @@ export const TasksGanttView: React.FC<TasksGanttViewProps> = ({
       todayStr: today,
       totalDays: totalDaysCount
     };
-  }, [ganttWeekOffset]);
+  }, [ganttWeekOffset, t]);
 
-  const dayNames = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+  const dayNames = useMemo(() => {
+    return language === 'vi'
+      ? ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7']
+      : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  }, [language]);
 
   const formatDateShort = (d: Date | string) => {
     const date = typeof d === 'string' ? new Date(d) : d;
@@ -82,10 +88,10 @@ export const TasksGanttView: React.FC<TasksGanttViewProps> = ({
 
   const getPriorityLabel = (p: string) => {
     const up = (p || '').toUpperCase();
-    if (up === 'URGENT') return 'Khẩn cấp';
-    if (up === 'HIGH') return 'Cao';
-    if (up === 'LOW') return 'Thấp';
-    return 'Trung bình';
+    if (up === 'URGENT') return t('tasks.priority_urgent');
+    if (up === 'HIGH') return t('tasks.priority_high');
+    if (up === 'LOW') return t('tasks.priority_low');
+    return t('tasks.priority_medium');
   };
 
   const getPriorityClass = (p: string) => {
@@ -98,7 +104,7 @@ export const TasksGanttView: React.FC<TasksGanttViewProps> = ({
 
   return (
     <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col">
-      {/* Top Gantt Toolbar (Inspired directly by NTasks) */}
+      {/* Top Gantt Toolbar (Directly from Vertex42 / Image 1) */}
       <div
         style={{
           padding: '10px 14px',
@@ -114,7 +120,7 @@ export const TasksGanttView: React.FC<TasksGanttViewProps> = ({
         <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)' }}>
             <TrendingUp size={16} style={{ color: 'var(--accent)' }} />
-            <span>Tiến Độ Đồ Án & Công Việc (Vertex42 Schedule &bull; 7 Tuần / 49 Ngày)</span>
+            <span>{t('gantt.title')}</span>
           </div>
 
           {/* Priority Legend */}
@@ -130,16 +136,16 @@ export const TasksGanttView: React.FC<TasksGanttViewProps> = ({
             }}
           >
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-              <span style={{ width: '9px', height: '9px', borderRadius: '2px', backgroundColor: '#ef4444' }} /> Khẩn cấp
+              <span style={{ width: '9px', height: '9px', borderRadius: '2px', backgroundColor: '#ef4444' }} /> {t('tasks.priority_urgent')}
             </span>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-              <span style={{ width: '9px', height: '9px', borderRadius: '2px', backgroundColor: '#f59e0b' }} /> Cao
+              <span style={{ width: '9px', height: '9px', borderRadius: '2px', backgroundColor: '#f59e0b' }} /> {t('tasks.priority_high')}
             </span>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-              <span style={{ width: '9px', height: '9px', borderRadius: '2px', backgroundColor: '#3b82f6' }} /> Trung bình
+              <span style={{ width: '9px', height: '9px', borderRadius: '2px', backgroundColor: '#3b82f6' }} /> {t('tasks.priority_medium')}
             </span>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-              <span style={{ width: '9px', height: '9px', borderRadius: '2px', backgroundColor: '#94a3b8' }} /> Thấp
+              <span style={{ width: '9px', height: '9px', borderRadius: '2px', backgroundColor: '#94a3b8' }} /> {t('tasks.priority_low')}
             </span>
           </div>
         </div>
@@ -151,28 +157,28 @@ export const TasksGanttView: React.FC<TasksGanttViewProps> = ({
             onClick={() => setGanttWeekOffset((prev) => prev - 1)}
             className="btn btn-sm btn-secondary"
             style={{ fontSize: '11.5px', padding: '4px 10px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-            title="Xem 7 tuần trước đó"
+            title={t('gantt.prev_week')}
           >
             <ChevronLeft size={14} />
-            <span>Tuần trước</span>
+            <span>{t('gantt.prev_week')}</span>
           </button>
           <button
             type="button"
             onClick={() => setGanttWeekOffset(0)}
             className="btn btn-sm btn-ghost"
             style={{ fontSize: '11.5px', padding: '4px 12px', fontWeight: 700, color: 'var(--accent)' }}
-            title="Quay lại thời điểm hiện tại"
+            title={t('gantt.today')}
           >
-            Hôm nay
+            {t('gantt.today')}
           </button>
           <button
             type="button"
             onClick={() => setGanttWeekOffset((prev) => prev + 1)}
             className="btn btn-sm btn-secondary"
             style={{ fontSize: '11.5px', padding: '4px 10px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-            title="Xem 7 tuần tiếp theo"
+            title={t('gantt.next_week')}
           >
-            <span>Tuần sau</span>
+            <span>{t('gantt.next_week')}</span>
             <ChevronRight size={14} />
           </button>
         </div>
@@ -184,14 +190,14 @@ export const TasksGanttView: React.FC<TasksGanttViewProps> = ({
           <thead>
             {/* Row 1: Left Columns + Week Headers */}
             <tr className="gantt-sticky-header" style={{ backgroundColor: 'var(--bg-secondary)', borderBottom: '1px solid var(--border-color)' }}>
-              <th rowSpan={4} style={{ width: '45px', minWidth: '45px', padding: '4px', textAlign: 'center', fontWeight: 700 }}>WBS</th>
-              <th rowSpan={4} style={{ width: '220px', minWidth: '220px', padding: '4px 10px', textAlign: 'left', fontWeight: 700 }}>CÔNG VIỆC</th>
-              <th rowSpan={4} style={{ width: '90px', minWidth: '90px', padding: '4px', textAlign: 'center', fontWeight: 700 }}>ƯU TIÊN</th>
-              <th rowSpan={4} style={{ width: '110px', minWidth: '110px', padding: '4px 8px', textAlign: 'left', fontWeight: 700 }}>PHỤ TRÁCH</th>
-              <th rowSpan={4} style={{ width: '80px', minWidth: '80px', padding: '4px', textAlign: 'center', fontWeight: 700 }}>BẮT ĐẦU</th>
-              <th rowSpan={4} style={{ width: '80px', minWidth: '80px', padding: '4px', textAlign: 'center', fontWeight: 700 }}>HẾT HẠN</th>
-              <th rowSpan={4} style={{ width: '45px', minWidth: '45px', padding: '4px', textAlign: 'center', fontWeight: 700 }}>NGÀY</th>
-              <th rowSpan={4} style={{ width: '55px', minWidth: '55px', padding: '4px', textAlign: 'center', fontWeight: 700 }}>% XONG</th>
+              <th rowSpan={4} style={{ width: '45px', minWidth: '45px', padding: '4px', textAlign: 'center', fontWeight: 700 }}>{t('gantt.wbs')}</th>
+              <th rowSpan={4} style={{ width: '220px', minWidth: '220px', padding: '4px 10px', textAlign: 'left', fontWeight: 700 }}>{t('gantt.task_name')}</th>
+              <th rowSpan={4} style={{ width: '90px', minWidth: '90px', padding: '4px', textAlign: 'center', fontWeight: 700 }}>{t('gantt.priority')}</th>
+              <th rowSpan={4} style={{ width: '110px', minWidth: '110px', padding: '4px 8px', textAlign: 'left', fontWeight: 700 }}>{t('gantt.assignee')}</th>
+              <th rowSpan={4} style={{ width: '80px', minWidth: '80px', padding: '4px', textAlign: 'center', fontWeight: 700 }}>{t('gantt.start')}</th>
+              <th rowSpan={4} style={{ width: '80px', minWidth: '80px', padding: '4px', textAlign: 'center', fontWeight: 700 }}>{t('gantt.due')}</th>
+              <th rowSpan={4} style={{ width: '45px', minWidth: '45px', padding: '4px', textAlign: 'center', fontWeight: 700 }}>{t('gantt.days')}</th>
+              <th rowSpan={4} style={{ width: '55px', minWidth: '55px', padding: '4px', textAlign: 'center', fontWeight: 700 }}>{t('gantt.pct_done')}</th>
               {weeks.map((w) => (
                 <th
                   key={w.number}
@@ -273,13 +279,13 @@ export const TasksGanttView: React.FC<TasksGanttViewProps> = ({
             {tasks.length === 0 ? (
               <tr>
                 <td colSpan={8 + totalDays} style={{ padding: '36px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '12px' }}>
-                  Chưa có công việc nào trong danh sách. Hãy tạo công việc mới để bắt đầu theo dõi tiến độ Gantt!
+                  {t('tasks.no_tasks')}
                 </td>
               </tr>
             ) : (
               tasks.map((task, idx) => {
                 const wbs = (idx + 1).toString();
-                const lead = task.project?.name || task.subject?.code || task.subject?.name || 'Cá nhân';
+                const lead = task.project?.name || task.subject?.code || task.subject?.name || t('common.personal');
                 const rawStart = task.startDate || task.startAt || task.createdAt;
                 const rawDue = task.dueDate || task.dueAt;
                 const startStr = rawStart ? formatDateShort(rawStart) : '-';
@@ -417,4 +423,3 @@ export const TasksGanttView: React.FC<TasksGanttViewProps> = ({
     </div>
   );
 };
-
