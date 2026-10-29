@@ -166,3 +166,4 @@ echo "💡 Gợi ý cấu hình SSL HTTPS miễn phí (nếu đã trỏ Domain):
 echo "   sudo apt install -y certbot python3-certbot-nginx"
 echo "   sudo certbot --nginx -d ${DOMAIN_OR_IP}"
 echo "=============================================================================="
+

@@ -1,5 +1,8 @@
 # 🌐 HƯỚNG DẪN TRIỂN KHAI PRODUCTION, CHI PHÍ VẬN HÀNH & DI CHUYỂN VPS (SNOTE)
 
+> 🚀 **Dành riêng cho Google Cloud (GCP Compute Engine + Docker Compose - Phương án 1 Khuyên dùng)**:  
+> Xem ngay tài liệu thực chiến 1-Click: 👉 **[`HUONG_DAN_DEPLOY_GCP.md`](HUONG_DAN_DEPLOY_GCP.md)**.
+
 Tài liệu này tổng hợp toàn diện:
 
 1. **Quy trình triển khai hệ thống SNOTE lên Cloud Server / VPS thực tế (Từ A đến Z)**.
