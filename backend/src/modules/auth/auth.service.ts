@@ -64,6 +64,7 @@ export class AuthService {
       email: dto.email,
       passwordHash,
       fullName: dto.fullName,
+      role: dto.role,
       timezone: dto.timezone
     });
 
@@ -106,6 +107,10 @@ export class AuthService {
       throw new AuthError('Email hoặc mật khẩu không chính xác');
     }
 
+    if (user.status === 'SUSPENDED') {
+      throw new AuthError('Tài khoản của bạn đã bị tạm khóa, vui lòng liên hệ quản trị viên');
+    }
+
     const { accessToken, refreshToken } = this.generateTokens({
       sub: user.id,
       email: user.email,
@@ -130,66 +135,52 @@ export class AuthService {
   }
 
   async loginWithGoogle(dto: GoogleAuthDto): Promise<{ authResponse: AuthResponseDto; refreshToken: string }> {
-    let email = dto.email?.toLowerCase().trim();
-    let fullName = dto.fullName?.trim() || 'Người dùng Google';
-    let avatarUrl = dto.avatarUrl || null;
-    let googleId = dto.googleId || '';
+    let email: string | undefined;
+    let fullName = 'Người dùng Google';
+    let avatarUrl: string | null = null;
+    let googleId = '';
 
     // 1. Nếu có ID Token (credential từ Google Identity Services)
     if (dto.credential) {
+      if (!env.GOOGLE_CLIENT_ID) {
+        throw new AuthError('Đăng nhập Google chưa được cấu hình trên máy chủ');
+      }
       try {
-        if (env.GOOGLE_CLIENT_ID) {
-          const ticket = await this.googleClient.verifyIdToken({
-            idToken: dto.credential,
-            audience: env.GOOGLE_CLIENT_ID
-          });
-          const payload = ticket.getPayload();
-          if (payload) {
-            googleId = payload.sub;
-            if (payload.email) email = payload.email.toLowerCase().trim();
-            if (payload.name) fullName = payload.name;
-            if (payload.picture) avatarUrl = payload.picture;
-          }
-        } else {
-          // Giải mã payload JWT nếu chưa cấu hình GOOGLE_CLIENT_ID cụ thể
-          const decoded = jwt.decode(dto.credential) as any;
-          if (decoded && decoded.sub) {
-            googleId = decoded.sub;
-            if (decoded.email) email = decoded.email.toLowerCase().trim();
-            if (decoded.name) fullName = decoded.name;
-            if (decoded.picture) avatarUrl = decoded.picture;
-          }
+        const ticket = await this.googleClient.verifyIdToken({
+          idToken: dto.credential,
+          audience: env.GOOGLE_CLIENT_ID
+        });
+        const payload = ticket.getPayload();
+        if (!payload?.sub || !payload.email || !payload.email_verified) {
+          throw new AuthError('Tài khoản Google chưa xác minh email');
         }
+        googleId = payload.sub;
+        email = payload.email.toLowerCase().trim();
+        fullName = payload.name || fullName;
+        avatarUrl = payload.picture || null;
       } catch {
-        // Fallback giải mã payload nếu token hợp lệ từ client
-        const decoded = jwt.decode(dto.credential) as any;
-        if (decoded && decoded.sub) {
-          googleId = decoded.sub;
-          if (decoded.email) email = decoded.email.toLowerCase().trim();
-          if (decoded.name) fullName = decoded.name;
-          if (decoded.picture) avatarUrl = decoded.picture;
-        } else {
-          throw new AuthError('Mã xác thực Google không hợp lệ hoặc đã hết hạn');
-        }
+        throw new AuthError('Mã xác thực Google không hợp lệ hoặc đã hết hạn');
       }
     } else if (dto.accessToken) {
       try {
         const response = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
           headers: { Authorization: `Bearer ${dto.accessToken}` }
         });
-        if (response.ok) {
-          const data: any = await response.json();
-          googleId = data.sub;
-          if (data.email) email = data.email.toLowerCase().trim();
-          if (data.name) fullName = data.name;
-          if (data.picture) avatarUrl = data.picture;
+        if (!response.ok) throw new AuthError('Mã truy cập Google không hợp lệ');
+        const data: any = await response.json();
+        if (!data.sub || !data.email || data.email_verified !== true) {
+          throw new AuthError('Tài khoản Google chưa xác minh email');
         }
+        googleId = data.sub;
+        email = data.email.toLowerCase().trim();
+        fullName = data.name || fullName;
+        avatarUrl = data.picture || null;
       } catch {
-        // ignore network error
+        throw new AuthError('Không thể xác minh tài khoản Google');
       }
     }
 
-    if (!email) {
+    if (!email || !googleId) {
       throw new ValidationError('Không thể trích xuất địa chỉ email từ tài khoản Google');
     }
 
@@ -253,30 +244,20 @@ export class AuthService {
     }
 
     const oldHash = this.hashToken(oldRefreshToken);
-    const existingToken = await this.authRepo.findRefreshToken(oldHash);
-    if (!existingToken) {
-      throw new AuthError('Refresh token đã bị thu hồi hoặc không tồn tại');
-    }
-
-    // Thu hồi token cũ (Token Rotation)
-    await this.authRepo.revokeRefreshToken(existingToken.id);
-
-    const user = await this.authRepo.findUserById(payload.sub);
-    if (!user) {
-      throw new NotFoundError('Không tìm thấy tài khoản người dùng');
-    }
-
-    const { accessToken, refreshToken: newRefreshToken } = this.generateTokens({
-      sub: user.id,
-      email: user.email,
-      role: (user.role as UserRole) || UserRole.STUDENT
-    });
-
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7);
-    await this.authRepo.saveRefreshToken({
-      userId: user.id,
-      tokenHash: this.hashToken(newRefreshToken),
+
+    const tokenPayload: TokenPayload = {
+      sub: payload.sub,
+      email: payload.email,
+      role: (payload.role as UserRole) || UserRole.STUDENT
+    };
+    const { accessToken, refreshToken: newRefreshToken } = this.generateTokens(tokenPayload);
+    const newHash = this.hashToken(newRefreshToken);
+
+    const { user } = await this.authRepo.rotateRefreshTokenAtomic(oldHash, {
+      userId: payload.sub,
+      tokenHash: newHash,
       expiresAt
     });
 

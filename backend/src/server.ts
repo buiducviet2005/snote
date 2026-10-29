@@ -22,6 +22,8 @@ import { backupRouter } from './modules/backup';
 import { aiRouter } from './modules/ai';
 import { searchRouter } from './modules/search';
 import { sharesRouter } from './modules/shares';
+import { classesRouter } from './modules/classes';
+import { workspacesRouter } from './modules/workspaces';
 
 // 1. Khởi tạo Express Application
 const app = express();
@@ -66,6 +68,8 @@ app.use('/health', healthRouter);
 
 // 8. Đăng ký Domain Routes (Modular Monolith)
 app.use('/api/auth', authRouter);
+app.use('/api/workspaces', workspacesRouter);
+app.use('/api/v1/workspaces', workspacesRouter);
 app.use('/api/semesters', semestersRouter);
 app.use('/api/subjects', subjectsRouter);
 app.use('/api/projects', projectsRouter);
@@ -76,6 +80,7 @@ app.use('/api/backup', backupRouter);
 app.use('/api/ai', aiRouter);
 app.use('/api/search', searchRouter);
 app.use('/api/shares', sharesRouter);
+app.use('/api/classes', classesRouter);
 
 // 9. Centralized Error Handling Middleware (Bắt buộc đặt cuối cùng)
 app.use(errorHandler);

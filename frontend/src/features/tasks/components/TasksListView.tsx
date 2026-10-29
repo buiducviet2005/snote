@@ -1,5 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { TaskStatus, TaskPriority } from '@snote/shared';
+import { useLanguage } from '../../../contexts/LanguageContext';
+import { extractNoteFeatures } from '../../notes/utils/smartNoteParser';
 import {
   CheckCircle2,
   Circle,
@@ -11,13 +13,11 @@ import {
   Edit3,
   Trash2,
   ListTodo,
-  ChevronDown,
-  ChevronRight,
-  Flame,
   User,
-  ArrowRight
+  CheckSquare,
+  Square,
+  Check
 } from 'lucide-react';
-import { extractNoteFeatures } from '../../notes/utils/smartNoteParser';
 
 interface TasksListViewProps {
   tasks: any[];
@@ -34,63 +34,11 @@ export const TasksListView: React.FC<TasksListViewProps> = ({
   onToggleStatus,
   onMoveStatus
 }) => {
-  const [isDoneSectionOpen, setIsDoneSectionOpen] = useState(true);
+  const { t, language } = useLanguage();
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const masterCheckboxRef = useRef<HTMLInputElement>(null);
 
-  // Group tasks into timeline categories
-  const grouped = useMemo(() => {
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-    const tomorrow = today + 24 * 60 * 60 * 1000;
-
-    const overdue: any[] = [];
-    const dueToday: any[] = [];
-    const upcoming: any[] = [];
-    const noDueDate: any[] = [];
-    const done: any[] = [];
-
-    tasks.forEach((t) => {
-      if (t.status === TaskStatus.DONE) {
-        done.push(t);
-        return;
-      }
-
-      if (!t.dueDate) {
-        noDueDate.push(t);
-        return;
-      }
-
-      const due = new Date(t.dueDate);
-      const dueDay = new Date(due.getFullYear(), due.getMonth(), due.getDate()).getTime();
-
-      if (dueDay < today) {
-        overdue.push(t);
-      } else if (dueDay === today) {
-        dueToday.push(t);
-      } else {
-        upcoming.push(t);
-      }
-    });
-
-    // Sort upcoming by dueDate asc
-    upcoming.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
-    overdue.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
-
-    return { overdue, dueToday, upcoming, noDueDate, done };
-  }, [tasks]);
-
-  const getPriorityInfo = (priority: TaskPriority) => {
-    switch (priority) {
-      case TaskPriority.URGENT:
-        return { label: 'Khẩn cấp', color: '#ef4444', bg: 'rgba(239, 68, 68, 0.15)', border: 'rgba(239, 68, 68, 0.3)' };
-      case TaskPriority.HIGH:
-        return { label: 'Cao', color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.15)', border: 'rgba(245, 158, 11, 0.3)' };
-      case TaskPriority.MEDIUM:
-        return { label: 'Trung bình', color: '#0ea5e9', bg: 'rgba(14, 165, 233, 0.15)', border: 'rgba(14, 165, 233, 0.3)' };
-      default:
-        return { label: 'Thấp', color: '#64748b', bg: 'rgba(100, 116, 139, 0.15)', border: 'rgba(100, 116, 139, 0.3)' };
-    }
-  };
-
+  // Parse checklist progress from markdown description
   const getSubtasks = (desc?: string | null) => {
     if (!desc) return null;
     const features = extractNoteFeatures(desc);
@@ -98,343 +46,389 @@ export const TasksListView: React.FC<TasksListViewProps> = ({
       return {
         done: features.checklist.done,
         total: features.checklist.total,
-        percent: Math.round((features.checklist.done / features.checklist.total) * 100)
+        label: `${features.checklist.done}/${features.checklist.total}`,
+        percent: Math.round((features.checklist.done / features.checklist.total) * 100),
+        isAllDone: features.checklist.done === features.checklist.total
       };
     }
     return null;
   };
 
-  const renderTaskRow = (task: any, isOverdue: boolean = false) => {
-    const isDone = task.status === TaskStatus.DONE;
-    const priority = getPriorityInfo(task.priority);
-    const subtasks = getSubtasks(task.description);
-    const assigneeName = task.assignees?.[0]?.name || task.assignee?.fullName || task.user?.fullName;
-    const assigneeInitial = assigneeName ? assigneeName.slice(0, 2).toUpperCase() : null;
-
-    let relativeDateStr = '';
-    if (task.dueDate) {
-      const due = new Date(task.dueDate);
-      const now = new Date();
-      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      const dueDay = new Date(due.getFullYear(), due.getMonth(), due.getDate());
-      const diffDays = Math.round((dueDay.getTime() - today.getTime()) / (24 * 60 * 60 * 1000));
-
-      if (diffDays < 0) relativeDateStr = `Trễ ${Math.abs(diffDays)} ngày`;
-      else if (diffDays === 0) relativeDateStr = 'Hôm nay';
-      else if (diffDays === 1) relativeDateStr = 'Ngày mai';
-      else relativeDateStr = `Còn ${diffDays} ngày (${due.getDate()}/${due.getMonth() + 1})`;
+  const getPriorityStyle = (priority: string) => {
+    const p = (priority || '').toUpperCase();
+    if (p === 'URGENT') {
+      return { label: t('tasks.priority_urgent'), color: '#ef4444', bg: 'rgba(239, 68, 68, 0.08)', border: '#ef4444' };
     }
+    if (p === 'HIGH') {
+      return { label: t('tasks.priority_high'), color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.08)', border: '#f59e0b' };
+    }
+    if (p === 'MEDIUM') {
+      return { label: t('tasks.priority_medium'), color: '#3b82f6', bg: 'rgba(59, 130, 246, 0.08)', border: '#3b82f6' };
+    }
+    return { label: t('tasks.priority_low'), color: '#94a3b8', bg: 'rgba(148, 163, 184, 0.08)', border: '#94a3b8' };
+  };
 
-    return (
+  const getStatusBadge = (status: string) => {
+    const s = (status || '').toUpperCase();
+    if (s === 'DONE') {
+      return { label: t('tasks.status_done'), color: '#10b981', bg: 'rgba(16, 185, 129, 0.12)' };
+    }
+    if (s === 'IN_PROGRESS') {
+      return { label: t('tasks.status_in_progress'), color: '#0ea5e9', bg: 'rgba(14, 165, 233, 0.12)' };
+    }
+    if (s === 'PENDING_REVIEW' || s === 'PENDING') {
+      return { label: t('tasks.status_pending'), color: '#8b5cf6', bg: 'rgba(139, 92, 246, 0.12)' };
+    }
+    return { label: t('tasks.status_todo'), color: 'var(--text-secondary)', bg: 'var(--bg-secondary)' };
+  };
+
+  // Master selection helpers
+  const isAllSelected = tasks.length > 0 && selectedIds.size === tasks.length;
+  const isIndeterminate = selectedIds.size > 0 && selectedIds.size < tasks.length;
+
+  useEffect(() => {
+    if (masterCheckboxRef.current) {
+      masterCheckboxRef.current.indeterminate = isIndeterminate;
+    }
+  }, [isIndeterminate]);
+
+  const handleToggleSelectAll = () => {
+    if (isAllSelected) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(tasks.map((t) => t.id)));
+    }
+  };
+
+  const handleToggleSingle = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleBatchMarkDone = async () => {
+    for (const id of Array.from(selectedIds)) {
+      const t = tasks.find((item) => item.id === id);
+      if (t && t.status !== TaskStatus.DONE) {
+        await onToggleStatus(id, t.status);
+      }
+    }
+    setSelectedIds(new Set());
+  };
+
+  const handleBatchDelete = async () => {
+    if (!window.confirm(language === 'vi' ? `Bạn có chắc muốn xóa ${selectedIds.size} công việc đã chọn?` : `Delete ${selectedIds.size} selected tasks?`)) return;
+    for (const id of Array.from(selectedIds)) {
+      const t = tasks.find((item) => item.id === id);
+      if (t) {
+        await onDelete(id, t.title);
+      }
+    }
+    setSelectedIds(new Set());
+  };
+
+  // Check if overdue
+  const now = new Date();
+  const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+      {/* 1. Master Checkbox Bar (Image 3) */}
       <div
-        key={task.id}
         className="snote-card"
         style={{
-          padding: '12px 16px',
+          padding: '8px 14px',
+          borderRadius: '8px',
+          backgroundColor: 'var(--bg-surface)',
+          border: '1px solid var(--border-color)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          gap: '12px',
-          backgroundColor: isDone ? 'var(--bg-secondary)' : isOverdue ? 'rgba(239, 68, 68, 0.04)' : 'var(--bg-primary)',
-          border: isOverdue && !isDone
-            ? '1px solid rgba(239, 68, 68, 0.4)'
-            : '1px solid var(--border-color)',
-          borderRadius: 'var(--radius-lg)',
-          opacity: isDone ? 0.75 : 1,
-          transition: 'all var(--transition-fast)'
+          gap: '12px'
         }}
       >
-        {/* Left: Checkbox + Title + Meta */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0 }}>
-          {/* Checkbox */}
-          <button
-            onClick={() => onToggleStatus(task.id, task.status)}
-            className="btn btn-ghost btn-icon"
+        <label
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '10px',
+            cursor: 'pointer',
+            fontSize: '12.5px',
+            fontWeight: 600,
+            color: 'var(--text-primary)',
+            userSelect: 'none'
+          }}
+        >
+          <input
+            type="checkbox"
+            ref={masterCheckboxRef}
+            checked={isAllSelected}
+            onChange={handleToggleSelectAll}
             style={{
-              padding: '2px',
-              color: isDone ? 'var(--color-success)' : 'var(--text-muted)',
+              width: '16px',
+              height: '16px',
               cursor: 'pointer',
-              flexShrink: 0
+              accentColor: 'var(--accent)'
             }}
-            title={isDone ? 'Đánh dấu chưa hoàn thành' : 'Đánh dấu hoàn thành'}
-          >
-            {isDone ? (
-              <CheckCircle2 size={20} style={{ fill: 'rgba(16, 185, 129, 0.2)' }} />
-            ) : (
-              <Circle size={20} />
-            )}
-          </button>
-
-          {/* Priority Dot */}
-          <span
-            style={{
-              width: '8px',
-              height: '8px',
-              borderRadius: '50%',
-              backgroundColor: priority.color,
-              flexShrink: 0
-            }}
-            title={`Mức độ ưu tiên: ${priority.label}`}
           />
+          <span>
+            {t('tasks.select_all_with_count', { count: tasks.length })}
+          </span>
+        </label>
 
-          {/* Title & Badges */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1, minWidth: 0 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-              <span
-                onClick={() => onEdit(task)}
-                style={{
-                  fontSize: '13.5px',
-                  fontWeight: 600,
-                  color: isDone ? 'var(--text-muted)' : 'var(--text-primary)',
-                  textDecoration: isDone ? 'line-through' : 'none',
-                  cursor: 'pointer',
-                  wordBreak: 'break-word'
-                }}
-                title={task.title}
-              >
-                {task.title}
-              </span>
+        {/* Floating Batch Actions */}
+        {selectedIds.size > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', animation: 'wsFadeIn 0.15s ease' }}>
+            <span style={{ fontSize: '11.5px', color: 'var(--text-secondary)', fontWeight: 600 }}>
+              {language === 'vi' ? `Đã chọn: ${selectedIds.size}` : `Selected: ${selectedIds.size}`}
+            </span>
+            <button
+              type="button"
+              onClick={handleBatchMarkDone}
+              className="btn btn-sm btn-primary"
+              style={{ fontSize: '11px', padding: '3px 10px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+            >
+              <Check size={13} />
+              <span>{t('tasks.batch_done', { count: selectedIds.size })}</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleBatchDelete}
+              className="btn btn-sm btn-danger"
+              style={{ fontSize: '11px', padding: '3px 10px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+            >
+              <Trash2 size={13} />
+              <span>{t('tasks.batch_delete', { count: selectedIds.size })}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedIds(new Set())}
+              className="btn btn-sm btn-ghost"
+              style={{ fontSize: '11px', padding: '3px 8px' }}
+            >
+              {t('common.cancel')}
+            </button>
+          </div>
+        )}
+      </div>
 
-              {/* Subtasks Progress */}
-              {subtasks && (
+      {/* 2. Tasks List Rows (Image 3) */}
+      {tasks.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '48px 0', color: 'var(--text-muted)', fontSize: '13px' }}>
+          {t('tasks.no_tasks')}
+        </div>
+      ) : (
+        tasks.map((task) => {
+          const isSelected = selectedIds.has(task.id);
+          const isDone = task.status === TaskStatus.DONE;
+          const priorityStyle = getPriorityStyle(task.priority);
+          const statusBadge = getStatusBadge(task.status);
+          const subtasks = getSubtasks(task.description);
+          const assigneeName = task.assignees?.[0]?.name || task.assignee?.fullName || task.user?.fullName || 'naver';
+          const projectName = task.project?.name || (task.subject ? `${task.subject.code ? `[${task.subject.code}] ` : ''}${task.subject.name}` : t('common.team_project'));
+
+          // Overdue calculation
+          let isOverdue = false;
+          let dueStr = '';
+          if (task.dueDate) {
+            const due = new Date(task.dueDate);
+            const dueDay = new Date(due.getFullYear(), due.getMonth(), due.getDate()).getTime();
+            if (dueDay < todayMidnight && !isDone) {
+              isOverdue = true;
+            }
+            const hours = due.getHours() < 10 ? `0${due.getHours()}` : due.getHours();
+            const mins = due.getMinutes() < 10 ? `0${due.getMinutes()}` : due.getMinutes();
+            const day = due.getDate() < 10 ? `0${due.getDate()}` : due.getDate();
+            const month = due.getMonth() + 1 < 10 ? `0${due.getMonth() + 1}` : due.getMonth() + 1;
+            
+            dueStr = isOverdue
+              ? `${t('tasks.overdue')}: ${hours}:${mins} ${day}/${month}`
+              : `${t('tasks.due_at')}: ${hours}:${mins} ${day}/${month}`;
+          }
+
+          // Percent
+          const pct = isDone ? 100 : task.progressPercent !== undefined ? task.progressPercent : (subtasks?.percent || 0);
+
+          return (
+            <div
+              key={task.id}
+              onClick={() => onEdit(task)}
+              className="snote-card"
+              style={{
+                position: 'relative',
+                padding: '10px 14px',
+                borderRadius: '8px',
+                backgroundColor: isSelected
+                  ? 'rgba(59, 130, 246, 0.05)'
+                  : isDone
+                  ? 'var(--bg-secondary)'
+                  : 'var(--bg-primary)',
+                border: isSelected
+                  ? '1px solid var(--accent)'
+                  : '1px solid var(--border-color)',
+                borderLeft: `3.5px solid ${priorityStyle.border}`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '12px',
+                cursor: 'pointer',
+                transition: 'all 0.12s ease',
+                opacity: isDone ? 0.75 : 1
+              }}
+            >
+              {/* Left Segment: Checkbox + Title + Badges + Meta */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: 0 }}>
+                {/* Selection Checkbox */}
+                <input
+                  type="checkbox"
+                  checked={isSelected}
+                  onClick={(e) => e.stopPropagation()}
+                  onChange={(e) => handleToggleSingle(task.id, e as any)}
+                  style={{
+                    width: '16px',
+                    height: '16px',
+                    cursor: 'pointer',
+                    accentColor: 'var(--accent)',
+                    flexShrink: 0
+                  }}
+                />
+
+                {/* Details Column */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', flex: 1, minWidth: 0 }}>
+                  {/* Row 1: Title + Pills */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '7px', flexWrap: 'wrap' }}>
+                    <span
+                      style={{
+                        fontSize: '13px',
+                        fontWeight: 600,
+                        color: isDone ? 'var(--text-muted)' : 'var(--text-primary)',
+                        textDecoration: isDone ? 'line-through' : 'none'
+                      }}
+                    >
+                      {task.title}
+                    </span>
+
+                    {/* Overdue Badge */}
+                    {isOverdue && (
+                      <span
+                        style={{
+                          fontSize: '10px',
+                          fontWeight: 700,
+                          padding: '1px 6px',
+                          borderRadius: '4px',
+                          backgroundColor: 'rgba(239, 68, 68, 0.14)',
+                          color: '#ef4444',
+                          border: '1px solid rgba(239, 68, 68, 0.25)',
+                          flexShrink: 0
+                        }}
+                      >
+                        {t('tasks.overdue')}
+                      </span>
+                    )}
+
+                    {/* Assigned Badge */}
+                    <span
+                      style={{
+                        fontSize: '10px',
+                        fontWeight: 600,
+                        padding: '1px 6px',
+                        borderRadius: '4px',
+                        backgroundColor: 'rgba(59, 130, 246, 0.12)',
+                        color: '#3b82f6',
+                        flexShrink: 0
+                      }}
+                    >
+                      {t('tasks.assigned')}
+                    </span>
+
+                    {/* Checklist Fraction Badge (e.g. 3/9) */}
+                    {subtasks && (
+                      <span
+                        style={{
+                          fontSize: '10px',
+                          fontFamily: 'var(--font-mono)',
+                          fontWeight: 700,
+                          padding: '1px 6px',
+                          borderRadius: '4px',
+                          backgroundColor: subtasks.isAllDone ? 'rgba(16, 185, 129, 0.12)' : 'var(--bg-secondary)',
+                          color: subtasks.isAllDone ? '#10b981' : 'var(--text-secondary)',
+                          border: '1px solid var(--border-color)',
+                          flexShrink: 0
+                        }}
+                        title={`Checklist: ${subtasks.done}/${subtasks.total} (${subtasks.percent}%)`}
+                      >
+                        {subtasks.label}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Row 2: Subline Meta (Project, %, Due Date, Assignee) */}
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      flexWrap: 'wrap',
+                      fontSize: '11px',
+                      color: 'var(--text-muted)'
+                    }}
+                  >
+                    <span>{projectName}</span>
+                    <span>•</span>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 600 }}>{pct}%</span>
+                    {dueStr && (
+                      <>
+                        <span>•</span>
+                        <span style={{ color: isOverdue ? '#ef4444' : 'inherit', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                          <Clock size={11} />
+                          <span>{dueStr}</span>
+                        </span>
+                      </>
+                    )}
+                    <span>•</span>
+                    <span>{language === 'vi' ? `Làm: ${assigneeName}` : `By: ${assigneeName}`}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Segment: Priority & Status Tags */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+                {/* Priority Label Tag */}
                 <span
                   style={{
                     fontSize: '10.5px',
                     fontWeight: 700,
-                    color: 'var(--accent-primary)',
-                    backgroundColor: 'rgba(56, 189, 248, 0.12)',
-                    padding: '1.5px 6px',
+                    padding: '2px 8px',
                     borderRadius: '4px',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '3px'
+                    backgroundColor: priorityStyle.bg,
+                    color: priorityStyle.color
                   }}
                 >
-                  <ListTodo size={11} />
-                  {subtasks.done}/{subtasks.total} ({subtasks.percent}%)
+                  {priorityStyle.label}
                 </span>
-              )}
-            </div>
 
-            {/* Subject / Project Tags */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', fontSize: '11px' }}>
-              {task.subject && (
+                {/* Status Label Tag */}
                 <span
                   style={{
-                    padding: '1px 6px',
-                    borderRadius: '4px',
-                    backgroundColor: 'rgba(56, 189, 248, 0.12)',
-                    color: task.subject.color || 'var(--color-info)',
+                    fontSize: '10.5px',
                     fontWeight: 600,
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '3px'
+                    padding: '2px 8px',
+                    borderRadius: '4px',
+                    backgroundColor: statusBadge.bg,
+                    color: statusBadge.color,
+                    border: '1px solid var(--border-color)'
                   }}
                 >
-                  <BookOpen size={10} />
-                  {task.subject.code ? `[${task.subject.code}] ` : ''}
-                  {task.subject.name}
+                  {statusBadge.label}
                 </span>
-              )}
-
-              {task.project && (
-                <span
-                  style={{
-                    padding: '1px 6px',
-                    borderRadius: '4px',
-                    backgroundColor: 'rgba(168, 85, 247, 0.12)',
-                    color: '#a855f7',
-                    fontWeight: 600,
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '3px'
-                  }}
-                >
-                  <FolderKanban size={10} />
-                  {task.project.name}
-                </span>
-              )}
+              </div>
             </div>
-          </div>
-        </div>
-
-        {/* Right: Assignee + Due Date + Actions */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexShrink: 0 }}>
-          {/* Assignee Avatar */}
-          {assigneeName && (
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '5px',
-                fontSize: '11px',
-                color: 'var(--text-secondary)'
-              }}
-              title={`Phụ trách: ${assigneeName}`}
-            >
-              <span
-                style={{
-                  width: '22px',
-                  height: '22px',
-                  borderRadius: '50%',
-                  backgroundColor: 'var(--accent-primary)',
-                  color: '#ffffff',
-                  fontSize: '9.5px',
-                  fontWeight: 700,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}
-              >
-                {assigneeInitial}
-              </span>
-              <span style={{ maxWidth: '80px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {assigneeName}
-              </span>
-            </div>
-          )}
-
-          {/* Due date badge */}
-          {task.dueDate && (
-            <div
-              style={{
-                fontSize: '11.5px',
-                fontWeight: isOverdue ? 700 : 500,
-                color: isOverdue ? 'var(--color-danger)' : 'var(--text-muted)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px',
-                minWidth: '90px',
-                justifyContent: 'flex-end'
-              }}
-            >
-              <Calendar size={13} />
-              <span>{relativeDateStr}</span>
-            </div>
-          )}
-
-          {/* Quick status transition button */}
-          {onMoveStatus && !isDone && (
-            <button
-              onClick={() => {
-                const nextStatus = task.status === TaskStatus.TODO ? TaskStatus.IN_PROGRESS : TaskStatus.DONE;
-                onMoveStatus(task.id, nextStatus);
-              }}
-              className="btn btn-ghost btn-sm"
-              style={{ fontSize: '11px', padding: '3px 8px', gap: '4px', color: 'var(--accent-primary)' }}
-              title={task.status === TaskStatus.TODO ? 'Chuyển sang Đang thực hiện' : 'Hoàn tất công việc'}
-            >
-              <span>{task.status === TaskStatus.TODO ? 'Làm ngay' : 'Hoàn thành'}</span>
-              <ArrowRight size={12} />
-            </button>
-          )}
-
-          {/* Edit & Delete */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
-            <button
-              onClick={() => onEdit(task)}
-              className="btn btn-ghost btn-icon btn-sm"
-              title="Chỉnh sửa chi tiết"
-            >
-              <Edit3 size={14} />
-            </button>
-            <button
-              onClick={() => onDelete(task.id, task.title)}
-              className="btn btn-ghost btn-icon btn-sm"
-              style={{ color: 'var(--color-danger)' }}
-              title="Xóa công việc"
-            >
-              <Trash2 size={14} />
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  const renderSection = (title: string, icon: any, items: any[], color: string, isOverdue: boolean = false) => {
-    if (items.length === 0) return null;
-    const Icon = icon;
-
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 0' }}>
-          <span style={{ color, display: 'flex' }}>
-            <Icon size={16} />
-          </span>
-          <span style={{ fontSize: '13.5px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.01em' }}>
-            {title}
-          </span>
-          <span
-            style={{
-              fontSize: '11px',
-              fontWeight: 700,
-              padding: '1px 6px',
-              borderRadius: '999px',
-              backgroundColor: `${color}20`,
-              color
-            }}
-          >
-            {items.length}
-          </span>
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          {items.map((t) => renderTaskRow(t, isOverdue))}
-        </div>
-      </div>
-    );
-  };
-
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-      {/* 1. Overdue Section */}
-      {renderSection('Quá hạn cần giải quyết gấp', AlertCircle, grouped.overdue, '#ef4444', true)}
-
-      {/* 2. Due Today Section */}
-      {renderSection('Hạn hôm nay', Clock, grouped.dueToday, '#f59e0b')}
-
-      {/* 3. Upcoming Section */}
-      {renderSection('Sắp tới & Tuần này', Calendar, grouped.upcoming, '#0ea5e9')}
-
-      {/* 4. No Due Date Section */}
-      {renderSection('Không giới hạn thời gian', ListTodo, grouped.noDueDate, '#8b5cf6')}
-
-      {/* 5. Completed Section (Collapsible) */}
-      {grouped.done.length > 0 && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '10px' }}>
-          <button
-            onClick={() => setIsDoneSectionOpen(!isDoneSectionOpen)}
-            className="btn btn-ghost"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'flex-start',
-              gap: '8px',
-              padding: '6px 0',
-              color: 'var(--text-secondary)',
-              fontSize: '13px',
-              fontWeight: 700
-            }}
-          >
-            {isDoneSectionOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-            <span style={{ color: 'var(--color-success)' }}>
-              Đã hoàn thành ({grouped.done.length})
-            </span>
-          </button>
-
-          {isDoneSectionOpen && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {grouped.done.map((t) => renderTaskRow(t))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {tasks.length === 0 && (
-        <div style={{ padding: '60px 20px', textAlign: 'center', color: 'var(--text-muted)' }}>
-          Chưa có công việc nào trong danh sách. Hãy thêm công việc ở thanh trên!
-        </div>
+          );
+        })
       )}
     </div>
   );

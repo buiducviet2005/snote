@@ -105,6 +105,7 @@ export const ProjectWorkspaceModal: React.FC<ProjectWorkspaceModalProps> = ({
   const isOwner = currentMember?.role === ProjectMemberRole.OWNER || project.userId === currentUser?.id;
   const isAdmin = currentMember?.role === ProjectMemberRole.ADMIN;
   const canManageProject = isOwner || isAdmin;
+  const isClassProject = Boolean(project.classId);
 
   // Toggle Task Status directly with Authorization Check
   const handleToggleTaskStatus = async (task: any) => {
@@ -648,7 +649,7 @@ export const ProjectWorkspaceModal: React.FC<ProjectWorkspaceModalProps> = ({
         {activeTab === 'MEMBERS' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
             {/* Invite Form (Owner & Admin) */}
-            {canManageProject && (
+            {canManageProject && !isClassProject && (
               <form onSubmit={handleAddMember} style={{ display: 'flex', gap: '10px', backgroundColor: 'var(--bg-primary)', padding: '12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
                 <input
                   type="text"
@@ -681,12 +682,12 @@ export const ProjectWorkspaceModal: React.FC<ProjectWorkspaceModalProps> = ({
                 const isMemberAdmin = m.role === ProjectMemberRole.ADMIN;
                 const isMe = m.userId === currentUser?.id;
 
-                const canKickThisMember =
+                const canKickThisMember = !isClassProject &&
                   !isMe &&
                   ((isOwner && !isMemberOwner) ||
                    (isAdmin && !isMemberOwner && !isMemberAdmin));
 
-                const canChangeThisRole =
+                const canChangeThisRole = !isClassProject &&
                   !isMe &&
                   ((isOwner && !isMemberOwner) ||
                    (isAdmin && !isMemberOwner && !isMemberAdmin));
@@ -779,7 +780,7 @@ export const ProjectWorkspaceModal: React.FC<ProjectWorkspaceModalProps> = ({
                       )}
 
                       {/* Leave Project for Self */}
-                      {isMe && !isMemberOwner && (
+                      {isMe && !isMemberOwner && !isClassProject && (
                         <button
                           type="button"
                           onClick={() => handleRemoveMember(m.userId, 'chính bạn')}
@@ -801,65 +802,69 @@ export const ProjectWorkspaceModal: React.FC<ProjectWorkspaceModalProps> = ({
 
         {/* TAB 4: DISCUSSION */}
         {activeTab === 'DISCUSSION' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div
               style={{
-                minHeight: '280px',
-                padding: '14px',
+                minHeight: '240px',
+                padding: '24px',
                 backgroundColor: 'var(--bg-primary)',
                 borderRadius: 'var(--radius-md)',
                 border: '1px solid var(--border-color)',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '10px'
+                alignItems: 'center',
+                justifyContent: 'center',
+                textAlign: 'center',
+                gap: '12px'
               }}
             >
-              {discussions.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)', fontSize: '13px' }}>
-                  <MessageSquare size={24} style={{ opacity: 0.4, marginBottom: '6px' }} />
-                  <p style={{ margin: 0 }}>Bảng thảo luận nội bộ dự án. Gửi tin nhắn đầu tiên để cùng nhóm trao đổi!</p>
-                </div>
-              ) : (
-                discussions.map((msg) => (
-                  <div key={msg.id} style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11.5px', color: 'var(--text-muted)' }}>
-                      <b style={{ color: 'var(--accent-primary)' }}>{msg.senderName}</b>
-                      <span>•</span>
-                      <span>{msg.time}</span>
-                    </div>
-                    <div
-                      style={{
-                        padding: '8px 12px',
-                        backgroundColor: 'var(--bg-secondary)',
-                        borderRadius: 'var(--radius-md)',
-                        fontSize: '13px',
-                        color: 'var(--text-primary)',
-                        border: '1px solid var(--border-color)',
-                        width: 'fit-content',
-                        maxWidth: '85%'
-                      }}
-                    >
-                      {msg.content}
-                    </div>
-                  </div>
-                ))
-              )}
+              <div
+                style={{
+                  width: '44px',
+                  height: '44px',
+                  borderRadius: '50%',
+                  background: 'var(--bg-secondary)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'var(--accent-primary)'
+                }}
+              >
+                <MessageSquare size={22} />
+              </div>
+              <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 700 }}>
+                Kênh Thảo Luận Dự Án Đang Được Đồng Bộ
+              </h4>
+              <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-secondary)', maxWidth: '440px', lineHeight: 1.5 }}>
+                Tính năng thảo luận nhóm và trao đổi trực tuyến theo thời gian thực (WebSocket) đang trong lộ trình tích hợp backend. Dữ liệu tin nhắn chưa được lưu trữ vĩnh viễn trên bản pilot.
+              </p>
+              <div
+                style={{
+                  fontSize: '11.5px',
+                  color: 'var(--text-muted)',
+                  background: 'var(--bg-secondary)',
+                  padding: '6px 12px',
+                  borderRadius: 'var(--radius-sm)',
+                  border: '1px solid var(--border-color)'
+                }}
+              >
+                📌 Đề xuất: Hãy quản lý công việc và phân công qua tab <b>Công việc</b> và <b>Tài liệu ghi chú</b>.
+              </div>
             </div>
 
-            <form onSubmit={handleSendDiscussion} style={{ display: 'flex', gap: '8px' }}>
+            <div style={{ display: 'flex', gap: '8px', opacity: 0.6 }}>
               <input
                 type="text"
-                placeholder="Nhập tin nhắn trao đổi với nhóm dự án..."
-                value={msgInput}
-                onChange={(e) => setMsgInput(e.target.value)}
+                disabled
+                placeholder="Khung thảo luận đang tạm khóa chờ backend đồng bộ..."
                 className="snote-input"
-                style={{ fontSize: '13px' }}
+                style={{ fontSize: '13px', cursor: 'not-allowed' }}
               />
-              <button type="submit" className="btn btn-primary" style={{ padding: '0 16px', fontWeight: 600 }}>
+              <button type="button" disabled className="btn btn-primary" style={{ padding: '0 16px', fontWeight: 600, cursor: 'not-allowed' }}>
                 <Send size={15} />
                 <span>Gửi</span>
               </button>
-            </form>
+            </div>
           </div>
         )}
 
@@ -881,6 +886,8 @@ export const ProjectWorkspaceModal: React.FC<ProjectWorkspaceModalProps> = ({
             onRefreshParent();
           }}
           noteToEdit={null}
+          defaultProjectId={projectId}
+          defaultSubjectId={project.subjectId ?? null}
         />
       )}
 
@@ -895,7 +902,7 @@ export const ProjectWorkspaceModal: React.FC<ProjectWorkspaceModalProps> = ({
           }}
           taskToEdit={null}
           defaultProjectId={projectId}
-          defaultSubjectId={project.subjectId}
+          defaultSubjectId={project.subjectId ?? null}
         />
       )}
 

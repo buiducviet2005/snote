@@ -16,7 +16,6 @@ Tài liệu này là **Sổ tay tra cứu tập trung toàn bộ câu lệnh CLI
 5. [Lệnh Kiểm thử & Nghiệm thu Endpoints (Testing & Verification)](#5-lệnh-kiểm-thử--nghiệm-thu-endpoints-testing--verification)
 6. [Lệnh Quản lý Mã nguồn Git (Version Control)](#6-lệnh-quản-lý-mã-nguồn-git-version-control)
 7. [Lệnh Dọn dẹp & Khởi tạo Lại (Clean & Reset)](#7-lệnh-dọn-dẹp--khởi-tạo-lại-clean--reset)
-8. [Lệnh & Hướng Dẫn Phân Hệ SNOTE Web Script (Google Apps Script)](#8-lệnh--hướng-dẫn-phân-hệ-snote-web-script-google-apps-script)
 
 ---
 
@@ -28,7 +27,7 @@ Thực thi tại **thư mục gốc của dự án (`SNOTE/`)**:
 | :--- | :--- | :--- |
 | **Tự động thiết lập 1-Click (Windows)** | `.\setup.bat` | Tự động tạo `.env`, cài đặt toàn bộ dependencies, khởi động Docker, migrate CSDL và nạp dữ liệu mẫu. |
 | **Tự động thiết lập 1-Click (macOS/Linux)** | `./setup.sh` | Script bash tự động hóa toàn diện từ A đến Z trên Unix. |
-| **Cài đặt toàn bộ dependencies Monorepo** | `npm run install:all` | Cài đặt `root`, `packages/shared` (kèm build), `backend` và `frontend`. |
+| **Cài đặt toàn bộ dependencies Monorepo** | `npm run install:all` | Cài đặt dependencies của root, backend và frontend. Shared contracts được resolve trực tiếp từ source. |
 | **Khởi tạo & Đồng bộ CSDL trọn gói** | `npm run db:setup` | Chạy `prisma:generate` -> `prisma:migrate` -> `prisma:seed` trong 1 lệnh. |
 | **Thiết lập toàn bộ (Dependencies + DB)** | `npm run setup` | Kết hợp `npm run install:all` và `npm run db:setup`. |
 | **Mở giao diện Web Prisma Studio** | `npm run db:studio` | Mở trực tiếp Web GUI quản lý dữ liệu CSDL tại `http://localhost:5555`. |
@@ -85,7 +84,6 @@ Thực thi tại **thư mục gốc `SNOTE/`**:
 | :--- | :--- | :--- |
 | **Build toàn bộ dự án** | `npm run build` | Thực thi build production cho cả Backend (tsc) và Frontend (Vite build). |
 | **Kiểm tra TypeScript toàn bộ** | `npm run type-check` | Chạy `tsc --noEmit` trên cả `backend/` và `frontend/` để phát hiện lỗi kiểu. |
-| **Build riêng Shared Library** | `npx tsc --project packages/shared/tsconfig.json` | Build `@snote/shared` xuất file định nghĩa `.d.ts` vào `packages/shared/dist/`. |
 | **Build riêng Backend** | `cd backend && npm run build` | Biên dịch TypeScript backend vào thư mục `backend/dist/`. |
 | **Build riêng Frontend** | `cd frontend && npm run build` | Đóng gói production frontend vào thư mục `frontend/dist/`. |
 
@@ -195,25 +193,4 @@ Thực thi tại **thư mục gốc `SNOTE/`**:
 | Thao tác | Câu lệnh thực thi | Ghi chú |
 | :--- | :--- | :--- |
 | **Cài đặt lại toàn bộ dependencies** | `npm install`<br>`cd backend && npm install`<br>`cd ../frontend && npm install`<br>`cd ..` | Cài đặt lại các gói thư viện sau khi clone project từ Git. |
-| **Xóa toàn bộ thư mục Build (`dist/`)** | `Remove-Item -Recurse -Force backend/dist, frontend/dist, packages/shared/dist` *(PowerShell)* | Xóa các file build cũ để build sạch từ đầu. |
-
----
-
-## 8. Lệnh & Hướng Dẫn Phân Hệ SNOTE Web Script (Google Apps Script)
-
-Thao tác tại thư mục **`web_script/`**:
-
-| Thao tác | Hướng dẫn thực hiện | Ghi chú |
-| :--- | :--- | :--- |
-| **Mở kiểm thử cục bộ trên trình duyệt (Local Runner)** | Mở trực tiếp `web_script/test_local.html` bằng trình duyệt hoặc chạy:<br>`Start-Process "web_script/test_local.html"` *(PowerShell)* | Chạy giả lập toàn bộ UI Kanban, Gantt, Table 11 cột, Notes, Roadmap DFA mà không cần tài khoản Google. |
-| **Chạy kiểm thử tự động toàn bộ phân hệ Web Script** | `python scratch/verify_all_modules.py` | Kiểm tra cú pháp V8 Code.gs, Index.html, Formula Injection defense, SafeStorageProxy, và thuật toán Cascading Deadlines. |
-| **Kiểm tra cú pháp JavaScript với Node.js** | `node -c web_script/Code.gs` *(sau khi copy sang .js tạm)* | Đảm bảo 100% không có lỗi cú pháp JavaScript trước khi deploy. |
-| **Chạy kiểm thử 10,000 Kịch bản & Cải tiến Bảo mật/Vận hành** | `python scratch/verify_10000_and_improvements.py` | Xác minh 10 tập (10,000 kịch bản), kiểm tra PIN Rate-limiting, Self-healing schema, Exponential Backoff và URL Sanitizer. |
-| **Chạy kiểm thử 10,000 Câu hỏi Bắt lỗi & Tái Cấu trúc SNOTE** | `python scratch/verify_faults_and_refactor.py` | Xác minh 10 tập (10,000 câu hỏi bắt lỗi), ma trận giải pháp, SNOTE Modular Namespace, EventBus, Store, Checklists và Gantt clamping. |
-| **Chạy kiểm thử 10,000 Lỗi Thực Chiến & Phân Lập Dự Án (Notes, Roadmap, Bento)** | `python scratch/verify_real_faults_and_isolation.py` | Kiểm tra 10,000 câu hỏi mã nguồn thực chiến, phân lập Notes theo projectId, reset active note, deleteNote, scope filters, phân lập Roadmap, và runner test_local.html. |
-| **Chạy kiểm thử 10,000 Lỗi Vận Hành & 1,000 Cải Tiến Giao Diện Tinh Gọn** | `python scratch/verify_system_ops_and_ui_1000.py` | Xác minh 10,000 lỗi vận hành/kiến trúc, 1,000 cải tiến UI Content-First, cú pháp V8 Code.gs 50k cell protection, Index.html không văn bản thừa, và 26px compact test runner. |
-| **Chạy kiểm thử Xác Thực Mã PIN, Sinh Mã Đồ Án & Phân Lập Dự Án** | `python scratch/verify_pin_and_project_code.py` | Xác minh loại bỏ dropdown, nhập mã đồ án trực tiếp, OTP 4 số tự nhảy số, dán mã, mắt ẩn/hiện, bắt buộc sinh mã đồ án, sinh PIN, và phân lập an toàn dữ liệu đồ án. |
-| **Chạy kiểm thử IDOR, BOLA, Broken Access Control & Tenant Isolation** | `python scratch/verify_idor_and_isolation.py` | Kiểm tra 25 kịch bản bảo mật: verifyAuthContext (Admin/Member), chặn IDOR chéo đồ án, chặn xóa/sửa task & note chéo, chặn nhảy đồ án trong switchProjectDirectly, và che giấu PIN. |
-| **Triển khai lên Google Sheets (3 phút)** | 1. Mở Google Drive ➔ Tạo Google Sheets mới.<br>2. Tiện ích mở rộng ➔ Apps Script.<br>3. Dán `web_script/Code.gs` và tạo file HTML `web_script/Index.html`.<br>4. Bấm Triển khai ➔ Bản triển khai mới (Web app, Execute as Me, Access Anyone). | Xem chi tiết quy trình tại [`web_script/README.md`](file:///D:/WORKSPACE/PROJECT/CLASS_PROJECT/MNM_PROJECT/SNOTE/web_script/README.md). |
-
-
+| **Xóa thư mục Build (`dist/`)** | `Remove-Item -Recurse -Force backend/dist, frontend/dist` *(PowerShell)* | Xóa các file build cũ để build sạch từ đầu. |

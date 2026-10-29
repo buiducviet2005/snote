@@ -7,7 +7,6 @@ import { ProjectModal } from '../components/ProjectModal';
 import { TeamMembersModal } from '../components/TeamMembersModal';
 import { ProjectWorkspaceModal } from '../components/ProjectWorkspaceModal';
 import { ProjectStatus } from '@snote/shared';
-import confetti from 'canvas-confetti';
 import {
   FolderKanban,
   Plus,
@@ -71,7 +70,6 @@ export const ProjectsListPage: React.FC = () => {
   const handleAcceptInvitation = async (id: string, name: string) => {
     try {
       await api.post(`/projects/${id}/invitations/accept`, {});
-      confetti({ particleCount: 70, spread: 60, origin: { y: 0.6 } });
       showToast(`🎉 Bạn đã tham gia dự án "${name}"!`, 'success');
       fetchProjects();
     } catch (err: any) {
@@ -287,6 +285,7 @@ export const ProjectsListPage: React.FC = () => {
             const currentMember = proj.members?.find((m: any) => m.userId === user?.id);
             const isOwner = currentMember?.role === 'OWNER' || proj.userId === user?.id;
             const isMember = Boolean(currentMember);
+            const isClassProject = Boolean(proj.classId);
 
             return (
               <div
@@ -309,18 +308,19 @@ export const ProjectsListPage: React.FC = () => {
                         <StatusIcon size={12} />
                         <span>{statusMeta.label}</span>
                       </span>
+                      {isClassProject && <span className="badge badge-purple">Dự án lớp</span>}
                     </div>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <button
+                      {!isClassProject && <button
                         onClick={() => setMemberProject(proj)}
                         className="btn btn-ghost btn-icon"
                         title="Quản lý thành viên nhóm"
                         style={{ padding: '6px', color: 'var(--text-secondary)' }}
                       >
                         <UserPlus size={15} />
-                      </button>
-                      <button
+                      </button>}
+                      {!isClassProject && <button
                         onClick={() => {
                           setProjectToEdit(proj);
                           setIsModalOpen(true);
@@ -330,8 +330,8 @@ export const ProjectsListPage: React.FC = () => {
                         style={{ padding: '6px', color: 'var(--text-secondary)' }}
                       >
                         <Edit3 size={15} />
-                      </button>
-                      {isOwner ? (
+                      </button>}
+                      {!isClassProject && (isOwner ? (
                         <button
                           onClick={() => handleDelete(proj.id, proj.name)}
                           className="btn btn-ghost btn-icon"
@@ -349,7 +349,7 @@ export const ProjectsListPage: React.FC = () => {
                         >
                           <LogOut size={15} />
                         </button>
-                      ) : null}
+                      ) : null)}
                     </div>
                   </div>
 

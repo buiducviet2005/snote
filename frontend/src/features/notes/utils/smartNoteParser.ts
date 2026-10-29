@@ -175,6 +175,19 @@ export function autoFormatPlainTextToMarkdown(rawText: string = ''): string {
       }
     );
 
+    // 7. Thuật toán nhận diện Obsidian [[Wiki Links]] (Liên kết hai chiều)
+    formattedLine = formattedLine.replace(/\[\[([^\]\|]+)(?:\|([^\]]+))?\]\]/g, (_, target, alias) => {
+      const cleanTarget = target.trim();
+      const label = (alias || cleanTarget).trim();
+      return `[📎 ${label}](#wiki:${encodeURIComponent(cleanTarget)})`;
+    });
+
+    // 8. Thuật toán nhận diện Hashtags (#tag)
+    formattedLine = formattedLine.replace(/(^|\s)#([a-zA-Z0-9_\u00C0-\u024F\u1E00-\u1EFF-]+)(?=\s|$|[.,;:!?])/g, (_, space, tag) => {
+      if (/^\d+$/.test(tag)) return `${space}#${tag}`;
+      return `${space}[#${tag}](#tag:${encodeURIComponent(tag)})`;
+    });
+
     processedLines.push(`${leadingSpaces}${formattedLine}`);
   }
 
@@ -376,4 +389,74 @@ export function toggleChecklistItem(content: string, targetIndex: number): strin
   }
 
   return content;
+}
+
+/**
+ * HỆ THỐNG LIÊN KẾT TRI THỨC VÀ GẮN THẺ KIỂU OBSIDIAN (OBSIDIAN KNOWLEDGE ENGINE)
+ */
+export interface WikiLink {
+  raw: string;
+  target: string;
+  alias?: string;
+}
+
+export function extractWikiLinks(content: string = ''): WikiLink[] {
+  if (!content) return [];
+  const regex = /\[\[([^\]\|]+)(?:\|([^\]]+))?\]\]/g;
+  const links: WikiLink[] = [];
+  let match: RegExpExecArray | null;
+  while ((match = regex.exec(content)) !== null) {
+    links.push({
+      raw: match[0],
+      target: match[1].trim(),
+      alias: match[2]?.trim()
+    });
+  }
+  return links;
+}
+
+export function extractTags(content: string = ''): string[] {
+  if (!content) return [];
+  const tagRegex = /(?:^|\s)#([a-zA-Z0-9_\u00C0-\u024F\u1E00-\u1EFF-]+)(?=\s|$|[.,;:!?])/g;
+  const tags = new Set<string>();
+  let match: RegExpExecArray | null;
+  while ((match = tagRegex.exec(content)) !== null) {
+    const tag = match[1].trim();
+    if (tag && !/^\d+$/.test(tag)) {
+      tags.add(tag);
+    }
+  }
+  return Array.from(tags);
+}
+
+export interface OutlineHeading {
+  level: number;
+  title: string;
+  lineIndex: number;
+}
+
+export function extractOutline(content: string = ''): OutlineHeading[] {
+  if (!content) return [];
+  const lines = content.split('\n');
+  const headings: OutlineHeading[] = [];
+  let inCodeBlock = false;
+
+  for (let i = 0; i < lines.length; i++) {
+    const trimmed = lines[i].trim();
+    if (trimmed.startsWith('```')) {
+      inCodeBlock = !inCodeBlock;
+      continue;
+    }
+    if (inCodeBlock) continue;
+
+    const match = trimmed.match(/^(#{1,6})\s+(.+)$/);
+    if (match) {
+      headings.push({
+        level: match[1].length,
+        title: match[2].trim(),
+        lineIndex: i
+      });
+    }
+  }
+  return headings;
 }

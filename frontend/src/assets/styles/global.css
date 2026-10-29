@@ -2,62 +2,66 @@
 /* SNOTE Academic Workspace Design System - Hallmark Study Edition */
 
 :root {
-  /* Font Family Stacks (Be Vietnam Pro: Siêu nhẹ, mềm mại, đặc trị tiếng Việt, chống lỗi dấu 100%) */
-  --font-sans: 'Be Vietnam Pro', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  --font-display: 'Be Vietnam Pro', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-mono: 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace;
+  /* Font Family Stacks (Inter & Be Vietnam Pro & JetBrains Mono - NTasks Standard) */
+  --font-sans: 'Inter', 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-display: 'Inter', 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
-  /* Default: Dark Theme (Deep Obsidian & Midnight Study Ink) */
-  --bg-primary: #090d16;
-  --bg-secondary: #0f172a;
-  --bg-tertiary: #172239;
-  --bg-card: #121b30;
-  --bg-card-hover: #182542;
-  --bg-input: #0c1222;
+  /* Default: Dark Theme (Deep Obsidian Canvas & Navy-Slate Surface - NTasks Standard) */
+  --bg-primary: #070b12;
+  --bg-surface: #0e1726;
+  --bg-secondary: #162032;
+  --bg-tertiary: #162032;
+  --bg-tray: #0b1320;
+  --bg-card: #121b2b;
+  --bg-card-hover: #162032;
+  --bg-input: #0e1726;
   
-  --border-color: rgba(255, 255, 255, 0.08);
-  --border-focus: #6366f1;
-  --border-subtle: rgba(255, 255, 255, 0.04);
-  --border-study: rgba(99, 102, 241, 0.22);
+  --border-color: #223147;
+  --border-hover: #3b506e;
+  --border-focus: #3b82f6;
+  --border-subtle: rgba(255, 255, 255, 0.05);
+  --border-study: rgba(59, 130, 246, 0.25);
   
   --text-primary: #f8fafc;
-  --text-secondary: #94a3b8;
-  --text-muted: #64748b;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
   --text-inverse: #0f172a;
   
-  /* Brand Study Accents */
-  --accent-primary: #6366f1;
-  --accent-hover: #4f46e5;
-  --accent-active: #4338ca;
-  --accent-subtle: rgba(99, 102, 241, 0.14);
-  --accent-border: rgba(99, 102, 241, 0.35);
+  /* Brand Accents - NTasks Blue 500 / 600 */
+  --accent-primary: #3b82f6;
+  --accent: #3b82f6;
+  --accent-hover: #60a5fa;
+  --accent-active: #2563eb;
+  --accent-subtle: #172554;
+  --accent-border: rgba(59, 130, 246, 0.35);
   
-  /* Academic Status Colors */
-  --color-success: #10b981;
-  --color-success-subtle: rgba(16, 185, 129, 0.14);
-  --color-warning: #f59e0b;
-  --color-warning-subtle: rgba(245, 158, 11, 0.14);
-  --color-danger: #ef4444;
-  --color-danger-subtle: rgba(239, 68, 68, 0.14);
+  /* Status Colors (WCAG AA Compliant) */
+  --color-success: #34d399;
+  --color-success-subtle: rgba(52, 211, 153, 0.14);
+  --color-warning: #fbbf24;
+  --color-warning-subtle: rgba(251, 191, 36, 0.14);
+  --color-danger: #f87171;
+  --color-danger-subtle: rgba(248, 113, 113, 0.14);
   --color-info: #3b82f6;
   --color-info-subtle: rgba(59, 130, 246, 0.14);
   --color-purple: #a855f7;
   --color-purple-subtle: rgba(168, 85, 247, 0.14);
 
   /* Shadows & Radius */
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.4);
-  --shadow-md: 0 4px 14px -2px rgba(0, 0, 0, 0.5), 0 2px 6px -2px rgba(0, 0, 0, 0.3);
-  --shadow-lg: 0 12px 30px -4px rgba(0, 0, 0, 0.6), 0 4px 12px -4px rgba(0, 0, 0, 0.4);
-  --shadow-accent: 0 4px 22px -2px rgba(99, 102, 241, 0.45);
-  --shadow-study: 0 0 0 1px rgba(99, 102, 241, 0.25), 0 4px 20px -2px rgba(0, 0, 0, 0.5);
+  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.25);
+  --shadow-md: 0 4px 14px -2px rgba(0, 0, 0, 0.4), 0 2px 6px -2px rgba(0, 0, 0, 0.2);
+  --shadow-lg: 0 20px 30px -10px rgba(0, 0, 0, 0.6);
+  --shadow-accent: 0 4px 20px -2px rgba(59, 130, 246, 0.35);
+  --shadow-study: 0 0 0 1px rgba(59, 130, 246, 0.2), 0 4px 18px -2px rgba(0, 0, 0, 0.4);
   
   --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
-  --radius-xl: 20px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
   --radius-full: 9999px;
 
-  /* Motion Tokens Scale (transitions.dev & polish) */
+  /* Motion Tokens Scale */
   --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
   --ease-smooth-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
@@ -84,34 +88,49 @@
 
 /* Light Theme Variables - Warm Tactile Academic Paper & Architectural Blueprint */
 [data-theme='light'] {
-  --bg-primary: #f5f3ec;
-  --bg-secondary: #ffffff;
-  --bg-tertiary: #ebe7dc;
-  --bg-card: rgba(255, 255, 255, 0.94);
-  --bg-card-hover: #ffffff;
+  --bg-primary: #edf2f7;
+  --bg-surface: #ffffff;
+  --bg-secondary: #e2e8f0;
+  --bg-tertiary: #e2e8f0;
+  --bg-tray: #f8fafc;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f1f5f9;
   --bg-input: #ffffff;
   
-  --border-color: rgba(30, 41, 59, 0.11);
-  --border-focus: #4f46e5;
-  --border-subtle: rgba(30, 41, 59, 0.06);
-  --border-study: rgba(79, 70, 229, 0.28);
+  --border-color: #cbd5e1;
+  --border-hover: #94a3b8;
+  --border-focus: #2563eb;
+  --border-subtle: rgba(0, 0, 0, 0.05);
+  --border-study: rgba(37, 99, 235, 0.25);
   
   --text-primary: #0f172a;
   --text-secondary: #334155;
   --text-muted: #64748b;
-  --text-inverse: #ffffff;
+  --text-inverse: #f8fafc;
   
-  --accent-primary: #4f46e5;
-  --accent-hover: #4338ca;
-  --accent-active: #3730a3;
-  --accent-subtle: rgba(79, 70, 229, 0.10);
-  --accent-border: rgba(79, 70, 229, 0.30);
+  --accent-primary: #2563eb;
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --accent-active: #1e40af;
+  --accent-subtle: #eff6ff;
+  --accent-border: rgba(37, 99, 235, 0.35);
   
-  --shadow-sm: 0 1px 3px rgba(30, 41, 59, 0.07);
-  --shadow-md: 0 4px 16px -2px rgba(30, 41, 59, 0.09), 0 2px 6px -2px rgba(30, 41, 59, 0.05);
-  --shadow-lg: 0 12px 32px -4px rgba(30, 41, 59, 0.12), 0 4px 14px -4px rgba(30, 41, 59, 0.08);
-  --shadow-accent: 0 4px 20px -2px rgba(79, 70, 229, 0.30);
-  --shadow-study: 0 0 0 1px rgba(79, 70, 229, 0.20), 0 4px 18px -2px rgba(30, 41, 59, 0.08);
+  --color-success: #059669;
+  --color-success-subtle: rgba(5, 150, 105, 0.12);
+  --color-warning: #d97706;
+  --color-warning-subtle: rgba(217, 119, 6, 0.12);
+  --color-danger: #dc2626;
+  --color-danger-subtle: rgba(220, 38, 38, 0.12);
+  --color-info: #2563eb;
+  --color-info-subtle: rgba(37, 99, 235, 0.12);
+  --color-purple: #9333ea;
+  --color-purple-subtle: rgba(147, 51, 234, 0.12);
+
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.06);
+  --shadow-lg: 0 10px 25px -5px rgba(15, 23, 42, 0.1), 0 8px 10px -6px rgba(15, 23, 42, 0.06);
+  --shadow-accent: 0 4px 18px -2px rgba(37, 99, 235, 0.25);
+  --shadow-study: 0 0 0 1px rgba(37, 99, 235, 0.18), 0 4px 14px -2px rgba(15, 23, 42, 0.06);
 }
 
 /* Base Styles with Personality-Rich Architectural Grid & Ambient Aura */
@@ -135,26 +154,6 @@ body {
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  /* Dark Mode: Cybernetic Obsidian Library with Major/Minor Blueprint Grid + Nebula Aurora */
-  background-image: 
-    radial-gradient(ellipse 70% 45% at 15% 10%, rgba(99, 102, 241, 0.20) 0%, transparent 70%),
-    radial-gradient(ellipse 60% 40% at 85% 18%, rgba(168, 85, 247, 0.16) 0%, transparent 65%),
-    radial-gradient(ellipse 55% 45% at 50% 90%, rgba(16, 185, 129, 0.10) 0%, transparent 70%),
-    radial-gradient(circle 350px at 70% 60%, rgba(59, 130, 246, 0.11) 0%, transparent 70%),
-    /* Major grid lines (every 128px) */
-    linear-gradient(to right, rgba(99, 102, 241, 0.06) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(99, 102, 241, 0.06) 1px, transparent 1px),
-    /* Minor grid mesh (every 32px) */
-    linear-gradient(to right, rgba(255, 255, 255, 0.025) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.025) 1px, transparent 1px),
-    /* Micro coordinate dots */
-    radial-gradient(rgba(255, 255, 255, 0.14) 1px, transparent 1px);
-  background-size: 
-    100% 100%, 100% 100%, 100% 100%, 100% 100%,
-    128px 128px, 128px 128px,
-    32px 32px, 32px 32px,
-    32px 32px;
-  background-position: 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 16px 16px;
   background-attachment: fixed;
   color: var(--text-primary);
   line-height: 1.55;
@@ -1022,3 +1021,55 @@ code, pre, kbd {
 
 
 
+
+
+/* ==========================================================================
+   Responsive & Viewport Safety Rules (360px Mobile to 1280px Desktop)
+   ========================================================================== */
+
+html, body, #root {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
+.topbar-header {
+  min-height: 64px;
+  padding: 0 clamp(10px, 2.5vw, 28px);
+}
+
+@media (max-width: 768px) {
+  .topbar-header {
+    height: auto !important;
+    padding: 8px 12px !important;
+    gap: 8px !important;
+    flex-wrap: wrap !important;
+  }
+  .topbar-context-group {
+    width: 100% !important;
+    gap: 8px !important;
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+  .topbar-actions-group {
+    width: 100% !important;
+    justify-content: space-between !important;
+    gap: 8px !important;
+  }
+  .topbar-search-trigger {
+    min-width: 0 !important;
+    flex: 1 !important;
+  }
+  .app-main-content {
+    padding: clamp(10px, 2vw, 16px) !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .sidebar-rail-placeholder {
+    width: 56px !important;
+  }
+  .snote-select {
+    min-width: 120px !important;
+    font-size: 12px !important;
+  }
+}

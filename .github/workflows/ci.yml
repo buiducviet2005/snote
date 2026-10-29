@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main, release/*]
+  push:
+    branches: [main, release/*]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgresql://ainote_test_user:ainote_test_pass@localhost:5432/snote_ci_db?schema=public
+      JWT_SECRET: super_secret_jwt_access_key_min_32_characters_2026
+      JWT_REFRESH_SECRET: super_secret_jwt_refresh_key_min_32_characters_2026
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            backend/package-lock.json
+            frontend/package-lock.json
+      - run: npm ci --prefix backend
+      - run: npm ci --prefix frontend
+      - run: npm run db:generate
+      - run: npm run type-check
+      - run: npm run build
+      - run: npm test
+

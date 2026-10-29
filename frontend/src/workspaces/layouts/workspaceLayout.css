@@ -1,0 +1,3125 @@
+/* ==========================================================================
+   SNOTE Academic Precision Workstation — Icon-Rail Minimalist Architecture
+   Font: Be Vietnam Pro (Engineered for Vietnamese Diacritics) & JetBrains Mono
+   Theme: Dual Carbon Dark & Studio Light (Zero Clutter, 100% Monochrome Icons)
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+/* ==========================================================================
+   DESIGN TOKENS (DUAL THEME - PURE MONOCHROME WITH CRISP ACCENT)
+   ========================================================================== */
+:root,
+.ws-shell.theme-dark {
+  --ws-bg-app: #070b12;
+  --ws-bg-rail: #070b12;
+  --ws-bg-surface: #0e1726;
+  --ws-bg-surface-elevated: #121b2b;
+  --ws-bg-surface-hover: #162032;
+  --ws-bg-surface-active: #1e293b;
+  
+  --ws-border-hairline: #223147;
+  --ws-border-strong: #3b506e;
+  
+  --ws-text-main: #f8fafc;
+  --ws-text-muted: #94a3b8;
+  --ws-text-faint: #64748b;
+  
+  --ws-accent: #3b82f6;
+  --ws-accent-soft: rgba(59, 130, 246, 0.14);
+  --ws-accent-border: rgba(59, 130, 246, 0.35);
+  
+  --ws-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.25);
+  --ws-shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
+  --ws-shadow-lg: 0 20px 30px -10px rgba(0, 0, 0, 0.6);
+}
+
+.ws-shell.theme-light {
+  --ws-bg-app: #edf2f7;
+  --ws-bg-rail: #ffffff;
+  --ws-bg-surface: #ffffff;
+  --ws-bg-surface-elevated: #f8fafc;
+  --ws-bg-surface-hover: #e2e8f0;
+  --ws-bg-surface-active: #cbd5e1;
+  
+  --ws-border-hairline: #cbd5e1;
+  --ws-border-strong: #94a3b8;
+  
+  --ws-text-main: #0f172a;
+  --ws-text-muted: #64748b;
+  --ws-text-faint: #94a3b8;
+  
+  --ws-accent: #2563eb;
+  --ws-accent-soft: #eff6ff;
+  --ws-accent-border: rgba(37, 99, 235, 0.3);
+  
+  --ws-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --ws-shadow-md: 0 4px 12px rgba(15, 23, 42, 0.06);
+  --ws-shadow-lg: 0 10px 25px -5px rgba(15, 23, 42, 0.1);
+}
+
+/* ==========================================================================
+   GLOBAL RESET & SHELL
+   ========================================================================== */
+.ws-shell {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  background-color: var(--ws-bg-app);
+  color: var(--ws-text-main);
+  font-family: 'Inter', 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.ws-font-mono {
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+/* ==========================================================================
+   1. ICON-ONLY RAIL (COMPACT, DISTRACTION-FREE, ZERO COLOR BLOAT)
+   ========================================================================== */
+.ws-icon-rail {
+  width: 62px;
+  min-width: 62px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-color: var(--ws-bg-rail);
+  border-right: 1px solid var(--ws-border-hairline);
+  padding: 12px 0;
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), margin-left 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 100;
+  user-select: none;
+  overflow: visible !important;
+}
+
+.ws-shell.zen-mode .ws-icon-rail {
+  margin-left: -62px;
+}
+
+.ws-rail-top {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding-bottom: 6px;
+  overflow: visible !important;
+}
+
+.ws-rail-brand-mark {
+  width: 40px;
+  height: 40px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ws-bg-surface-elevated);
+  border: 1px solid var(--ws-border-hairline);
+  color: var(--ws-accent);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 16px;
+  font-weight: 800;
+  user-select: none;
+  box-shadow: var(--ws-shadow-sm);
+}
+
+.ws-brand-mono {
+  line-height: 1;
+}
+
+.ws-rail-divider {
+  width: 32px;
+  height: 1px;
+  background-color: var(--ws-border-hairline);
+  margin: 8px 0;
+  flex-shrink: 0;
+}
+
+.ws-rail-nav {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  overflow: visible !important;
+  padding: 4px 0;
+}
+
+.ws-rail-bottom {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin-top: auto;
+  overflow: visible !important;
+}
+
+/* Rail Item Wrapper for relative tooltip anchor */
+.ws-rail-item-wrapper {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  overflow: visible !important;
+}
+
+.ws-rail-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ws-text-muted);
+  background: transparent;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.14s ease;
+  position: relative;
+}
+
+.ws-rail-btn:hover {
+  background: var(--ws-bg-surface-hover);
+  color: var(--ws-text-main);
+  border-color: var(--ws-border-hairline);
+}
+
+.ws-rail-btn.active {
+  background: var(--ws-accent-soft);
+  color: var(--ws-accent);
+  border-color: var(--ws-accent-border);
+}
+
+.ws-rail-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ws-rail-badge-dot {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ws-accent);
+}
+
+/* User Avatar in Rail */
+.ws-rail-user-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: var(--ws-bg-surface-elevated);
+  border: 1px solid var(--ws-border-hairline);
+  color: var(--ws-text-main);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  position: relative;
+  transition: border-color 0.14s ease;
+}
+
+.ws-rail-user-avatar:hover {
+  border-color: var(--ws-border-strong);
+}
+
+/* ==========================================================================
+   2. ROUNDED FLOATING TOOLTIPS ON HOVER (BO TRÒN CÁC GÓC)
+   ========================================================================== */
+.ws-rail-tooltip {
+  position: absolute;
+  left: 56px;
+  top: 50%;
+  transform: translateY(-50%) translateX(-6px);
+  background: var(--ws-bg-surface-elevated);
+  color: var(--ws-text-main);
+  border: 1px solid var(--ws-border-strong);
+  border-radius: 8px; /* Bo tròn các góc */
+  padding: 7px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  transition: opacity 0.14s cubic-bezier(0.16, 1, 0.3, 1), transform 0.14s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 999999 !important;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Arrow indicator pointing to icon */
+.ws-rail-tooltip::before {
+  content: '';
+  position: absolute;
+  left: -5px;
+  top: 50%;
+  transform: translateY(-50%) rotate(45deg);
+  width: 8px;
+  height: 8px;
+  background: var(--ws-bg-surface-elevated);
+  border-left: 1px solid var(--ws-border-strong);
+  border-bottom: 1px solid var(--ws-border-strong);
+}
+
+.ws-rail-item-wrapper:hover .ws-rail-tooltip,
+.ws-switcher-rail-wrapper:hover .ws-rail-tooltip {
+  opacity: 1 !important;
+  visibility: visible !important;
+  transform: translateY(-50%) translateX(0) !important;
+}
+
+.ws-tooltip-text {
+  line-height: 1.3;
+}
+
+.ws-tooltip-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9.5px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--ws-bg-surface);
+  border: 1px solid var(--ws-border-hairline);
+  color: var(--ws-accent);
+}
+
+.ws-tooltip-kbd {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: var(--ws-bg-surface);
+  border: 1px solid var(--ws-border-hairline);
+  color: var(--ws-text-faint);
+}
+
+/* User Profile Tooltip */
+.ws-rail-tooltip.user-tooltip {
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  min-width: 170px;
+}
+
+.ws-tooltip-user-meta {
+  display: flex;
+  flex-direction: column;
+}
+
+.ws-tooltip-user-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ws-text-main);
+}
+
+.ws-tooltip-user-email {
+  font-size: 10px;
+  color: var(--ws-text-faint);
+}
+
+.ws-tooltip-logout-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  border-radius: 5px;
+  background: var(--ws-bg-surface);
+  border: 1px solid var(--ws-border-hairline);
+  color: var(--ws-text-muted);
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.ws-tooltip-logout-btn:hover {
+  background: rgba(244, 63, 94, 0.12);
+  color: #f43f5e;
+  border-color: rgba(244, 63, 94, 0.3);
+}
+
+/* ==========================================================================
+   3. WORKSPACE SWITCHER (COMPACT RAIL FLYOUT)
+   ========================================================================== */
+.ws-switcher-rail-wrapper {
+  position: relative;
+}
+
+.ws-switcher-rail-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ws-bg-surface);
+  border: 1px solid var(--ws-border-hairline);
+  color: var(--ws-text-main);
+  cursor: pointer;
+  transition: all 0.14s ease;
+}
+
+.ws-switcher-rail-btn:hover,
+.ws-switcher-rail-btn:focus-visible {
+  border-color: var(--ws-accent);
+  background: var(--ws-bg-surface-hover);
+  outline: none;
+}
+
+.ws-switcher-monogram {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--ws-text-main);
+}
+
+/* Flyout Popover Menu to the right of the rail */
+.ws-switcher-flyout {
+  position: absolute;
+  top: 0;
+  left: calc(100% + 10px);
+  width: 300px;
+  background: var(--ws-bg-surface);
+  border: 1px solid var(--ws-border-hairline);
+  border-radius: 8px;
+  box-shadow: var(--ws-shadow-lg);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: wsFadeIn 0.12s ease-out;
+}
+
+@keyframes wsFadeIn {
+  from { opacity: 0; transform: translateX(-4px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.ws-flyout-search-wrap {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--ws-border-hairline);
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.ws-search-icon {
+  position: absolute;
+  left: 18px;
+  color: var(--ws-text-faint);
+}
+
+.ws-flyout-search-input {
+  width: 100%;
+  padding: 6px 8px 6px 28px;
+  font-size: 12px;
+  border-radius: 5px;
+  border: 1px solid var(--ws-border-hairline);
+  background: var(--ws-bg-app);
+  color: var(--ws-text-main);
+  outline: none;
+}
+
+.ws-flyout-search-input:focus {
+  border-color: var(--ws-accent);
+}
+
+.ws-flyout-tabs {
+  display: flex;
+  padding: 4px 6px;
+  background: var(--ws-bg-rail);
+  border-bottom: 1px solid var(--ws-border-hairline);
+  gap: 3px;
+}
+
+.ws-flyout-tab {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 4px 6px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--ws-text-muted);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.1s ease;
+}
+
+.ws-flyout-tab:hover {
+  color: var(--ws-text-main);
+  background: var(--ws-bg-surface-hover);
+}
+
+.ws-flyout-tab.active {
+  background: var(--ws-bg-surface);
+  color: var(--ws-accent);
+  box-shadow: var(--ws-shadow-sm);
+  border: 1px solid var(--ws-border-hairline);
+}
+
+.ws-flyout-list {
+  overflow-y: auto;
+  max-height: 250px;
+  padding: 6px;
+}
+
+.ws-flyout-empty {
+  padding: 20px 10px;
+  text-align: center;
+  font-size: 11.5px;
+  color: var(--ws-text-faint);
+}
+
+.ws-flyout-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 8px;
+  border-radius: 6px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.1s ease;
+  color: var(--ws-text-main);
+}
+
+.ws-flyout-item:hover,
+.ws-flyout-item.focused {
+  background: var(--ws-bg-surface-hover);
+  outline: none;
+}
+
+.ws-flyout-item.selected {
+  background: var(--ws-accent-soft);
+}
+
+.ws-item-monochrome-icon {
+  width: 26px;
+  height: 26px;
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: var(--ws-bg-surface-elevated);
+  border: 1px solid var(--ws-border-hairline);
+  color: var(--ws-text-muted);
+}
+
+.ws-flyout-item.selected .ws-item-monochrome-icon {
+  color: var(--ws-accent);
+  border-color: var(--ws-accent-border);
+}
+
+.ws-item-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.ws-item-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ws-item-name {
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ws-mono-tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  padding: 0 4px;
+  background: var(--ws-bg-surface-elevated);
+  border-radius: 3px;
+  color: var(--ws-text-muted);
+}
+
+.ws-item-sub-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.ws-role-text,
+.ws-member-text {
+  font-size: 9.5px;
+  color: var(--ws-text-faint);
+}
+
+.ws-archived-pill {
+  font-size: 8.5px;
+  padding: 0 4px;
+  background: var(--ws-bg-surface-elevated);
+  border: 1px solid var(--ws-border-hairline);
+  color: var(--ws-text-faint);
+  border-radius: 3px;
+}
+
+.ws-item-check-icon {
+  color: var(--ws-accent);
+  margin-left: auto;
+}
+
+.ws-flyout-footer {
+  padding: 8px 10px;
+  border-top: 1px solid var(--ws-border-hairline);
+  background: var(--ws-bg-rail);
+}
+
+.ws-create-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 5px;
+  border: 1px dashed var(--ws-border-hairline);
+  background: var(--ws-bg-surface);
+  color: var(--ws-accent);
+  cursor: pointer;
+  transition: all 0.14s ease;
+}
+
+.ws-create-btn:hover {
+  background: var(--ws-bg-surface-hover);
+  border-color: var(--ws-accent);
+}
+
+/* ==========================================================================
+   4. MAIN WORKSPACE CANVAS & TOPBAR
+   ========================================================================== */
+.ws-main {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  background-color: var(--ws-bg-app);
+}
+
+.ws-topbar {
+  height: 48px;
+  min-height: 48px;
+  border-bottom: 1px solid var(--ws-border-hairline);
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: var(--ws-bg-app);
+  z-index: 20;
+}
+
+.ws-topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ws-zen-exit-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 7px;
+  font-size: 10.5px;
+  font-weight: 700;
+  border-radius: 5px;
+  background: var(--ws-bg-surface);
+  border: 1px solid var(--ws-border-hairline);
+  color: var(--ws-accent);
+  cursor: pointer;
+}
+
+.ws-breadcrumbs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  color: var(--ws-text-muted);
+}
+
+.ws-breadcrumb-parent {
+  font-weight: 500;
+  color: var(--ws-text-muted);
+}
+
+.ws-breadcrumb-current {
+  font-weight: 700;
+  color: var(--ws-text-main);
+}
+
+.ws-topbar-tools {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+/* Quick Search Button */
+.ws-quick-search-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 9px;
+  border-radius: 6px;
+  border: 1px solid var(--ws-border-hairline);
+  background: var(--ws-bg-surface);
+  color: var(--ws-text-muted);
+  font-size: 11.5px;
+  cursor: pointer;
+  transition: all 0.14s ease;
+}
+
+.ws-quick-search-pill:hover {
+  border-color: var(--ws-border-strong);
+  color: var(--ws-text-main);
+  background: var(--ws-bg-surface-hover);
+}
+
+.ws-quick-search-pill kbd {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: var(--ws-bg-app);
+  border: 1px solid var(--ws-border-hairline);
+  color: var(--ws-text-faint);
+}
+
+/* Icon Buttons in Topbar (Monochrome) */
+.ws-tool-btn {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 5px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--ws-text-muted);
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.ws-tool-btn:hover {
+  background: var(--ws-bg-surface);
+  border-color: var(--ws-border-hairline);
+  color: var(--ws-text-main);
+}
+
+.ws-tool-btn.active {
+  background: var(--ws-accent-soft);
+  color: var(--ws-accent);
+  border-color: var(--ws-accent-border);
+}
+
+/* New Item Action Button */
+.ws-new-item-wrap {
+  position: relative;
+}
+
+.ws-new-item-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 6px;
+  background: var(--ws-accent);
+  color: #ffffff;
+  border: none;
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.12s ease;
+}
+
+.ws-new-item-btn:hover {
+  opacity: 0.9;
+}
+
+.ws-new-item-dropdown {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 5px);
+  min-width: 170px;
+  background: var(--ws-bg-surface);
+  border: 1px solid var(--ws-border-hairline);
+  border-radius: 6px;
+  box-shadow: var(--ws-shadow-lg);
+  padding: 4px;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ws-new-menu-opt {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 9px;
+  border-radius: 4px;
+  background: transparent;
+  border: none;
+  font-size: 11.5px;
+  color: var(--ws-text-main);
+  cursor: pointer;
+  text-align: left;
+}
+
+.ws-new-menu-opt:hover {
+  background: var(--ws-bg-surface-hover);
+  color: var(--ws-accent);
+}
+
+/* ==========================================================================
+   5. FOCUS POMODORO TIMER CAPSULE
+   ========================================================================== */
+.ws-timer-container {
+  position: relative;
+}
+
+.ws-timer-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 99px;
+  border: 1px solid var(--ws-border-hairline);
+  background: var(--ws-bg-surface);
+  cursor: pointer;
+  transition: all 0.14s ease;
+}
+
+.ws-timer-pill:hover {
+  border-color: var(--ws-border-strong);
+}
+
+.ws-timer-pill.running {
+  border-color: var(--ws-accent-border);
+  background: var(--ws-accent-soft);
+}
+
+.ws-timer-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ws-text-faint);
+}
+
+.ws-timer-dot.pulse {
+  background: var(--ws-accent);
+  box-shadow: 0 0 0 3px var(--ws-accent-soft);
+  animation: wsTimerPulse 1.5s infinite;
+}
+
+@keyframes wsTimerPulse {
+  0% { transform: scale(0.95); opacity: 0.8; }
+  50% { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(0.95); opacity: 0.8; }
+}
+
+.ws-timer-time {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ws-text-main);
+}
+
+.ws-timer-mode-tag {
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--ws-text-muted);
+}
+
+.ws-timer-popover {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  width: 240px;
+  background: var(--ws-bg-surface);
+  border: 1px solid var(--ws-border-hairline);
+  border-radius: 8px;
+  box-shadow: var(--ws-shadow-lg);
+  padding: 14px;
+  z-index: 60;
+  animation: wsFadeIn 0.12s ease-out;
+}
+
+.ws-timer-popover-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.ws-timer-counter-tag {
+  font-size: 9.5px;
+  color: var(--ws-text-faint);
+  font-weight: 600;
+}
+
+.ws-timer-big-display {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  text-align: center;
+  color: var(--ws-text-main);
+  margin-bottom: 12px;
+}
+
+.ws-timer-mode-toggles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
+  margin-bottom: 12px;
+}
+
+.ws-timer-mode-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 4px;
+  font-size: 10.5px;
+  font-weight: 600;
+  border-radius: 4px;
+  border: 1px solid var(--ws-border-hairline);
+  background: var(--ws-bg-app);
+  color: var(--ws-text-muted);
+  cursor: pointer;
+}
+
+.ws-timer-mode-btn.active {
+  background: var(--ws-accent-soft);
+  color: var(--ws-accent);
+  border-color: var(--ws-accent-border);
+}
+
+.ws-timer-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ws-timer-play-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 11.5px;
+  font-weight: 700;
+  height: 32px;
+  border-radius: 5px;
+  background: var(--ws-accent);
+  color: #ffffff;
+  border: none;
+  cursor: pointer;
+}
+
+/* ==========================================================================
+   6. QUICK CAPTURE SLIDE-OVER DRAWER
+   ========================================================================== */
+.ws-drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 80;
+  backdrop-filter: blur(2px);
+}
+
+.ws-quick-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 400px;
+  max-width: 90vw;
+  background: var(--ws-bg-surface);
+  border-left: 1px solid var(--ws-border-hairline);
+  box-shadow: var(--ws-shadow-lg);
+  z-index: 90;
+  display: flex;
+  flex-direction: column;
+  animation: wsDrawerSlideIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes wsDrawerSlideIn {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+.ws-drawer-header {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--ws-border-hairline);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ws-drawer-body {
+  flex: 1;
+  padding: 14px;
+  display: flex;
+}
+
+.ws-drawer-textarea {
+  width: 100%;
+  height: 100%;
+  border: none;
+  resize: none;
+  outline: none;
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.65;
+  color: var(--ws-text-main);
+  background: transparent;
+}
+
+.ws-drawer-footer {
+  padding: 10px 14px;
+  border-top: 1px solid var(--ws-border-hairline);
+  background: var(--ws-bg-app);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ws-drawer-stats {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--ws-text-faint);
+}
+
+/* ==========================================================================
+   7. COMMAND PALETTE MODAL
+   ========================================================================== */
+.ws-cmd-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 150;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 14vh;
+  backdrop-filter: blur(4px);
+}
+
+.ws-cmd-dialog {
+  width: 560px;
+  max-width: 92vw;
+  background: var(--ws-bg-surface);
+  border: 1px solid var(--ws-border-hairline);
+  border-radius: 10px;
+  box-shadow: var(--ws-shadow-lg);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: wsCmdZoomIn 0.14s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes wsCmdZoomIn {
+  from { opacity: 0; transform: scale(0.97); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.ws-cmd-search-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--ws-border-hairline);
+}
+
+.ws-cmd-search-icon {
+  color: var(--ws-text-faint);
+  flex-shrink: 0;
+}
+
+.ws-cmd-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 13.5px;
+  color: var(--ws-text-main);
+  background: transparent;
+}
+
+.ws-cmd-close-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--ws-text-faint);
+  padding: 4px;
+  border-radius: 4px;
+}
+
+.ws-cmd-list {
+  max-height: 330px;
+  overflow-y: auto;
+  padding: 6px;
+}
+
+.ws-cmd-empty {
+  padding: 24px 16px;
+  text-align: center;
+  font-size: 12.5px;
+  color: var(--ws-text-muted);
+}
+
+.ws-cmd-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.1s ease;
+}
+
+.ws-cmd-item.active {
+  background: var(--ws-accent-soft);
+}
+
+.ws-cmd-item-icon {
+  color: var(--ws-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+}
+
+.ws-cmd-item-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.ws-cmd-item-title {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ws-text-main);
+}
+
+.ws-cmd-item-subtitle {
+  font-size: 10.5px;
+  color: var(--ws-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ws-cmd-kbd {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: var(--ws-bg-app);
+  border: 1px solid var(--ws-border-hairline);
+  color: var(--ws-text-muted);
+}
+
+.ws-cmd-enter-hint {
+  font-size: 11px;
+  color: var(--ws-text-faint);
+  opacity: 0;
+}
+
+.ws-cmd-item.active .ws-cmd-enter-hint {
+  opacity: 1;
+}
+
+.ws-cmd-footer {
+  padding: 7px 12px;
+  border-top: 1px solid var(--ws-border-hairline);
+  background: var(--ws-bg-app);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ws-cmd-hints {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 10px;
+  color: var(--ws-text-faint);
+}
+
+.ws-cmd-hints kbd {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  padding: 1px 3px;
+  background: var(--ws-bg-surface);
+  border: 1px solid var(--ws-border-hairline);
+  border-radius: 3px;
+}
+
+.ws-cmd-tagline {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--ws-accent);
+}
+
+/* ==========================================================================
+   8. CONTENT CANVAS & HIGH-DENSITY ACADEMIC COCKPIT (FULL-BLEED 100% WIDTH)
+   ========================================================================== */
+.ws-content-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 18px 24px 36px;
+  background-color: var(--ws-bg-app);
+}
+
+.ws-content-scroll.ws-content-fullbleed {
+  padding: 0 !important;
+  overflow: hidden !important;
+  height: calc(100vh - 48px);
+}
+
+.ws-content-inner {
+  width: 100%;
+  max-width: 100%; /* 100% full-width fluid layout */
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* Academic Header Block */
+.ws-canvas-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--ws-border-hairline);
+}
+
+.ws-canvas-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ws-canvas-title {
+  font-size: 21px;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  margin: 0;
+  color: var(--ws-text-main);
+  line-height: 1.2;
+}
+
+.ws-canvas-desc {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--ws-text-muted);
+}
+
+.ws-canvas-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ws-canvas-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  background: var(--ws-bg-surface);
+  border: 1px solid var(--ws-border-hairline);
+  color: var(--ws-text-main);
+  white-space: nowrap;
+}
+
+.ws-canvas-badge.accent {
+  background: var(--ws-accent-soft);
+  color: var(--ws-accent);
+  border-color: var(--ws-accent-border);
+}
+
+/* Linear-Style View Tabs Directly on Canvas */
+.ws-view-tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--ws-bg-surface);
+  border: 1px solid var(--ws-border-hairline);
+  padding: 3px;
+  border-radius: 7px;
+  width: fit-content;
+}
+
+.ws-view-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  font-size: 11.5px;
+  font-weight: 600;
+  border-radius: 5px;
+  background: transparent;
+  border: none;
+  color: var(--ws-text-muted);
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.ws-view-tab-btn:hover {
+  color: var(--ws-text-main);
+  background: var(--ws-bg-surface-hover);
+}
+
+.ws-view-tab-btn.active {
+  background: var(--ws-bg-surface-active);
+  color: var(--ws-text-main);
+  font-weight: 700;
+}
+
+/* ==========================================================================
+   9. TOP METRIC CARDS (SHADCN DASHBOARD-01 SECTION-CARDS)
+   ========================================================================== */
+.ws-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  width: 100%;
+}
+
+.ws-kpi-card {
+  background: var(--ws-bg-surface);
+  border: 1px solid var(--ws-border-hairline);
+  border-radius: 8px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: var(--ws-shadow-sm);
+  transition: border-color 0.15s ease, transform 0.12s ease;
+}
+
+.ws-kpi-card:hover {
+  border-color: var(--ws-border-strong);
+}
+
+.ws-kpi-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ws-kpi-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ws-text-muted);
+}
+
+.ws-kpi-icon {
+  color: var(--ws-text-faint);
+  display: flex;
+  align-items: center;
+}
+
+.ws-kpi-value-row {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.ws-kpi-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--ws-text-main);
+  line-height: 1;
+}
+
+.ws-kpi-unit {
+  font-size: 12px;
+  color: var(--ws-text-muted);
+  font-weight: 500;
+}
+
+.ws-kpi-footer {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--ws-text-faint);
+}
+
+.ws-kpi-footer.urgent {
+  color: #f43f5e;
+  font-weight: 600;
+}
+
+.ws-kpi-footer.success {
+  color: #10b981;
+  font-weight: 600;
+}
+
+.ws-kpi-progress-bar {
+  width: 100%;
+  height: 4px;
+  background: var(--ws-bg-surface-elevated);
+  border-radius: 99px;
+  overflow: hidden;
+  margin-top: 2px;
+}
+
+.ws-kpi-progress-fill {
+  height: 100%;
+  background: var(--ws-accent);
+  border-radius: 99px;
+  transition: width 0.3s ease;
+}
+
+/* ==========================================================================
+   10. FULL-WIDTH ACADEMIC DATA TABLE (SHADCN TANSTACK PATTERN)
+   ========================================================================== */
+.ws-table-container {
+  background: var(--ws-bg-surface);
+  border: 1px solid var(--ws-border-hairline);
+  border-radius: 8px;
+  box-shadow: var(--ws-shadow-sm);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Table Toolbar */
+.ws-table-toolbar {
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid var(--ws-border-hairline);
+  background: var(--ws-bg-surface);
+  flex-wrap: wrap;
+}
+
+.ws-table-toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 280px;
+}
+
+.ws-table-search-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: var(--ws-bg-app);
+  border: 1px solid var(--ws-border-hairline);
+  border-radius: 6px;
+  flex: 1;
+  max-width: 380px;
+}
+
+.ws-table-search-wrap input {
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 12px;
+  color: var(--ws-text-main);
+  width: 100%;
+}
+
+.ws-table-search-wrap input::placeholder {
+  color: var(--ws-text-faint);
+}
+
+.ws-table-facet-tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ws-facet-pill {
+  padding: 4px 9px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 5px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--ws-text-muted);
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.ws-facet-pill:hover {
+  background: var(--ws-bg-surface-hover);
+  color: var(--ws-text-main);
+}
+
+.ws-facet-pill.active {
+  background: var(--ws-bg-surface-elevated);
+  border-color: var(--ws-border-hairline);
+  color: var(--ws-text-main);
+  font-weight: 700;
+}
+
+.ws-table-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ws-table-select-filter {
+  padding: 5px 8px;
+  font-size: 11px;
+  border-radius: 5px;
+  background: var(--ws-bg-app);
+  border: 1px solid var(--ws-border-hairline);
+  color: var(--ws-text-muted);
+  outline: none;
+  cursor: pointer;
+}
+
+/* Data Table Structure */
+.ws-table-responsive {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.ws-data-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.ws-data-table th {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ws-text-muted);
+  background: var(--ws-bg-surface-elevated);
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--ws-border-hairline);
+  white-space: nowrap;
+}
+
+.ws-data-table td {
+  font-size: 12.5px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--ws-border-hairline);
+  color: var(--ws-text-main);
+  vertical-align: middle;
+}
+
+.ws-data-table tr.ws-row-item {
+  transition: background-color 0.1s ease;
+  cursor: pointer;
+}
+
+.ws-data-table tr.ws-row-item:hover {
+  background-color: var(--ws-bg-surface-hover);
+}
+
+.ws-data-table tr.ws-row-item.done {
+  opacity: 0.6;
+}
+
+.ws-data-table tr.ws-row-item.done .ws-task-title-cell {
+  text-decoration: line-through;
+  color: var(--ws-text-muted);
+}
+
+.ws-task-key-tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--ws-bg-app);
+  border: 1px solid var(--ws-border-hairline);
+  color: var(--ws-accent);
+  white-space: nowrap;
+}
+
+.ws-task-title-cell {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ws-text-main);
+  line-height: 1.4;
+}
+
+.ws-course-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--ws-bg-surface-elevated);
+  border: 1px solid var(--ws-border-hairline);
+  color: var(--ws-text-muted);
+  white-space: nowrap;
+}
+
+.ws-priority-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.ws-priority-badge.urgent {
+  background: rgba(244, 63, 94, 0.12);
+  color: #f43f5e;
+  border: 1px solid rgba(244, 63, 94, 0.25);
+}
+
+.ws-priority-badge.high {
+  background: rgba(245, 158, 11, 0.12);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.25);
+}
+
+.ws-priority-badge.normal {
+  background: var(--ws-bg-app);
+  color: var(--ws-text-muted);
+  border: 1px solid var(--ws-border-hairline);
+}
+
+.ws-priority-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.ws-deadline-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--ws-text-muted);
+  white-space: nowrap;
+}
+
+.ws-status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.ws-status-chip.todo {
+  background: var(--ws-bg-app);
+  color: var(--ws-text-muted);
+  border: 1px solid var(--ws-border-hairline);
+}
+
+.ws-status-chip.in-progress {
+  background: var(--ws-accent-soft);
+  color: var(--ws-accent);
+  border: 1px solid var(--ws-accent-border);
+}
+
+.ws-status-chip.done {
+  background: rgba(16, 185, 129, 0.12);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+/* Inline Quick-Add Task Row in Table */
+.ws-table-quick-add-row {
+  background: var(--ws-bg-app);
+  border-top: 1px dashed var(--ws-border-hairline);
+}
+
+.ws-table-quick-add-cell {
+  padding: 8px 12px;
+}
+
+.ws-table-quick-add-input {
+  width: 100%;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 12px;
+  color: var(--ws-text-main);
+  padding: 4px 0;
+}
+
+.ws-table-quick-add-input::placeholder {
+  color: var(--ws-text-faint);
+  font-style: italic;
+}
+
+/* Table Summary Footer */
+.ws-table-footer {
+  padding: 9px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid var(--ws-border-hairline);
+  background: var(--ws-bg-surface);
+  font-size: 11px;
+  color: var(--ws-text-muted);
+}
+
+.ws-table-footer strong {
+  color: var(--ws-text-main);
+}
+
+/* ==========================================================================
+   11. RECENT LECTURE NOTES & KNOWLEDGE CARDS STRIP
+   ========================================================================== */
+.ws-recent-notes-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ws-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ws-section-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--ws-text-main);
+  letter-spacing: -0.01em;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ws-section-action-btn {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--ws-accent);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: opacity 0.12s ease;
+}
+
+.ws-section-action-btn:hover {
+  text-decoration: underline;
+}
+
+.ws-notes-card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.ws-note-grid-card {
+  background: var(--ws-bg-surface);
+  border: 1px solid var(--ws-border-hairline);
+  border-radius: 8px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: var(--ws-shadow-sm);
+  cursor: pointer;
+  transition: all 0.14s ease;
+}
+
+.ws-note-grid-card:hover {
+  border-color: var(--ws-accent);
+  transform: translateY(-1px);
+  background: var(--ws-bg-surface-hover);
+}
+
+.ws-note-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.ws-note-card-tag {
+  font-size: 9.5px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--ws-accent-soft);
+  color: var(--ws-accent);
+  border: 1px solid var(--ws-accent-border);
+}
+
+.ws-note-card-updated {
+  font-size: 10px;
+  color: var(--ws-text-faint);
+}
+
+.ws-note-card-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ws-text-main);
+  line-height: 1.35;
+}
+
+.ws-note-card-excerpt {
+  font-size: 11.5px;
+  color: var(--ws-text-muted);
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.ws-note-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10px;
+  color: var(--ws-text-faint);
+  margin-top: auto;
+  padding-top: 6px;
+  border-top: 1px solid var(--ws-border-hairline);
+}
+
+/* ==========================================================================
+   12. MASTER-DETAIL DUAL PANE NOTE READER (SHADCN MAIL PATTERN)
+   ========================================================================== */
+.ws-master-detail {
+  display: flex;
+  height: calc(100vh - 120px);
+  border: 1px solid var(--ws-border-hairline);
+  border-radius: 8px;
+  background: var(--ws-bg-surface);
+  box-shadow: var(--ws-shadow-sm);
+  overflow: hidden;
+}
+
+.ws-md-sidebar {
+  width: 340px;
+  min-width: 300px;
+  max-width: 380px;
+  border-right: 1px solid var(--ws-border-hairline);
+  display: flex;
+  flex-direction: column;
+  background: var(--ws-bg-surface);
+}
+
+.ws-md-sidebar-header {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--ws-border-hairline);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ws-md-search-input {
+  width: 100%;
+  padding: 6px 10px;
+  border-radius: 5px;
+  border: 1px solid var(--ws-border-hairline);
+  background: var(--ws-bg-app);
+  color: var(--ws-text-main);
+  font-size: 11.5px;
+  outline: none;
+}
+
+.ws-md-filter-row {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+}
+
+.ws-md-filter-btn {
+  padding: 2px 7px;
+  font-size: 10px;
+  font-weight: 600;
+  border-radius: 4px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--ws-text-muted);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.ws-md-filter-btn.active {
+  background: var(--ws-bg-surface-elevated);
+  border-color: var(--ws-border-hairline);
+  color: var(--ws-text-main);
+}
+
+.ws-md-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ws-md-item {
+  padding: 10px 12px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: all 0.1s ease;
+}
+
+.ws-md-item:hover {
+  background: var(--ws-bg-surface-hover);
+}
+
+.ws-md-item.active {
+  background: var(--ws-accent-soft);
+  border-color: var(--ws-accent-border);
+}
+
+.ws-md-item-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ws-md-item-title {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--ws-text-main);
+  line-height: 1.3;
+}
+
+.ws-md-item-tag {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: var(--ws-bg-surface-elevated);
+  color: var(--ws-text-muted);
+}
+
+.ws-md-item-excerpt {
+  font-size: 11px;
+  color: var(--ws-text-muted);
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.ws-md-item-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 9.5px;
+  color: var(--ws-text-faint);
+  margin-top: 2px;
+}
+
+/* Reader Panel */
+.ws-md-reader {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  background: var(--ws-bg-app);
+}
+
+.ws-reader-header {
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--ws-border-hairline);
+  background: var(--ws-bg-surface);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.ws-reader-title-area {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ws-reader-title {
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--ws-text-main);
+  margin: 0;
+  line-height: 1.3;
+}
+
+.ws-reader-meta-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 11px;
+  color: var(--ws-text-muted);
+  flex-wrap: wrap;
+}
+
+.ws-reader-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ws-reader-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 9px;
+  border-radius: 5px;
+  border: 1px solid var(--ws-border-hairline);
+  background: var(--ws-bg-surface);
+  color: var(--ws-text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.ws-reader-btn:hover {
+  background: var(--ws-bg-surface-hover);
+  color: var(--ws-text-main);
+  border-color: var(--ws-border-strong);
+}
+
+.ws-reader-body {
+  padding: 24px 32px;
+  max-width: 860px;
+  line-height: 1.7;
+  color: var(--ws-text-main);
+}
+
+.ws-reader-body h2 {
+  font-size: 16px;
+  font-weight: 800;
+  margin: 24px 0 10px;
+  color: var(--ws-text-main);
+  letter-spacing: -0.015em;
+  border-bottom: 1px solid var(--ws-border-hairline);
+  padding-bottom: 6px;
+}
+
+.ws-reader-body h3 {
+  font-size: 14px;
+  font-weight: 700;
+  margin: 18px 0 8px;
+  color: var(--ws-text-main);
+}
+
+.ws-reader-body p {
+  margin: 0 0 12px;
+  font-size: 13px;
+  color: var(--ws-text-main);
+}
+
+.ws-reader-body ul,
+.ws-reader-body ol {
+  margin: 0 0 14px;
+  padding-left: 20px;
+  font-size: 13px;
+}
+
+.ws-reader-body li {
+  margin-bottom: 4px;
+}
+
+.ws-callout-note {
+  margin: 16px 0;
+  padding: 12px 16px;
+  border-radius: 6px;
+  border-left: 3px solid var(--ws-accent);
+  background: var(--ws-accent-soft);
+  font-size: 12.5px;
+  color: var(--ws-text-main);
+}
+
+.ws-code-block-wrap {
+  margin: 16px 0;
+  background: var(--ws-bg-surface-elevated);
+  border: 1px solid var(--ws-border-hairline);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.ws-code-block-header {
+  padding: 6px 12px;
+  background: var(--ws-bg-surface);
+  border-bottom: 1px solid var(--ws-border-hairline);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10.5px;
+  color: var(--ws-text-muted);
+}
+
+.ws-code-pre {
+  margin: 0;
+  padding: 14px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--ws-text-main);
+  overflow-x: auto;
+}
+
+/* ==========================================================================
+   13. KANBAN 4-COLUMN BOARD
+   ========================================================================== */
+.ws-kanban-board {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.ws-kanban-col {
+  background: var(--ws-bg-surface);
+  border: 1px solid var(--ws-border-hairline);
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 480px;
+}
+
+.ws-kanban-col-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--ws-border-hairline);
+}
+
+.ws-kanban-col-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ws-text-main);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ws-kanban-col-count {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: var(--ws-bg-surface-elevated);
+  color: var(--ws-text-muted);
+}
+
+.ws-kanban-card {
+  background: var(--ws-bg-app);
+  border: 1px solid var(--ws-border-hairline);
+  border-radius: 6px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.ws-kanban-card:hover {
+  border-color: var(--ws-border-strong);
+  background: var(--ws-bg-surface-hover);
+}
+
+.ws-kanban-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ws-kanban-card-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ws-text-main);
+  line-height: 1.35;
+}
+
+.ws-kanban-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 4px;
+}
+
+/* ==========================================================================
+   14. GANTT ROADMAP & SEMESTER TIMELINE
+   ========================================================================== */
+.ws-gantt-board {
+  background: var(--ws-bg-surface);
+  border: 1px solid var(--ws-border-hairline);
+  border-radius: 8px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ws-gantt-timeline-track {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ws-gantt-row {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: 16px;
+  align-items: center;
+}
+
+.ws-gantt-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ws-text-main);
+}
+
+.ws-gantt-bar-wrap {
+  background: var(--ws-bg-app);
+  border: 1px solid var(--ws-border-hairline);
+  border-radius: 6px;
+  height: 28px;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+}
+
+.ws-gantt-bar {
+  position: absolute;
+  height: 20px;
+  border-radius: 4px;
+  background: var(--ws-accent-soft);
+  border: 1px solid var(--ws-accent-border);
+  color: var(--ws-accent);
+  font-size: 10px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  white-space: nowrap;
+}
+
+/* ==========================================================================
+   15. DOCUMENTS REPOSITORY & MEMBER DIRECTORY
+   ========================================================================== */
+.ws-docs-view,
+.ws-members-view {
+  background: var(--ws-bg-surface);
+  border: 1px solid var(--ws-border-hairline);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.ws-members-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  padding: 16px;
+}
+
+.ws-member-card {
+  background: var(--ws-bg-app);
+  border: 1px solid var(--ws-border-hairline);
+  border-radius: 6px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ws-member-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--ws-accent-soft);
+  color: var(--ws-accent);
+  font-weight: 800;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.ws-member-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.ws-member-name {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--ws-text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ws-member-role {
+  font-size: 11px;
+  color: var(--ws-text-muted);
+}
+
+.ws-member-email {
+  font-size: 10px;
+  color: var(--ws-text-faint);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* ==========================================================================
+   16. RESPONSIVE OVERRIDES
+   ========================================================================== */
+@media (max-width: 1200px) {
+  .ws-kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .ws-notes-card-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .ws-kanban-board {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .ws-members-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .ws-icon-rail {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    transform: translateX(-100%);
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.4);
+  }
+
+  .ws-icon-rail.open {
+    transform: translateX(0);
+  }
+
+  .ws-sidebar-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 45;
+  }
+
+  .ws-content-scroll {
+    padding: 14px;
+  }
+
+  .ws-topbar {
+    padding: 0 14px;
+  }
+
+  .ws-quick-search-pill span,
+  .ws-quick-search-pill kbd {
+    display: none;
+  }
+
+  .ws-kpi-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ws-notes-card-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ws-kanban-board {
+    grid-template-columns: 1fr;
+  }
+
+  .ws-members-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ws-master-detail {
+    flex-direction: column;
+    height: auto;
+  }
+
+  .ws-md-sidebar {
+    width: 100%;
+    max-width: 100%;
+    height: 300px;
+    border-right: none;
+    border-bottom: 1px solid var(--ws-border-hairline);
+  }
+}
+
+
+/* ==========================================================================
+   WORKSPACE TOPBAR SELECTOR & ADVANCED MANAGEMENT MODAL
+   ========================================================================== */
+.ws-topbar-selector-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.ws-topbar-workspace-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px;
+  background: var(--ws-bg-surface);
+  border: 1px solid var(--ws-border-hairline);
+  border-radius: 7px;
+  color: var(--ws-text-main);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.14s ease;
+  box-shadow: var(--ws-shadow-sm);
+}
+
+.ws-topbar-workspace-btn:hover,
+.ws-topbar-workspace-btn.active {
+  background: var(--ws-bg-surface-hover);
+  border-color: var(--ws-accent);
+}
+
+.ws-topbar-ws-tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--ws-accent-soft);
+  color: var(--ws-accent);
+  border: 1px solid var(--ws-accent-border);
+}
+
+.ws-topbar-ws-name {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ws-topbar-ws-badge {
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 10px;
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  animation: wsPulse 2s infinite;
+}
+
+@keyframes wsPulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+.ws-topbar-ws-arrow {
+  color: var(--ws-text-muted);
+  transition: transform 0.16s ease;
+}
+
+.ws-topbar-ws-arrow.open {
+  transform: rotate(180deg);
+}
+
+.ws-breadcrumb-separator {
+  margin: 0 4px;
+  color: var(--ws-text-faint);
+}
+
+.ws-topbar-dropdown-popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 99999;
+}
+
+.ws-topbar-dropdown-popover .ws-switcher-flyout {
+  position: static;
+  width: 350px;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.65);
+}
+
+/* Rail Monogram indicator */
+.ws-rail-chevron-indicator {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  color: var(--ws-text-faint);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ws-rail-badge-ping {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #f59e0b;
+  box-shadow: 0 0 6px #f59e0b;
+}
+
+/* Header row in flyout */
+.ws-flyout-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--ws-border-hairline);
+  background: var(--ws-bg-rail);
+}
+
+.ws-flyout-header-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ws-tag-mono {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9.5px;
+  font-weight: 800;
+  padding: 2px 5px;
+  border-radius: 4px;
+  background: var(--ws-accent-soft);
+  color: var(--ws-accent);
+}
+
+.ws-header-text {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ws-text-main);
+}
+
+.ws-flyout-close-btn {
+  background: transparent;
+  border: none;
+  color: var(--ws-text-muted);
+  cursor: pointer;
+  padding: 3px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.12s ease;
+}
+
+.ws-flyout-close-btn:hover {
+  background: var(--ws-bg-surface-hover);
+  color: var(--ws-text-main);
+}
+
+/* Actions Row (Create, Join, Add Member) */
+.ws-flyout-actions-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  background: var(--ws-bg-surface);
+  border-bottom: 1px solid var(--ws-border-hairline);
+}
+
+.ws-action-pill-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 5px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 5px;
+  border: 1px solid var(--ws-border-hairline);
+  background: var(--ws-bg-app);
+  color: var(--ws-text-main);
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.ws-action-pill-btn:hover {
+  background: var(--ws-bg-surface-hover);
+  border-color: var(--ws-accent);
+}
+
+.ws-action-pill-btn.active {
+  background: var(--ws-accent-soft);
+  color: var(--ws-accent);
+  border-color: var(--ws-accent-border);
+}
+
+/* Sub-form Styles */
+.ws-subform-box {
+  padding: 12px;
+  background: var(--ws-bg-app);
+  border-bottom: 1px solid var(--ws-border-hairline);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  animation: wsFadeIn 0.12s ease-out;
+}
+
+.ws-subform-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ws-text-main);
+}
+
+.ws-subform-hint {
+  font-size: 11px;
+  color: var(--ws-text-muted);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.ws-subform-hint code {
+  font-family: 'JetBrains Mono', monospace;
+  background: var(--ws-bg-surface);
+  padding: 1px 4px;
+  border-radius: 3px;
+  color: var(--ws-accent);
+}
+
+.ws-type-segmented-wrap {
+  display: flex;
+  gap: 5px;
+}
+
+.ws-type-opt {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 4px;
+  font-size: 10.5px;
+  font-weight: 600;
+  border-radius: 6px;
+  background: var(--ws-bg-surface);
+  border: 1px solid var(--ws-border-hairline);
+  color: var(--ws-text-muted);
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.ws-type-opt:hover {
+  color: var(--ws-text-main);
+  border-color: var(--ws-accent);
+}
+
+.ws-type-opt.active {
+  background: var(--ws-accent-soft);
+  color: var(--ws-accent);
+  border-color: var(--ws-accent-border);
+}
+
+.ws-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ws-form-field label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ws-text-muted);
+}
+
+.ws-form-field input,
+.ws-form-field textarea,
+.ws-select-field {
+  width: 100%;
+  padding: 6px 9px;
+  font-size: 12px;
+  border-radius: 5px;
+  border: 1px solid var(--ws-border-hairline);
+  background: var(--ws-bg-surface);
+  color: var(--ws-text-main);
+  outline: none;
+  font-family: inherit;
+}
+
+.ws-form-field input:focus,
+.ws-form-field textarea:focus,
+.ws-select-field:focus {
+  border-color: var(--ws-accent);
+}
+
+.ws-subform-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 7px;
+  margin-top: 4px;
+}
+
+.ws-btn-cancel {
+  padding: 5px 10px;
+  font-size: 11.5px;
+  font-weight: 600;
+  border-radius: 5px;
+  background: transparent;
+  border: 1px solid var(--ws-border-hairline);
+  color: var(--ws-text-muted);
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.ws-btn-cancel:hover {
+  background: var(--ws-bg-surface-hover);
+  color: var(--ws-text-main);
+}
+
+.ws-btn-submit {
+  padding: 5px 12px;
+  font-size: 11.5px;
+  font-weight: 700;
+  border-radius: 5px;
+  background: var(--ws-accent);
+  border: 1px solid var(--ws-accent);
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.ws-btn-submit:hover:not(:disabled) {
+  opacity: 0.92;
+}
+
+.ws-btn-submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Invitations Tab & Cards */
+.ws-flyout-tab.has-invites {
+  color: #f59e0b;
+  font-weight: 700;
+}
+
+.ws-invite-card {
+  padding: 9px;
+  margin-bottom: 6px;
+  background: var(--ws-bg-app);
+  border: 1px solid var(--ws-border-hairline);
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ws-invite-meta {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.ws-invite-details {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.ws-invite-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ws-text-main);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ws-invite-sub {
+  font-size: 10.5px;
+  color: var(--ws-text-muted);
+}
+
+.ws-invite-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.ws-invite-accept-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 4px;
+  background: var(--ws-accent);
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  transition: opacity 0.12s ease;
+}
+
+.ws-invite-accept-btn:hover {
+  opacity: 0.9;
+}
+
+.ws-invite-decline-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 4px;
+  background: transparent;
+  border: 1px solid var(--ws-border-hairline);
+  color: var(--ws-text-muted);
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.ws-invite-decline-btn:hover {
+  background: var(--ws-bg-surface-hover);
+  color: var(--ws-text-main);
+}
+
+.ws-topbar-ws-tag.tag-subject {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.ws-topbar-ws-tag.tag-project {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+.ws-topbar-ws-tag.tag-personal {
+  background: rgba(99, 102, 241, 0.15);
+  color: #6366f1;
+  border-color: rgba(99, 102, 241, 0.3);
+}
+
+/* ==========================================================================
+   WATER DROP / INK RIPPLE THEME TRANSITION (EXPANDS RADIALLY FROM SCREEN CENTER)
+   ========================================================================== */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+::view-transition-old(root) {
+  z-index: 1;
+}
+::view-transition-new(root) {
+  z-index: 9999999;
+}
+
+.ws-water-drop-ripple {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  pointer-events: none;
+  z-index: 9999999;
+  opacity: 0.98;
+  box-shadow: 0 0 60px rgba(0, 0, 0, 0.4);
+  transition: transform 0.65s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease;
+}
+
+.ws-water-drop-ripple.animate {
+  transform: translate(-50%, -50%) scale(220);
+}
+
+.ws-water-drop-ripple.fade-out {
+  opacity: 0;
+}
+
+/* ==========================================================================
+   WORKSPACE GOVERNANCE & PROGRESS OBSERVATION FLYOUT STYLES
+   ========================================================================== */
+.ws-manage-box {
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background-color: var(--ws-bg-surface);
+}
+
+.ws-manage-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--ws-border-hairline);
+  padding-bottom: 8px;
+}
+
+.ws-manage-tabs {
+  display: flex;
+  background: var(--ws-bg-rail);
+  border: 1px solid var(--ws-border-hairline);
+  border-radius: 6px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.ws-manage-tab {
+  flex: 1;
+  padding: 5px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  border: none;
+  background: transparent;
+  color: var(--ws-text-muted);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.1s ease;
+  text-align: center;
+}
+
+.ws-manage-tab.active {
+  background: var(--ws-bg-surface);
+  color: var(--ws-accent);
+  box-shadow: var(--ws-shadow-sm);
+}
+
+.ws-manage-progress-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ws-progress-summary-card {
+  background: var(--ws-bg-surface-elevated);
+  border: 1px solid var(--ws-border-hairline);
+  border-radius: 6px;
+  padding: 10px 12px;
+}
+
+.ws-progress-bar-bg {
+  width: 100%;
+  height: 6px;
+  background: var(--ws-bg-app);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.ws-progress-bar-fill {
+  height: 100%;
+  background: var(--ws-accent);
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+.ws-progress-counters {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--ws-text-muted);
+}
+
+.ws-member-prod-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ws-prod-member-item {
+  background: var(--ws-bg-surface-elevated);
+  border: 1px solid var(--ws-border-hairline);
+  border-radius: 6px;
+  padding: 8px 10px;
+}
+
+.ws-members-list-scroll {
+  max-height: 200px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-bottom: 6px;
+}
+
+.ws-manage-member-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 8px;
+  background: var(--ws-bg-surface-elevated);
+  border: 1px solid var(--ws-border-hairline);
+  border-radius: 5px;
+}
+
+.ws-member-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.ws-member-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ws-text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ws-member-email {
+  font-size: 10px;
+  color: var(--ws-text-faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ws-member-role-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ws-role-tag {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--ws-bg-surface);
+  border: 1px solid var(--ws-border-hairline);
+  color: var(--ws-text-muted);
+}
+
+.ws-role-tag.owner {
+  background: rgba(59, 130, 246, 0.12);
+  border-color: rgba(59, 130, 246, 0.3);
+  color: var(--ws-accent);
+}
+
+.ws-role-select {
+  font-size: 10.5px;
+  padding: 2px 4px;
+  border-radius: 4px;
+  background: var(--ws-bg-surface);
+  border: 1px solid var(--ws-border-hairline);
+  color: var(--ws-text-main);
+  outline: none;
+}
+
+.ws-member-kick-btn {
+  padding: 3px;
+  background: transparent;
+  border: none;
+  color: var(--ws-text-faint);
+  cursor: pointer;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ws-member-kick-btn:hover {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+.ws-add-member-mini-form {
+  padding-top: 8px;
+  border-top: 1px solid var(--ws-border-hairline);
+}
+
+.ws-mini-input {
+  flex: 1;
+  padding: 4px 6px;
+  font-size: 11px;
+  border-radius: 4px;
+  border: 1px solid var(--ws-border-hairline);
+  background: var(--ws-bg-app);
+  color: var(--ws-text-main);
+  outline: none;
+}
+
+.ws-mini-select {
+  font-size: 11px;
+  padding: 4px;
+  border-radius: 4px;
+  border: 1px solid var(--ws-border-hairline);
+  background: var(--ws-bg-app);
+  color: var(--ws-text-main);
+  outline: none;
+}

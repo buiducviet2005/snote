@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Modal } from '../../../components/common/Modal';
 import { MarkdownViewer } from '../../../components/common/MarkdownViewer';
 import { ShareModal } from '../../../components/common/ShareModal';
@@ -6,7 +6,7 @@ import { api, ApiResponse } from '../../../services/api';
 import { useToast } from '../../../contexts/ToastContext';
 import { useAppFilter } from '../../../contexts/AppFilterContext';
 import { NoteType } from '@snote/shared';
-import { autoFormatPlainTextToMarkdown, detectNoteType, extractNoteFeatures, toggleChecklistItem } from '../utils/smartNoteParser';
+import { autoFormatPlainTextToMarkdown, detectNoteType, extractNoteFeatures, toggleChecklistItem, extractWikiLinks, extractTags, extractOutline } from '../utils/smartNoteParser';
 import { handleSmartListKeyDown } from '../utils/smartKeyboard';
 import {
   BookOpen,
@@ -29,9 +29,11 @@ interface NoteModalProps {
   onSuccess: () => void;
   noteToEdit?: any | null;
   initialMode?: NoteModalMode;
-  defaultProjectId?: string;
-  defaultSubjectId?: string;
+  defaultProjectId?: string | null;
+  defaultSubjectId?: string | null;
   onConvertToTask?: (note: any) => void;
+  allNotes?: any[];
+  onOpenNote?: (note: any) => void;
 }
 
 export const NoteModal: React.FC<NoteModalProps> = ({
@@ -42,7 +44,9 @@ export const NoteModal: React.FC<NoteModalProps> = ({
   initialMode,
   defaultProjectId,
   defaultSubjectId,
-  onConvertToTask
+  onConvertToTask,
+  allNotes,
+  onOpenNote
 }) => {
   const { subjects, selectedSubjectId } = useAppFilter();
   const [projects, setProjects] = useState<any[]>([]);
@@ -56,7 +60,56 @@ export const NoteModal: React.FC<NoteModalProps> = ({
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const isSavedRef = useRef(false);
+  const wasOpenRef = useRef(false);
+  const lastNoteIdRef = useRef<string | null | undefined>(undefined);
   const { showToast } = useToast();
+  const [obsidianTab, setObsidianTab] = useState<'PREVIEW' | 'LINKS' | 'OUTLINE' | 'TAGS'>('PREVIEW');
+
+  const backlinks = useMemo(() => {
+    if (!noteToEdit?.title || !allNotes) return [];
+    const targetTitle = noteToEdit.title.trim().toLowerCase();
+    return allNotes.filter((other) => {
+      if (other.id === noteToEdit.id) return false;
+      const links = extractWikiLinks(other.content || '');
+      return links.some((l) => l.target.toLowerCase() === targetTitle || l.target === noteToEdit.id);
+    });
+  }, [noteToEdit, allNotes]);
+
+  const outgoingLinks = useMemo(() => {
+    return extractWikiLinks(content || '');
+  }, [content]);
+
+  const tagsList = useMemo(() => {
+    return extractTags(content || '');
+  }, [content]);
+
+  const outlineList = useMemo(() => {
+    return extractOutline(content || '');
+  }, [content]);
+
+  const handleNavigateWiki = (target: string) => {
+    if (!allNotes || !onOpenNote) {
+      showToast(`Liên kết tới: ${target}`, 'info');
+      return;
+    }
+    const targetLower = target.trim().toLowerCase();
+    const found = allNotes.find((n) => n.title?.trim().toLowerCase() === targetLower || n.id === target);
+    if (found) {
+      onOpenNote(found);
+    } else {
+      showToast(`Chưa tìm thấy ghi chú "${target}" trong kho`, 'info');
+    }
+  };
+
+  const initialValuesRef = useRef({
+    title: '',
+    content: '',
+    subjectId: '',
+    projectId: '',
+    noteType: NoteType.GENERAL,
+    tagsInput: ''
+  });
 
   useEffect(() => {
     if (isOpen) {
@@ -67,24 +120,121 @@ export const NoteModal: React.FC<NoteModalProps> = ({
   }, [isOpen]);
 
   useEffect(() => {
+    if (!isOpen) {
+      wasOpenRef.current = false;
+      lastNoteIdRef.current = undefined;
+      return;
+    }
+
+    const noteId = noteToEdit?.id ?? null;
+    const isNewOpen = !wasOpenRef.current;
+    const isNoteChanged = noteId !== lastNoteIdRef.current;
+
+    if (!isNewOpen && !isNoteChanged) {
+      return;
+    }
+
+    wasOpenRef.current = true;
+    lastNoteIdRef.current = noteId;
+    isSavedRef.current = false;
+
     if (noteToEdit) {
-      setTitle(noteToEdit.title || '');
-      setContent(noteToEdit.content || '');
-      setSubjectId(noteToEdit.subjectId || '');
-      setProjectId(noteToEdit.projectId || '');
-      setNoteType(noteToEdit.noteType || NoteType.GENERAL);
-      setTagsInput((noteToEdit.tags || []).map((t: any) => t.name).join(', '));
-      setIsEditing(initialMode === 'WRITE' || initialMode === 'EDIT');
+      const initTitle = noteToEdit.title || '';
+      const initContent = noteToEdit.content || '';
+      const initSubjectId = noteToEdit.subjectId || '';
+      const initProjectId = noteToEdit.projectId || '';
+      const initNoteType = noteToEdit.noteType || NoteType.GENERAL;
+      const initTags = (noteToEdit.tags || []).map((t: any) => t.name).join(', ');
+      const initEditing = initialMode === 'WRITE' || initialMode === 'EDIT';
+
+      setTitle(initTitle);
+      setContent(initContent);
+      setSubjectId(initSubjectId);
+      setProjectId(initProjectId);
+      setNoteType(initNoteType);
+      setTagsInput(initTags);
+      setIsEditing(initEditing);
+
+      initialValuesRef.current = {
+        title: initTitle,
+        content: initContent,
+        subjectId: initSubjectId,
+        projectId: initProjectId,
+        noteType: initNoteType,
+        tagsInput: initTags
+      };
     } else {
+      // In project context: defaultProjectId is defined. Do not fall back to selectedSubjectId if defaultSubjectId is null/empty
+      const initProjectId = defaultProjectId || '';
+      const initSubjectId = defaultProjectId ? (defaultSubjectId || '') : (defaultSubjectId || selectedSubjectId || '');
+      const initNoteType = initProjectId ? NoteType.PROJECT_LOG : (initSubjectId ? NoteType.LECTURE : NoteType.GENERAL);
+
       setTitle('');
       setContent('');
-      setSubjectId(defaultSubjectId || selectedSubjectId || '');
-      setProjectId(defaultProjectId || '');
-      setNoteType(defaultProjectId ? NoteType.PROJECT_LOG : (selectedSubjectId ? NoteType.LECTURE : NoteType.GENERAL));
+      setSubjectId(initSubjectId);
+      setProjectId(initProjectId);
+      setNoteType(initNoteType);
       setTagsInput('');
       setIsEditing(true);
+
+      initialValuesRef.current = {
+        title: '',
+        content: '',
+        subjectId: initSubjectId,
+        projectId: initProjectId,
+        noteType: initNoteType,
+        tagsInput: ''
+      };
     }
-  }, [noteToEdit, selectedSubjectId, subjects, isOpen, initialMode, defaultProjectId, defaultSubjectId]);
+  }, [isOpen, noteToEdit, defaultProjectId, defaultSubjectId, initialMode, selectedSubjectId]);
+
+  const isDirty = useMemo(() => {
+    if (!isEditing) return false;
+    const initial = initialValuesRef.current;
+    return (
+      title !== initial.title ||
+      content !== initial.content ||
+      subjectId !== initial.subjectId ||
+      projectId !== initial.projectId ||
+      noteType !== initial.noteType ||
+      tagsInput !== initial.tagsInput
+    );
+  }, [isEditing, title, content, subjectId, projectId, noteType, tagsInput]);
+
+  const handleRequestClose = useCallback(() => {
+    if (isEditing && isDirty && !isSavedRef.current) {
+      const confirmDiscard = window.confirm(
+        'Bạn có thay đổi chưa lưu trong ghi chú. Bạn có chắc chắn muốn đóng và hủy các thay đổi này không?'
+      );
+      if (!confirmDiscard) {
+        return;
+      }
+    }
+    onClose();
+  }, [isEditing, isDirty, onClose]);
+
+  const handleCancelEdit = useCallback(() => {
+    if (isDirty) {
+      const confirmDiscard = window.confirm(
+        'Bạn có thay đổi chưa lưu. Bạn có chắc chắn muốn hủy các thay đổi và quay lại xem chi tiết không?'
+      );
+      if (!confirmDiscard) {
+        return;
+      }
+    }
+    if (noteToEdit) {
+      const initial = initialValuesRef.current;
+      setTitle(initial.title);
+      setContent(initial.content);
+      setSubjectId(initial.subjectId);
+      setProjectId(initial.projectId);
+      setNoteType(initial.noteType);
+      setTagsInput(initial.tagsInput);
+      setIsEditing(false);
+    } else {
+      onClose();
+    }
+  }, [isDirty, noteToEdit, onClose]);
 
   // Insert natural plain text helper at cursor position
   const insertPlainText = (prefix: string, suffix: string = '', defaultText: string = '') => {
@@ -141,6 +291,7 @@ export const NoteModal: React.FC<NoteModalProps> = ({
         showToast('Tạo ghi chú mới thành công!', 'success');
       }
 
+      isSavedRef.current = true;
       onSuccess();
       onClose();
     } catch (err: any) {
@@ -171,7 +322,7 @@ export const NoteModal: React.FC<NoteModalProps> = ({
     <>
       <Modal
         isOpen={isOpen}
-      onClose={onClose}
+        onClose={handleRequestClose}
       title={
         noteToEdit
           ? isEditing
@@ -540,7 +691,7 @@ export const NoteModal: React.FC<NoteModalProps> = ({
                     }}
                     title="Tự động nhận diện thụt lề, danh sách, checklist, liên kết từ văn bản thuần túy"
                   >
-                    <Sparkles size={12} />
+                    <List size={12} />
                     <span>Tự nhận diện</span>
                   </button>
                 </div>
@@ -575,7 +726,7 @@ export const NoteModal: React.FC<NoteModalProps> = ({
                 {noteToEdit && (
                   <button
                     type="button"
-                    onClick={() => setIsEditing(false)}
+                    onClick={handleCancelEdit}
                     className="btn btn-ghost btn-sm"
                     style={{ fontWeight: 600, color: 'var(--text-secondary)' }}
                   >
@@ -587,7 +738,7 @@ export const NoteModal: React.FC<NoteModalProps> = ({
               <div style={{ display: 'flex', gap: '10px' }}>
                 <button
                   type="button"
-                  onClick={onClose}
+                  onClick={handleRequestClose}
                   className="btn btn-secondary"
                 >
                   Hủy

@@ -219,9 +219,16 @@ export const SettingsPage: React.FC = () => {
     }
   };
 
-  const handleCopyId = () => {
+  const handleCopyId = async () => {
     if (user?.id) {
-      navigator.clipboard.writeText(user.id);
+      try {
+        if (!navigator.clipboard?.writeText) throw new Error('Clipboard API unavailable');
+        await navigator.clipboard.writeText(user.id);
+      } catch {
+        showToast('Không thể sao chép Mã tài khoản sinh viên. Vui lòng thử lại.', 'error');
+        return;
+      }
+
       setCopiedId(true);
       showToast('Đã sao chép Mã tài khoản sinh viên!', 'info');
       setTimeout(() => setCopiedId(false), 2500);
@@ -231,17 +238,17 @@ export const SettingsPage: React.FC = () => {
   return (
     <div style={{ maxWidth: '920px', margin: '0 auto' }}>
       {/* Header */}
-      <div style={{ marginBottom: '28px' }}>
+      <div style={{ marginBottom: '24px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <h1 style={{ fontSize: '24px', fontWeight: 800, margin: 0, letterSpacing: '-0.02em' }}>
-            Cài Đặt Tài Khoản & Quản Lý Dữ Liệu
+          <h1 style={{ fontSize: '22px', fontWeight: 800, margin: 0, letterSpacing: '-0.02em' }}>
+            Cài Đặt Tài Khoản
           </h1>
-          <span className={`badge ${isAdmin ? 'badge-rose' : 'badge-blue'}`}>
-            {isAdmin ? '🛡️ QUẢN TRỊ VIÊN (ADMIN)' : '🎓 SINH VIÊN (STUDENT)'}
+          <span className={`badge ${isAdmin ? 'badge-rose' : 'badge-blue'}`} style={{ fontSize: '11px', fontWeight: 600 }}>
+            {isAdmin ? 'Quản trị viên' : (user as any)?.role === 'TEACHER' ? 'Giảng viên' : 'Sinh viên'}
           </span>
         </div>
-        <p style={{ margin: '4px 0 0 0', fontSize: '13.5px', color: 'var(--text-secondary)' }}>
-          Quản lý hồ sơ, đổi mật khẩu bảo mật, sao lưu đa cấp độ và phục hồi toàn vẹn dữ liệu
+        <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: 'var(--text-secondary)' }}>
+          Quản lý thông tin cá nhân, bảo mật mật khẩu và sao lưu dữ liệu học tập
         </p>
       </div>
 
@@ -609,7 +616,7 @@ export const SettingsPage: React.FC = () => {
               style={{ fontSize: '12.5px', width: '220px' }}
             >
               <option value="MERGE">➕ Chế độ Gộp (Merge - Giữ dữ liệu cũ)</option>
-              <option value="REPLACE">⚠️ Chế độ Ghi đè (Replace - Xóa cũ)</option>
+              <option value="REPLACE" disabled>⚠️ Chế độ Ghi đè (Replace - Khóa trong bản Pilot)</option>
             </select>
 
             <button

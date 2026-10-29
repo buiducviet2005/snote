@@ -6,7 +6,7 @@ export const createNoteSchema = z.object({
   subjectId: z.string().uuid('ID môn học không hợp lệ').nullable().optional(),
   projectId: z.string().uuid('ID đồ án không hợp lệ').nullable().optional(),
   noteType: z.enum(['LECTURE', 'LAB_REPORT', 'EXAM_PREP', 'PROJECT_LOG', 'MEETING_MINUTES', 'GENERAL'], {
-    errorMap: () => ({ message: 'Loại ghi chú không hợp lệ' })
+    error: 'Loại ghi chú không hợp lệ'
   }).default('GENERAL'),
   tagNames: z.array(z.string().trim().min(1)).optional()
 });

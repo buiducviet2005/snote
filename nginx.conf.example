@@ -1,71 +1,31 @@
-# Cấu hình Nginx Virtual Host cho SNOTE Production
-# Đường dẫn cài đặt trên VPS: /etc/nginx/sites-available/snote
-
+# SNOTE frontend + API on one origin. Configure TLS and server_name for the host.
 server {
     listen 80;
-    server_name snote.yourdomain.com; # Thay thế bằng tên miền thật của bạn
-
-    # Chuyển hướng toàn bộ HTTP sang HTTPS
-    return 301 https://$host$request_uri;
-}
-
-server {
-    listen 443 ssl http2;
-    server_name snote.yourdomain.com; # Thay thế bằng tên miền thật của bạn
-
-    # Đường dẫn SSL do Certbot tự động cấu hình
-    ssl_certificate /etc/letsencrypt/live/snote.yourdomain.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/snote.yourdomain.com/privkey.pem;
-    include /etc/letsencrypt/options-ssl-nginx.conf;
-    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
-
-    # Cấu hình nén Gzip tăng tốc độ tải trang
-    gzip on;
-    gzip_vary on;
-    gzip_min_length 1024;
-    gzip_proxied any;
-    gzip_types text/plain text/css text/xml text/javascript application/x-javascript application/xml application/json application/javascript;
-
-    # 1. Phục vụ Frontend SPA Static Files
+    server_name snote.example;
     root /var/www/snote/frontend/dist;
     index index.html;
 
-    # Hỗ trợ React Router DOM (Deep links)
     location / {
         try_files $uri $uri/ /index.html;
-        expires 1h;
-        add_header Cache-Control "public, no-transform";
     }
 
-    # Cache tài nguyên tĩnh (JS, CSS, Ảnh, Fonts)
-    location ~* \.(?:ico|css|js|gif|jpe?g|png|woff2?|eot|ttf|svg)$ {
-        expires 30d;
-        add_header Cache-Control "public, max-age=2592000, immutable";
-        access_log off;
+    location /assets/ {
+        try_files $uri =404;
+        expires 1y;
+        add_header Cache-Control "public, immutable";
     }
 
-    # 2. Reverse Proxy cho Backend REST API
     location /api/ {
-        proxy_pass http://127.0.0.1:4000/api/;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
+        proxy_pass http://127.0.0.1:4000;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_cache_bypass $http_upgrade;
-
-        # Timeout cho API
-        proxy_connect_timeout 60s;
-        proxy_send_timeout 60s;
-        proxy_read_timeout 60s;
     }
 
-    # 3. Reverse Proxy cho Health Check Probe
     location /health {
-        proxy_pass http://127.0.0.1:4000/health;
+        proxy_pass http://127.0.0.1:4000;
         proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
     }
 }
+

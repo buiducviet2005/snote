@@ -1,6 +1,5 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { AppLayout } from '../components/layout/AppLayout';
 import { ProtectedRoute } from '../components/layout/ProtectedRoute';
 import { AdminRoute } from '../components/layout/AdminRoute';
 import { LoginPage, RegisterPage } from '../features/auth';
@@ -13,26 +12,29 @@ import { ProjectsListPage } from '../features/projects';
 import { ProgressDashboardPage } from '../features/progress';
 import { SettingsPage } from '../features/settings';
 import { SystemStatusPage } from '../features/status';
-import { AiChatPage } from '../features/ai';
+import { ClassesPage } from '../features/classes/pages/ClassesPage';
+import { WorkspaceLayout } from '../workspaces/layouts';
 
 export const AppRouter: React.FC = () => {
   return (
     <Routes>
-      {/* Public Routes */}
+      {/* Public Authentication & Note Sharing Routes */}
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/share/:token" element={<PublicShareViewPage />} />
 
-      {/* Protected Student Routes */}
+      {/* Protected Student Workstation Routes - All Rendered within WorkspaceLayout */}
       <Route element={<ProtectedRoute />}>
-        <Route element={<AppLayout />}>
-          <Route path="/" element={<Navigate to="/notes" replace />} />
+        <Route element={<WorkspaceLayout />}>
+          <Route index element={<Navigate to="/notes" replace />} />
+          <Route path="/ws" element={<Navigate to="/notes" replace />} />
+          <Route path="/workspace-preview" element={<Navigate to="/notes" replace />} />
           <Route path="/notes" element={<NotesListPage />} />
           <Route path="/tasks" element={<TasksListPage />} />
           <Route path="/schedule" element={<ScheduleWeekPage />} />
-          <Route path="/semesters" element={<SemesterOverviewPage />} />
+          <Route path="/classes" element={<ClassesPage />} />
+          <Route path="/semesters" element={<Navigate to="/classes" replace />} />
           <Route path="/projects" element={<ProjectsListPage />} />
-          <Route path="/ai-chat" element={<AiChatPage />} />
           <Route path="/progress" element={<ProgressDashboardPage />} />
           <Route path="/settings" element={<SettingsPage />} />
 
@@ -43,7 +45,7 @@ export const AppRouter: React.FC = () => {
         </Route>
       </Route>
 
-      {/* Fallback */}
+      {/* Fallback to Default Notes Workspace */}
       <Route path="*" element={<Navigate to="/notes" replace />} />
     </Routes>
   );

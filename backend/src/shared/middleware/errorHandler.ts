@@ -14,7 +14,7 @@ export function errorHandler(
 
   // 1. Xử lý lỗi Zod Validation (Request Body / Query Schema)
   if (err instanceof ZodError) {
-    const formattedErrors = err.errors.map((e) => ({
+    const formattedErrors = err.issues.map((e) => ({
       field: e.path.join('.'),
       message: e.message
     }));

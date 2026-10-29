@@ -21,8 +21,7 @@ export default defineConfig({
         manualChunks: {
           vendor: ['react', 'react-dom', 'react-router-dom'],
           icons: ['lucide-react'],
-          markdown: ['react-markdown', 'remark-gfm'],
-          effects: ['canvas-confetti']
+          markdown: ['react-markdown', 'remark-gfm']
         }
       }
     }

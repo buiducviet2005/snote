@@ -12,6 +12,7 @@ datasource db {
 
 enum UserRole {
   STUDENT
+  TEACHER
   ADMIN
 
   @@map("user_role")
@@ -67,6 +68,46 @@ enum ProjectMemberStatus {
   DECLINED
 
   @@map("project_member_status")
+}
+
+enum WorkspaceType {
+  PERSONAL
+  SUBJECT
+  PROJECT
+
+  @@map("workspace_type")
+}
+
+enum WorkspaceStatus {
+  ACTIVE
+  ARCHIVED
+
+  @@map("workspace_status")
+}
+
+enum WorkspaceRole {
+  OWNER
+  MANAGER
+  MEMBER
+  VIEWER
+
+  @@map("workspace_role")
+}
+
+enum WorkspaceMembershipStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  REMOVED
+
+  @@map("workspace_membership_status")
+}
+
+enum ClassMemberRole {
+  CLASS_ADMIN
+  STUDENT
+
+  @@map("class_member_role")
 }
 
 enum NoteType {
@@ -144,19 +185,28 @@ model User {
   deletedAt    DateTime?  @map("deleted_at") @db.Timestamptz(6)
 
   // Relations
-  refreshTokens      RefreshToken[]
-  semesters          Semester[]
-  subjects           Subject[]
-  projects           Project[]
-  projectMemberships ProjectMember[]
-  notes              Note[]
-  tasks              Task[]
-  taskAssignments    TaskAssignee[]
-  tags               Tag[]
-  scheduleEvents     ScheduleEvent[]
-  backups            BackupRecord[]
-  createdShares      ResourceShare[] @relation("SharedResourcesOwner")
-  receivedShares     ResourceShare[] @relation("SharedResourcesRecipient")
+  refreshTokens            RefreshToken[]
+  semesters                Semester[]
+  subjects                 Subject[]
+  projects                 Project[]
+  projectMemberships       ProjectMember[]
+  notes                    Note[]
+  tasks                    Task[]
+  taskAssignments          TaskAssignee[]
+  tags                     Tag[]
+  scheduleEvents           ScheduleEvent[]
+  backups                  BackupRecord[]
+  createdShares            ResourceShare[]    @relation("SharedResourcesOwner")
+  receivedShares           ResourceShare[]    @relation("SharedResourcesRecipient")
+  taughtClasses            CourseClass[]      @relation("ClassTeacher")
+  classMemberships         ClassMember[]
+  ledGroups                StudyGroup[]       @relation("GroupLeader")
+  groupMemberships         StudyGroupMember[]
+  submittedReports         ProgressReport[]   @relation("ReportSubmitter")
+  reviewedReports          ProgressReport[]   @relation("ReportReviewer")
+  workspacesOwned          Workspace[]        @relation("WorkspaceOwner")
+  workspaceMemberships     WorkspaceMember[]  @relation("WorkspaceMemberUser")
+  workspaceInvitationsSent WorkspaceMember[]  @relation("WorkspaceInviter")
 
   @@map("users")
 }
@@ -219,6 +269,7 @@ model Subject {
   notes          Note[]
   tasks          Task[]
   scheduleEvents ScheduleEvent[]
+  workspace      Workspace?
 
   @@index([userId])
   @@index([semesterId])
@@ -228,11 +279,81 @@ model Subject {
   @@map("subjects")
 }
 
+model CourseClass {
+  id          String    @id @default(uuid()) @db.Uuid
+  teacherId   String    @map("teacher_id") @db.Uuid
+  name        String    @db.VarChar(150)
+  code        String?   @db.VarChar(50)
+  term        String?   @db.VarChar(100)
+  description String?   @db.Text
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(6)
+
+  teacher      User               @relation("ClassTeacher", fields: [teacherId], references: [id])
+  members      ClassMember[]
+  groupMembers StudyGroupMember[]
+  groups       StudyGroup[]
+  projects     Project[]
+
+  @@index([teacherId, deletedAt])
+  @@map("course_classes")
+}
+
+model ClassMember {
+  classId  String          @map("class_id") @db.Uuid
+  userId   String          @map("user_id") @db.Uuid
+  role     ClassMemberRole @default(STUDENT)
+  joinedAt DateTime        @default(now()) @map("joined_at") @db.Timestamptz(6)
+
+  courseClass CourseClass @relation(fields: [classId], references: [id], onDelete: Cascade)
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([classId, userId])
+  @@index([userId])
+  @@map("class_members")
+}
+
+model StudyGroup {
+  id        String   @id @default(uuid()) @db.Uuid
+  classId   String   @map("class_id") @db.Uuid
+  leaderId  String   @map("leader_id") @db.Uuid
+  name      String   @db.VarChar(150)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  courseClass CourseClass        @relation(fields: [classId], references: [id], onDelete: Cascade)
+  leader      User               @relation("GroupLeader", fields: [leaderId], references: [id])
+  members     StudyGroupMember[]
+  projects    Project[]
+
+  @@index([classId])
+  @@map("study_groups")
+}
+
+model StudyGroupMember {
+  groupId  String   @map("group_id") @db.Uuid
+  classId  String   @map("class_id") @db.Uuid
+  userId   String   @map("user_id") @db.Uuid
+  joinedAt DateTime @default(now()) @map("joined_at") @db.Timestamptz(6)
+
+  group       StudyGroup  @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  courseClass CourseClass @relation(fields: [classId], references: [id], onDelete: Cascade)
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([groupId, userId])
+  @@unique([classId, userId])
+  @@index([userId])
+  @@map("study_group_members")
+}
+
 model Project {
   id          String        @id @default(uuid()) @db.Uuid
   userId      String        @map("user_id") @db.Uuid
   semesterId  String?       @map("semester_id") @db.Uuid
   subjectId   String?       @map("subject_id") @db.Uuid
+  classId     String?       @map("class_id") @db.Uuid
+  groupId     String?       @map("group_id") @db.Uuid
   name        String        @db.VarChar(150)
   description String?       @db.Text
   status      ProjectStatus @default(ACTIVE)
@@ -242,19 +363,45 @@ model Project {
   updatedAt   DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
   deletedAt   DateTime?     @map("deleted_at") @db.Timestamptz(6)
 
-  user     User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  semester Semester?       @relation(fields: [semesterId], references: [id], onDelete: SetNull)
-  subject  Subject?        @relation(fields: [subjectId], references: [id], onDelete: SetNull)
-  members  ProjectMember[]
-  notes    Note[]
-  tasks    Task[]
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  semester        Semester?        @relation(fields: [semesterId], references: [id], onDelete: SetNull)
+  subject         Subject?         @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+  members         ProjectMember[]
+  notes           Note[]
+  tasks           Task[]
+  courseClass     CourseClass?     @relation(fields: [classId], references: [id], onDelete: SetNull)
+  studyGroup      StudyGroup?      @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  progressReports ProgressReport[]
+  workspace       Workspace?
 
   @@index([userId])
   @@index([subjectId])
+  @@index([classId, groupId])
   @@index([userId, deletedAt])
   @@index([userId, status, deletedAt])
   @@index([userId, dueDate])
   @@map("projects")
+}
+
+model ProgressReport {
+  id              String    @id @default(uuid()) @db.Uuid
+  projectId       String    @map("project_id") @db.Uuid
+  submittedById   String    @map("submitted_by_id") @db.Uuid
+  progressPercent Int       @map("progress_percent")
+  summary         String    @db.Text
+  blockers        String?   @db.Text
+  reviewScore     Int?      @map("review_score")
+  reviewComment   String?   @map("review_comment") @db.Text
+  reviewedById    String?   @map("reviewed_by_id") @db.Uuid
+  reviewedAt      DateTime? @map("reviewed_at") @db.Timestamptz(6)
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  project     Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  submittedBy User    @relation("ReportSubmitter", fields: [submittedById], references: [id])
+  reviewedBy  User?   @relation("ReportReviewer", fields: [reviewedById], references: [id])
+
+  @@index([projectId, createdAt])
+  @@map("progress_reports")
 }
 
 model ProjectMember {
@@ -272,6 +419,57 @@ model ProjectMember {
   @@index([userId])
   @@index([projectId])
   @@map("project_members")
+}
+
+model Workspace {
+  id        String          @id @default(uuid()) @db.Uuid
+  type      WorkspaceType
+  name      String          @db.VarChar(150)
+  ownerId   String          @map("owner_id") @db.Uuid
+  status    WorkspaceStatus @default(ACTIVE)
+  timezone  String          @default("Asia/Ho_Chi_Minh") @db.VarChar(100)
+  version   Int             @default(1)
+  subjectId String?         @unique @map("subject_id") @db.Uuid
+  projectId String?         @unique @map("project_id") @db.Uuid
+  createdAt DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt DateTime?       @map("deleted_at") @db.Timestamptz(6)
+
+  owner   User              @relation("WorkspaceOwner", fields: [ownerId], references: [id], onDelete: Restrict)
+  subject Subject?          @relation(fields: [subjectId], references: [id], onDelete: Restrict)
+  project Project?          @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  members WorkspaceMember[]
+
+  @@index([ownerId])
+  @@index([type, status, deletedAt])
+  @@index([createdAt, id])
+  @@map("workspaces")
+}
+
+model WorkspaceMember {
+  id          String                    @id @default(uuid()) @db.Uuid
+  workspaceId String                    @map("workspace_id") @db.Uuid
+  userId      String                    @map("user_id") @db.Uuid
+  invitedById String?                   @map("invited_by_id") @db.Uuid
+  role        WorkspaceRole             @default(MEMBER)
+  status      WorkspaceMembershipStatus @default(PENDING)
+  version     Int                       @default(1)
+  invitedAt   DateTime                  @default(now()) @map("invited_at") @db.Timestamptz(6)
+  expiresAt   DateTime?                 @map("expires_at") @db.Timestamptz(6)
+  joinedAt    DateTime?                 @map("joined_at") @db.Timestamptz(6)
+  createdAt   DateTime                  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime                  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation("WorkspaceMemberUser", fields: [userId], references: [id], onDelete: Cascade)
+  invitedBy User?     @relation("WorkspaceInviter", fields: [invitedById], references: [id], onDelete: SetNull)
+
+  @@unique([workspaceId, userId])
+  @@index([userId, status])
+  @@index([workspaceId, status])
+  @@index([workspaceId, status, joinedAt, id])
+  @@index([invitedById])
+  @@map("workspace_members")
 }
 
 model Note {
@@ -311,7 +509,7 @@ model Tag {
   color     String?  @default("#64748b") @db.VarChar(20)
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
-  user     User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   noteTags NoteTag[]
   taskTags TaskTag[]
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Modal } from '../../../components/common/Modal';
 import { MarkdownViewer } from '../../../components/common/MarkdownViewer';
 import { StudyDateTimePicker } from '../../../components/common/StudyDateTimePicker';
@@ -37,8 +37,8 @@ interface TaskModalProps {
   onSuccess: () => void;
   taskToEdit?: any | null;
   initialMode?: 'VIEW' | 'EDIT';
-  defaultProjectId?: string;
-  defaultSubjectId?: string;
+  defaultProjectId?: string | null;
+  defaultSubjectId?: string | null;
 }
 
 export const TaskModal: React.FC<TaskModalProps> = ({
@@ -66,7 +66,24 @@ export const TaskModal: React.FC<TaskModalProps> = ({
   const [mode, setMode] = useState<'VIEW' | 'EDIT'>('VIEW');
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [loadingMembers, setLoadingMembers] = useState(false);
+  const isSavedRef = useRef(false);
+  const wasOpenRef = useRef(false);
+  const lastTaskIdRef = useRef<string | null | undefined>(undefined);
+  const workspaceGenRef = useRef(0);
   const { showToast } = useToast();
+
+  const initialValuesRef = useRef({
+    title: '',
+    description: '',
+    subjectId: '',
+    projectId: '',
+    selectedAssigneeIds: [] as string[],
+    status: TaskStatus.TODO,
+    priority: TaskPriority.MEDIUM,
+    dueDate: '',
+    tagsInput: ''
+  });
 
   useEffect(() => {
     if (isOpen) {
@@ -77,65 +94,223 @@ export const TaskModal: React.FC<TaskModalProps> = ({
     }
   }, [isOpen]);
 
-  // When project changes, load its members for assignment
+  // When project changes, load its members for assignment & filter out invalid assignees (generation-gated)
   useEffect(() => {
+    if (!isOpen) return;
+
     if (projectId) {
+      const gen = ++workspaceGenRef.current;
+      setLoadingMembers(true);
+
       api.get<ApiResponse<any>>(`/projects/${projectId}/workspace`)
         .then((res) => {
+          if (gen !== workspaceGenRef.current) return;
+          setLoadingMembers(false);
           const members = res.data?.members || [];
           setProjectMembers(members);
-          if (selectedAssigneeIds.length === 0 && currentUser) {
-            const isMember = members.some((m: any) => m.userId === currentUser.id);
-            if (isMember) {
-              setSelectedAssigneeIds([currentUser.id]);
+          const memberUserIds = new Set(members.map((m: any) => m.userId));
+
+          setSelectedAssigneeIds((prev) => {
+            // Filter invalid assignees not belonging to the new project
+            const valid = prev.filter((id) => memberUserIds.has(id));
+            let nextAssignees: string[] = [];
+            if (valid.length > 0) {
+              nextAssignees = valid;
+            } else if (currentUser && memberUserIds.has(currentUser.id)) {
+              nextAssignees = [currentUser.id];
             } else if (members.length > 0) {
-              setSelectedAssigneeIds([members[0].userId]);
+              nextAssignees = [members[0].userId];
+            } else {
+              nextAssignees = [];
             }
-          }
+
+            // Sync initial snapshot if it had no valid assignees in this project yet
+            if (
+              initialValuesRef.current.selectedAssigneeIds.length === 0 ||
+              !initialValuesRef.current.selectedAssigneeIds.some((id) => memberUserIds.has(id))
+            ) {
+              initialValuesRef.current.selectedAssigneeIds = nextAssignees;
+            }
+
+            return nextAssignees;
+          });
         })
         .catch(() => {
+          if (gen !== workspaceGenRef.current) return;
+          setLoadingMembers(false);
           setProjectMembers([]);
+          // Clear assignees on failure to prevent submitting orphaned assignees
+          setSelectedAssigneeIds([]);
         });
     } else {
+      workspaceGenRef.current++;
+      setLoadingMembers(false);
       setProjectMembers([]);
+      // When projectId is empty (personal task), default to current user if not set
+      setSelectedAssigneeIds((prev) => {
+        const next = prev.length > 0 ? prev : (currentUser?.id ? [currentUser.id] : []);
+        return next;
+      });
     }
-  }, [projectId, currentUser]);
+  }, [isOpen, projectId, currentUser]);
 
   useEffect(() => {
+    if (!isOpen) {
+      wasOpenRef.current = false;
+      lastTaskIdRef.current = undefined;
+      return;
+    }
+
+    const taskId = taskToEdit?.id ?? null;
+    const isNewOpen = !wasOpenRef.current;
+    const isTaskChanged = taskId !== lastTaskIdRef.current;
+
+    if (!isNewOpen && !isTaskChanged) {
+      return;
+    }
+
+    wasOpenRef.current = true;
+    lastTaskIdRef.current = taskId;
+    isSavedRef.current = false;
+
     if (taskToEdit) {
-      setTitle(taskToEdit.title || '');
-      setDescription(taskToEdit.description || '');
-      setSubjectId(taskToEdit.subjectId || '');
-      setProjectId(taskToEdit.projectId || '');
+      const initTitle = taskToEdit.title || '';
+      const initDescription = taskToEdit.description || '';
+      const initSubjectId = taskToEdit.subjectId || '';
+      const initProjectId = taskToEdit.projectId || '';
 
       // Multi-assignees
       const existingAssigneeIds = (taskToEdit.assignees || []).map((a: any) => a.id || a.userId);
+      let initAssignees: string[] = [];
       if (existingAssigneeIds.length > 0) {
-        setSelectedAssigneeIds(existingAssigneeIds);
+        initAssignees = existingAssigneeIds;
       } else if (taskToEdit.userId) {
-        setSelectedAssigneeIds([taskToEdit.userId]);
+        initAssignees = [taskToEdit.userId];
       } else if (taskToEdit.assignee?.id) {
-        setSelectedAssigneeIds([taskToEdit.assignee.id]);
+        initAssignees = [taskToEdit.assignee.id];
       }
 
-      setStatus(taskToEdit.status || TaskStatus.TODO);
-      setPriority(taskToEdit.priority || TaskPriority.MEDIUM);
-      setDueDate(taskToEdit.dueDate ? new Date(taskToEdit.dueDate).toISOString().slice(0, 16) : '');
-      setTagsInput((taskToEdit.tags || []).map((t: any) => t.name).join(', '));
-      setMode(initialMode || 'VIEW');
+      const initStatus = taskToEdit.status || TaskStatus.TODO;
+      const initPriority = taskToEdit.priority || TaskPriority.MEDIUM;
+      const initDueDate = taskToEdit.dueDate ? new Date(taskToEdit.dueDate).toISOString().slice(0, 16) : '';
+      const initTags = (taskToEdit.tags || []).map((t: any) => t.name).join(', ');
+      const initMode = initialMode || 'VIEW';
+
+      setTitle(initTitle);
+      setDescription(initDescription);
+      setSubjectId(initSubjectId);
+      setProjectId(initProjectId);
+      setSelectedAssigneeIds(initAssignees);
+      setStatus(initStatus);
+      setPriority(initPriority);
+      setDueDate(initDueDate);
+      setTagsInput(initTags);
+      setMode(initMode);
+
+      initialValuesRef.current = {
+        title: initTitle,
+        description: initDescription,
+        subjectId: initSubjectId,
+        projectId: initProjectId,
+        selectedAssigneeIds: initAssignees,
+        status: initStatus,
+        priority: initPriority,
+        dueDate: initDueDate,
+        tagsInput: initTags
+      };
     } else {
+      // In project context: defaultProjectId is defined. Do not fall back to selectedSubjectId if defaultSubjectId is null/empty
+      const initProjectId = defaultProjectId || '';
+      const initSubjectId = defaultProjectId ? (defaultSubjectId || '') : (defaultSubjectId || selectedSubjectId || '');
+      const initAssignees = currentUser?.id ? [currentUser.id] : [];
+      const initStatus = TaskStatus.TODO;
+      const initPriority = TaskPriority.MEDIUM;
+      const initDueDate = '';
+      const initTags = '';
+      const initMode = initialMode || 'EDIT';
+
       setTitle('');
       setDescription('');
-      setSubjectId(defaultSubjectId || selectedSubjectId || '');
-      setProjectId(defaultProjectId || '');
-      setSelectedAssigneeIds(currentUser?.id ? [currentUser.id] : []);
-      setStatus(TaskStatus.TODO);
-      setPriority(TaskPriority.MEDIUM);
-      setDueDate('');
-      setTagsInput('');
-      setMode(initialMode || 'EDIT');
+      setSubjectId(initSubjectId);
+      setProjectId(initProjectId);
+      setSelectedAssigneeIds(initAssignees);
+      setStatus(initStatus);
+      setPriority(initPriority);
+      setDueDate(initDueDate);
+      setTagsInput(initTags);
+      setMode(initMode);
+
+      initialValuesRef.current = {
+        title: '',
+        description: '',
+        subjectId: initSubjectId,
+        projectId: initProjectId,
+        selectedAssigneeIds: initAssignees,
+        status: initStatus,
+        priority: initPriority,
+        dueDate: initDueDate,
+        tagsInput: initTags
+      };
     }
-  }, [taskToEdit, selectedSubjectId, subjects, isOpen, defaultProjectId, defaultSubjectId, currentUser, initialMode]);
+  }, [isOpen, taskToEdit, defaultProjectId, defaultSubjectId, initialMode, selectedSubjectId, currentUser]);
+
+  const isDirty = useMemo(() => {
+    if (mode !== 'EDIT') return false;
+    const initial = initialValuesRef.current;
+    const assigneesChanged =
+      selectedAssigneeIds.length !== initial.selectedAssigneeIds.length ||
+      [...selectedAssigneeIds].sort().join(',') !== [...initial.selectedAssigneeIds].sort().join(',');
+
+    return (
+      title !== initial.title ||
+      description !== initial.description ||
+      subjectId !== initial.subjectId ||
+      projectId !== initial.projectId ||
+      status !== initial.status ||
+      priority !== initial.priority ||
+      dueDate !== initial.dueDate ||
+      tagsInput !== initial.tagsInput ||
+      assigneesChanged
+    );
+  }, [mode, title, description, subjectId, projectId, status, priority, dueDate, tagsInput, selectedAssigneeIds]);
+
+  const handleRequestClose = useCallback(() => {
+    if (mode === 'EDIT' && isDirty && !isSavedRef.current) {
+      const confirmDiscard = window.confirm(
+        'Bạn có thay đổi chưa lưu trong công việc. Bạn có chắc chắn muốn đóng và hủy các thay đổi này không?'
+      );
+      if (!confirmDiscard) {
+        return;
+      }
+    }
+    onClose();
+  }, [mode, isDirty, onClose]);
+
+  const handleCancelEdit = useCallback(() => {
+    if (isDirty) {
+      const confirmDiscard = window.confirm(
+        'Bạn có thay đổi chưa lưu. Bạn có chắc chắn muốn hủy các thay đổi và quay lại xem chi tiết không?'
+      );
+      if (!confirmDiscard) {
+        return;
+      }
+    }
+    if (taskToEdit) {
+      const init = initialValuesRef.current;
+      setTitle(init.title);
+      setDescription(init.description);
+      setSubjectId(init.subjectId);
+      setProjectId(init.projectId);
+      setSelectedAssigneeIds(init.selectedAssigneeIds);
+      setStatus(init.status);
+      setPriority(init.priority);
+      setDueDate(init.dueDate);
+      setTagsInput(init.tagsInput);
+      setMode('VIEW');
+    } else {
+      onClose();
+    }
+  }, [isDirty, taskToEdit, onClose]);
 
   const toggleAssignee = (userId: string) => {
     setSelectedAssigneeIds((prev) => {
@@ -183,6 +358,11 @@ export const TaskModal: React.FC<TaskModalProps> = ({
       return;
     }
 
+    if (projectId && loadingMembers) {
+      showToast('Đang tải danh sách thành viên dự án, vui lòng đợi', 'warning');
+      return;
+    }
+
     const tagNames = tagsInput
       .split(',')
       .map((t) => t.trim())
@@ -218,6 +398,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
         showToast('Tạo công việc và giao việc thành công!', 'success');
       }
 
+      isSavedRef.current = true;
       onSuccess();
       onClose();
     } catch (err: any) {
@@ -235,7 +416,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
     <>
       <Modal
         isOpen={isOpen}
-      onClose={onClose}
+        onClose={handleRequestClose}
       title={
         taskToEdit
           ? mode === 'VIEW'
@@ -449,7 +630,13 @@ export const TaskModal: React.FC<TaskModalProps> = ({
             </div>
 
             {/* Multi-Assignee Selection */}
-            {projectId && projectMembers.length > 0 && (
+            {projectId && loadingMembers && (
+              <div style={{ backgroundColor: 'var(--accent-subtle)', padding: '10px 14px', borderRadius: 'var(--radius-md)', border: '1px solid var(--accent-border)', fontSize: '12.5px', color: 'var(--text-muted)' }}>
+                ⏳ Đang tải danh sách thành viên dự án...
+              </div>
+            )}
+
+            {projectId && !loadingMembers && projectMembers.length > 0 && (
               <div style={{ backgroundColor: 'var(--accent-subtle)', padding: '14px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--accent-border)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
                   <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 700, color: 'var(--accent-primary)', margin: 0 }}>
@@ -637,7 +824,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
             ) : taskToEdit ? (
               <button
                 type="button"
-                onClick={() => setMode('VIEW')}
+                onClick={handleCancelEdit}
                 className="btn btn-secondary btn-sm"
                 style={{ fontWeight: 600 }}
               >
@@ -650,7 +837,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
           <div style={{ display: 'flex', gap: '10px' }}>
             <button
               type="button"
-              onClick={onClose}
+              onClick={handleRequestClose}
               className="btn btn-secondary"
             >
               {mode === 'VIEW' ? 'Đóng' : 'Hủy'}
@@ -658,12 +845,12 @@ export const TaskModal: React.FC<TaskModalProps> = ({
             {mode === 'EDIT' && (
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || (Boolean(projectId) && loadingMembers)}
                 className="btn btn-primary"
                 style={{ fontWeight: 700 }}
               >
                 <Save size={15} />
-                <span>{loading ? 'Đang lưu trữ...' : taskToEdit ? 'Lưu Thay Đổi' : 'Tạo Nhiệm Vụ'}</span>
+                <span>{loading ? 'Đang lưu trữ...' : (Boolean(projectId) && loadingMembers) ? 'Đang tải thành viên...' : taskToEdit ? 'Lưu Thay Đổi' : 'Tạo Nhiệm Vụ'}</span>
               </button>
             )}
           </div>
