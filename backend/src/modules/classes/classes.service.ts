@@ -39,15 +39,21 @@ export class ClassesService {
     return { ...access, project, isGroupMember, isLeader: project.studyGroup.leaderId === userId };
   }
 
-    async joinClass(userId: string, code: string) {
+  async joinClass(userId: string, codeOrId: string) {
+    const input = codeOrId.trim();
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(input);
+
     const courseClass = await prisma.courseClass.findFirst({
       where: {
-        code: { equals: code.trim(), mode: 'insensitive' },
+        OR: [
+          ...(isUuid ? [{ id: input }] : []),
+          { code: { equals: input, mode: 'insensitive' } }
+        ],
         deletedAt: null
       }
     });
     if (!courseClass) {
-      throw new NotFoundError(`Không tìm thấy lớp học với mã "${code}"`);
+      throw new NotFoundError(`Không tìm thấy lớp học với mã hoặc UID "${input}"`);
     }
     if (courseClass.teacherId === userId) {
       throw new ValidationError('Giảng viên phụ trách không thể tham gia lớp học của chính mình');

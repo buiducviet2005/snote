@@ -295,19 +295,22 @@ export const ClassesPage: React.FC = () => {
     {user?.role === UserRole.STUDENT && (
       <details className="classes-panel" open>
         <summary style={{ cursor: 'pointer', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Plus size={16} /> Tham gia lớp học bằng Mã Lớp
+          <Plus size={16} /> Tham gia lớp học bằng UID hoặc Mã Lớp
         </summary>
         <form className="classes-form" onSubmit={handleJoinClass}>
           <label style={{ flex: 2 }}>
-            Nhập mã lớp do Giảng viên cung cấp
+            Nhập UID duy nhất của lớp hoặc Mã lớp học (do Giảng viên cung cấp)
             <input
               className="snote-input"
               required
-              maxLength={50}
+              maxLength={100}
               value={joinCode}
               onChange={(e) => setJoinCode(e.target.value)}
-              placeholder="Ví dụ: CSDL-01..."
+              placeholder="Dán UID lớp (UUID) hoặc nhập Mã lớp (ví dụ: CSDL-01)..."
             />
+            <small style={{ color: 'var(--text-muted)', fontSize: '11px', marginTop: '2px' }}>
+              💡 Khuyên dùng: Dán UID lớp học để đảm bảo 100% không bị trùng lặp giữa các giảng viên và học kỳ.
+            </small>
           </label>
           <button className="btn btn-primary" disabled={busy || !joinCode.trim()}>
             Tham gia lớp
@@ -358,9 +361,52 @@ export const ClassesPage: React.FC = () => {
         </div>}
         {detail && detail.id === selectedId && <>
           <section className="classes-panel">
-            <div className="classes-section-head"><div><span className="badge badge-purple">{isTeacher ? 'Giảng viên' : classRole === 'CLASS_ADMIN' ? 'Quản trị viên lớp' : 'Sinh viên'}</span>
-              <h2>{detail.name}</h2><p>{detail.code || 'Không có mã lớp'} · {detail.term || 'Chưa ghi học kỳ'} · GV: {detail.teacher.fullName}</p>
-            </div><BookOpen size={24} aria-hidden="true" /></div>
+            <div className="classes-section-head">
+              <div>
+                <span className="badge badge-purple">{isTeacher ? 'Giảng viên' : classRole === 'CLASS_ADMIN' ? 'Lớp trưởng' : 'Sinh viên'}</span>
+                <h2>{detail.name}</h2>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', margin: '6px 0', fontSize: '12.5px', color: 'var(--text-secondary)' }}>
+                  <span>GV: <b>{detail.teacher.fullName}</b></span>
+                  <span>·</span>
+                  <span>{detail.term || 'Chưa ghi học kỳ'}</span>
+                  <span>·</span>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                    Mã lớp: <code>{detail.code || 'Chưa có mã'}</code>
+                    {detail.code && (
+                      <button
+                        type="button"
+                        className="btn btn-ghost btn-sm"
+                        style={{ fontSize: '11px', padding: '1px 6px' }}
+                        onClick={() => {
+                          navigator.clipboard.writeText(detail.code || '');
+                          showToast('Đã sao chép Mã lớp!', 'success');
+                        }}
+                        title="Sao chép Mã lớp"
+                      >
+                        Sao chép mã
+                      </button>
+                    )}
+                  </span>
+                  <span>·</span>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                    UID lớp: <code style={{ fontSize: '11px' }}>{detail.id}</code>
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-sm"
+                      style={{ fontSize: '11px', padding: '1px 6px' }}
+                      onClick={() => {
+                        navigator.clipboard.writeText(detail.id);
+                        showToast('Đã sao chép UID lớp độc nhất!', 'success');
+                      }}
+                      title="Sao chép UID duy nhất không bao giờ trùng lặp của lớp"
+                    >
+                      Sao chép UID
+                    </button>
+                  </span>
+                </div>
+              </div>
+              <BookOpen size={24} aria-hidden="true" />
+            </div>
             {detail.description && <p>{detail.description}</p>}
             {isTeacher && <details>
               <summary>Chỉnh sửa thông tin môn học và lớp</summary>

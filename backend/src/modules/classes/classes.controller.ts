@@ -15,7 +15,7 @@ export class ClassesController {
   constructor(private readonly service = new ClassesService()) {}
 
     joinClass = async (req: Request, res: Response) => {
-    const schema = z.object({ code: z.string().trim().min(1, 'Mã lớp không được để trống').max(50) });
+    const schema = z.object({ code: z.string().trim().min(1, 'Mã lớp hoặc UID không được để trống').max(100) });
     const { code } = schema.parse(req.body);
     const result = await this.service.joinClass(req.user!.id, code);
     res.status(200).json({ success: true, message: 'Tham gia lớp học thành công', data: result });
