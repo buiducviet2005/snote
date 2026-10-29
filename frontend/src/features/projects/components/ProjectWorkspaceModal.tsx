@@ -312,7 +312,7 @@ export const ProjectWorkspaceModal: React.FC<ProjectWorkspaceModalProps> = ({
                     }}
                     title={`${m.user?.fullName || m.user?.email} (${m.role})`}
                   >
-                    {m.role === 'OWNER' ? '👑' : (m.user?.fullName?.charAt(0) || 'U')}
+                    {m.role === 'OWNER' ? <Crown size={12} strokeWidth={1.5} /> : (m.user?.fullName?.charAt(0) || 'U')}
                   </div>
                 ))}
                 {members.length > 4 && (
@@ -517,7 +517,7 @@ export const ProjectWorkspaceModal: React.FC<ProjectWorkspaceModalProps> = ({
                           }}
                           title={
                             !canComplete
-                              ? (language === 'vi' ? '🔒 Chỉ thành viên được phân công hoặc Trưởng nhóm mới có quyền hoàn thành task này' : '🔒 Only assigned members or the Project Owner can complete this task')
+                              ? t('tasks.locked_complete_tooltip')
                               : isDone
                               ? t('tasks.mark_as_open')
                               : t('tasks.mark_as_done')
@@ -889,12 +889,18 @@ export const ProjectWorkspaceModal: React.FC<ProjectWorkspaceModalProps> = ({
                   background: 'var(--bg-secondary)',
                   padding: '6px 12px',
                   borderRadius: 'var(--radius-sm)',
-                  border: '1px solid var(--border-color)'
+                  border: '1px solid var(--border-color)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
                 }}
               >
-                {language === 'vi'
-                  ? '📌 Đề xuất: Hãy quản lý công việc và phân công qua tab Công việc và Tài liệu ghi chú.'
-                  : '📌 Tip: Coordinate assignments through the Tasks and Notes tabs.'}
+                <Pin size={13} strokeWidth={1.5} style={{ color: 'var(--text-secondary)', flexShrink: 0 }} />
+                <span>
+                  {language === 'vi'
+                    ? 'Đề xuất: Hãy quản lý công việc và phân công qua tab Công việc và Tài liệu ghi chú.'
+                    : 'Tip: Coordinate assignments through the Tasks and Notes tabs.'}
+                </span>
               </div>
             </div>
 
@@ -968,4 +974,3 @@ export const ProjectWorkspaceModal: React.FC<ProjectWorkspaceModalProps> = ({
     </Modal>
   );
 };
-                                                                                               

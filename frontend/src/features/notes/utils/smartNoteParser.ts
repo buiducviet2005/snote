@@ -111,7 +111,7 @@ export function autoFormatPlainTextToMarkdown(rawText: string = ''): string {
     } else if (/^(=>|->)\s*(.*)$/.test(formattedLine)) {
       const match = formattedLine.match(/^(=>|->)\s*(.*)$/);
       if (match) {
-        formattedLine = `  - ➡️ ${match[2]}`;
+        formattedLine = `  - → ${match[2]}`;
       }
     }
     // 4. Thuật toán nhận diện danh sách có thứ tự (1., 1), 1/, a., a), 1.1)
@@ -141,7 +141,7 @@ export function autoFormatPlainTextToMarkdown(rawText: string = ''): string {
         /^(Chương|Bài|Phần|Mục|Lưu ý|Chú ý|Ghi nhớ|Tổng kết|Công thức|Định lý|Định nghĩa|Tài liệu tham khảo|Nguồn):\s*(.*)$/i
       );
       if (match) {
-        formattedLine = `### 🏷️ ${match[1]}: ${match[2]}`;
+        formattedLine = `### ${match[1]}: ${match[2]}`;
       }
     } else if (
       formattedLine.endsWith(':') &&
@@ -170,7 +170,7 @@ export function autoFormatPlainTextToMarkdown(rawText: string = ''): string {
           const badgeText = getDomainBadge(parsed.hostname);
           return `[${badgeText} ↗](${fullUrl})${trailing}`;
         } catch {
-          return `[🌐 ${url} ↗](${fullUrl})${trailing}`;
+          return `[${url} ↗](${fullUrl})${trailing}`;
         }
       }
     );
@@ -179,7 +179,7 @@ export function autoFormatPlainTextToMarkdown(rawText: string = ''): string {
     formattedLine = formattedLine.replace(/\[\[([^\]\|]+)(?:\|([^\]]+))?\]\]/g, (_, target, alias) => {
       const cleanTarget = target.trim();
       const label = (alias || cleanTarget).trim();
-      return `[📎 ${label}](#wiki:${encodeURIComponent(cleanTarget)})`;
+      return `[${label} ↗](#wiki:${encodeURIComponent(cleanTarget)})`;
     });
 
     // 8. Thuật toán nhận diện Hashtags (#tag)

@@ -56,9 +56,9 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({
                   }}
                   title={t('notes.open_linked_note', { target })}
                   style={{
-                    color: '#60a5fa',
-                    backgroundColor: 'rgba(37, 99, 235, 0.15)',
-                    border: '1px solid rgba(59, 130, 246, 0.35)',
+                    color: 'var(--accent-hover)',
+                    backgroundColor: 'var(--accent-subtle)',
+                    border: '1px solid var(--accent-border)',
                     padding: '1.5px 7px',
                     borderRadius: '5px',
                     fontWeight: 600,
@@ -88,9 +88,9 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({
                   }}
                   title={t('notes.filter_by_tag', { tag })}
                   style={{
-                    color: '#c084fc',
-                    backgroundColor: 'rgba(192, 132, 252, 0.12)',
-                    border: '1px solid rgba(192, 132, 252, 0.3)',
+                    color: 'var(--text-secondary)',
+                    backgroundColor: 'var(--bg-secondary)',
+                    border: '1px solid var(--border-subtle)',
                     padding: '1px 6px',
                     borderRadius: '4px',
                     fontWeight: 600,
@@ -115,9 +115,9 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({
                 onClick={(e) => e.stopPropagation()}
                 className="note-link-highlight"
                 style={{
-                  color: '#38bdf8',
-                  backgroundColor: 'rgba(56, 189, 248, 0.12)',
-                  border: '1px solid rgba(56, 189, 248, 0.3)',
+                  color: 'var(--accent-hover)',
+                  backgroundColor: 'var(--accent-subtle)',
+                  border: '1px solid var(--accent-border)',
                   padding: '1.5px 7px',
                   borderRadius: '6px',
                   fontWeight: 600,

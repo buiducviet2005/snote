@@ -214,10 +214,10 @@ export const EventModal: React.FC<EventModalProps> = ({
   };
 
   const eventTypeTabs = [
-    { type: ScheduleEventType.CLASS, label: t('schedule.type_class'), icon: Presentation, color: '#38bdf8' },
-    { type: ScheduleEventType.EXAM, label: t('schedule.type_exam'), icon: GraduationCap, color: '#ef4444' },
-    { type: ScheduleEventType.GROUP_MEETING, label: t('schedule.type_meeting'), icon: Users, color: '#a855f7' },
-    { type: ScheduleEventType.PERSONAL, label: t('schedule.type_personal'), icon: User, color: '#10b981' }
+    { type: ScheduleEventType.CLASS, label: t('schedule.type_class'), icon: Presentation },
+    { type: ScheduleEventType.EXAM, label: t('schedule.type_exam'), icon: GraduationCap },
+    { type: ScheduleEventType.GROUP_MEETING, label: t('schedule.type_meeting'), icon: Users },
+    { type: ScheduleEventType.PERSONAL, label: t('schedule.type_personal'), icon: User }
   ];
 
   if (eventToEdit?.userId && eventToEdit.userId !== user?.id) {
@@ -271,10 +271,11 @@ export const EventModal: React.FC<EventModalProps> = ({
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  gap: '4px',
+                  gap: '6px',
                   transition: 'all 0.15s ease'
                 }}
               >
+                <tab.icon size={14} strokeWidth={1.5} />
                 <span>{tab.label}</span>
               </button>
             );
@@ -308,7 +309,7 @@ export const EventModal: React.FC<EventModalProps> = ({
               style={{ fontSize: 'var(--type-caption)', padding: '3px 9px', borderRadius: '6px', border: '1px solid var(--border-subtle)' }}
               title={t('schedule.slot_1_3')}
             >
-              🌅 Ca 1 (07:00 - 09:25)
+              Ca 1 (07:00 - 09:25)
             </button>
             <button
               type="button"
@@ -317,7 +318,7 @@ export const EventModal: React.FC<EventModalProps> = ({
               style={{ fontSize: 'var(--type-caption)', padding: '3px 9px', borderRadius: '6px', border: '1px solid var(--border-subtle)' }}
               title={t('schedule.slot_4_6')}
             >
-              ☀️ Ca 2 (09:35 - 12:00)
+              Ca 2 (09:35 - 12:00)
             </button>
             <button
               type="button"
@@ -326,7 +327,7 @@ export const EventModal: React.FC<EventModalProps> = ({
               style={{ fontSize: 'var(--type-caption)', padding: '3px 9px', borderRadius: '6px', border: '1px solid var(--border-subtle)' }}
               title={t('schedule.slot_7_9')}
             >
-              🌤️ Ca 3 (12:30 - 14:55)
+              Ca 3 (12:30 - 14:55)
             </button>
             <button
               type="button"
@@ -335,7 +336,7 @@ export const EventModal: React.FC<EventModalProps> = ({
               style={{ fontSize: 'var(--type-caption)', padding: '3px 9px', borderRadius: '6px', border: '1px solid var(--border-subtle)' }}
               title={t('schedule.slot_10_12')}
             >
-              🌆 Ca 4 (15:05 - 17:30)
+              Ca 4 (15:05 - 17:30)
             </button>
             <button
               type="button"
@@ -344,7 +345,7 @@ export const EventModal: React.FC<EventModalProps> = ({
               style={{ fontSize: 'var(--type-caption)', padding: '3px 9px', borderRadius: '6px', border: '1px solid var(--border-subtle)' }}
               title={t('schedule.slot_13_15')}
             >
-              🌙 Ca 5 (18:00 - 20:30)
+              Ca 5 (18:00 - 20:30)
             </button>
           </div>
         </div>
@@ -409,7 +410,7 @@ export const EventModal: React.FC<EventModalProps> = ({
                 <option value="">{t('schedule.select_project_option')}</option>
                 {projects.map((p) => (
                   <option key={p.id} value={p.id}>
-                    📁 {p.name}
+                    {p.name}
                   </option>
                 ))}
               </select>
@@ -430,7 +431,7 @@ export const EventModal: React.FC<EventModalProps> = ({
               gap: '10px'
             }}
           >
-            <div style={{ fontSize: 'var(--type-small)', fontWeight: 700, color: '#ef4444', display: 'flex', alignItems: 'center', gap: '5px' }}>
+            <div style={{ fontSize: 'var(--type-small)', fontWeight: 700, color: 'var(--color-danger)', display: 'flex', alignItems: 'center', gap: '5px' }}>
               <Flame size={15} />
               <span>{t('schedule.exam_info_header')}</span>
             </div>

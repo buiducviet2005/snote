@@ -532,19 +532,8 @@ export const TaskModal: React.FC<TaskModalProps> = ({
         }
         maxWidth={mode === 'VIEW' ? '680px' : '720px'}
         icon={
-          <div
-            style={{
-              width: '28px',
-              height: '28px',
-              borderRadius: '50%',
-              backgroundColor: 'rgba(37, 99, 235, 0.12)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#2563eb'
-            }}
-          >
-            <Plus size={16} strokeWidth={2.5} />
+          <div className="snote-icon-tile" style={{ width: '28px', height: '28px' }}>
+            <Plus size={16} strokeWidth={1.5} />
           </div>
         }
       >
@@ -775,7 +764,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                   type="checkbox"
                   checked={allowSelfAssign}
                   onChange={(e) => setAllowSelfAssign(e.target.checked)}
-                  style={{ width: '16px', height: '16px', accentColor: '#2563eb', cursor: 'pointer' }}
+                  style={{ width: '16px', height: '16px', accentColor: 'var(--accent-primary)', cursor: 'pointer' }}
                 />
                 <span>{t('tasks.allow_self_assign')}</span>
               </label>

@@ -103,7 +103,7 @@ export const WorkspaceQuickCapture: React.FC<WorkspaceQuickCaptureProps> = ({
               onClick={handleCopy}
               title={t('quick_capture.copy_tooltip')}
             >
-              {isCopied ? <Check size={15} style={{ color: '#16a34a' }} /> : <Copy size={15} />}
+              {isCopied ? <Check size={14} strokeWidth={1.5} style={{ color: 'var(--color-success)' }} /> : <Copy size={14} strokeWidth={1.5} />}
             </button>
             <button
               type="button"

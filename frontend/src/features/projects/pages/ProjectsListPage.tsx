@@ -28,7 +28,8 @@ import {
   Check,
   X,
   LogOut,
-  ShieldAlert
+  ShieldAlert,
+  Folder
 } from 'lucide-react';
 
 export const ProjectsListPage: React.FC = () => {
@@ -191,8 +192,9 @@ export const ProjectsListPage: React.FC = () => {
               >
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Folder size={15} strokeWidth={1.5} style={{ color: 'var(--text-secondary)' }} />
                     <span style={{ fontSize: 'var(--type-body)', fontWeight: 700, color: 'var(--text-primary)' }}>
-                      📁 {inv.name}
+                      {inv.name}
                     </span>
                     {inv.subject && (
                       <span className="badge badge-blue" style={{ fontSize: 'var(--type-caption)' }}>

@@ -842,8 +842,9 @@ export const NotesObsidianWorkbench: React.FC<NotesObsidianWorkbenchProps> = ({
                         }
                       }}
                     >
-                      <span style={{ fontSize: 'var(--type-caption)', fontWeight: 600, color: match ? '#38bdf8' : 'var(--text-muted)' }}>
-                        📎 {link.alias || link.target}
+                      <span style={{ fontSize: 'var(--type-caption)', fontWeight: 600, color: match ? 'var(--accent-primary)' : 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                        <Link2 size={12} strokeWidth={1.5} />
+                        <span>{link.alias || link.target}</span>
                       </span>
                       <span style={{ fontSize: 'var(--type-caption)', color: match ? 'var(--ws-text-faint)' : 'var(--ws-accent)' }}>
                         {match ? (language === 'vi' ? 'Nhảy tới ↗' : 'Jump to ↗') : `+ ${t('notes.new_note')}`}

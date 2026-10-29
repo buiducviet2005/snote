@@ -56,7 +56,7 @@ export const WorkspaceArchivedBanner: React.FC<ArchivedBannerProps> = ({ isOwner
             fontSize: 'var(--type-caption)',
             padding: '3px 10px',
             background: 'var(--bg-card)',
-            borderColor: '#d97706',
+            borderColor: 'var(--color-warning)',
             color: 'var(--text-primary)',
             fontWeight: 700,
             display: 'inline-flex',
@@ -64,7 +64,7 @@ export const WorkspaceArchivedBanner: React.FC<ArchivedBannerProps> = ({ isOwner
             gap: '4px'
           }}
         >
-          <RefreshCw size={12} />
+          <RefreshCw size={12} strokeWidth={1.5} />
           <span>{t('workspaces.reopen_workspace')}</span>
         </button>
       )}
