@@ -12,6 +12,7 @@ import {
 import { handleSmartListKeyDown } from '../utils/smartKeyboard';
 import { useToast } from '../../../contexts/ToastContext';
 import { useAuth } from '../../../contexts/AuthContext';
+import { useLanguage } from '../../../contexts/LanguageContext';
 import {
   Link2,
   ArrowUpRight,
@@ -65,6 +66,7 @@ export const NotesObsidianWorkbench: React.FC<NotesObsidianWorkbenchProps> = ({
 }) => {
   const { showToast } = useToast();
   const { user } = useAuth();
+  const { t, language, formatDate } = useLanguage();
 
   // Active note selection
   const [selectedNote, setSelectedNote] = useState<any | null>(null);
@@ -404,23 +406,23 @@ export const NotesObsidianWorkbench: React.FC<NotesObsidianWorkbenchProps> = ({
           <div className="obs-left-header-top">
             <div className="obs-left-title">
               <BookOpen size={14} style={{ color: 'var(--ws-accent)' }} />
-              <span>Kho Bài Ghi ({notes.length})</span>
+              <span>{t('notes.vault_title')} ({notes.length})</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
               <button
                 type="button"
                 className="obs-new-note-btn"
                 onClick={onCreateNote}
-                title="Tạo bài ghi chép mới"
+                title={t('notes.new_note_tooltip')}
               >
                 <Plus size={12} />
-                <span>Mới</span>
+                <span>{t('notes.new_note')}</span>
               </button>
               <button
                 type="button"
                 className="obs-collapse-btn"
                 onClick={() => setIsLeftCollapsed(true)}
-                title="Gập thanh duyệt bài (Ctrl + \)"
+                title={t('notes.collapse_left_tooltip')}
               >
                 <ChevronLeft size={14} />
               </button>
@@ -433,7 +435,7 @@ export const NotesObsidianWorkbench: React.FC<NotesObsidianWorkbenchProps> = ({
             <input
               type="text"
               className="obs-search-input"
-              placeholder="Tìm theo tên hoặc #tag..."
+              placeholder={t('notes.search_placeholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -446,21 +448,21 @@ export const NotesObsidianWorkbench: React.FC<NotesObsidianWorkbenchProps> = ({
               className={`obs-filter-pill ${filterType === 'ALL' ? 'active' : ''}`}
               onClick={() => setFilterType('ALL')}
             >
-              Tất cả
+              {t('notes.all')}
             </button>
             <button
               type="button"
               className={`obs-filter-pill ${filterType === 'PINNED' ? 'active' : ''}`}
               onClick={() => setFilterType('PINNED')}
             >
-              Ghim
+              {t('notes.pinned')}
             </button>
             <button
               type="button"
               className={`obs-filter-pill ${filterType === 'PROJECT' ? 'active' : ''}`}
               onClick={() => setFilterType('PROJECT')}
             >
-              Dự án
+              {t('notes.project')}
             </button>
           </div>
         </div>
@@ -469,7 +471,7 @@ export const NotesObsidianWorkbench: React.FC<NotesObsidianWorkbenchProps> = ({
         <div className="obs-notes-list">
           {filteredNotes.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '30px 10px', color: 'var(--ws-text-faint)', fontSize: '11px' }}>
-              Không tìm thấy bài ghi nào phù hợp.
+              {t('notes.no_notes_found')}
             </div>
           ) : (
             filteredNotes.map((note) => {
@@ -485,18 +487,18 @@ export const NotesObsidianWorkbench: React.FC<NotesObsidianWorkbenchProps> = ({
                   }}
                 >
                   <div className="obs-note-item-top">
-                    <span className="obs-note-item-title">{note.title || 'Ghi chú không tên'}</span>
+                    <span className="obs-note-item-title">{note.title || t('notes.untitled')}</span>
                     {note.isPinned && <Pin size={11} style={{ color: 'var(--ws-accent)', flexShrink: 0 }} />}
                   </div>
 
                   <span className="obs-note-item-snippet">
-                    {note.content ? note.content.slice(0, 70).replace(/[#*`[\]]/g, '') : 'Chưa có nội dung...'}
+                    {note.content ? note.content.slice(0, 70).replace(/[#*`[\]]/g, '') : t('notes.no_content')}
                   </span>
 
                   <div className="obs-note-item-meta">
-                    <span>{new Date(note.updatedAt || note.createdAt).toLocaleDateString('vi-VN')}</span>
-                    {tags.slice(0, 2).map((t, idx) => (
-                      <span key={idx} className="obs-tag-pill">#{t}</span>
+                    <span>{formatDate(note.updatedAt || note.createdAt)}</span>
+                    {tags.slice(0, 2).map((tTag, idx) => (
+                      <span key={idx} className="obs-tag-pill">#{tTag}</span>
                     ))}
                   </div>
                 </div>
@@ -516,7 +518,7 @@ export const NotesObsidianWorkbench: React.FC<NotesObsidianWorkbenchProps> = ({
             type="button"
             className="obs-unhide-floating-left"
             onClick={() => setIsLeftCollapsed(false)}
-            title="Hiện lại danh sách bài ghi"
+            title={t('notes.unhide_left_tooltip')}
           >
             <ChevronRight size={13} />
           </button>
@@ -527,7 +529,7 @@ export const NotesObsidianWorkbench: React.FC<NotesObsidianWorkbenchProps> = ({
             type="button"
             className="obs-unhide-floating-right"
             onClick={() => setIsRightCollapsed(false)}
-            title="Hiện ngăn thanh tra liên kết (Inspector)"
+            title={t('notes.unhide_right_tooltip')}
           >
             <ChevronLeft size={13} />
           </button>
@@ -537,7 +539,7 @@ export const NotesObsidianWorkbench: React.FC<NotesObsidianWorkbenchProps> = ({
         <div className="obs-canvas-body">
           {!selectedNote ? (
             <div style={{ textAlign: 'center', padding: '120px 20px', color: 'var(--ws-text-muted)' }}>
-              <i>Chọn một ghi chú ở cột bên trái hoặc bấm <b>"+ Mới"</b> để bắt đầu soạn thảo.</i>
+              <i>{t('notes.select_prompt')}</i>
             </div>
           ) : (
             <>
@@ -549,14 +551,14 @@ export const NotesObsidianWorkbench: React.FC<NotesObsidianWorkbenchProps> = ({
                   value={editTitle}
                   onChange={handleTitleChange}
                   readOnly={!canEditSelected}
-                  placeholder="Ghi chú không tên..."
+                  placeholder={t('notes.title_placeholder')}
                 />
                 <div className="obs-doc-tools">
                   {canEditSelected && <button
                     type="button"
                     className={`obs-doc-tool-btn ${editorMode === 'READ' ? 'active' : ''}`}
                     onClick={() => setEditorMode(editorMode === 'EDIT' ? 'READ' : 'EDIT')}
-                    title={editorMode === 'EDIT' ? 'Chuyển sang chế độ đọc tĩnh (Ctrl+E)' : 'Chuyển sang chế độ soạn thảo (Ctrl+E)'}
+                    title={editorMode === 'EDIT' ? t('notes.reading_mode') : t('notes.edit_mode')}
                   >
                     {editorMode === 'EDIT' ? <BookOpen size={14} /> : <Edit3 size={14} />}
                   </button>}
@@ -564,7 +566,7 @@ export const NotesObsidianWorkbench: React.FC<NotesObsidianWorkbenchProps> = ({
                     type="button"
                     className={`obs-doc-tool-btn ${selectedNote.isPinned ? 'active' : ''}`}
                     onClick={() => onTogglePin(selectedNote.id)}
-                    title={selectedNote.isPinned ? 'Bỏ ghim bài ghi' : 'Ghim bài ghi'}
+                    title={selectedNote.isPinned ? t('notes.unpin') : t('notes.pin')}
                   >
                     <Pin size={14} style={{ color: selectedNote.isPinned ? 'var(--ws-accent)' : undefined }} />
                   </button>}
@@ -573,7 +575,7 @@ export const NotesObsidianWorkbench: React.FC<NotesObsidianWorkbenchProps> = ({
                       type="button"
                       className="obs-doc-tool-btn"
                       onClick={() => onConvertToTask(selectedNote)}
-                      title="Chuyển thành Công việc (Task)"
+                      title={t('notes.convert_to_task')}
                     >
                       <CheckSquare size={14} />
                     </button>
@@ -583,7 +585,7 @@ export const NotesObsidianWorkbench: React.FC<NotesObsidianWorkbenchProps> = ({
                       type="button"
                       className="obs-doc-tool-btn"
                       onClick={() => onShareNote(selectedNote)}
-                      title="Chia sẻ ghi chú"
+                      title={t('notes.share')}
                     >
                       <Share2 size={14} />
                     </button>
@@ -592,7 +594,7 @@ export const NotesObsidianWorkbench: React.FC<NotesObsidianWorkbenchProps> = ({
                     type="button"
                     className="obs-doc-tool-btn danger"
                     onClick={() => onDeleteNote(selectedNote.id)}
-                    title="Xóa ghi chú"
+                    title={t('notes.delete_note')}
                   >
                     <Trash2 size={14} />
                   </button>}
@@ -603,7 +605,7 @@ export const NotesObsidianWorkbench: React.FC<NotesObsidianWorkbenchProps> = ({
             <textarea
               ref={textareaRef}
               className="obs-editor-textarea"
-              placeholder="Bắt đầu ghi chép học tập... Gõ [[ để liên kết bài khác, # để gắn thẻ..."
+              placeholder={t('notes.content_placeholder')}
               value={editContent}
               onChange={handleContentChange}
               onKeyDown={(e) => {
@@ -623,7 +625,7 @@ export const NotesObsidianWorkbench: React.FC<NotesObsidianWorkbenchProps> = ({
                   setSelectedNote(found);
                   onSelectNote(found);
                 } else {
-                  showToast(`Chưa tìm thấy ghi chú "${target}"`, 'info');
+                  showToast(language === 'vi' ? `Chưa tìm thấy ghi chú "${target}"` : `Note "${target}" not found`, 'info');
                 }
               }}
               onSelectTag={(tag) => {
@@ -638,16 +640,16 @@ export const NotesObsidianWorkbench: React.FC<NotesObsidianWorkbenchProps> = ({
         {/* 4. Bottom Status Bar */}
         <footer className="obs-status-bar">
           <div className="obs-status-left">
-            <span>{wordsCount} từ</span>
+            <span>{t('notes.word_count', { words: wordsCount })}</span>
             <span style={{ opacity: 0.35 }}>•</span>
-            <span>{editContent.length} ký tự</span>
+            <span>{t('notes.character_count', { chars: editContent.length })}</span>
             <span style={{ opacity: 0.35 }}>•</span>
-            <span>{linkedBacklinks.length} liên kết</span>
+            <span>{linkedBacklinks.length} {language === 'vi' ? 'liên kết' : 'links'}</span>
             <span style={{ opacity: 0.35 }}>•</span>
-            <span>~{Math.ceil(Math.max(wordsCount, 1) / 200)} phút đọc</span>
+            <span>~{Math.ceil(Math.max(wordsCount, 1) / 200)} {language === 'vi' ? 'phút đọc' : 'min read'}</span>
           </div>
           <div className="obs-status-right">
-            <span>{isSaving ? 'Đang lưu...' : 'Đã lưu'}</span>
+            <span>{isSaving ? (language === 'vi' ? 'Đang lưu...' : 'Saving...') : (language === 'vi' ? 'Đã lưu' : 'Saved')}</span>
           </div>
         </footer>
       </main>
