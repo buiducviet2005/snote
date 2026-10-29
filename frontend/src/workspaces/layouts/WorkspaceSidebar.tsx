@@ -9,15 +9,11 @@ import {
   Calendar,
   Layers,
   Settings,
-  Command,
-  Maximize2,
-  Minimize2,
   Moon,
   Sun,
   LogOut,
   Shield,
-  GraduationCap,
-  Globe
+  GraduationCap
 } from 'lucide-react';
 
 interface WorkspaceSidebarProps {
@@ -58,7 +54,7 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
   const navigate = useNavigate();
   const location = useLocation();
   const currentPath = location.pathname;
-  const { t, language, toggleLanguage } = useLanguage();
+  const { t, language } = useLanguage();
 
   const isTeacher = (currentUser as any)?.role === 'TEACHER';
   const navItems = [
@@ -99,17 +95,19 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
       {/* Mobile backdrop */}
       {isMobileOpen && <div className="ws-sidebar-backdrop" onClick={onCloseMobile} />}
 
-      <aside className={`ws-sidebar ${isMobileOpen ? 'mobile-open' : ''}`}>
+      <aside className={`ws-icon-rail ws-sidebar ${isMobileOpen ? 'open mobile-open' : ''}`} aria-label="Thanh điều hướng">
         {/* Top: Minimal Brand Icon */}
-        <div className="ws-sidebar-header">
+        <div className="ws-rail-top ws-sidebar-header">
           <div
-            className="ws-logo-mark"
+            className="ws-rail-brand-mark ws-logo-mark"
             onClick={() => handleNavClick('/notes')}
             title="SNOTE Workspace"
           >
-            <span>S</span>
+            <span className="ws-brand-mono">S</span>
           </div>
         </div>
+
+        <div className="ws-rail-divider" />
 
         {/* Rail Navigation Icon Items */}
         <nav className="ws-rail-nav">
@@ -137,65 +135,8 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
           })}
         </nav>
 
-        {/* Rail Footer Controls (Command Palette, Language, Theme, Settings, User) */}
-        <div className="ws-rail-footer">
-          {/* Language Switcher */}
-          <div className="ws-rail-item-wrapper">
-            <button
-              type="button"
-              className="ws-rail-btn"
-              onClick={toggleLanguage}
-              title={language === 'vi' ? 'Switch to English' : 'Chuyển sang Tiếng Việt'}
-              aria-label="Language Toggle"
-              style={{ fontSize: '10.5px', fontWeight: 800, fontFamily: 'var(--font-mono)' }}
-            >
-              {language.toUpperCase()}
-            </button>
-            <div className="ws-rail-tooltip" role="tooltip">
-              <span className="ws-tooltip-text">
-                {language === 'vi' ? 'Đổi sang English' : 'Switch to Tiếng Việt'}
-              </span>
-            </div>
-          </div>
-
-          {/* Quick Command Palette Launcher */}
-          {onOpenCommandPalette && (
-            <div className="ws-rail-item-wrapper">
-              <button
-                type="button"
-                className="ws-rail-btn"
-                onClick={onOpenCommandPalette}
-                title={t('nav.command_palette')}
-                aria-label="Command Palette"
-              >
-                <Command size={18} strokeWidth={1.8} />
-              </button>
-              <div className="ws-rail-tooltip" role="tooltip">
-                <span className="ws-tooltip-text">{t('nav.command_palette')}</span>
-              </div>
-            </div>
-          )}
-
-          {/* Zen Mode Toggle */}
-          {onToggleZenMode && (
-            <div className="ws-rail-item-wrapper">
-              <button
-                type="button"
-                className={`ws-rail-btn ${isZenMode ? 'active' : ''}`}
-                onClick={onToggleZenMode}
-                title={isZenMode ? 'Thoát Zen Mode (Z)' : 'Bật Zen Mode tập trung (Z)'}
-                aria-label="Zen Mode"
-              >
-                {isZenMode ? <Minimize2 size={18} strokeWidth={1.8} /> : <Maximize2 size={18} strokeWidth={1.8} />}
-              </button>
-              <div className="ws-rail-tooltip" role="tooltip">
-                <span className="ws-tooltip-text">
-                  {isZenMode ? 'Thoát Zen Mode' : 'Chế độ Tập Trung (Zen)'}
-                </span>
-              </div>
-            </div>
-          )}
-
+        {/* Rail Bottom Footer Controls (Theme, Admin, Settings, User - Pinned to bottom) */}
+        <div className="ws-rail-bottom ws-rail-footer">
           {/* Dark / Light Theme Toggle */}
           {onToggleTheme && (
             <div className="ws-rail-item-wrapper">
