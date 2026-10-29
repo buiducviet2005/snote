@@ -12,6 +12,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { useAppFilter } from '../../contexts/AppFilterContext';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useTheme } from '../../contexts/ThemeContext';
 import { api } from '../../services/api';
 import {
   Menu,
@@ -37,49 +38,9 @@ interface WorkspaceLayoutProps {
   onLogout?: () => void;
 }
 
-// Default Personal Workspace
-const DEFAULT_WORKSPACES: WorkspaceSummary[] = [
-  {
-    id: 'ws-personal',
-    type: 'PERSONAL',
-    name: 'Không gian Cá nhân',
-    description: 'Bàn học riêng tư: Quản lý kế hoạch ôn tập, ghi chép cá nhân',
-    status: 'ACTIVE',
-    role: 'OWNER'
-  },
-  {
-    id: 'ws-sub-web',
-    type: 'SUBJECT',
-    name: 'Phát triển ứng dụng Web',
-    code: 'INT3306',
-    description: 'Học kỳ 1 năm học 2026-2027 • Giảng đường 301-G2',
-    status: 'ACTIVE',
-    role: 'MEMBER',
-    memberCount: 48,
-    color: '#6366f1'
-  },
-  {
-    id: 'ws-sub-db',
-    type: 'SUBJECT',
-    name: 'Cơ sở dữ liệu nâng cao',
-    code: 'INT3202',
-    description: 'Học kỳ 1 năm học 2026-2027 • Giảng đường 205-G2',
-    status: 'ACTIVE',
-    role: 'MEMBER',
-    memberCount: 52,
-    color: '#10b981'
-  },
-  {
-    id: 'ws-proj-snote',
-    type: 'PROJECT',
-    name: 'Đồ án Xây dựng Website SNOTE',
-    description: 'Đồ án lớn môn Web - Nhóm 4 sinh viên K66-CACLC',
-    status: 'ACTIVE',
-    role: 'OWNER',
-    memberCount: 4,
-    color: '#f59e0b'
-  }
-];
+const UNAVAILABLE_WORKSPACE: WorkspaceSummary = {
+  id: '', type: 'PERSONAL', name: 'Không gian làm việc', status: 'ACTIVE', role: 'MEMBER'
+};
 
 export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
   initialWorkspaceId,
@@ -109,10 +70,12 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
     }
   }, [propLogout, authLogout, navigate]);
 
-  const [workspaces, setWorkspaces] = useState<WorkspaceSummary[]>(DEFAULT_WORKSPACES);
+  const [workspaces, setWorkspaces] = useState<WorkspaceSummary[]>([]);
   const [activeWorkspaceId, setActiveWorkspaceId] = useState<string>(
-    initialWorkspaceId || DEFAULT_WORKSPACES[0].id
+    initialWorkspaceId || ''
   );
+  const [workspacesLoading, setWorkspacesLoading] = useState(true);
+  const [workspacesError, setWorkspacesError] = useState(false);
 
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
@@ -124,14 +87,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
   const topbarDropdownRef = useRef<HTMLDivElement>(null);
 
   // Theme state: defaults to dark carbon mode (Linear / Vercel style), toggleable to light
-  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
-    return (localStorage.getItem('snote_theme') as 'dark' | 'light') || 'dark';
-  });
-
-  useEffect(() => {
-    localStorage.setItem('snote_theme', theme);
-    document.documentElement.setAttribute('data-theme', theme);
-  }, [theme]);
+  const { theme, setTheme } = useTheme();
 
   const toggleTheme = () => {
     const next = theme === 'dark' ? 'light' : 'dark';
@@ -142,19 +98,43 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
 
   // Fetch workspaces from API on mount
   const refreshWorkspaces = useCallback(async () => {
+    setWorkspacesLoading(true);
     try {
-      const res = await api.get<any>('/workspaces');
-      const list = res.data?.data || res.data;
-      if (Array.isArray(list) && list.length > 0) {
-        setWorkspaces(list);
-        if (!list.some((w: WorkspaceSummary) => w.id === activeWorkspaceId)) {
-          setActiveWorkspaceId(list[0].id);
-        }
-      }
+      const list: { id: string }[] = [];
+      let cursor: string | null = null;
+      do {
+        const res: any = await api.get(`/workspaces?limit=100${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`);
+        if (!Array.isArray(res.data)) throw new Error('Invalid workspace response');
+        list.push(...res.data);
+        cursor = res.meta?.hasMore ? res.meta.nextCursor : null;
+      } while (cursor);
+      // The list endpoint omits membership role; context is the authority for UI permissions.
+      const contexts = await Promise.all(list.map((workspace: { id: string }) =>
+        api.get<any>(`/workspaces/${workspace.id}/context`)
+      ));
+      const summaries: WorkspaceSummary[] = contexts.map((result) => {
+        const { workspace, membership } = result.data;
+        return {
+          id: workspace.id,
+          type: workspace.type,
+          name: workspace.name,
+          status: workspace.status,
+          role: membership.role,
+          code: workspace.subject?.code || undefined,
+          subjectCode: workspace.subject?.code || undefined,
+          description: workspace.project?.description || undefined
+        };
+      });
+      setWorkspaces(summaries);
+      setWorkspacesError(false);
+      setActiveWorkspaceId((current) => summaries.some((w) => w.id === current) ? current : (summaries[0]?.id || ''));
     } catch {
-      // Keep default workspaces on fallback
+      setWorkspacesError(true);
+      setWorkspaces([]);
+    } finally {
+      setWorkspacesLoading(false);
     }
-  }, [activeWorkspaceId]);
+  }, []);
 
   const fetchInvitationsCount = useCallback(async () => {
     try {
@@ -192,7 +172,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
     return (
       workspaces.find((w) => w.id === activeWorkspaceId) ||
       workspaces[0] ||
-      DEFAULT_WORKSPACES[0]
+      UNAVAILABLE_WORKSPACE
     );
   }, [workspaces, activeWorkspaceId]);
 
@@ -206,12 +186,6 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
     } else if (ws.type === 'PERSONAL') {
       setSelectedSubjectId(null);
     }
-  };
-
-  const handleReopenWorkspace = () => {
-    setWorkspaces((prev) =>
-      prev.map((w) => (w.id === currentWorkspace.id ? { ...w, status: 'ACTIVE' } : w))
-    );
   };
 
   // Keyboard Shortcuts (Ctrl+K: Command, Z: Zen, Q: Quick Capture)
@@ -317,7 +291,10 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                 <span className={`ws-topbar-ws-tag tag-${currentWorkspace.type.toLowerCase()}`}>
                   {currentWorkspace.type === 'SUBJECT' ? 'LỚP HỌC' : currentWorkspace.type === 'PROJECT' ? 'ĐỒ ÁN' : 'CÁ NHÂN'}
                 </span>
-                <span className="ws-topbar-ws-name">{currentWorkspace.name}</span>
+                <span className="ws-topbar-ws-name">
+                  {workspacesLoading && workspaces.length === 0 ? 'Đang tải không gian...' :
+                    workspacesError ? 'Không thể tải không gian' : currentWorkspace.name}
+                </span>
                 {invitationsCount > 0 && (
                   <span className="ws-topbar-ws-badge">{invitationsCount} lời mời</span>
                 )}
@@ -327,6 +304,11 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
               {/* Dropdown Popover */}
               {isTopbarWorkspaceOpen && (
                 <div className="ws-topbar-dropdown-popover">
+                  {workspacesError && (
+                    <button type="button" className="btn btn-secondary btn-sm" onClick={refreshWorkspaces}>
+                      Tải lại danh sách không gian
+                    </button>
+                  )}
                   <WorkspaceSwitcher
                     currentWorkspace={currentWorkspace}
                     workspaces={workspaces}
@@ -401,7 +383,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
 
             
 
-            {currentWorkspace.status === 'ACTIVE' && (
+            {workspaces.length > 0 && currentWorkspace.status === 'ACTIVE' && (
               <div className="ws-new-item-wrap">
                 <button
                   type="button"
@@ -443,7 +425,6 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
         {currentWorkspace.status === 'ARCHIVED' && (
           <WorkspaceArchivedBanner
             isOwner={currentWorkspace.role === 'OWNER'}
-            onReopen={handleReopenWorkspace}
           />
         )}
 

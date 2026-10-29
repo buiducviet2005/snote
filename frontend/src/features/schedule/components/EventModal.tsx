@@ -31,6 +31,11 @@ interface EventModalProps {
   eventToEdit?: any | null;
 }
 
+const toLocalDateTime = (value: Date) => {
+  const pad = (part: number) => String(part).padStart(2, '0');
+  return `${value.getFullYear()}-${pad(value.getMonth() + 1)}-${pad(value.getDate())}T${pad(value.getHours())}:${pad(value.getMinutes())}`;
+};
+
 export const EventModal: React.FC<EventModalProps> = ({
   isOpen,
   onClose,
@@ -65,8 +70,8 @@ export const EventModal: React.FC<EventModalProps> = ({
       setTitle(eventToEdit.title || '');
       setSubjectId(eventToEdit.subjectId || '');
       setEventType(eventToEdit.eventType || ScheduleEventType.CLASS);
-      setStartTime(eventToEdit.startTime ? new Date(eventToEdit.startTime).toISOString().slice(0, 16) : '');
-      setEndTime(eventToEdit.endTime ? new Date(eventToEdit.endTime).toISOString().slice(0, 16) : '');
+      setStartTime(eventToEdit.startTime ? toLocalDateTime(new Date(eventToEdit.startTime)) : '');
+      setEndTime(eventToEdit.endTime ? toLocalDateTime(new Date(eventToEdit.endTime)) : '');
       setLocation(eventToEdit.location || '');
       setIsRecurring(Boolean(eventToEdit.isRecurring));
     } else {
@@ -77,13 +82,8 @@ export const EventModal: React.FC<EventModalProps> = ({
       const endD = new Date(base);
       endD.setHours(9, 25, 0, 0);
 
-      const toLocalISO = (d: Date) => {
-        const pad = (n: number) => String(n).padStart(2, '0');
-        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-      };
-
-      setStartTime(toLocalISO(startD));
-      setEndTime(toLocalISO(endD));
+      setStartTime(toLocalDateTime(startD));
+      setEndTime(toLocalDateTime(endD));
       setTitle('');
       setLocation('');
       setSubjectId(subjects[0]?.id || '');
@@ -102,9 +102,8 @@ export const EventModal: React.FC<EventModalProps> = ({
     const e = new Date(base);
     e.setHours(endH, endM, 0, 0);
 
-    const pad = (n: number) => String(n).padStart(2, '0');
-    setStartTime(`${s.getFullYear()}-${pad(s.getMonth() + 1)}-${pad(s.getDate())}T${pad(s.getHours())}:${pad(s.getMinutes())}`);
-    setEndTime(`${e.getFullYear()}-${pad(e.getMonth() + 1)}-${pad(e.getDate())}T${pad(e.getHours())}:${pad(e.getMinutes())}`);
+    setStartTime(toLocalDateTime(s));
+    setEndTime(toLocalDateTime(e));
   };
 
   const handleSubjectChange = (subId: string) => {

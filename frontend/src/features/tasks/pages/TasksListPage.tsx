@@ -200,7 +200,11 @@ export const TasksListPage: React.FC = () => {
 
       if (t.dueDate) {
         const dueTime = new Date(t.dueDate).getTime();
-        if (dueTime >= todayStart && dueTime < todayEnd) today++;
+        if (t.status !== TaskStatus.DONE && dueTime < todayEnd) {
+          today++;
+        } else if (dueTime >= todayStart && dueTime < todayEnd) {
+          today++;
+        }
       }
     });
 
@@ -234,7 +238,11 @@ export const TasksListPage: React.FC = () => {
       if (metricTab === 'TODAY') {
         if (!t.dueDate) return false;
         const dueTime = new Date(t.dueDate).getTime();
-        if (dueTime < todayStart || dueTime >= todayEnd) return false;
+        if (t.status !== TaskStatus.DONE) {
+          if (dueTime >= todayEnd) return false;
+        } else {
+          if (dueTime < todayStart || dueTime >= todayEnd) return false;
+        }
       } else if (metricTab === 'IN_PROGRESS') {
         if (t.status !== TaskStatus.IN_PROGRESS) return false;
       } else if (metricTab === 'PENDING') {

@@ -32,7 +32,7 @@ export const QuickTaskBar: React.FC<QuickTaskBarProps> = ({
         title: title.trim(),
         subjectId: subjectId || undefined,
         priority,
-        dueDate: dueDate ? new Date(`${dueDate}T23:59:59.000Z`).toISOString() : undefined,
+        dueDate: dueDate ? new Date(`${dueDate}T23:59:59`).toISOString() : undefined,
         status: 'TODO'
       });
 

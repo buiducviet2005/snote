@@ -11,6 +11,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { TaskStatus, TaskPriority } from '@snote/shared';
 import {
   CheckSquare,
+  Plus,
   Calendar,
   Layers,
   Flame,
@@ -509,16 +510,31 @@ export const TaskModal: React.FC<TaskModalProps> = ({
       <Modal
         isOpen={isOpen}
         onClose={handleRequestClose}
-      title={
-        taskToEdit
-          ? mode === 'VIEW'
-            ? 'Xem Chi Tiết Công Việc'
-            : 'Chỉnh Sửa Công Việc & Phân Công'
-          : 'Giao Việc & Tạo Nhiệm Vụ Mới'
-      }
-      maxWidth={mode === 'VIEW' ? '680px' : '720px'}
-      icon={<CheckSquare size={20} />}
-    >
+        title={
+          taskToEdit
+            ? mode === 'VIEW'
+              ? 'Xem Chi Tiết Công Việc'
+              : 'Chỉnh sửa công việc'
+            : 'Tạo công việc mới'
+        }
+        maxWidth={mode === 'VIEW' ? '680px' : '720px'}
+        icon={
+          <div
+            style={{
+              width: '28px',
+              height: '28px',
+              borderRadius: '50%',
+              backgroundColor: 'rgba(37, 99, 235, 0.12)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#2563eb'
+            }}
+          >
+            <Plus size={16} strokeWidth={2.5} />
+          </div>
+        }
+      >
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
         {/* VIEW / PREVIEW MODE: Minimalist, clean title, subtle metadata string, bounded description */}
         {mode === 'VIEW' ? (
@@ -925,7 +941,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                 style={{ fontWeight: 700 }}
               >
                 <Save size={15} />
-                <span>{loading ? 'Đang lưu trữ...' : (Boolean(projectId) && loadingMembers) ? 'Đang tải thành viên...' : taskToEdit ? 'Lưu Thay Đổi' : 'Tạo Nhiệm Vụ'}</span>
+                <span>{loading ? 'Đang lưu trữ...' : (Boolean(projectId) && loadingMembers) ? 'Đang tải thành viên...' : taskToEdit ? 'Lưu thay đổi' : 'Tạo công việc'}</span>
               </button>
             )}
           </div>

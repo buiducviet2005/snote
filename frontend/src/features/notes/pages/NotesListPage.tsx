@@ -59,10 +59,7 @@ export const NotesListPage: React.FC = () => {
       setNotes(fetchedNotes);
 
       setSelectedNote((prev: any) => {
-        if (prev && fetchedNotes.some((n: any) => n.id === prev.id)) {
-          return prev;
-        }
-        return fetchedNotes[0] || null;
+        return fetchedNotes.find((n: any) => n.id === prev?.id) || fetchedNotes[0] || null;
       });
     } catch {
       showToast('Không thể tải danh sách ghi chú bài học', 'error');
@@ -120,10 +117,14 @@ export const NotesListPage: React.FC = () => {
     }
   };
 
-  const handleCopyContent = (note: any) => {
+  const handleCopyContent = async (note: any) => {
     if (!note?.content && !note?.title) return;
-    navigator.clipboard.writeText(`${note.title || ''}\n\n${note.content || ''}`);
-    showToast('Đã sao chép nội dung bài ghi!', 'success');
+    try {
+      await navigator.clipboard.writeText(`${note.title || ''}\n\n${note.content || ''}`);
+      showToast('Đã sao chép nội dung bài ghi!', 'success');
+    } catch {
+      showToast('Không thể sao chép nội dung bài ghi', 'error');
+    }
   };
 
   const handleOpenCreate = () => {

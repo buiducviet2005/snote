@@ -94,13 +94,15 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
       <aside className={`ws-icon-rail ws-sidebar ${isMobileOpen ? 'open mobile-open' : ''}`} aria-label="Thanh điều hướng">
         {/* Top: Minimal Brand Icon */}
         <div className="ws-rail-top ws-sidebar-header">
-          <div
+          <button
+            type="button"
             className="ws-rail-brand-mark ws-logo-mark"
             onClick={() => handleNavClick('/notes')}
-            title="SNOTE Workspace"
+            title="Về trang ghi chú"
+            aria-label="Về trang ghi chú"
           >
             <span className="ws-brand-mono">S</span>
-          </div>
+          </button>
         </div>
 
         <div className="ws-rail-divider" />
