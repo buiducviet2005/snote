@@ -177,7 +177,7 @@ export const TasksHourlyView: React.FC<TasksHourlyViewProps> = ({
   const currentTimeTopPx = currentMinutesFromSix * (52 / 60); // 52px per hour
 
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col">
+    <div className="snote-card" style={{ overflow: "hidden", display: "flex", flexDirection: "column" }}>
       {/* 1. Header Toolbar (Image 2 style) */}
       <div
         style={{

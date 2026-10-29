@@ -52,9 +52,9 @@ export const WorkspaceArchivedBanner: React.FC<ArchivedBannerProps> = ({ isOwner
           style={{
             fontSize: '11.5px',
             padding: '3px 10px',
-            background: '#ffffff',
+            background: 'var(--bg-card)',
             borderColor: '#d97706',
-            color: '#92400e',
+            color: 'var(--text-primary)',
             fontWeight: 700,
             display: 'inline-flex',
             alignItems: 'center',

@@ -183,7 +183,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
       if (matched) {
         setSelectedSubjectId(matched.id);
       }
-    } else if (ws.type === 'PERSONAL') {
+    } else {
       setSelectedSubjectId(null);
     }
   };

@@ -103,7 +103,7 @@ export const TasksGanttView: React.FC<TasksGanttViewProps> = ({
   };
 
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col">
+    <div className="snote-card" style={{ overflow: "hidden", display: "flex", flexDirection: "column" }}>
       {/* Top Gantt Toolbar (Directly from Vertex42 / Image 1) */}
       <div
         style={{
@@ -352,7 +352,7 @@ export const TasksGanttView: React.FC<TasksGanttViewProps> = ({
                 return (
                   <tr
                     key={task.id}
-                    className="hover:bg-blue-50/20 dark:hover:bg-blue-950/20"
+                    className="table-row-hover"
                     style={{ transition: 'background-color 0.12s ease' }}
                   >
                     <td

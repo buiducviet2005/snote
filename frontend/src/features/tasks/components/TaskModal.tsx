@@ -266,7 +266,12 @@ export const TaskModal: React.FC<TaskModalProps> = ({
 
       const initStatus = taskToEdit.status || TaskStatus.TODO;
       const initPriority = taskToEdit.priority || TaskPriority.MEDIUM;
-      const initDueDate = taskToEdit.dueDate ? new Date(taskToEdit.dueDate).toISOString().slice(0, 16) : '';
+      const initDueDate = taskToEdit.dueDate
+        ? (() => {
+            const date = new Date(taskToEdit.dueDate);
+            return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
+          })()
+        : '';
       const initTags = (taskToEdit.tags || []).map((t: any) => t.name).join(', ');
       const initMode = initialMode || 'VIEW';
 
@@ -680,7 +685,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
-                  Khong gian luu tru
+                  Không gian lưu trữ
                 </label>
                 <select
                   value={projectId}
@@ -689,7 +694,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                   disabled={Boolean(defaultProjectId)}
                   style={{ borderRadius: '10px' }}
                 >
-                  <option value="">Viec ca nhan (Personal Space)</option>
+                  <option value="">Việc cá nhân (Personal Space)</option>
                   {projects.map((proj) => (
                     <option key={proj.id} value={proj.id}>
                       📁 {proj.name}
@@ -700,7 +705,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
 
               <div>
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
-                  Do uu tien
+                  Độ ưu tiên
                 </label>
                 <select
                   value={priority}
@@ -708,10 +713,10 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                   className="snote-select"
                   style={{ borderRadius: '10px' }}
                 >
-                  <option value={TaskPriority.MEDIUM}>Trung binh (Medium)</option>
+                  <option value={TaskPriority.MEDIUM}>Trung bình (Medium)</option>
                   <option value={TaskPriority.HIGH}>Cao (High)</option>
-                  <option value={TaskPriority.URGENT}>Khan cap (Urgent)</option>
-                  <option value={TaskPriority.LOW}>Thap (Low)</option>
+                  <option value={TaskPriority.URGENT}>Khẩn cấp (Urgent)</option>
+                  <option value={TaskPriority.LOW}>Thấp (Low)</option>
                 </select>
               </div>
             </div>
@@ -719,7 +724,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
             {/* Số người nhận tối đa (Slot limit) Card */}
             <div
               style={{
-                backgroundColor: 'rgba(241, 245, 249, 0.6)',
+                backgroundColor: 'var(--bg-secondary)',
                 border: '1px solid var(--border-color)',
                 borderRadius: '12px',
                 padding: '12px 16px',
@@ -785,7 +790,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                           padding: '6px 10px',
                           borderRadius: '6px',
                           cursor: 'pointer',
-                          backgroundColor: isSelected ? 'var(--bg-secondary)' : 'rgba(255,255,255,0.03)',
+                          backgroundColor: isSelected ? 'var(--bg-secondary)' : 'var(--bg-input)',
                           border: isSelected ? '1.5px solid var(--accent-primary)' : '1px solid var(--border-color)',
                           fontSize: '12px'
                         }}
@@ -813,14 +818,14 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
                     className="snote-input"
-                    style={{ borderRadius: '8px', fontSize: '12px' }}
+                    style={{ borderRadius: '8px', fontSize: '12px', padding: '6px 8px' }}
                   />
                   <input
                     type="time"
                     value={startTime}
                     onChange={(e) => setStartTime(e.target.value)}
                     className="snote-input"
-                    style={{ borderRadius: '8px', fontSize: '12px' }}
+                    style={{ borderRadius: '8px', fontSize: '12px', padding: '6px 8px' }}
                   />
                 </div>
               </div>
@@ -835,14 +840,14 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                     value={dueDateOnly}
                     onChange={(e) => setDueDateOnly(e.target.value)}
                     className="snote-input"
-                    style={{ borderRadius: '8px', fontSize: '12px' }}
+                    style={{ borderRadius: '8px', fontSize: '12px', padding: '6px 8px' }}
                   />
                   <input
                     type="time"
                     value={dueTimeOnly}
                     onChange={(e) => setDueTimeOnly(e.target.value)}
                     className="snote-input"
-                    style={{ borderRadius: '8px', fontSize: '12px' }}
+                    style={{ borderRadius: '8px', fontSize: '12px', padding: '6px 8px' }}
                   />
                 </div>
               </div>
@@ -940,7 +945,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                 className="btn btn-primary"
                 style={{ fontWeight: 700 }}
               >
-                <Save size={15} />
+                {taskToEdit && <Save size={15} />}
                 <span>{loading ? 'Đang lưu trữ...' : (Boolean(projectId) && loadingMembers) ? 'Đang tải thành viên...' : taskToEdit ? 'Lưu thay đổi' : 'Tạo công việc'}</span>
               </button>
             )}

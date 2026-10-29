@@ -528,27 +528,64 @@ export const TasksListPage: React.FC = () => {
         </div>
       </div>
 
-      {/* 2. 1-CLICK STATUS FILTER PILLS & MULTI-DIMENSIONAL CONTROLS (Exact requested style) */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 mb-3 bg-white dark:bg-slate-900 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 text-xs shadow-2xs">
+      {/* 2. 1-CLICK STATUS FILTER PILLS & MULTI-DIMENSIONAL CONTROLS (Native SNOTE Semantic Styling) */}
+      <div
+        className="snote-card"
+        style={{
+          display: 'flex',
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '10px',
+          padding: '8px 12px',
+          borderRadius: '12px',
+          backgroundColor: 'var(--bg-surface)',
+          border: '1px solid var(--border-color)',
+          fontSize: '12px',
+          marginBottom: '12px'
+        }}
+      >
         {/* 1-Click Status Filter Pills */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 sm:pb-0 custom-scrollbar">
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            overflowX: 'auto',
+            paddingBottom: '2px',
+            scrollbarWidth: 'none'
+          }}
+        >
           <button
             type="button"
             onClick={() => setMetricTab('ALL')}
             title="Xem tất cả công việc"
-            className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 ${
-              metricTab === 'ALL'
-                ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 font-bold'
-                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-            }`}
+            style={{
+              padding: '5px 10px',
+              borderRadius: '8px',
+              fontWeight: metricTab === 'ALL' ? 700 : 500,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              flexShrink: 0,
+              border: 'none',
+              backgroundColor: metricTab === 'ALL' ? 'var(--text-primary)' : 'transparent',
+              color: metricTab === 'ALL' ? 'var(--bg-primary)' : 'var(--text-secondary)',
+              transition: 'all 0.15s ease'
+            }}
           >
             <span>Tất cả</span>
             <span
-              className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${
-                metricTab === 'ALL'
-                  ? 'bg-white/20 text-white dark:bg-slate-900/20 dark:text-slate-900'
-                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
-              }`}
+              style={{
+                padding: '1px 6px',
+                borderRadius: '999px',
+                fontSize: '10px',
+                fontFamily: 'var(--font-mono, monospace)',
+                backgroundColor: metricTab === 'ALL' ? 'rgba(0,0,0,0.18)' : 'var(--bg-secondary)',
+                color: metricTab === 'ALL' ? 'inherit' : 'var(--text-muted)'
+              }}
             >
               {metrics.total}
             </span>
@@ -558,15 +595,34 @@ export const TasksListPage: React.FC = () => {
             type="button"
             onClick={() => setMetricTab('TODAY')}
             title="Chỉ xem công việc cần làm hôm nay hoặc quá hạn"
-            className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 ${
-              metricTab === 'TODAY'
-                ? 'bg-blue-600 text-white font-bold'
-                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-            }`}
+            style={{
+              padding: '5px 10px',
+              borderRadius: '8px',
+              fontWeight: metricTab === 'TODAY' ? 700 : 500,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              flexShrink: 0,
+              border: 'none',
+              backgroundColor: metricTab === 'TODAY' ? '#2563eb' : 'transparent',
+              color: metricTab === 'TODAY' ? '#ffffff' : 'var(--text-secondary)',
+              transition: 'all 0.15s ease'
+            }}
           >
             <Clock size={14} />
             <span>Hôm nay</span>
-            <span className="px-1.5 py-0.2 rounded-full text-[10px] font-mono bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 font-bold">
+            <span
+              style={{
+                padding: '1px 6px',
+                borderRadius: '999px',
+                fontSize: '10px',
+                fontFamily: 'var(--font-mono, monospace)',
+                fontWeight: 700,
+                backgroundColor: metricTab === 'TODAY' ? 'rgba(255,255,255,0.22)' : 'rgba(37, 99, 235, 0.12)',
+                color: metricTab === 'TODAY' ? '#ffffff' : '#2563eb'
+              }}
+            >
               {metrics.today}
             </span>
           </button>
@@ -575,14 +631,32 @@ export const TasksListPage: React.FC = () => {
             type="button"
             onClick={() => setMetricTab('IN_PROGRESS')}
             title="Lọc công việc đang làm"
-            className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 ${
-              metricTab === 'IN_PROGRESS'
-                ? 'bg-blue-600 text-white font-bold'
-                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-            }`}
+            style={{
+              padding: '5px 10px',
+              borderRadius: '8px',
+              fontWeight: metricTab === 'IN_PROGRESS' ? 700 : 500,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              flexShrink: 0,
+              border: 'none',
+              backgroundColor: metricTab === 'IN_PROGRESS' ? '#2563eb' : 'transparent',
+              color: metricTab === 'IN_PROGRESS' ? '#ffffff' : 'var(--text-secondary)',
+              transition: 'all 0.15s ease'
+            }}
           >
             <span>Đang làm</span>
-            <span className="px-1.5 py-0.2 rounded-full text-[10px] font-mono bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400">
+            <span
+              style={{
+                padding: '1px 6px',
+                borderRadius: '999px',
+                fontSize: '10px',
+                fontFamily: 'var(--font-mono, monospace)',
+                backgroundColor: metricTab === 'IN_PROGRESS' ? 'rgba(255,255,255,0.22)' : 'rgba(37, 99, 235, 0.12)',
+                color: metricTab === 'IN_PROGRESS' ? '#ffffff' : '#2563eb'
+              }}
+            >
               {metrics.inProgress}
             </span>
           </button>
@@ -591,14 +665,32 @@ export const TasksListPage: React.FC = () => {
             type="button"
             onClick={() => setMetricTab('PENDING')}
             title="Lọc công việc chờ duyệt"
-            className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 ${
-              metricTab === 'PENDING'
-                ? 'bg-purple-600 text-white font-bold'
-                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-            }`}
+            style={{
+              padding: '5px 10px',
+              borderRadius: '8px',
+              fontWeight: metricTab === 'PENDING' ? 700 : 500,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              flexShrink: 0,
+              border: 'none',
+              backgroundColor: metricTab === 'PENDING' ? '#9333ea' : 'transparent',
+              color: metricTab === 'PENDING' ? '#ffffff' : 'var(--text-secondary)',
+              transition: 'all 0.15s ease'
+            }}
           >
             <span>Chờ duyệt</span>
-            <span className="px-1.5 py-0.2 rounded-full text-[10px] font-mono bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400">
+            <span
+              style={{
+                padding: '1px 6px',
+                borderRadius: '999px',
+                fontSize: '10px',
+                fontFamily: 'var(--font-mono, monospace)',
+                backgroundColor: metricTab === 'PENDING' ? 'rgba(255,255,255,0.22)' : 'rgba(147, 51, 234, 0.12)',
+                color: metricTab === 'PENDING' ? '#ffffff' : '#9333ea'
+              }}
+            >
               {metrics.pending}
             </span>
           </button>
@@ -607,14 +699,32 @@ export const TasksListPage: React.FC = () => {
             type="button"
             onClick={() => setMetricTab('DONE')}
             title="Lọc công việc đã xong"
-            className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 ${
-              metricTab === 'DONE'
-                ? 'bg-emerald-600 text-white font-bold'
-                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-            }`}
+            style={{
+              padding: '5px 10px',
+              borderRadius: '8px',
+              fontWeight: metricTab === 'DONE' ? 700 : 500,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              flexShrink: 0,
+              border: 'none',
+              backgroundColor: metricTab === 'DONE' ? '#10b981' : 'transparent',
+              color: metricTab === 'DONE' ? '#ffffff' : 'var(--text-secondary)',
+              transition: 'all 0.15s ease'
+            }}
           >
             <span>Đã xong</span>
-            <span className="px-1.5 py-0.2 rounded-full text-[10px] font-mono bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400">
+            <span
+              style={{
+                padding: '1px 6px',
+                borderRadius: '999px',
+                fontSize: '10px',
+                fontFamily: 'var(--font-mono, monospace)',
+                backgroundColor: metricTab === 'DONE' ? 'rgba(255,255,255,0.22)' : 'rgba(16, 185, 129, 0.12)',
+                color: metricTab === 'DONE' ? '#ffffff' : '#10b981'
+              }}
+            >
               {metrics.donePercent}%
             </span>
           </button>
@@ -623,15 +733,33 @@ export const TasksListPage: React.FC = () => {
             type="button"
             onClick={() => setMetricTab('ARCHIVED')}
             title="Xem danh sách công việc đã lưu trữ (Archived Vault)"
-            className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 ${
-              metricTab === 'ARCHIVED'
-                ? 'bg-slate-700 text-white font-bold'
-                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-            }`}
+            style={{
+              padding: '5px 10px',
+              borderRadius: '8px',
+              fontWeight: metricTab === 'ARCHIVED' ? 700 : 500,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              flexShrink: 0,
+              border: 'none',
+              backgroundColor: metricTab === 'ARCHIVED' ? 'var(--border-color)' : 'transparent',
+              color: metricTab === 'ARCHIVED' ? 'var(--text-primary)' : 'var(--text-secondary)',
+              transition: 'all 0.15s ease'
+            }}
           >
             <Archive size={14} />
             <span>Đã lưu trữ</span>
-            <span className="px-1.5 py-0.2 rounded-full text-[10px] font-mono bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+            <span
+              style={{
+                padding: '1px 6px',
+                borderRadius: '999px',
+                fontSize: '10px',
+                fontFamily: 'var(--font-mono, monospace)',
+                backgroundColor: 'var(--bg-secondary)',
+                color: 'var(--text-muted)'
+              }}
+            >
               {metrics.archived}
             </span>
           </button>
@@ -640,21 +768,40 @@ export const TasksListPage: React.FC = () => {
             type="button"
             onClick={() => setMetricTab('UNASSIGNED')}
             title="Xem việc chưa có người nhận"
-            className={`px-2.5 py-1 rounded-lg font-semibold transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 ${
-              metricTab === 'UNASSIGNED'
-                ? 'bg-amber-600 text-white font-bold'
-                : 'bg-amber-500/10 dark:bg-amber-950/40 hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30 dark:border-amber-700/50'
-            }`}
+            style={{
+              padding: '5px 10px',
+              borderRadius: '8px',
+              fontWeight: 700,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              flexShrink: 0,
+              border: metricTab === 'UNASSIGNED' ? '1px solid #d97706' : '1px solid rgba(217, 119, 6, 0.3)',
+              backgroundColor: metricTab === 'UNASSIGNED' ? '#d97706' : 'rgba(217, 119, 6, 0.1)',
+              color: metricTab === 'UNASSIGNED' ? '#ffffff' : '#d97706',
+              transition: 'all 0.15s ease'
+            }}
           >
-            <UserCheck size={14} className="text-amber-600 dark:text-amber-400" />
+            <UserCheck size={14} />
             <span>Chưa giao ({metrics.unassigned})</span>
           </button>
         </div>
 
         {/* Search & Filter Controls */}
-        <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
-          <div className="relative flex-1 sm:w-52">
-            <span className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-slate-400">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          <div style={{ position: 'relative', flex: 1, minWidth: '180px', maxWidth: '240px' }}>
+            <span
+              style={{
+                position: 'absolute',
+                left: '10px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                pointerEvents: 'none',
+                color: 'var(--text-muted)',
+                display: 'flex'
+              }}
+            >
               <Search size={14} />
             </span>
             <input
@@ -663,7 +810,14 @@ export const TasksListPage: React.FC = () => {
               placeholder="Tìm việc, người làm, checklist... [/]"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-8 pr-7 py-1 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-blue-500 transition-colors"
+              className="snote-input"
+              style={{
+                paddingLeft: '32px',
+                paddingRight: '28px',
+                height: '32px',
+                fontSize: '11.5px',
+                borderRadius: '8px'
+              }}
             />
             {search && (
               <button
@@ -671,7 +825,18 @@ export const TasksListPage: React.FC = () => {
                 id="btn-clear-search"
                 onClick={() => setSearch('')}
                 title="Xóa tìm kiếm (Esc)"
-                className="absolute inset-y-0 right-0 pr-2 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                style={{
+                  position: 'absolute',
+                  right: '8px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: 'var(--text-muted)',
+                  display: 'flex',
+                  padding: 0
+                }}
               >
                 <X size={14} />
               </button>
@@ -683,7 +848,14 @@ export const TasksListPage: React.FC = () => {
             id="filter-assignee-select"
             value={filterAssignee}
             onChange={(e) => setFilterAssignee(e.target.value)}
-            className="text-xs py-1 pl-2 pr-5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 focus:outline-none cursor-pointer shrink-0 max-w-[115px] sm:max-w-[135px] truncate"
+            className="snote-select"
+            style={{
+              height: '32px',
+              fontSize: '11.5px',
+              padding: '4px 8px',
+              borderRadius: '8px',
+              maxWidth: '135px'
+            }}
             title="Lọc công việc theo người phụ trách"
           >
             <option value="ALL">Tất cả người làm</option>
@@ -700,7 +872,15 @@ export const TasksListPage: React.FC = () => {
           <select
             value={sortMode}
             onChange={(e) => setSortMode(e.target.value as any)}
-            className="text-xs py-1 pl-2 pr-5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 focus:outline-none cursor-pointer shrink-0 max-w-[125px] sm:max-w-[145px] truncate font-medium"
+            className="snote-select"
+            style={{
+              height: '32px',
+              fontSize: '11.5px',
+              padding: '4px 8px',
+              borderRadius: '8px',
+              maxWidth: '145px',
+              fontWeight: 600
+            }}
             title="Thứ tự sắp xếp công việc"
           >
             <option value="today_first">Hôm nay & Hạn chót</option>
@@ -713,7 +893,14 @@ export const TasksListPage: React.FC = () => {
           <select
             value={filterPriority}
             onChange={(e) => setFilterPriority(e.target.value)}
-            className="text-xs py-1 pl-2 pr-5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 focus:outline-none cursor-pointer shrink-0 max-w-[95px] truncate"
+            className="snote-select"
+            style={{
+              height: '32px',
+              fontSize: '11.5px',
+              padding: '4px 8px',
+              borderRadius: '8px',
+              maxWidth: '110px'
+            }}
             title="Lọc theo mức độ ưu tiên"
           >
             <option value="ALL">Mọi ưu tiên</option>
