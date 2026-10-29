@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useLanguage } from '../../../contexts/LanguageContext';
 import {
   Activity,
   Server,
@@ -21,6 +22,7 @@ interface HealthStatus {
 }
 
 export const StatusPage: React.FC = () => {
+  const { t } = useLanguage();
   const [liveHealth, setLiveHealth] = useState<HealthStatus | null>(null);
   const [readyHealth, setReadyHealth] = useState<HealthStatus | null>(null);
   const [latencyMs, setLatencyMs] = useState<number | null>(null);
@@ -47,7 +49,7 @@ export const StatusPage: React.FC = () => {
       const readyData = await readyRes.json();
       setReadyHealth(readyData);
     } catch (err: any) {
-      setError(err.message || 'Không thể kết nối đến Backend Server (http://localhost:4000)');
+      setError(err.message || t('status.connection_error'));
     } finally {
       setLoading(false);
     }
@@ -63,16 +65,16 @@ export const StatusPage: React.FC = () => {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '28px', flexWrap: 'wrap', gap: '16px' }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <h1 style={{ fontSize: '24px', fontWeight: 800, margin: 0, letterSpacing: '-0.02em' }}>
-              Trạng Thái Hệ Thống (System Diagnostics)
+            <h1 style={{ fontSize: 'var(--type-title)', fontWeight: 800, margin: 0, letterSpacing: '-0.02em' }}>
+              {t('status.header_title')}
             </h1>
             <span className="badge badge-green">
               <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: 'var(--color-success)', display: 'inline-block' }} />
-              Live Monitor
+              {t('status.live_monitor')}
             </span>
           </div>
-          <p style={{ margin: '4px 0 0 0', fontSize: '13.5px', color: 'var(--text-secondary)' }}>
-            Giám sát thời gian thực sức khỏe dịch vụ SNOTE Backend Core và PostgreSQL Database
+          <p style={{ margin: '4px 0 0 0', fontSize: 'var(--type-small)', color: 'var(--text-secondary)' }}>
+            {t('status.header_desc')}
           </p>
         </div>
 
@@ -83,15 +85,15 @@ export const StatusPage: React.FC = () => {
           style={{ fontWeight: 600 }}
         >
           <RefreshCw size={15} className={loading ? 'spinner' : ''} />
-          <span>{loading ? 'Đang kiểm tra...' : 'Làm Mới Trạng Thái'}</span>
+          <span>{loading ? t('status.checking') : t('status.refresh_button')}</span>
         </button>
       </div>
 
       {loading ? (
         <div style={{ textAlign: 'center', padding: '80px 0', color: 'var(--text-muted)' }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', fontSize: '14px' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', fontSize: 'var(--type-body)' }}>
             <Sparkles size={18} className="pulse-urgent" style={{ color: 'var(--accent-primary)' }} />
-            <span>Đang gửi tín hiệu Ping tới máy chủ...</span>
+            <span>{t('status.pinging')}</span>
           </div>
         </div>
       ) : error ? (
@@ -105,9 +107,9 @@ export const StatusPage: React.FC = () => {
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--color-danger)', marginBottom: '8px' }}>
             <AlertTriangle size={20} />
-            <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700 }}>Lỗi Kết Nối Máy Chủ</h3>
+            <h3 style={{ margin: 0, fontSize: 'var(--type-body)', fontWeight: 700 }}>{t('status.connection_error')}</h3>
           </div>
-          <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '13.5px' }}>{error}</p>
+          <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: 'var(--type-small)' }}>{error}</p>
         </div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
@@ -136,10 +138,10 @@ export const StatusPage: React.FC = () => {
                   <Server size={20} />
                 </div>
                 <div>
-                  <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)' }}>
-                    API Server
+                  <h3 style={{ margin: 0, fontSize: 'var(--type-body)', fontWeight: 700, color: 'var(--text-primary)' }}>
+                    {t('status.liveness_title')}
                   </h3>
-                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Liveness Probe</span>
+                  <span style={{ fontSize: 'var(--type-caption)', color: 'var(--text-muted)' }}>{t('status.liveness_probe')}</span>
                 </div>
               </div>
 
@@ -149,22 +151,22 @@ export const StatusPage: React.FC = () => {
               </span>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '13px', color: 'var(--text-secondary)' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: 'var(--type-small)', color: 'var(--text-secondary)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '6px' }}>
-                <span>Tên dịch vụ:</span>
+                <span>{t('status.service_name')}</span>
                 <b style={{ color: 'var(--text-primary)' }}>{liveHealth?.service || 'snote-backend'}</b>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '6px' }}>
-                <span>Môi trường:</span>
+                <span>{t('status.environment')}</span>
                 <b style={{ color: 'var(--text-primary)' }}>{liveHealth?.environment || 'development'}</b>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '6px' }}>
-                <span>Độ trễ phản hồi:</span>
+                <span>{t('status.latency')}</span>
                 <b style={{ color: 'var(--color-success)' }}>{latencyMs !== null ? `${latencyMs} ms` : 'N/A'}</b>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span>Thời gian:</span>
-                <span style={{ fontSize: '11.5px', color: 'var(--text-muted)' }}>{liveHealth?.timestamp}</span>
+                <span>{t('status.time')}</span>
+                <span style={{ fontSize: 'var(--type-caption)', color: 'var(--text-muted)' }}>{liveHealth?.timestamp}</span>
               </div>
             </div>
           </div>
@@ -194,34 +196,34 @@ export const StatusPage: React.FC = () => {
                   <Database size={20} />
                 </div>
                 <div>
-                  <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)' }}>
-                    PostgreSQL Database
+                  <h3 style={{ margin: 0, fontSize: 'var(--type-body)', fontWeight: 700, color: 'var(--text-primary)' }}>
+                    {t('status.readiness_title')}
                   </h3>
-                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Readiness Probe</span>
+                  <span style={{ fontSize: 'var(--type-caption)', color: 'var(--text-muted)' }}>{t('status.readiness_probe')}</span>
                 </div>
               </div>
 
               <span className={`badge ${readyHealth?.status === 'ok' ? 'badge-green' : 'badge-rose'}`}>
                 {readyHealth?.status === 'ok' ? <CheckCircle2 size={12} /> : <AlertTriangle size={12} />}
-                <span>{readyHealth?.status === 'ok' ? 'Đã Kết Nối' : 'Mất Kết Nối'}</span>
+                <span>{readyHealth?.status === 'ok' ? t('status.db_connected') : t('status.db_disconnected')}</span>
               </span>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '13px', color: 'var(--text-secondary)' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: 'var(--type-small)', color: 'var(--text-secondary)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '6px' }}>
-                <span>Trạng thái Database:</span>
+                <span>{t('status.db_state')}</span>
                 <b style={{ color: 'var(--text-primary)' }}>{readyHealth?.database || 'healthy'}</b>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '6px' }}>
-                <span>Prisma ORM Client:</span>
+                <span>{t('status.prisma_client')}</span>
                 <b style={{ color: 'var(--text-primary)' }}>v7.10.0 Connected</b>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '6px' }}>
-                <span>Truy vấn kiểm tra:</span>
+                <span>{t('status.check_query')}</span>
                 <b style={{ color: 'var(--color-success)' }}>SELECT 1 OK</b>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span>Ranh giới Transaction:</span>
+                <span>{t('status.tx_boundary')}</span>
                 <b style={{ color: 'var(--color-info)' }}>ACID Compliant</b>
               </div>
             </div>

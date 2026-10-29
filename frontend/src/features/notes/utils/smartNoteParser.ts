@@ -15,16 +15,16 @@ import { NoteType } from '@snote/shared';
  */
 function getDomainBadge(hostname: string): string {
   const host = hostname.toLowerCase().replace('www.', '');
-  if (host.includes('github.com')) return '🐙 GitHub';
-  if (host.includes('youtube.com') || host.includes('youtu.be')) return '▶️ YouTube';
-  if (host.includes('drive.google.com')) return '📄 Google Drive';
-  if (host.includes('docs.google.com')) return '📝 Google Docs';
-  if (host.includes('notion.so') || host.includes('notion.site')) return '📓 Notion';
-  if (host.includes('figma.com')) return '🎨 Figma';
-  if (host.includes('stackoverflow.com')) return '💡 StackOverflow';
-  if (host.includes('canva.com')) return '🖼️ Canva';
-  if (host.includes('wikipedia.org')) return '📚 Wikipedia';
-  return `🌐 ${host}`;
+  if (host.includes('github.com')) return 'GitHub';
+  if (host.includes('youtube.com') || host.includes('youtu.be')) return 'YouTube';
+  if (host.includes('drive.google.com')) return 'Google Drive';
+  if (host.includes('docs.google.com')) return 'Google Docs';
+  if (host.includes('notion.so') || host.includes('notion.site')) return 'Notion';
+  if (host.includes('figma.com')) return 'Figma';
+  if (host.includes('stackoverflow.com')) return 'StackOverflow';
+  if (host.includes('canva.com')) return 'Canva';
+  if (host.includes('wikipedia.org')) return 'Wikipedia';
+  return host;
 }
 
 /**

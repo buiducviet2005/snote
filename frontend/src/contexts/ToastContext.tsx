@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { CheckCircle2, AlertCircle, Info, AlertTriangle, X } from 'lucide-react';
+import { useLanguage } from './LanguageContext';
 
 export type ToastType = 'success' | 'error' | 'info' | 'warning';
 
@@ -16,6 +17,7 @@ interface ToastContextType {
 const ToastContext = createContext<ToastContextType | undefined>(undefined);
 
 export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { t } = useLanguage();
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
   const showToast = useCallback((message: string, type: ToastType = 'info') => {
@@ -87,7 +89,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 gap: '12px',
-                fontSize: '13.5px',
+                fontSize: 'var(--type-small)',
                 fontWeight: 500,
                 pointerEvents: 'auto'
               }}
@@ -102,7 +104,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                 onClick={() => removeToast(toast.id)}
                 className="btn btn-ghost btn-icon"
                 style={{ padding: '4px', color: 'var(--text-muted)' }}
-                title="Đóng"
+                title={t('common.close')}
               >
                 <X size={14} />
               </button>

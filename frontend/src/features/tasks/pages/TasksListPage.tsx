@@ -90,17 +90,19 @@ export const TasksListPage: React.FC = () => {
         }
       })
       .catch(() => {
-        showToast(language === 'vi' ? 'Không tìm thấy công việc hoặc bạn không có quyền truy cập' : 'Task not found or access denied', 'error');
+        showToast(t('tasks.deep_link_error'), 'error');
       });
-  }, [deepTaskId, showToast, language]);
+  }, [deepTaskId, showToast, t]);
 
   const handleSelectViewMode = (mode: ViewMode) => {
     setViewMode(mode);
     localStorage.setItem('snote_tasks_view_mode', mode);
   };
 
-  const fetchTasks = useCallback(async () => {
-    setLoading(true);
+  const fetchTasks = useCallback(async (silent = false) => {
+    if (!silent && tasks.length === 0) {
+      setLoading(true);
+    }
     try {
       const params = new URLSearchParams();
       if (currentWorkspace.id) params.append('workspaceId', currentWorkspace.id);
@@ -109,49 +111,59 @@ export const TasksListPage: React.FC = () => {
       const res = await api.get<ApiResponse<any[]>>(`/tasks?${params.toString()}`);
       setTasks(res.data || []);
     } catch {
-      showToast(language === 'vi' ? 'Không thể tải danh sách công việc' : 'Failed to fetch tasks', 'error');
+      showToast(t('tasks.fetch_error'), 'error');
     } finally {
-      setLoading(false);
+      if (!silent) {
+        setLoading(false);
+      }
     }
-  }, [currentWorkspace.id, selectedSubjectId, showToast, language]);
+  }, [currentWorkspace.id, selectedSubjectId, showToast, t, tasks.length]);
 
   useEffect(() => {
     fetchTasks();
-  }, [fetchTasks, selectedSemesterId]);
+  }, [currentWorkspace.id, selectedSubjectId, selectedSemesterId]);
+
+  const handleTaskAdded = (newTask: any) => {
+    if (newTask) {
+      setTasks((prev) => [newTask, ...prev]);
+    } else {
+      fetchTasks(true);
+    }
+    setIsQuickAddOpen(false);
+  };
 
   const handleDelete = async (id: string, title: string) => {
-    if (!window.confirm(language === 'vi' ? `Bạn có chắc chắn muốn xóa công việc "${title}" không?` : `Delete task "${title}"?`)) return;
-
+    if (!window.confirm(t('tasks.delete_named_confirm', { title }))) return;
+    const prevTasks = tasks;
+    setTasks((prev) => prev.filter((t) => t.id !== id));
     try {
       await api.delete(`/tasks/${id}`);
-      showToast(language === 'vi' ? `Đã xóa công việc "${title}"` : `Deleted task "${title}"`, 'success');
-      fetchTasks();
     } catch (err: any) {
+      setTasks(prevTasks);
       showToast(err.message || 'Error deleting task', 'error');
     }
   };
 
   const handleToggleStatus = async (id: string, currentStatus: TaskStatus) => {
     const nextStatus = currentStatus === TaskStatus.DONE ? TaskStatus.TODO : TaskStatus.DONE;
+    setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, status: nextStatus } : t)));
     try {
       await api.patch(`/tasks/${id}/status`, { status: nextStatus });
-      showToast(
-        nextStatus === TaskStatus.DONE
-          ? (language === 'vi' ? 'Đã hoàn thành công việc!' : 'Task marked as completed!')
-          : (language === 'vi' ? 'Đã chuyển công việc về danh sách Cần làm' : 'Task moved back to To Do'),
-        'success'
-      );
-      fetchTasks();
     } catch (err: any) {
+      setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, status: currentStatus } : t)));
       showToast(err.message || 'Error updating task status', 'error');
     }
   };
 
   const handleMoveStatus = async (id: string, newStatus: TaskStatus) => {
+    const prevStatus = tasks.find((t) => t.id === id)?.status;
+    setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, status: newStatus } : t)));
     try {
       await api.patch(`/tasks/${id}/status`, { status: newStatus });
-      fetchTasks();
     } catch (err: any) {
+      if (prevStatus) {
+        setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, status: prevStatus } : t)));
+      }
       showToast(err.message || 'Error moving task', 'error');
     }
   };
@@ -363,553 +375,549 @@ export const TasksListPage: React.FC = () => {
 
   return (
     <div className="tasks-page">
-      {/* 1. TOP VIEW MODE SWITCHER & PRIMARY ACTION BAR */}
+      {/* 1. UNIFIED INTEGRATED TASKS TOOLBAR */}
       <div
-        className="snote-card"
         style={{
-          padding: '6px 10px',
-          borderRadius: '12px',
+          padding: '8px 12px',
+          borderRadius: 'var(--radius-lg)',
           backgroundColor: 'var(--bg-surface)',
           border: '1px solid var(--border-color)',
           display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: '8px'
+          flexDirection: 'column',
+          gap: '10px'
         }}
       >
-        {/* Left: View Mode Controls (Hourly removed as requested) */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-          <div
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              backgroundColor: 'var(--bg-secondary)',
-              border: '1px solid var(--border-color)',
-              borderRadius: '8px',
-              padding: '2px',
-              gap: '2px'
-            }}
-          >
-            {/* GANTT */}
-            <button
-              onClick={() => handleSelectViewMode('GANTT')}
-              className={`btn btn-sm ${viewMode === 'GANTT' ? 'btn-primary' : 'btn-ghost'}`}
+        {/* Tier 1: View Mode Switcher + Count on Left; Quick Add + New Task on Right */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+            <div
               style={{
-                padding: '4px 10px',
-                borderRadius: '6px',
-                fontSize: '11.5px',
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '5px',
-                backgroundColor: viewMode === 'GANTT' ? 'var(--accent)' : 'transparent',
-                color: viewMode === 'GANTT' ? '#ffffff' : 'var(--text-secondary)'
+                backgroundColor: 'var(--bg-secondary)',
+                border: '1px solid var(--border-color)',
+                borderRadius: '8px',
+                padding: '2px',
+                gap: '2px'
               }}
-              title={t('tasks.view_gantt')}
             >
-              <TrendingUp size={14} />
-              <span>Gantt (7W)</span>
-            </button>
+              {/* GANTT */}
+              <button
+                onClick={() => handleSelectViewMode('GANTT')}
+                className={`btn btn-sm ${viewMode === 'GANTT' ? 'btn-primary' : 'btn-ghost'}`}
+                style={{
+                  padding: '4px 10px',
+                  borderRadius: '6px',
+                  fontSize: 'var(--type-caption)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '5px',
+                  backgroundColor: viewMode === 'GANTT' ? 'var(--text-primary)' : 'transparent',
+                  color: viewMode === 'GANTT' ? 'var(--bg-primary)' : 'var(--text-secondary)'
+                }}
+                title={t('tasks.view_gantt')}
+              >
+                <TrendingUp size={14} />
+                <span>Gantt (7W)</span>
+              </button>
 
-            {/* LIST */}
-            <button
-              onClick={() => handleSelectViewMode('LIST')}
-              className={`btn btn-sm ${viewMode === 'LIST' ? 'btn-primary' : 'btn-ghost'}`}
-              style={{
-                padding: '4px 10px',
-                borderRadius: '6px',
-                fontSize: '11.5px',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '5px',
-                backgroundColor: viewMode === 'LIST' ? 'var(--accent)' : 'transparent',
-                color: viewMode === 'LIST' ? '#ffffff' : 'var(--text-secondary)'
-              }}
-              title={t('tasks.view_list')}
-            >
-              <ListFilter size={14} />
-              <span>{language === 'vi' ? 'Danh sách' : 'List'}</span>
-            </button>
+              {/* LIST */}
+              <button
+                onClick={() => handleSelectViewMode('LIST')}
+                className={`btn btn-sm ${viewMode === 'LIST' ? 'btn-primary' : 'btn-ghost'}`}
+                style={{
+                  padding: '4px 10px',
+                  borderRadius: '6px',
+                  fontSize: 'var(--type-caption)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '5px',
+                  backgroundColor: viewMode === 'LIST' ? 'var(--text-primary)' : 'transparent',
+                  color: viewMode === 'LIST' ? 'var(--bg-primary)' : 'var(--text-secondary)'
+                }}
+                title={t('tasks.view_list')}
+              >
+                <ListFilter size={14} />
+                <span>{t('tasks.view_list_tab')}</span>
+              </button>
 
-            {/* KANBAN */}
-            <button
-              onClick={() => handleSelectViewMode('KANBAN')}
-              className={`btn btn-sm ${viewMode === 'KANBAN' ? 'btn-primary' : 'btn-ghost'}`}
-              style={{
-                padding: '4px 10px',
-                borderRadius: '6px',
-                fontSize: '11.5px',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '5px',
-                backgroundColor: viewMode === 'KANBAN' ? 'var(--accent)' : 'transparent',
-                color: viewMode === 'KANBAN' ? '#ffffff' : 'var(--text-secondary)'
-              }}
-              title={t('tasks.view_kanban')}
-            >
-              <Columns3 size={14} />
-              <span>Kanban</span>
-            </button>
+              {/* KANBAN */}
+              <button
+                onClick={() => handleSelectViewMode('KANBAN')}
+                className={`btn btn-sm ${viewMode === 'KANBAN' ? 'btn-primary' : 'btn-ghost'}`}
+                style={{
+                  padding: '4px 10px',
+                  borderRadius: '6px',
+                  fontSize: 'var(--type-caption)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '5px',
+                  backgroundColor: viewMode === 'KANBAN' ? 'var(--text-primary)' : 'transparent',
+                  color: viewMode === 'KANBAN' ? 'var(--bg-primary)' : 'var(--text-secondary)'
+                }}
+                title={t('tasks.view_kanban')}
+              >
+                <Columns3 size={14} />
+                <span>Kanban</span>
+              </button>
 
-            {/* EISENHOWER */}
-            <button
-              onClick={() => handleSelectViewMode('EISENHOWER')}
-              className={`btn btn-sm ${viewMode === 'EISENHOWER' ? 'btn-primary' : 'btn-ghost'}`}
-              style={{
-                padding: '4px 10px',
-                borderRadius: '6px',
-                fontSize: '11.5px',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '5px',
-                backgroundColor: viewMode === 'EISENHOWER' ? 'var(--accent)' : 'transparent',
-                color: viewMode === 'EISENHOWER' ? '#ffffff' : 'var(--text-secondary)'
-              }}
-              title={t('tasks.view_eisenhower')}
-            >
-              <LayoutGrid size={14} />
-              <span>Eisenhower</span>
-            </button>
+              {/* EISENHOWER */}
+              <button
+                onClick={() => handleSelectViewMode('EISENHOWER')}
+                className={`btn btn-sm ${viewMode === 'EISENHOWER' ? 'btn-primary' : 'btn-ghost'}`}
+                style={{
+                  padding: '4px 10px',
+                  borderRadius: '6px',
+                  fontSize: 'var(--type-caption)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '5px',
+                  backgroundColor: viewMode === 'EISENHOWER' ? 'var(--text-primary)' : 'transparent',
+                  color: viewMode === 'EISENHOWER' ? 'var(--bg-primary)' : 'var(--text-secondary)'
+                }}
+                title={t('tasks.view_eisenhower')}
+              >
+                <LayoutGrid size={14} />
+                <span>Eisenhower</span>
+              </button>
+            </div>
+
+            <span style={{ fontSize: 'var(--type-caption)', color: 'var(--text-secondary)', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+              <span>{t('tasks.tasks_count_badge', { count: filteredTasks.length })}</span>
+              <span>•</span>
+              <span>{t('tasks.tasks_done_badge', { count: doneTasks.length })}</span>
+            </span>
           </div>
 
-          <span style={{ fontSize: '11.5px', color: 'var(--text-secondary)', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-            <span>{filteredTasks.length} {language === 'vi' ? 'việc' : 'tasks'}</span>
-            <span>•</span>
-            <span style={{ color: 'var(--color-success)', fontWeight: 600 }}>{doneTasks.length} {language === 'vi' ? 'xong' : 'done'}</span>
-          </span>
+          {/* Right: Quick Add Toggle + New Task Primary Button */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <button
+              type="button"
+              onClick={() => setIsQuickAddOpen(!isQuickAddOpen)}
+              className="btn btn-sm btn-ghost"
+              style={{
+                height: '32px',
+                fontSize: 'var(--type-caption)',
+                padding: '0 10px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                border: '1px solid var(--border-color)',
+                borderRadius: '8px',
+                color: 'var(--text-secondary)'
+              }}
+            >
+              <Zap size={13} />
+              <span>{t('tasks.quick_add_btn')}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleOpenCreate}
+              className="btn btn-sm btn-primary"
+              style={{
+                height: '32px',
+                fontSize: 'var(--type-small)',
+                padding: '0 14px',
+                fontWeight: 700,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                borderRadius: '8px'
+              }}
+            >
+              <Plus size={14} strokeWidth={2.5} />
+              <span>{t('tasks.new_task_btn')}</span>
+            </button>
+          </div>
         </div>
 
-        {/* Right: Quick Add Toggle + New Task Primary Button */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <button
-            type="button"
-            onClick={() => setIsQuickAddOpen(!isQuickAddOpen)}
-            className="btn btn-sm btn-ghost"
-            style={{
-              height: '32px',
-              fontSize: '11.5px',
-              padding: '0 10px',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '4px',
-              border: '1px solid var(--border-color)',
-              borderRadius: '8px',
-              color: isQuickAddOpen ? 'var(--accent)' : 'var(--text-secondary)'
-            }}
-          >
-            <Zap size={13} />
-            <span>{language === 'vi' ? 'Tạo nhanh' : 'Quick Add'}</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={handleOpenCreate}
-            className="btn btn-sm btn-primary"
-            style={{
-              height: '32px',
-              fontSize: '12px',
-              padding: '0 14px',
-              fontWeight: 700,
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              borderRadius: '8px',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
-            }}
-          >
-            <Plus size={14} strokeWidth={2.5} />
-            <span>{language === 'vi' ? '+ Tạo công việc mới' : '+ New Task'}</span>
-          </button>
-        </div>
-      </div>
-
-      {/* 2. 1-CLICK STATUS FILTER PILLS & MULTI-DIMENSIONAL CONTROLS (Native SNOTE Semantic Styling) */}
-      <div
-        className="snote-card"
-        style={{
-          display: 'flex',
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: '8px',
-          padding: '6px 10px',
-          borderRadius: '12px',
-          backgroundColor: 'var(--bg-surface)',
-          border: '1px solid var(--border-color)',
-          fontSize: '12px',
-          marginBottom: 0
-        }}
-      >
-        {/* 1-Click Status Filter Pills */}
+        {/* Tier 2: 1-Click Status Filter Pills & Search/Dropdown Controls */}
         <div
-          className="tasks-status-filters"
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: '6px',
-            overflowX: 'auto',
-            paddingBottom: '2px',
-            flex: '1 1 420px',
-            minWidth: 0
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '8px',
+            paddingTop: '8px',
+            borderTop: '1px solid var(--border-subtle)'
           }}
         >
-          <button
-            type="button"
-            onClick={() => setMetricTab('ALL')}
-            title="Xem tất cả công việc"
+          {/* Status Filter Pills */}
+          <div
+            className="tasks-status-filters"
             style={{
-              padding: '5px 10px',
-              borderRadius: '8px',
-              fontWeight: metricTab === 'ALL' ? 700 : 500,
-              cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
-              gap: '6px',
-              flexShrink: 0,
-              border: 'none',
-              backgroundColor: metricTab === 'ALL' ? 'var(--text-primary)' : 'transparent',
-              color: metricTab === 'ALL' ? 'var(--bg-primary)' : 'var(--text-secondary)',
-              transition: 'all 0.15s ease'
+              gap: '4px',
+              overflowX: 'auto',
+              paddingBottom: '2px',
+              flex: '1 1 380px',
+              minWidth: 0
             }}
           >
-            <span>Tất cả</span>
-            <span
+            <button
+              type="button"
+              onClick={() => setMetricTab('ALL')}
+              title={t('tasks.view_all_tooltip')}
               style={{
-                padding: '1px 6px',
-                borderRadius: '999px',
-                fontSize: '10px',
-                fontFamily: 'var(--font-mono, monospace)',
-                backgroundColor: metricTab === 'ALL' ? 'rgba(0,0,0,0.18)' : 'var(--bg-secondary)',
-                color: metricTab === 'ALL' ? 'inherit' : 'var(--text-secondary)', fontWeight: 700
+                padding: '4px 8px',
+                borderRadius: '6px',
+                fontWeight: metricTab === 'ALL' ? 700 : 500,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                flexShrink: 0,
+                border: 'none',
+                backgroundColor: metricTab === 'ALL' ? 'var(--text-primary)' : 'transparent',
+                color: metricTab === 'ALL' ? 'var(--bg-primary)' : 'var(--text-secondary)',
+                transition: 'all 0.12s ease'
               }}
             >
-              {metrics.total}
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setMetricTab('TODAY')}
-            title="Chỉ xem công việc cần làm hôm nay hoặc quá hạn"
-            style={{
-              padding: '5px 10px',
-              borderRadius: '8px',
-              fontWeight: metricTab === 'TODAY' ? 700 : 500,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              flexShrink: 0,
-              border: 'none',
-              backgroundColor: metricTab === 'TODAY' ? '#2563eb' : 'transparent',
-              color: metricTab === 'TODAY' ? '#ffffff' : 'var(--text-secondary)',
-              transition: 'all 0.15s ease'
-            }}
-          >
-            <Clock size={14} />
-            <span>Hôm nay</span>
-            <span
-              style={{
-                padding: '1px 6px',
-                borderRadius: '999px',
-                fontSize: '10px',
-                fontFamily: 'var(--font-mono, monospace)',
-                fontWeight: 700,
-                backgroundColor: metricTab === 'TODAY' ? 'rgba(255,255,255,0.22)' : 'rgba(37, 99, 235, 0.12)',
-                color: metricTab === 'TODAY' ? '#ffffff' : '#2563eb'
-              }}
-            >
-              {metrics.today}
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setMetricTab('IN_PROGRESS')}
-            title="Lọc công việc đang làm"
-            style={{
-              padding: '5px 10px',
-              borderRadius: '8px',
-              fontWeight: metricTab === 'IN_PROGRESS' ? 700 : 500,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              flexShrink: 0,
-              border: 'none',
-              backgroundColor: metricTab === 'IN_PROGRESS' ? '#2563eb' : 'transparent',
-              color: metricTab === 'IN_PROGRESS' ? '#ffffff' : 'var(--text-secondary)',
-              transition: 'all 0.15s ease'
-            }}
-          >
-            <span>Đang làm</span>
-            <span
-              style={{
-                padding: '1px 6px',
-                borderRadius: '999px',
-                fontSize: '10px',
-                fontFamily: 'var(--font-mono, monospace)',
-                backgroundColor: metricTab === 'IN_PROGRESS' ? 'rgba(255,255,255,0.22)' : 'rgba(37, 99, 235, 0.12)',
-                color: metricTab === 'IN_PROGRESS' ? '#ffffff' : '#2563eb'
-              }}
-            >
-              {metrics.inProgress}
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setMetricTab('PENDING')}
-            title="Lọc công việc chờ duyệt"
-            style={{
-              padding: '5px 10px',
-              borderRadius: '8px',
-              fontWeight: metricTab === 'PENDING' ? 700 : 500,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              flexShrink: 0,
-              border: 'none',
-              backgroundColor: metricTab === 'PENDING' ? '#9333ea' : 'transparent',
-              color: metricTab === 'PENDING' ? '#ffffff' : 'var(--text-secondary)',
-              transition: 'all 0.15s ease'
-            }}
-          >
-            <span>Chờ duyệt</span>
-            <span
-              style={{
-                padding: '1px 6px',
-                borderRadius: '999px',
-                fontSize: '10px',
-                fontFamily: 'var(--font-mono, monospace)',
-                backgroundColor: metricTab === 'PENDING' ? 'rgba(255,255,255,0.22)' : 'rgba(147, 51, 234, 0.12)',
-                color: metricTab === 'PENDING' ? '#ffffff' : '#9333ea'
-              }}
-            >
-              {metrics.pending}
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setMetricTab('DONE')}
-            title="Lọc công việc đã xong"
-            style={{
-              padding: '5px 10px',
-              borderRadius: '8px',
-              fontWeight: metricTab === 'DONE' ? 700 : 500,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              flexShrink: 0,
-              border: 'none',
-              backgroundColor: metricTab === 'DONE' ? '#10b981' : 'transparent',
-              color: metricTab === 'DONE' ? '#ffffff' : 'var(--text-secondary)',
-              transition: 'all 0.15s ease'
-            }}
-          >
-            <span>Đã xong</span>
-            <span
-              style={{
-                padding: '1px 6px',
-                borderRadius: '999px',
-                fontSize: '10px',
-                fontFamily: 'var(--font-mono, monospace)',
-                backgroundColor: metricTab === 'DONE' ? 'rgba(255,255,255,0.22)' : 'rgba(16, 185, 129, 0.12)',
-                color: metricTab === 'DONE' ? '#ffffff' : '#10b981'
-              }}
-            >
-              {metrics.donePercent}%
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setMetricTab('ARCHIVED')}
-            title="Xem danh sách công việc đã lưu trữ (Archived Vault)"
-            style={{
-              padding: '5px 10px',
-              borderRadius: '8px',
-              fontWeight: metricTab === 'ARCHIVED' ? 700 : 500,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              flexShrink: 0,
-              border: 'none',
-              backgroundColor: metricTab === 'ARCHIVED' ? 'var(--border-color)' : 'transparent',
-              color: metricTab === 'ARCHIVED' ? 'var(--text-primary)' : 'var(--text-secondary)',
-              transition: 'all 0.15s ease'
-            }}
-          >
-            <Archive size={14} />
-            <span>Đã lưu trữ</span>
-            <span
-              style={{
-                padding: '1px 6px',
-                borderRadius: '999px',
-                fontSize: '10px',
-                fontFamily: 'var(--font-mono, monospace)',
-                backgroundColor: 'var(--bg-secondary)',
-                color: 'var(--text-secondary)', fontWeight: 700
-              }}
-            >
-              {metrics.archived}
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setMetricTab('UNASSIGNED')}
-            title="Xem việc chưa có người nhận"
-            style={{
-              padding: '5px 10px',
-              borderRadius: '8px',
-              fontWeight: 700,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              flexShrink: 0,
-              border: metricTab === 'UNASSIGNED' ? '1px solid #f59e0b' : '1px solid rgba(245, 158, 11, 0.4)',
-              backgroundColor: metricTab === 'UNASSIGNED' ? '#f59e0b' : 'rgba(245, 158, 11, 0.15)',
-              color: metricTab === 'UNASSIGNED' ? '#ffffff' : '#f59e0b',
-              transition: 'all 0.15s ease'
-            }}
-          >
-            <UserCheck size={14} />
-            <span>Chưa giao ({metrics.unassigned})</span>
-          </button>
-        </div>
-
-        {/* Search & Filter Controls */}
-        <div className="tasks-filter-controls" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-          <div style={{ position: 'relative', flex: '1 1 180px', minWidth: '160px', maxWidth: '260px' }}>
-            <span
-              style={{
-                position: 'absolute',
-                left: '10px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                pointerEvents: 'none',
-                color: 'var(--text-secondary)', fontWeight: 700,
-                display: 'flex'
-              }}
-            >
-              <Search size={14} />
-            </span>
-            <input
-              type="text"
-              id="global-search-input"
-              placeholder="Tìm việc, người làm, checklist... [/]"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="snote-input"
-              style={{
-                paddingLeft: '32px',
-                paddingRight: '28px',
-                height: '32px',
-                fontSize: '11.5px',
-                borderRadius: '8px'
-              }}
-            />
-            {search && (
-              <button
-                type="button"
-                id="btn-clear-search"
-                onClick={() => setSearch('')}
-                title="Xóa tìm kiếm (Esc)"
+              <span>{t('tasks.all_count')}</span>
+              <span
                 style={{
-                  position: 'absolute',
-                  right: '8px',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  background: 'transparent',
-                  border: 'none',
-                  cursor: 'pointer',
-                  color: 'var(--text-secondary)', fontWeight: 700,
-                  display: 'flex',
-                  padding: 0
+                  padding: '1px 5px',
+                  borderRadius: '999px',
+                  fontSize: 'var(--type-caption)',
+                  fontFamily: 'var(--font-mono, monospace)',
+                  backgroundColor: metricTab === 'ALL' ? 'rgba(128,128,128,0.25)' : 'var(--bg-secondary)',
+                  color: 'inherit',
+                  fontWeight: 700
                 }}
               >
-                <X size={14} />
-              </button>
-            )}
+                {metrics.total}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setMetricTab('TODAY')}
+              title={t('tasks.view_today_tooltip')}
+              style={{
+                padding: '4px 8px',
+                borderRadius: '6px',
+                fontWeight: metricTab === 'TODAY' ? 700 : 500,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                flexShrink: 0,
+                border: 'none',
+                backgroundColor: metricTab === 'TODAY' ? 'var(--text-primary)' : 'transparent',
+                color: metricTab === 'TODAY' ? 'var(--bg-primary)' : 'var(--text-secondary)',
+                transition: 'all 0.12s ease'
+              }}
+            >
+              <Clock size={13} />
+              <span>{t('tasks.today_count')}</span>
+              <span
+                style={{
+                  padding: '1px 5px',
+                  borderRadius: '999px',
+                  fontSize: 'var(--type-caption)',
+                  fontFamily: 'var(--font-mono, monospace)',
+                  fontWeight: 700,
+                  backgroundColor: metricTab === 'TODAY' ? 'rgba(128,128,128,0.25)' : 'var(--bg-secondary)',
+                  color: 'inherit'
+                }}
+              >
+                {metrics.today}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setMetricTab('IN_PROGRESS')}
+              title={t('tasks.view_inprogress_tooltip')}
+              style={{
+                padding: '4px 8px',
+                borderRadius: '6px',
+                fontWeight: metricTab === 'IN_PROGRESS' ? 700 : 500,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                flexShrink: 0,
+                border: 'none',
+                backgroundColor: metricTab === 'IN_PROGRESS' ? 'var(--text-primary)' : 'transparent',
+                color: metricTab === 'IN_PROGRESS' ? 'var(--bg-primary)' : 'var(--text-secondary)',
+                transition: 'all 0.12s ease'
+              }}
+            >
+              <span>{t('tasks.in_progress_count')}</span>
+              <span
+                style={{
+                  padding: '1px 5px',
+                  borderRadius: '999px',
+                  fontSize: 'var(--type-caption)',
+                  fontFamily: 'var(--font-mono, monospace)',
+                  fontWeight: 700,
+                  backgroundColor: metricTab === 'IN_PROGRESS' ? 'rgba(128,128,128,0.25)' : 'var(--bg-secondary)',
+                  color: 'inherit'
+                }}
+              >
+                {metrics.inProgress}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setMetricTab('PENDING')}
+              title={t('tasks.view_pending_tooltip')}
+              style={{
+                padding: '4px 8px',
+                borderRadius: '6px',
+                fontWeight: metricTab === 'PENDING' ? 700 : 500,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                flexShrink: 0,
+                border: 'none',
+                backgroundColor: metricTab === 'PENDING' ? 'var(--text-primary)' : 'transparent',
+                color: metricTab === 'PENDING' ? 'var(--bg-primary)' : 'var(--text-secondary)',
+                transition: 'all 0.12s ease'
+              }}
+            >
+              <span>{t('tasks.pending_count')}</span>
+              <span
+                style={{
+                  padding: '1px 5px',
+                  borderRadius: '999px',
+                  fontSize: 'var(--type-caption)',
+                  fontFamily: 'var(--font-mono, monospace)',
+                  fontWeight: 700,
+                  backgroundColor: metricTab === 'PENDING' ? 'rgba(128,128,128,0.25)' : 'var(--bg-secondary)',
+                  color: 'inherit'
+                }}
+              >
+                {metrics.pending}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setMetricTab('DONE')}
+              title={t('tasks.view_done_tooltip')}
+              style={{
+                padding: '4px 8px',
+                borderRadius: '6px',
+                fontWeight: metricTab === 'DONE' ? 700 : 500,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                flexShrink: 0,
+                border: 'none',
+                backgroundColor: metricTab === 'DONE' ? 'var(--text-primary)' : 'transparent',
+                color: metricTab === 'DONE' ? 'var(--bg-primary)' : 'var(--text-secondary)',
+                transition: 'all 0.12s ease'
+              }}
+            >
+              <span>{t('tasks.done_count')}</span>
+              <span
+                style={{
+                  padding: '1px 5px',
+                  borderRadius: '999px',
+                  fontSize: 'var(--type-caption)',
+                  fontFamily: 'var(--font-mono, monospace)',
+                  fontWeight: 700,
+                  backgroundColor: metricTab === 'DONE' ? 'rgba(128,128,128,0.25)' : 'var(--bg-secondary)',
+                  color: 'inherit'
+                }}
+              >
+                {metrics.donePercent}%
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setMetricTab('ARCHIVED')}
+              title={t('tasks.view_archived_tooltip')}
+              style={{
+                padding: '4px 8px',
+                borderRadius: '6px',
+                fontWeight: metricTab === 'ARCHIVED' ? 700 : 500,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                flexShrink: 0,
+                border: 'none',
+                backgroundColor: metricTab === 'ARCHIVED' ? 'var(--text-primary)' : 'transparent',
+                color: metricTab === 'ARCHIVED' ? 'var(--bg-primary)' : 'var(--text-secondary)',
+                transition: 'all 0.12s ease'
+              }}
+            >
+              <Archive size={13} />
+              <span>{t('tasks.archived_count')}</span>
+              <span
+                style={{
+                  padding: '1px 5px',
+                  borderRadius: '999px',
+                  fontSize: 'var(--type-caption)',
+                  fontFamily: 'var(--font-mono, monospace)',
+                  backgroundColor: metricTab === 'ARCHIVED' ? 'rgba(128,128,128,0.25)' : 'var(--bg-secondary)',
+                  color: 'inherit',
+                  fontWeight: 700
+                }}
+              >
+                {metrics.archived}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setMetricTab('UNASSIGNED')}
+              title={t('tasks.view_unassigned_tooltip')}
+              style={{
+                padding: '4px 8px',
+                borderRadius: '6px',
+                fontWeight: metricTab === 'UNASSIGNED' ? 700 : 500,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                flexShrink: 0,
+                border: 'none',
+                backgroundColor: metricTab === 'UNASSIGNED' ? 'var(--text-primary)' : 'transparent',
+                color: metricTab === 'UNASSIGNED' ? 'var(--bg-primary)' : 'var(--text-secondary)',
+                transition: 'all 0.12s ease'
+              }}
+            >
+              <UserCheck size={13} />
+              <span>{t('tasks.metric_unassigned_btn', { count: metrics.unassigned })}</span>
+            </button>
           </div>
 
-          {/* Lọc theo Người phụ trách */}
-          <select
-            id="filter-assignee-select"
-            value={filterAssignee}
-            onChange={(e) => setFilterAssignee(e.target.value)}
-            className="snote-select"
-            style={{
-              height: '32px',
-              fontSize: '11.5px',
-              padding: '4px 8px',
-              borderRadius: '8px',
-              maxWidth: '135px'
-            }}
-            title="Lọc công việc theo người phụ trách"
-          >
-            <option value="ALL">Tất cả người làm</option>
-            <option value="me">Việc của tôi</option>
-            <option value="UNASSIGNED">Chưa phân công ({metrics.unassigned})</option>
-            {distinctAssignees.map((a) => (
-              <option key={a.id} value={a.id}>
-                {a.name}
-              </option>
-            ))}
-          </select>
+          {/* Search & Filter Controls */}
+          <div className="tasks-filter-controls" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <div style={{ position: 'relative', flex: '1 1 180px', minWidth: '150px', maxWidth: '240px' }}>
+              <span
+                style={{
+                  position: 'absolute',
+                  left: '10px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  pointerEvents: 'none',
+                  color: 'var(--text-muted)',
+                  display: 'flex'
+                }}
+              >
+                <Search size={14} />
+              </span>
+              <input
+                type="text"
+                id="global-search-input"
+                placeholder={`${t('tasks.search_placeholder')} [/]`}
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="snote-input"
+                style={{
+                  paddingLeft: '30px',
+                  paddingRight: '26px',
+                  height: '30px',
+                  fontSize: 'var(--type-caption)',
+                  borderRadius: '6px'
+                }}
+              />
+              {search && (
+                <button
+                  type="button"
+                  id="btn-clear-search"
+                  onClick={() => setSearch('')}
+                  title={t('tasks.clear_search_tooltip')}
+                  style={{
+                    position: 'absolute',
+                    right: '6px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                    color: 'var(--text-muted)',
+                    display: 'flex',
+                    padding: 0
+                  }}
+                >
+                  <X size={13} />
+                </button>
+              )}
+            </div>
 
-          {/* Tùy chọn Sắp xếp (Sort Mode) */}
-          <select
-            value={sortMode}
-            onChange={(e) => setSortMode(e.target.value as any)}
-            className="snote-select"
-            style={{
-              height: '32px',
-              fontSize: '11.5px',
-              padding: '4px 8px',
-              borderRadius: '8px',
-              maxWidth: '145px',
-              fontWeight: 600
-            }}
-            title="Thứ tự sắp xếp công việc"
-          >
-            <option value="today_first">Hôm nay & Hạn chót</option>
-            <option value="priority_first">Độ quan trọng</option>
-            <option value="due_asc">Hạn chót gần nhất</option>
-            <option value="created_desc">Mới tạo gần nhất</option>
-          </select>
+            {/* Lọc theo Người phụ trách */}
+            <select
+              id="filter-assignee-select"
+              value={filterAssignee}
+              onChange={(e) => setFilterAssignee(e.target.value)}
+              className="snote-select"
+              style={{
+                height: '30px',
+                fontSize: 'var(--type-caption)',
+                padding: '3px 8px',
+                borderRadius: '6px',
+                maxWidth: '130px'
+              }}
+              title={t('tasks.filter_assignee_title')}
+            >
+              <option value="ALL">{t('tasks.filter_assignee_all')}</option>
+              <option value="me">{t('tasks.filter_assignee_me')}</option>
+              <option value="UNASSIGNED">{t('tasks.filter_assignee_unassigned', { count: metrics.unassigned })}</option>
+              {distinctAssignees.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.name}
+                </option>
+              ))}
+            </select>
 
-          {/* Lọc theo Mức độ ưu tiên */}
-          <select
-            value={filterPriority}
-            onChange={(e) => setFilterPriority(e.target.value)}
-            className="snote-select"
-            style={{
-              height: '32px',
-              fontSize: '11.5px',
-              padding: '4px 8px',
-              borderRadius: '8px',
-              maxWidth: '110px'
-            }}
-            title="Lọc theo mức độ ưu tiên"
-          >
-            <option value="ALL">Mọi ưu tiên</option>
-            <option value={TaskPriority.URGENT}>Khẩn cấp</option>
-            <option value={TaskPriority.HIGH}>Cao</option>
-            <option value={TaskPriority.MEDIUM}>Trung bình</option>
-            <option value={TaskPriority.LOW}>Thấp</option>
-          </select>
+            {/* Tùy chọn Sắp xếp (Sort Mode) */}
+            <select
+              value={sortMode}
+              onChange={(e) => setSortMode(e.target.value as any)}
+              className="snote-select"
+              style={{
+                height: '30px',
+                fontSize: 'var(--type-caption)',
+                padding: '3px 8px',
+                borderRadius: '6px',
+                maxWidth: '140px'
+              }}
+              title={t('tasks.sort_title')}
+            >
+              <option value="today_first">{t('tasks.sort_today_first')}</option>
+              <option value="priority_first">{t('tasks.sort_priority_first')}</option>
+              <option value="due_asc">{t('tasks.sort_due_asc')}</option>
+              <option value="created_desc">{t('tasks.sort_created_desc')}</option>
+            </select>
+
+            {/* Lọc theo Mức độ ưu tiên */}
+            <select
+              value={filterPriority}
+              onChange={(e) => setFilterPriority(e.target.value)}
+              className="snote-select"
+              style={{
+                height: '30px',
+                fontSize: 'var(--type-caption)',
+                padding: '3px 8px',
+                borderRadius: '6px',
+                maxWidth: '110px'
+              }}
+              title={t('tasks.filter_priority_title')}
+            >
+              <option value="ALL">{t('tasks.filter_priority_all')}</option>
+              <option value={TaskPriority.URGENT}>{t('tasks.priority_urgent')}</option>
+              <option value={TaskPriority.HIGH}>{t('tasks.priority_high')}</option>
+              <option value={TaskPriority.MEDIUM}>{t('tasks.priority_medium')}</option>
+              <option value={TaskPriority.LOW}>{t('tasks.priority_low')}</option>
+            </select>
+          </div>
         </div>
       </div>
 
-      {/* 3. COLLAPSIBLE QUICK ADD BOX */}
+      {/* 2. COLLAPSIBLE QUICK ADD BOX */}
       {isQuickAddOpen && (
         <div style={{ animation: 'wsFadeIn 0.14s ease-out' }}>
           <QuickTaskBar
@@ -917,19 +925,20 @@ export const TasksListPage: React.FC = () => {
             defaultSubjectId={currentWorkspace.type === 'SUBJECT' ? currentWorkspace.subjectId : undefined}
             defaultProjectId={currentWorkspace.type === 'PROJECT' ? currentWorkspace.projectId : undefined}
             defaultWorkspaceId={currentWorkspace.type === 'GROUP' ? currentWorkspace.id : undefined}
+            onTaskAdded={handleTaskAdded}
             onTaskCreated={() => {
-              fetchTasks();
+              fetchTasks(true);
               setIsQuickAddOpen(false);
             }}
           />
         </div>
       )}
 
-      {/* 4. MAIN VIEW CANVAS */}
+      {/* 3. MAIN VIEW CANVAS */}
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '80px 0', color: 'var(--text-secondary)', fontWeight: 700 }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', fontSize: '14px' }}>
-            <Sparkles size={18} className="pulse-urgent" style={{ color: 'var(--accent-primary)' }} />
+        <div style={{ textAlign: 'center', padding: '80px 0', color: 'var(--text-secondary)', fontWeight: 600 }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', fontSize: 'var(--type-body)' }}>
+            <Sparkles size={16} style={{ color: 'var(--text-muted)' }} />
             <span>{t('common.loading')}</span>
           </div>
         </div>
@@ -974,7 +983,7 @@ export const TasksListPage: React.FC = () => {
                 className="snote-card"
                 style={{
                   backgroundColor: 'var(--bg-secondary)',
-                  borderRadius: '10px',
+                  borderRadius: 'var(--radius-lg)',
                   border: '1px solid var(--border-color)',
                   overflow: 'hidden',
                   display: 'flex',
@@ -993,17 +1002,17 @@ export const TasksListPage: React.FC = () => {
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Icon size={16} style={{ color: col.accentColor }} />
-                    <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                    <Icon size={15} style={{ color: 'var(--text-secondary)' }} />
+                    <span style={{ fontSize: 'var(--type-small)', fontWeight: 700, color: 'var(--text-primary)' }}>
                       {col.title}
                     </span>
                   </div>
                   <span
                     className="badge"
                     style={{
-                      fontSize: '11px',
+                      fontSize: 'var(--type-caption)',
                       padding: '1px 7px',
-                      backgroundColor: 'var(--bg-secondary)',
+                      backgroundColor: 'var(--bg-primary)',
                       color: 'var(--text-secondary)',
                       fontFamily: 'var(--font-mono)'
                     }}
@@ -1023,8 +1032,8 @@ export const TasksListPage: React.FC = () => {
                   }}
                 >
                   {col.items.length === 0 ? (
-                    <div style={{ textAlign: 'center', padding: '36px 0', color: 'var(--text-secondary)', fontWeight: 700, fontSize: '12px' }}>
-                      {language === 'vi' ? 'Không có công việc' : 'No tasks in this lane'}
+                    <div style={{ textAlign: 'center', padding: '36px 0', color: 'var(--text-secondary)', fontWeight: 700, fontSize: 'var(--type-small)' }}>
+                      {t('tasks.empty_lane')}
                     </div>
                   ) : (
                     col.items.map((task) => (
@@ -1057,7 +1066,7 @@ export const TasksListPage: React.FC = () => {
           onClose={() => setIsModalOpen(false)}
           onSuccess={() => {
             setIsModalOpen(false);
-            fetchTasks();
+            fetchTasks(true);
           }}
         />
       )}

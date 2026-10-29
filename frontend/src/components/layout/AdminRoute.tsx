@@ -1,16 +1,18 @@
 import React from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 import { ShieldAlert, ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export const AdminRoute: React.FC = () => {
   const { isAuthenticated, isAdmin, loading } = useAuth();
+  const { t } = useLanguage();
 
   if (loading) {
     return (
       <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center' }}>
-        <p style={{ color: 'var(--text-secondary)' }}>Đang xác thực quyền Quản trị viên...</p>
+        <p style={{ color: 'var(--text-secondary)' }}>{t('auth.verifying_admin')}</p>
       </div>
     );
   }
@@ -37,15 +39,16 @@ export const AdminRoute: React.FC = () => {
         >
           <ShieldAlert size={32} />
         </div>
-        <h2 style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 10px 0' }}>
-          403 – Quyền Truy Cập Bị Từ Chối
+        <h2 style={{ fontSize: 'var(--type-section)', fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 10px 0' }}>
+          {t('auth.access_denied_403')}
         </h2>
-        <p style={{ fontSize: '14px', color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '24px' }}>
-          Trang <b>Trạng Thái Hệ Thống (System Status)</b> và các công cụ chẩn đoán máy chủ chỉ dành riêng cho tài khoản <b>Quản Trị Viên (Admin)</b>.
-        </p>
+        <p
+          style={{ fontSize: 'var(--type-body)', color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '24px' }}
+          dangerouslySetInnerHTML={{ __html: t('auth.admin_only_desc') }}
+        />
         <Link to="/notes" className="btn btn-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
           <ArrowLeft size={16} />
-          <span>Quay lại Trang Ghi Chú</span>
+          <span>{t('auth.back_to_notes_btn')}</span>
         </Link>
       </div>
     );

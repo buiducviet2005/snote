@@ -8,6 +8,7 @@ import { api, ApiResponse } from '../../../services/api';
 import { useToast } from '../../../contexts/ToastContext';
 import { useAppFilter } from '../../../contexts/AppFilterContext';
 import { useAuth } from '../../../contexts/AuthContext';
+import { useLanguage } from '../../../contexts/LanguageContext';
 import { TaskStatus, TaskPriority } from '@snote/shared';
 import {
   CheckSquare,
@@ -55,6 +56,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
   defaultWorkspaceId,
   defaultWorkspaceName
 }) => {
+  const { t, formatDateTime } = useLanguage();
   const { user: currentUser } = useAuth();
   const { subjects, selectedSubjectId } = useAppFilter();
   const [projects, setProjects] = useState<any[]>([]);
@@ -369,19 +371,19 @@ export const TaskModal: React.FC<TaskModalProps> = ({
   const handleRequestClose = useCallback(() => {
     if (mode === 'EDIT' && isDirty && !isSavedRef.current) {
       const confirmDiscard = window.confirm(
-        'Bạn có thay đổi chưa lưu trong công việc. Bạn có chắc chắn muốn đóng và hủy các thay đổi này không?'
+        t('tasks.unsaved_close_confirm')
       );
       if (!confirmDiscard) {
         return;
       }
     }
     onClose();
-  }, [mode, isDirty, onClose]);
+  }, [mode, isDirty, onClose, t]);
 
   const handleCancelEdit = useCallback(() => {
     if (isDirty) {
       const confirmDiscard = window.confirm(
-        'Bạn có thay đổi chưa lưu. Bạn có chắc chắn muốn hủy các thay đổi và quay lại xem chi tiết không?'
+        t('tasks.unsaved_view_confirm')
       );
       if (!confirmDiscard) {
         return;
@@ -402,7 +404,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
     } else {
       onClose();
     }
-  }, [isDirty, taskToEdit, onClose]);
+  }, [isDirty, taskToEdit, onClose, t]);
 
   const toggleAssignee = (userId: string) => {
     setSelectedAssigneeIds((prev) => {
@@ -421,10 +423,10 @@ export const TaskModal: React.FC<TaskModalProps> = ({
     setStatus(nextStatus);
     try {
       await api.patch(`/tasks/${taskToEdit.id}/status`, { status: nextStatus });
-      showToast(nextStatus === TaskStatus.DONE ? '🎉 Đã hoàn thành nhiệm vụ!' : 'Đã mở lại nhiệm vụ', 'success');
+      showToast(nextStatus === TaskStatus.DONE ? t('tasks.completed_toast') : t('tasks.reopened_toast'), 'success');
       onSuccess();
     } catch (err: any) {
-      showToast(err.message || 'Lỗi khi cập nhật trạng thái', 'error');
+      showToast(err.message || t('tasks.status_update_error'), 'error');
     }
   };
 
@@ -437,7 +439,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
         await api.put(`/tasks/${taskToEdit.id}`, { description: newDesc });
         onSuccess();
       } catch {
-        showToast('Lỗi cập nhật tiến độ công việc', 'error');
+        showToast(t('tasks.progress_update_error'), 'error');
       }
     }
   };
@@ -446,12 +448,12 @@ export const TaskModal: React.FC<TaskModalProps> = ({
     e.preventDefault();
 
     if (!title.trim()) {
-      showToast('Vui lòng nhập tên công việc', 'error');
+      showToast(t('tasks.enter_title_error'), 'error');
       return;
     }
 
     if (projectId && loadingMembers) {
-      showToast('Đang tải danh sách thành viên dự án, vui lòng đợi', 'warning');
+      showToast(t('tasks.loading_members_warning'), 'warning');
       return;
     }
 
@@ -484,7 +486,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
           startDate: finalStartDate || null,
           tagNames
         });
-        showToast('Cập nhật công việc thành công!', 'success');
+        showToast(t('tasks.update_success'), 'success');
       } else {
         await api.post('/tasks', {
           title: title.trim(),
@@ -499,14 +501,14 @@ export const TaskModal: React.FC<TaskModalProps> = ({
           startDate: finalStartDate || undefined,
           tagNames
         });
-        showToast('Tạo công việc và giao việc thành công!', 'success');
+        showToast(t('tasks.create_success'), 'success');
       }
 
       isSavedRef.current = true;
       onSuccess();
       onClose();
     } catch (err: any) {
-      showToast(err.message || 'Lỗi khi lưu công việc', 'error');
+      showToast(err.message || t('tasks.save_error'), 'error');
     } finally {
       setLoading(false);
     }
@@ -524,9 +526,9 @@ export const TaskModal: React.FC<TaskModalProps> = ({
         title={
           taskToEdit
             ? mode === 'VIEW'
-              ? 'Xem Chi Tiết Công Việc'
-              : 'Chỉnh sửa công việc'
-            : 'Tạo công việc mới'
+              ? t('tasks.view_modal_title')
+              : t('tasks.edit_task')
+            : t('tasks.create_task')
         }
         maxWidth={mode === 'VIEW' ? '680px' : '720px'}
         icon={
@@ -565,7 +567,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                     display: 'flex',
                     marginTop: '2px'
                   }}
-                  title={isDone ? 'Đánh dấu chưa hoàn thành' : 'Đánh dấu hoàn thành'}
+                  title={isDone ? t('tasks.mark_undone') : t('tasks.mark_done')}
                 >
                   {isDone ? <CheckCircle2 size={22} style={{ fill: 'rgba(16, 185, 129, 0.2)' }} /> : <Circle size={22} />}
                 </button>
@@ -575,7 +577,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                 <h2
                   style={{
                     margin: '0 0 6px 0',
-                    fontSize: '18px',
+                    fontSize: 'var(--type-section)',
                     fontWeight: 800,
                     color: isDone ? 'var(--text-muted)' : 'var(--text-primary)',
                     textDecoration: isDone ? 'line-through' : 'none',
@@ -583,7 +585,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                     wordBreak: 'break-word'
                   }}
                 >
-                  {title || 'Công việc chưa có tiêu đề'}
+                  {title || t('tasks.untitled_task')}
                 </h2>
 
                 {/* Subtle Metadata String */}
@@ -593,7 +595,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                     alignItems: 'center',
                     flexWrap: 'wrap',
                     gap: '6px',
-                    fontSize: '12px',
+                    fontSize: 'var(--type-small)',
                     color: 'var(--text-muted)',
                     lineHeight: 1.6,
                     paddingBottom: '10px',
@@ -602,38 +604,50 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                 >
                   {dueDate && (
                     <span>
-                      📅 Hạn nộp: <b style={{ color: 'var(--text-primary)' }}>{new Date(dueDate).toLocaleString('vi-VN', { dateStyle: 'medium', timeStyle: 'short' })}</b>
+                      {t('tasks.due_date_label')}: <b style={{ color: 'var(--text-primary)' }}>{formatDateTime(dueDate, { dateStyle: 'medium', timeStyle: 'short' })}</b>
                     </span>
                   )}
                   <span>•</span>
                   <span>
-                    ⚡ Độ ưu tiên:{' '}
+                    {t('tasks.priority_label')}:{' '}
                     <b style={{ color: priority === TaskPriority.URGENT ? 'var(--color-danger)' : priority === TaskPriority.HIGH ? 'var(--color-warning)' : 'var(--text-primary)' }}>
-                      {priority === TaskPriority.URGENT ? 'Khẩn cấp' : priority === TaskPriority.HIGH ? 'Ưu tiên cao' : priority === TaskPriority.MEDIUM ? 'Trung bình' : 'Thấp'}
+                      {priority === TaskPriority.URGENT
+                        ? t('tasks.priority_urgent')
+                        : priority === TaskPriority.HIGH
+                        ? t('tasks.priority_high')
+                        : priority === TaskPriority.MEDIUM
+                        ? t('tasks.priority_medium')
+                        : t('tasks.priority_low')}
                     </b>
                   </span>
                   <span>•</span>
                   <span>
-                    Trạng thái: <b style={{ color: isDone ? 'var(--color-success)' : 'var(--accent-primary)' }}>{isDone ? 'Đã hoàn thành' : status === TaskStatus.IN_PROGRESS ? 'Đang thực hiện' : 'Cần làm'}</b>
+                    {t('tasks.status_label')}: <b style={{ color: isDone ? 'var(--color-success)' : 'var(--accent-primary)' }}>
+                      {isDone
+                        ? t('tasks.status_done')
+                        : status === TaskStatus.IN_PROGRESS
+                        ? t('tasks.status_in_progress')
+                        : t('tasks.status_todo')}
+                    </b>
                   </span>
                   {currentSubject && (
                     <>
                       <span>•</span>
                       <span style={{ color: currentSubject.color || 'var(--accent-primary)', fontWeight: 600 }}>
-                        📖 [{currentSubject.code || 'Môn'}] {currentSubject.name}
+                        [{currentSubject.code || t('classes.subject_card')}] {currentSubject.name}
                       </span>
                     </>
                   )}
                   {currentProjectName && (
                     <>
                       <span>•</span>
-                      <span style={{ color: 'var(--color-purple)', fontWeight: 600 }}>📁 {currentProjectName}</span>
+                      <span style={{ color: 'var(--color-purple)', fontWeight: 600 }}>{currentProjectName}</span>
                     </>
                   )}
                   {tagsInput.trim() && (
                     <>
                       <span>•</span>
-                      <span>🏷️ {tagsInput}</span>
+                      <span>{tagsInput}</span>
                     </>
                   )}
                 </div>
@@ -642,8 +656,8 @@ export const TaskModal: React.FC<TaskModalProps> = ({
 
             {/* Bounded Task Description to Prevent Overflow */}
             <div>
-              <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                Nội dung chi tiết công việc:
+              <div style={{ fontSize: 'var(--type-small)', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                {t('tasks.details_label')}
               </div>
               <div
                 className="snote-card"
@@ -661,8 +675,8 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                 {description.trim() ? (
                   <MarkdownViewer content={description} onToggleTodo={handleToggleTodoInTask} />
                 ) : (
-                  <div style={{ color: 'var(--text-muted)', fontSize: '13px', fontStyle: 'italic' }}>
-                    Chưa có mô tả chi tiết cho nhiệm vụ này.
+                  <div style={{ color: 'var(--text-muted)', fontSize: 'var(--type-small)', fontStyle: 'italic' }}>
+                    {t('tasks.no_details')}
                   </div>
                 )}
               </div>
@@ -673,25 +687,25 @@ export const TaskModal: React.FC<TaskModalProps> = ({
           <>
             {/* Tiêu đề công việc (*) */}
             <div>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
-                Tiêu đề công việc (*)
+              <label style={{ display: 'block', fontSize: 'var(--type-small)', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
+                {t('tasks.task_title')}
               </label>
               <input
                 type="text"
                 required
-                placeholder="Nhập tiêu đề công việc..."
+                placeholder={t('tasks.task_title_placeholder')}
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 className="snote-input"
-                style={{ fontSize: '14px', borderRadius: '10px' }}
+                style={{ fontSize: 'var(--type-body)', borderRadius: '10px' }}
               />
             </div>
 
             {/* Không gian lưu trữ & Độ ưu tiên (Row) */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
               <div>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
-                  Không gian lưu trữ
+                <label style={{ display: 'block', fontSize: 'var(--type-small)', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
+                  {t('tasks.workspace_storage')}
                 </label>
                 <select
                   value={projectId}
@@ -700,18 +714,18 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                   disabled={Boolean(defaultProjectId || defaultWorkspaceId)}
                   style={{ borderRadius: '10px' }}
                 >
-                  <option value="">{defaultWorkspaceId ? `Nhóm: ${defaultWorkspaceName || 'hiện tại'}` : 'Việc cá nhân'}</option>
+                  <option value="">{defaultWorkspaceId ? t('tasks.group_workspace', { name: defaultWorkspaceName || '' }) : t('tasks.personal_task')}</option>
                   {projects.map((proj) => (
                     <option key={proj.id} value={proj.id}>
-                      📁 {proj.name}
+                      {proj.name}
                     </option>
                   ))}
                 </select>
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
-                  Độ ưu tiên
+                <label style={{ display: 'block', fontSize: 'var(--type-small)', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
+                  {t('tasks.priority_label')}
                 </label>
                 <select
                   value={priority}
@@ -719,10 +733,10 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                   className="snote-select"
                   style={{ borderRadius: '10px' }}
                 >
-                  <option value={TaskPriority.MEDIUM}>Trung bình</option>
-                  <option value={TaskPriority.HIGH}>Cao</option>
-                  <option value={TaskPriority.URGENT}>Khẩn cấp</option>
-                  <option value={TaskPriority.LOW}>Thấp</option>
+                  <option value={TaskPriority.MEDIUM}>{t('tasks.priority_medium')}</option>
+                  <option value={TaskPriority.HIGH}>{t('tasks.priority_high')}</option>
+                  <option value={TaskPriority.URGENT}>{t('tasks.priority_urgent')}</option>
+                  <option value={TaskPriority.LOW}>{t('tasks.priority_low')}</option>
                 </select>
               </div>
             </div>
@@ -742,8 +756,8 @@ export const TaskModal: React.FC<TaskModalProps> = ({
               }}
             >
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1, minWidth: '180px' }}>
-                <span style={{ fontSize: '12.5px', fontWeight: 600, color: 'var(--text-primary)' }}>
-                  Số người nhận tối đa (Slot limit)
+                <span style={{ fontSize: 'var(--type-small)', fontWeight: 600, color: 'var(--text-primary)' }}>
+                  {t('tasks.slot_limit_label')}
                 </span>
                 <input
                   type="number"
@@ -756,30 +770,30 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                 />
               </div>
 
-              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '12.5px', fontWeight: 600, color: 'var(--text-primary)' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: 'var(--type-small)', fontWeight: 600, color: 'var(--text-primary)' }}>
                 <input
                   type="checkbox"
                   checked={allowSelfAssign}
                   onChange={(e) => setAllowSelfAssign(e.target.checked)}
                   style={{ width: '16px', height: '16px', accentColor: '#2563eb', cursor: 'pointer' }}
                 />
-                <span>Mở cho thành viên tự nhận việc</span>
+                <span>{t('tasks.allow_self_assign')}</span>
               </label>
             </div>
 
             {/* Multi-Assignee Selection if inside project */}
             {(projectId || defaultWorkspaceId || taskToEdit?.workspaceId) && loadingMembers && (
-              <div style={{ backgroundColor: 'var(--accent-subtle)', padding: '10px 14px', borderRadius: 'var(--radius-md)', border: '1px solid var(--accent-border)', fontSize: '12.5px', color: 'var(--text-muted)' }}>
-                ⏳ Đang tải danh sách thành viên dự án...
+              <div style={{ backgroundColor: 'var(--accent-subtle)', padding: '10px 14px', borderRadius: 'var(--radius-md)', border: '1px solid var(--accent-border)', fontSize: 'var(--type-small)', color: 'var(--text-muted)' }}>
+                ⏳ {t('tasks.loading_members')}
               </div>
             )}
 
             {(projectId || defaultWorkspaceId || taskToEdit?.workspaceId) && !loadingMembers && projectMembers.length > 0 && (
               <div style={{ backgroundColor: 'var(--accent-subtle)', padding: '12px', borderRadius: '10px', border: '1px solid var(--accent-border)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 700, color: 'var(--accent-primary)', margin: 0 }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: 'var(--type-small)', fontWeight: 700, color: 'var(--accent-primary)', margin: 0 }}>
                     <Users size={14} />
-                    <span>Giao trực tiếp cho thành viên ({selectedAssigneeIds.length} người)</span>
+                    <span>{t('tasks.assign_members', { count: selectedAssigneeIds.length })}</span>
                   </label>
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '6px' }}>
@@ -797,7 +811,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                           cursor: 'pointer',
                           backgroundColor: isSelected ? 'var(--bg-secondary)' : 'var(--bg-input)',
                           border: isSelected ? '1.5px solid var(--accent-primary)' : '1px solid var(--border-color)',
-                          fontSize: '12px'
+                          fontSize: 'var(--type-small)'
                         }}
                       >
                         <input type="checkbox" checked={isSelected} onChange={() => toggleAssignee(m.userId)} style={{ accentColor: 'var(--accent-primary)' }} />
@@ -814,8 +828,8 @@ export const TaskModal: React.FC<TaskModalProps> = ({
             {/* Ngày & Giờ bắt đầu & Hạn chót (Row) */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
               <div>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
-                  Ngày & Giờ bắt đầu
+                <label style={{ display: 'block', fontSize: 'var(--type-small)', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
+                  {t('tasks.start_datetime')}
                 </label>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
                   <input
@@ -823,21 +837,21 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
                     className="snote-input"
-                    style={{ borderRadius: '8px', fontSize: '12px', padding: '6px 8px', minWidth: '95px' }}
+                    style={{ borderRadius: '8px', fontSize: 'var(--type-small)', padding: '6px 8px', minWidth: '95px' }}
                   />
                   <input
                     type="time"
                     value={startTime}
                     onChange={(e) => setStartTime(e.target.value)}
                     className="snote-input"
-                    style={{ borderRadius: '8px', fontSize: '12px', padding: '6px 8px', minWidth: '95px' }}
+                    style={{ borderRadius: '8px', fontSize: 'var(--type-small)', padding: '6px 8px', minWidth: '95px' }}
                   />
                 </div>
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
-                  Hạn chót (Ngày & Giờ)
+                <label style={{ display: 'block', fontSize: 'var(--type-small)', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
+                  {t('tasks.due_datetime')}
                 </label>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
                   <input
@@ -845,14 +859,14 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                     value={dueDateOnly}
                     onChange={(e) => setDueDateOnly(e.target.value)}
                     className="snote-input"
-                    style={{ borderRadius: '8px', fontSize: '12px', padding: '6px 8px', minWidth: '95px' }}
+                    style={{ borderRadius: '8px', fontSize: 'var(--type-small)', padding: '6px 8px', minWidth: '95px' }}
                   />
                   <input
                     type="time"
                     value={dueTimeOnly}
                     onChange={(e) => setDueTimeOnly(e.target.value)}
                     className="snote-input"
-                    style={{ borderRadius: '8px', fontSize: '12px', padding: '6px 8px', minWidth: '95px' }}
+                    style={{ borderRadius: '8px', fontSize: 'var(--type-small)', padding: '6px 8px', minWidth: '95px' }}
                   />
                 </div>
               </div>
@@ -860,18 +874,18 @@ export const TaskModal: React.FC<TaskModalProps> = ({
 
             {/* Danh sách đầu việc Checklist (mỗi dòng 1 mục) */}
             <div>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
-                Danh sách đầu việc Checklist (mỗi dòng 1 mục)
+              <label style={{ display: 'block', fontSize: 'var(--type-small)', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
+                {t('tasks.checklist_input_label')}
               </label>
               <textarea
                 rows={3}
-                placeholder={"- Phân tích yêu cầu bài tập\n- Lập trình giao diện web\n- Kiểm thử và hoàn thiện"}
+                placeholder={t('tasks.checklist_placeholder')}
                 value={checklistText}
                 onChange={(e) => setChecklistText(e.target.value)}
                 className="snote-textarea"
                 style={{
                   fontFamily: 'var(--font-mono, monospace)',
-                  fontSize: '12px',
+                  fontSize: 'var(--type-small)',
                   borderRadius: '10px',
                   lineHeight: '1.6'
                 }}
@@ -880,12 +894,12 @@ export const TaskModal: React.FC<TaskModalProps> = ({
 
             {/* Nội dung chi tiết (Hỗ trợ Markdown) */}
             <div>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
-                Nội dung chi tiết (Hỗ trợ Markdown)
+              <label style={{ display: 'block', fontSize: 'var(--type-small)', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
+                {t('tasks.details_markdown_label')}
               </label>
               <textarea
                 rows={4}
-                placeholder="Nhập mô tả chi tiết, hướng dẫn thực hiện hoặc link tham khảo..."
+                placeholder={t('tasks.details_placeholder')}
                 value={markdownDetails}
                 onChange={(e) => setMarkdownDetails(e.target.value)}
                 className="snote-textarea"
@@ -907,7 +921,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                   style={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}
                 >
                   <Edit3 size={15} />
-                  <span>Chỉnh Sửa Công Việc</span>
+                  <span>{t('tasks.edit_task')}</span>
                 </button>
                 {taskToEdit && (
                   <button
@@ -915,10 +929,10 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                     onClick={() => setIsShareModalOpen(true)}
                     className="btn btn-secondary"
                     style={{ fontWeight: 600, color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}
-                    title="Chia sẻ công việc này cho bạn học hoặc tạo link công khai"
+                    title={t('tasks.share_task_tooltip')}
                   >
                     <Share2 size={15} />
-                    <span>Chia sẻ</span>
+                    <span>{t('notes.share')}</span>
                   </button>
                 )}
               </>
@@ -930,7 +944,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                 style={{ fontWeight: 600 }}
               >
                 <Eye size={14} />
-                <span>Quay Lại Xem Chi Tiết</span>
+                <span>{t('tasks.back_to_details')}</span>
               </button>
             ) : null}
           </div>
@@ -941,7 +955,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
               onClick={handleRequestClose}
               className="btn btn-secondary"
             >
-              {mode === 'VIEW' ? 'Đóng' : 'Hủy'}
+              {mode === 'VIEW' ? t('common.close') : t('common.cancel')}
             </button>
             {mode === 'EDIT' && (
               <button
@@ -951,7 +965,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                 style={{ fontWeight: 700 }}
               >
                 {taskToEdit && <Save size={15} />}
-                <span>{loading ? 'Đang lưu trữ...' : (Boolean(projectId) && loadingMembers) ? 'Đang tải thành viên...' : taskToEdit ? 'Lưu thay đổi' : 'Tạo công việc'}</span>
+                <span>{loading ? t('tasks.saving') : (Boolean(projectId) && loadingMembers) ? t('tasks.loading_members_btn') : taskToEdit ? t('tasks.save_changes') : t('tasks.create_task')}</span>
               </button>
             )}
           </div>
@@ -965,7 +979,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
         onClose={() => setIsShareModalOpen(false)}
         targetType="TASK"
         targetId={taskToEdit.id}
-        targetTitle={taskToEdit.title || 'Công việc'}
+        targetTitle={taskToEdit.title || t('tasks.untitled_task')}
       />
     )}
   </>

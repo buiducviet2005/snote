@@ -25,6 +25,7 @@ export interface ProjectMemberDto {
   projectId: string;
   userId: string;
   role: ProjectMemberRole;
+  status: 'PENDING' | 'ACCEPTED' | 'DECLINED';
   joinedAt: Date | string;
   user?: {
     id: string;

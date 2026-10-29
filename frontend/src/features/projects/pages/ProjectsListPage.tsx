@@ -3,6 +3,7 @@ import { api, ApiResponse } from '../../../services/api';
 import { useAppFilter } from '../../../contexts/AppFilterContext';
 import { useToast } from '../../../contexts/ToastContext';
 import { useAuth } from '../../../contexts/AuthContext';
+import { useLanguage } from '../../../contexts/LanguageContext';
 import { ProjectModal } from '../components/ProjectModal';
 import { TeamMembersModal } from '../components/TeamMembersModal';
 import { ProjectWorkspaceModal } from '../components/ProjectWorkspaceModal';
@@ -33,12 +34,14 @@ import {
 export const ProjectsListPage: React.FC = () => {
   const { user } = useAuth();
   const { selectedSubjectId, selectedSemesterId } = useAppFilter();
+  const { t, formatDate } = useLanguage();
   const [projects, setProjects] = useState<any[]>([]);
   const [invitations, setInvitations] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [projectToEdit, setProjectToEdit] = useState<any | null>(null);
-  const [memberProject, setMemberProject] = useState<any | null>(null);
+  const [memberProjectId, setMemberProjectId] = useState<string | null>(null);
+  const memberProject = projects.find((project) => project.id === memberProjectId) || null;
   const [workspaceProjectId, setWorkspaceProjectId] = useState<string | null>(null);
   const { showToast } = useToast();
 
@@ -57,11 +60,11 @@ export const ProjectsListPage: React.FC = () => {
       setProjects(resProjects.data || []);
       setInvitations(resInvites.data || []);
     } catch {
-      showToast('Không thể tải danh sách dự án', 'error');
+      showToast(t('projects.load_error'), 'error');
     } finally {
       setLoading(false);
     }
-  }, [selectedSubjectId, selectedSemesterId, showToast]);
+  }, [selectedSubjectId, selectedSemesterId, showToast, t]);
 
   useEffect(() => {
     fetchProjects();
@@ -70,59 +73,61 @@ export const ProjectsListPage: React.FC = () => {
   const handleAcceptInvitation = async (id: string, name: string) => {
     try {
       await api.post(`/projects/${id}/invitations/accept`, {});
-      showToast(`🎉 Bạn đã tham gia dự án "${name}"!`, 'success');
+      showToast(t('projects.join_success_banner', { name }), 'success');
       fetchProjects();
+      window.dispatchEvent(new Event('snote_refresh_workspaces'));
     } catch (err: any) {
-      showToast(err.message || 'Lỗi khi chấp nhận lời mời', 'error');
+      showToast(err.message || t('projects.join_error'), 'error');
     }
   };
 
   const handleDeclineInvitation = async (id: string, name: string) => {
-    if (!window.confirm(`Bạn có chắc chắn muốn từ chối tham gia dự án "${name}" không?`)) return;
+    if (!window.confirm(t('projects.decline_confirm', { name }))) return;
     try {
       await api.post(`/projects/${id}/invitations/decline`, {});
-      showToast(`Đã từ chối lời mời dự án "${name}"`, 'info');
+      showToast(t('projects.decline_success', { name }), 'info');
       fetchProjects();
     } catch (err: any) {
-      showToast(err.message || 'Lỗi khi từ chối lời mời', 'error');
+      showToast(err.message || t('projects.decline_error'), 'error');
     }
   };
 
   const handleDelete = async (id: string, name: string) => {
-    if (!window.confirm(`Bạn có chắc chắn muốn xóa dự án / bài tập lớn "${name}" không?`)) return;
+    if (!window.confirm(t('projects.delete_confirm', { name }))) return;
 
     try {
       await api.delete(`/projects/${id}`);
-      showToast(`Đã xóa dự án "${name}"`, 'success');
+      showToast(t('projects.delete_success_msg', { name }), 'success');
       fetchProjects();
     } catch (err: any) {
-      showToast(err.message || 'Lỗi khi xóa dự án', 'error');
+      showToast(err.message || t('projects.delete_error'), 'error');
     }
   };
 
   const handleLeave = async (id: string, name: string) => {
     if (!user) return;
-    if (!window.confirm(`Bạn có chắc chắn muốn rời khỏi nhóm dự án "${name}" không?`)) return;
+    if (!window.confirm(t('projects.leave_confirm', { name }))) return;
 
     try {
       await api.delete(`/projects/${id}/members/${user.id}`);
-      showToast(`Bạn đã rời khỏi nhóm dự án "${name}"`, 'success');
+      showToast(t('projects.leave_success', { name }), 'success');
       fetchProjects();
+      window.dispatchEvent(new Event('snote_refresh_workspaces'));
     } catch (err: any) {
-      showToast(err.message || 'Lỗi khi rời nhóm', 'error');
+      showToast(err.message || t('projects.leave_error'), 'error');
     }
   };
 
   const getStatusBadge = (status: ProjectStatus) => {
     switch (status) {
       case ProjectStatus.ACTIVE:
-        return { label: 'Đang làm', badgeClass: 'badge-blue', icon: Zap };
+        return { label: t('classes.status_active'), badgeClass: 'badge-blue', icon: Zap };
       case ProjectStatus.COMPLETED:
-        return { label: 'Hoàn thành', badgeClass: 'badge-green', icon: CheckCircle2 };
+        return { label: t('classes.status_completed'), badgeClass: 'badge-green', icon: CheckCircle2 };
       case ProjectStatus.ON_HOLD:
-        return { label: 'Tạm hoãn', badgeClass: 'badge-amber', icon: Clock };
+        return { label: t('classes.status_on_hold'), badgeClass: 'badge-amber', icon: Clock };
       default:
-        return { label: 'Lên kế hoạch', badgeClass: 'badge-neutral', icon: Calendar };
+        return { label: t('classes.status_planned'), badgeClass: 'badge-neutral', icon: Calendar };
     }
   };
 
@@ -131,8 +136,8 @@ export const ProjectsListPage: React.FC = () => {
       {/* Top Action Bar */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <span className="badge badge-purple" style={{ fontSize: '11px', padding: '3px 8px' }}>
-            {projects.length} Dự án & Bài tập lớn
+          <span className="badge badge-purple" style={{ fontSize: 'var(--type-caption)', padding: '3px 8px' }}>
+            {t('projects.header_badge', { count: projects.length })}
           </span>
         </div>
 
@@ -145,7 +150,7 @@ export const ProjectsListPage: React.FC = () => {
           style={{ padding: '7px 14px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}
         >
           <Plus size={15} />
-          <span>Tạo Dự Án Mới</span>
+          <span>{t('projects.create_btn')}</span>
         </button>
       </div>
 
@@ -163,8 +168,8 @@ export const ProjectsListPage: React.FC = () => {
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
             <MailCheck size={18} style={{ color: 'var(--accent-primary)' }} />
-            <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 800, color: 'var(--text-primary)' }}>
-              Lời Mời Tham Gia Dự Án Nhóm ({invitations.length})
+            <h3 style={{ margin: 0, fontSize: 'var(--type-body)', fontWeight: 800, color: 'var(--text-primary)' }}>
+              {t('projects.invitations_title', { count: invitations.length })}
             </h3>
           </div>
 
@@ -186,17 +191,17 @@ export const ProjectsListPage: React.FC = () => {
               >
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ fontSize: '14.5px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                    <span style={{ fontSize: 'var(--type-body)', fontWeight: 700, color: 'var(--text-primary)' }}>
                       📁 {inv.name}
                     </span>
                     {inv.subject && (
-                      <span className="badge badge-blue" style={{ fontSize: '10.5px' }}>
+                      <span className="badge badge-blue" style={{ fontSize: 'var(--type-caption)' }}>
                         {inv.subject.code || inv.subject.name}
                       </span>
                     )}
                   </div>
-                  <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '3px' }}>
-                    Trưởng nhóm mời: <b>{inv.user?.fullName || inv.user?.email}</b>
+                  <div style={{ fontSize: 'var(--type-small)', color: 'var(--text-muted)', marginTop: '3px' }}>
+                    {t('projects.invited_by', { name: inv.user?.fullName || inv.user?.email })}
                   </div>
                 </div>
 
@@ -207,7 +212,7 @@ export const ProjectsListPage: React.FC = () => {
                     style={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}
                   >
                     <Check size={14} />
-                    <span>Chấp Nhận</span>
+                    <span>{t('projects.accept_invite')}</span>
                   </button>
                   <button
                     onClick={() => handleDeclineInvitation(inv.id, inv.name)}
@@ -215,7 +220,7 @@ export const ProjectsListPage: React.FC = () => {
                     style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
                   >
                     <X size={14} />
-                    <span>Từ Chối</span>
+                    <span>{t('projects.decline_invite')}</span>
                   </button>
                 </div>
               </div>
@@ -227,9 +232,9 @@ export const ProjectsListPage: React.FC = () => {
       {/* Projects List Grid */}
       {loading ? (
         <div style={{ textAlign: 'center', padding: '80px 0', color: 'var(--text-muted)' }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', fontSize: '14px' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', fontSize: 'var(--type-body)' }}>
             <Sparkles size={18} className="pulse-urgent" style={{ color: 'var(--accent-primary)' }} />
-            <span>Đang tải danh sách dự án...</span>
+            <span>{t('projects.loading')}</span>
           </div>
         </div>
       ) : projects.length === 0 ? (
@@ -258,11 +263,11 @@ export const ProjectsListPage: React.FC = () => {
           >
             <FolderKanban size={28} />
           </div>
-          <h3 style={{ margin: '0 0 8px 0', fontSize: '17px', fontWeight: 700, color: 'var(--text-primary)' }}>
-            Chưa có dự án hoặc bài tập lớn nào
+          <h3 style={{ margin: '0 0 8px 0', fontSize: 'var(--type-section)', fontWeight: 700, color: 'var(--text-primary)' }}>
+            {t('projects.empty_title')}
           </h3>
-          <p style={{ margin: '0 0 20px 0', fontSize: '13.5px', color: 'var(--text-secondary)', maxWidth: '420px', marginLeft: 'auto', marginRight: 'auto' }}>
-            Tạo không gian dự án để theo dõi bài tập lớn, phân chia công việc cho thành viên và lưu trữ tài liệu nhóm.
+          <p style={{ margin: '0 0 20px 0', fontSize: 'var(--type-small)', color: 'var(--text-secondary)', maxWidth: '420px', marginLeft: 'auto', marginRight: 'auto' }}>
+            {t('projects.empty_desc')}
           </p>
           <button
             onClick={() => {
@@ -273,7 +278,7 @@ export const ProjectsListPage: React.FC = () => {
             style={{ padding: '10px 20px', fontWeight: 700 }}
           >
             <Plus size={16} />
-            <span>Tạo Dự Án Đầu Tiên</span>
+            <span>{t('projects.create_first')}</span>
           </button>
         </div>
       ) : (
@@ -308,26 +313,28 @@ export const ProjectsListPage: React.FC = () => {
                         <StatusIcon size={12} />
                         <span>{statusMeta.label}</span>
                       </span>
-                      {isClassProject && <span className="badge badge-purple">Dự án lớp</span>}
+                      {isClassProject && <span className="badge badge-purple">{t('projects.class_project_tag')}</span>}
                     </div>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      {!isClassProject && <button
-                        onClick={() => setMemberProject(proj)}
+                      <button
+                        onClick={() => setMemberProjectId(proj.id)}
                         className="btn btn-ghost btn-icon"
-                        title="Quản lý thành viên nhóm"
-                        style={{ padding: '6px', color: 'var(--text-secondary)' }}
+                        title={t('projects.manage_members_tooltip')}
+                        aria-label={t('projects.manage_members_tooltip')}
+                        style={{ minWidth: '30px', minHeight: '30px', padding: '4px', color: 'var(--text-secondary)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
                       >
-                        <UserPlus size={15} />
-                      </button>}
+                        <Users size={15} />
+                      </button>
                       {!isClassProject && <button
                         onClick={() => {
                           setProjectToEdit(proj);
                           setIsModalOpen(true);
                         }}
                         className="btn btn-ghost btn-icon"
-                        title="Chỉnh sửa dự án"
-                        style={{ padding: '6px', color: 'var(--text-secondary)' }}
+                        title={t('projects.edit_tooltip')}
+                        aria-label={t('projects.edit_tooltip')}
+                        style={{ minWidth: '30px', minHeight: '30px', padding: '4px', color: 'var(--text-secondary)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
                       >
                         <Edit3 size={15} />
                       </button>}
@@ -335,8 +342,9 @@ export const ProjectsListPage: React.FC = () => {
                         <button
                           onClick={() => handleDelete(proj.id, proj.name)}
                           className="btn btn-ghost btn-icon"
-                          title="Xóa dự án / bài tập lớn (Chỉ Trưởng nhóm)"
-                          style={{ padding: '6px', color: 'var(--color-danger)' }}
+                          title={t('projects.delete_tooltip')}
+                          aria-label={t('projects.delete_tooltip')}
+                          style={{ minWidth: '30px', minHeight: '30px', padding: '4px', color: 'var(--color-danger)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
                         >
                           <Trash2 size={15} />
                         </button>
@@ -344,8 +352,9 @@ export const ProjectsListPage: React.FC = () => {
                         <button
                           onClick={() => handleLeave(proj.id, proj.name)}
                           className="btn btn-ghost btn-icon"
-                          title="Rời khỏi nhóm dự án"
-                          style={{ padding: '6px', color: 'var(--color-danger)' }}
+                          title={t('projects.leave_tooltip')}
+                          aria-label={t('projects.leave_tooltip')}
+                          style={{ minWidth: '30px', minHeight: '30px', padding: '4px', color: 'var(--color-danger)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
                         >
                           <LogOut size={15} />
                         </button>
@@ -358,7 +367,7 @@ export const ProjectsListPage: React.FC = () => {
                     onClick={() => setWorkspaceProjectId(proj.id)}
                     style={{
                       margin: '0 0 8px 0',
-                      fontSize: '16.5px',
+                      fontSize: 'var(--type-section)',
                       fontWeight: 800,
                       color: 'var(--text-primary)',
                       cursor: 'pointer',
@@ -366,14 +375,14 @@ export const ProjectsListPage: React.FC = () => {
                       alignItems: 'center',
                       gap: '6px'
                     }}
-                    title="Mở Không Gian Làm Việc Dự Án"
+                    title={t('projects.open_workspace_tooltip')}
                   >
                     <span>{proj.name}</span>
                     <ExternalLink size={13} style={{ color: 'var(--text-muted)' }} />
                   </h3>
 
-                  <p style={{ margin: '0 0 16px 0', fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                    {proj.description || 'Chưa có mô tả chi tiết cho dự án này.'}
+                  <p style={{ margin: '0 0 16px 0', fontSize: 'var(--type-small)', color: 'var(--text-secondary)', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                    {proj.description || t('projects.no_desc')}
                   </p>
 
                   {/* Stats Counter Row */}
@@ -390,28 +399,28 @@ export const ProjectsListPage: React.FC = () => {
                     }}
                   >
                     <div>
-                      <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '3px' }}>
-                        <CheckSquare size={12} /> Tasks
+                      <div style={{ fontSize: 'var(--type-caption)', color: 'var(--text-muted)', marginBottom: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '3px' }}>
+                        <CheckSquare size={12} /> {t('projects.tasks_stat')}
                       </div>
-                      <div style={{ fontSize: '14.5px', fontWeight: 800, color: 'var(--text-primary)' }}>
+                      <div style={{ fontSize: 'var(--type-body)', fontWeight: 800, color: 'var(--text-primary)' }}>
                         {proj._count?.tasks || 0}
                       </div>
                     </div>
 
                     <div>
-                      <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '3px' }}>
-                        <FileText size={12} /> Notes
+                      <div style={{ fontSize: 'var(--type-caption)', color: 'var(--text-muted)', marginBottom: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '3px' }}>
+                        <FileText size={12} /> {t('projects.notes_stat')}
                       </div>
-                      <div style={{ fontSize: '14.5px', fontWeight: 800, color: 'var(--text-primary)' }}>
+                      <div style={{ fontSize: 'var(--type-body)', fontWeight: 800, color: 'var(--text-primary)' }}>
                         {proj._count?.notes || 0}
                       </div>
                     </div>
 
                     <div>
-                      <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '3px' }}>
-                        <Users size={12} /> Thành viên
+                      <div style={{ fontSize: 'var(--type-caption)', color: 'var(--text-muted)', marginBottom: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '3px' }}>
+                        <Users size={12} /> {t('projects.members_stat')}
                       </div>
-                      <div style={{ fontSize: '14.5px', fontWeight: 800, color: 'var(--text-primary)' }}>
+                      <div style={{ fontSize: 'var(--type-body)', fontWeight: 800, color: 'var(--text-primary)' }}>
                         {membersCount}
                       </div>
                     </div>
@@ -420,10 +429,10 @@ export const ProjectsListPage: React.FC = () => {
 
                 {/* Card Footer */}
                 <div>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '11.5px', color: 'var(--text-muted)', borderTop: '1px solid var(--border-color)', paddingTop: '12px', marginBottom: '14px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 'var(--type-caption)', color: 'var(--text-muted)', borderTop: '1px solid var(--border-color)', paddingTop: '12px', marginBottom: '14px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                       <Calendar size={12} />
-                      <span>Hạn nộp: {proj.dueDate ? new Date(proj.dueDate).toLocaleDateString('vi-VN') : 'Chưa đặt'}</span>
+                      <span>{proj.dueDate ? t('projects.due_stat', { date: formatDate(proj.dueDate) }) : t('projects.not_set')}</span>
                     </div>
 
                     {proj.members && proj.members.length > 0 && (
@@ -440,7 +449,7 @@ export const ProjectsListPage: React.FC = () => {
                               display: 'inline-flex',
                               alignItems: 'center',
                               justifyContent: 'center',
-                              fontSize: '10px',
+                              fontSize: 'var(--type-caption)',
                               fontWeight: 700,
                               marginLeft: i > 0 ? '-6px' : 0,
                               border: '1.5px solid var(--bg-card)'
@@ -460,7 +469,7 @@ export const ProjectsListPage: React.FC = () => {
                     className="btn btn-secondary"
                     style={{ width: '100%', justifyContent: 'center', fontWeight: 700, padding: '8px 12px' }}
                   >
-                    <span>Mở Không Gian Làm Việc</span>
+                    <span>{t('projects.open_workspace')}</span>
                     <ArrowRight size={14} />
                   </button>
                 </div>
@@ -482,9 +491,12 @@ export const ProjectsListPage: React.FC = () => {
       {memberProject && (
         <TeamMembersModal
           isOpen={Boolean(memberProject)}
-          onClose={() => setMemberProject(null)}
+          onClose={() => setMemberProjectId(null)}
           project={memberProject}
-          onSuccess={fetchProjects}
+          onSuccess={() => {
+            void fetchProjects();
+            window.dispatchEvent(new Event('snote_refresh_workspaces'));
+          }}
         />
       )}
 

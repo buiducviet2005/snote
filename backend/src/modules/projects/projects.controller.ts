@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { ProjectsService } from './projects.service';
-import { createProjectSchema, updateProjectSchema } from './projects.schemas';
+import { createProjectSchema, updateProjectSchema, addProjectMemberSchema, updateProjectMemberRoleSchema } from './projects.schemas';
 
 export class ProjectsController {
   constructor(private readonly service: ProjectsService = new ProjectsService()) {}
@@ -74,10 +74,10 @@ export class ProjectsController {
   addMember = async (req: Request, res: Response): Promise<void> => {
     const userId = req.user!.id;
     const id = req.params.id as string;
-    const data = await this.service.addMember(id, userId, req.body);
+    const data = await this.service.addMember(id, userId, addProjectMemberSchema.parse(req.body));
     res.status(200).json({
       success: true,
-      message: 'Thêm thành viên vào dự án thành công',
+      message: 'Đã gửi lời mời tham gia dự án',
       data
     });
   };
@@ -86,7 +86,7 @@ export class ProjectsController {
     const userId = req.user!.id;
     const id = req.params.id as string;
     const targetUserId = req.params.memberUserId as string;
-    const data = await this.service.updateMemberRole(id, userId, targetUserId, req.body);
+    const data = await this.service.updateMemberRole(id, userId, targetUserId, updateProjectMemberRoleSchema.parse(req.body));
     res.status(200).json({
       success: true,
       message: 'Cập nhật vai trò thành viên thành công',

@@ -13,6 +13,7 @@ import {
   Target
 } from 'lucide-react';
 import { extractNoteFeatures } from '../../notes/utils/smartNoteParser';
+import { useLanguage } from '../../../contexts/LanguageContext';
 
 export interface GanttItem {
   id: string;
@@ -62,7 +63,9 @@ export const GanttTimelineView: React.FC<GanttTimelineViewProps> = ({
   onItemClick,
   onDateClick
 }) => {
+  const { t, formatDate } = useLanguage();
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
+  const [mobileView, setMobileView] = useState<'BOTH' | 'LIST' | 'TIMELINE'>('BOTH');
   const [hoveredItemId, setHoveredItemId] = useState<string | null>(null);
   const [tooltipData, setTooltipData] = useState<{ item: GanttItem; x: number; y: number } | null>(null);
   const timelineScrollRef = useRef<HTMLDivElement>(null);
@@ -204,18 +207,18 @@ export const GanttTimelineView: React.FC<GanttTimelineViewProps> = ({
   const getStatusBadge = (item: GanttItem) => {
     const s = (item.status || '').toUpperCase();
     if (s === 'DONE' || s === 'COMPLETED') {
-      return { text: 'Hoàn thành', bg: 'rgba(16, 185, 129, 0.15)', color: '#10b981', border: 'rgba(16, 185, 129, 0.3)' };
+      return { text: t('tasks.status_done'), bg: 'rgba(16, 185, 129, 0.15)', color: '#10b981', border: 'rgba(16, 185, 129, 0.3)' };
     }
     if (s === 'IN_PROGRESS') {
-      return { text: 'Đang làm', bg: 'rgba(14, 165, 233, 0.15)', color: '#0ea5e9', border: 'rgba(14, 165, 233, 0.3)' };
+      return { text: t('tasks.status_in_progress'), bg: 'rgba(14, 165, 233, 0.15)', color: '#0ea5e9', border: 'rgba(14, 165, 233, 0.3)' };
     }
     if (s === 'PENDING' || s === 'REVIEW' || s === 'IN_REVIEW') {
-      return { text: 'Chờ duyệt', bg: 'rgba(168, 85, 247, 0.15)', color: '#a855f7', border: 'rgba(168, 85, 247, 0.3)' };
+      return { text: t('tasks.status_pending'), bg: 'rgba(168, 85, 247, 0.15)', color: '#a855f7', border: 'rgba(168, 85, 247, 0.3)' };
     }
     if (item.itemType === 'EVENT') {
-      return { text: 'Tiết học', bg: 'rgba(59, 130, 246, 0.15)', color: '#3b82f6', border: 'rgba(59, 130, 246, 0.3)' };
+      return { text: t('schedule.type_class'), bg: 'rgba(59, 130, 246, 0.15)', color: '#3b82f6', border: 'rgba(59, 130, 246, 0.3)' };
     }
-    return { text: 'Cần làm', bg: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', border: 'rgba(245, 158, 11, 0.3)' };
+    return { text: t('tasks.status_todo'), bg: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', border: 'rgba(245, 158, 11, 0.3)' };
   };
 
   const getItemSubtasksInfo = (item: GanttItem) => {
@@ -275,8 +278,8 @@ export const GanttTimelineView: React.FC<GanttTimelineViewProps> = ({
             >
               <Target size={18} />
             </span>
-            <span style={{ fontSize: '16px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.01em' }}>
-              Sơ đồ Gantt
+            <span style={{ fontSize: 'var(--type-body)', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.01em' }}>
+              {t('gantt.title')}
             </span>
           </div>
 
@@ -293,11 +296,11 @@ export const GanttTimelineView: React.FC<GanttTimelineViewProps> = ({
             }}
           >
             {[
-              { id: 'ALL', label: `Tất cả (${counts.all})` },
-              { id: 'TODO', label: `Cần làm (${counts.todo})` },
-              { id: 'IN_PROGRESS', label: `Đang làm (${counts.inProgress})` },
-              { id: 'PENDING', label: `Chờ duyệt (${counts.pending})` },
-              { id: 'DONE', label: `Hoàn thành (${counts.done})` }
+              { id: 'ALL', label: t('gantt.filter_all', { count: counts.all }) },
+              { id: 'TODO', label: t('gantt.filter_todo', { count: counts.todo }) },
+              { id: 'IN_PROGRESS', label: t('gantt.filter_in_progress', { count: counts.inProgress }) },
+              { id: 'PENDING', label: t('gantt.filter_pending', { count: counts.pending }) },
+              { id: 'DONE', label: t('gantt.filter_done', { count: counts.done }) }
             ].map((tab) => {
               const active = statusFilter === tab.id;
               return (
@@ -306,7 +309,7 @@ export const GanttTimelineView: React.FC<GanttTimelineViewProps> = ({
                   onClick={() => setStatusFilter(tab.id as StatusFilter)}
                   className={`btn btn-sm ${active ? 'btn-primary' : 'btn-ghost'}`}
                   style={{
-                    fontSize: '12px',
+                    fontSize: 'var(--type-small)',
                     fontWeight: active ? 700 : 500,
                     padding: '4px 10px',
                     borderRadius: '6px',
@@ -330,16 +333,16 @@ export const GanttTimelineView: React.FC<GanttTimelineViewProps> = ({
               display: 'flex',
               alignItems: 'center',
               gap: '5px',
-              fontSize: '12px',
+              fontSize: 'var(--type-small)',
               fontWeight: 700,
               color: 'var(--accent-primary)',
               borderColor: 'rgba(56, 189, 248, 0.4)',
               padding: '5px 12px'
             }}
-            title="Nhảy về ngày hôm nay"
+            title={t('gantt.jump_today_tooltip')}
           >
             <Clock size={14} />
-            <span>Hôm nay</span>
+            <span>{t('gantt.today')}</span>
           </button>
 
           <div
@@ -355,41 +358,81 @@ export const GanttTimelineView: React.FC<GanttTimelineViewProps> = ({
             <button
               onClick={handlePrevMonth}
               className="btn btn-ghost btn-icon btn-sm"
-              title="Tháng trước"
+              title={t('gantt.prev_month_tooltip')}
               style={{ padding: '5px' }}
             >
               <ChevronLeft size={16} />
             </button>
 
-            <span style={{ fontSize: '13px', fontWeight: 700, padding: '0 10px', color: 'var(--text-primary)' }}>
-              Tháng {month + 1}/{year}
+            <span style={{ fontSize: 'var(--type-small)', fontWeight: 700, padding: '0 10px', color: 'var(--text-primary)' }}>
+              {formatDate(new Date(year, month, 1), { month: 'long', year: 'numeric' })}
             </span>
 
             <button
               onClick={handleNextMonth}
               className="btn btn-ghost btn-icon btn-sm"
-              title="Tháng sau"
+              title={t('gantt.next_month_tooltip')}
               style={{ padding: '5px' }}
             >
               <ChevronRight size={16} />
+            </button>
+          </div>
+
+          {/* Mobile View Mode Switcher (Split / List / Timeline) */}
+          <div
+            className="gantt-mobile-view-toggle"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              background: 'var(--bg-secondary)',
+              border: '1px solid var(--border-color)',
+              borderRadius: 'var(--radius-md)',
+              padding: '2px',
+              gap: '2px'
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => setMobileView('BOTH')}
+              className={`btn btn-sm ${mobileView === 'BOTH' ? 'btn-primary' : 'btn-ghost'}`}
+              style={{ fontSize: 'var(--type-caption)', padding: '2px 8px', borderRadius: '4px' }}
+            >
+              Split
+            </button>
+            <button
+              type="button"
+              onClick={() => setMobileView('LIST')}
+              className={`btn btn-sm ${mobileView === 'LIST' ? 'btn-primary' : 'btn-ghost'}`}
+              style={{ fontSize: 'var(--type-caption)', padding: '2px 8px', borderRadius: '4px' }}
+            >
+              List
+            </button>
+            <button
+              type="button"
+              onClick={() => setMobileView('TIMELINE')}
+              className={`btn btn-sm ${mobileView === 'TIMELINE' ? 'btn-primary' : 'btn-ghost'}`}
+              style={{ fontSize: 'var(--type-caption)', padding: '2px 8px', borderRadius: '4px' }}
+            >
+              Timeline
             </button>
           </div>
         </div>
       </div>
 
       {/* 2. Main Gantt Body: Left Sticky Table + Right Scrollable Timeline Canvas */}
-      <div style={{ display: 'flex', width: '100%', overflow: 'hidden', position: 'relative' }}>
-        {/* Left Side: Tasks Info Table (~340px) */}
-        <div
-          style={{
-            width: '360px',
-            minWidth: '360px',
-            flexShrink: 0,
-            borderRight: '1px solid var(--border-color)',
-            backgroundColor: 'var(--bg-primary)',
-            zIndex: 10
-          }}
-        >
+      <div style={{ display: 'flex', width: '100%', overflowX: 'auto', position: 'relative' }}>
+        {/* Left Side: Tasks Info Table */}
+        {(mobileView === 'BOTH' || mobileView === 'LIST') && (
+          <div
+            style={{
+              width: mobileView === 'LIST' ? '100%' : 'clamp(260px, 28vw, 360px)',
+              minWidth: mobileView === 'LIST' ? '100%' : '240px',
+              flexShrink: 0,
+              borderRight: mobileView === 'LIST' ? 'none' : '1px solid var(--border-color)',
+              backgroundColor: 'var(--bg-primary)',
+              zIndex: 10
+            }}
+          >
           {/* Table Header */}
           <div
             style={{
@@ -399,7 +442,7 @@ export const GanttTimelineView: React.FC<GanttTimelineViewProps> = ({
               alignItems: 'center',
               padding: '0 14px',
               borderBottom: '1px solid var(--border-color)',
-              fontSize: '12px',
+              fontSize: 'var(--type-small)',
               fontWeight: 700,
               color: 'var(--text-muted)',
               textTransform: 'uppercase',
@@ -407,23 +450,23 @@ export const GanttTimelineView: React.FC<GanttTimelineViewProps> = ({
               backgroundColor: 'var(--bg-secondary)'
             }}
           >
-            <div>Công việc</div>
-            <div>Phụ trách</div>
-            <div style={{ textAlign: 'right' }}>Thời gian</div>
+            <div>{t('gantt.task_name')}</div>
+            <div>{t('gantt.assignee')}</div>
+            <div style={{ textAlign: 'right' }}>{t('gantt.duration')}</div>
           </div>
 
           {/* Table Rows */}
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             {filteredItems.length === 0 ? (
-              <div style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px' }}>
-                Không có sự kiện hoặc công việc nào trong bộ lọc này.
+              <div style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--text-muted)', fontSize: 'var(--type-small)' }}>
+                {t('gantt.empty_filtered')}
               </div>
             ) : (
               filteredItems.map((item) => {
                 const isHovered = hoveredItemId === item.id;
                 const badge = getStatusBadge(item);
                 const subtasks = getItemSubtasksInfo(item);
-                const assigneeName = item.assignees?.[0]?.name || 'Tôi';
+                const assigneeName = item.assignees?.[0]?.name || t('tasks.assignee_you');
                 const assigneeInitial = assigneeName.slice(0, 2).toUpperCase();
 
                 const startDate = new Date(item.startTime || item.createdAt || monthStart);
@@ -452,7 +495,7 @@ export const GanttTimelineView: React.FC<GanttTimelineViewProps> = ({
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden' }}>
                       <span
                         style={{
-                          fontSize: '10px',
+                          fontSize: 'var(--type-caption)',
                           fontWeight: 700,
                           padding: '1.5px 6px',
                           borderRadius: '4px',
@@ -466,7 +509,7 @@ export const GanttTimelineView: React.FC<GanttTimelineViewProps> = ({
                       </span>
                       <span
                         style={{
-                          fontSize: '12.5px',
+                          fontSize: 'var(--type-small)',
                           fontWeight: 600,
                           color: 'var(--text-primary)',
                           whiteSpace: 'nowrap',
@@ -480,7 +523,7 @@ export const GanttTimelineView: React.FC<GanttTimelineViewProps> = ({
                       {subtasks && (
                         <span
                           style={{
-                            fontSize: '10px',
+                            fontSize: 'var(--type-caption)',
                             fontWeight: 700,
                             color: 'var(--accent-primary)',
                             backgroundColor: 'rgba(56, 189, 248, 0.12)',
@@ -491,7 +534,7 @@ export const GanttTimelineView: React.FC<GanttTimelineViewProps> = ({
                             gap: '2px',
                             flexShrink: 0
                           }}
-                          title={`Tiến độ: ${subtasks.done}/${subtasks.total} việc cần làm (${subtasks.percent}%)`}
+                          title={t('gantt.progress_tooltip', { done: subtasks.done, total: subtasks.total, percent: subtasks.percent })}
                         >
                           <ListTodo size={10} />
                           {subtasks.done}/{subtasks.total}
@@ -508,7 +551,7 @@ export const GanttTimelineView: React.FC<GanttTimelineViewProps> = ({
                           borderRadius: '50%',
                           backgroundColor: 'var(--accent-primary)',
                           color: '#ffffff',
-                          fontSize: '10px',
+                          fontSize: 'var(--type-caption)',
                           fontWeight: 700,
                           display: 'inline-flex',
                           alignItems: 'center',
@@ -520,7 +563,7 @@ export const GanttTimelineView: React.FC<GanttTimelineViewProps> = ({
                       </span>
                       <span
                         style={{
-                          fontSize: '11.5px',
+                          fontSize: 'var(--type-caption)',
                           color: 'var(--text-secondary)',
                           whiteSpace: 'nowrap',
                           overflow: 'hidden',
@@ -532,7 +575,7 @@ export const GanttTimelineView: React.FC<GanttTimelineViewProps> = ({
                     </div>
 
                     {/* Column 3: Duration string */}
-                    <div style={{ textAlign: 'right', fontSize: '11.5px', color: 'var(--text-muted)', fontWeight: 500 }}>
+                    <div style={{ textAlign: 'right', fontSize: 'var(--type-caption)', color: 'var(--text-muted)', fontWeight: 500 }}>
                       {dateStr}
                     </div>
                   </div>
@@ -541,8 +584,10 @@ export const GanttTimelineView: React.FC<GanttTimelineViewProps> = ({
             )}
           </div>
         </div>
+        )}
 
         {/* Right Side: Horizontal Scrollable Timeline Canvas */}
+        {(mobileView === 'BOTH' || mobileView === 'TIMELINE') && (
         <div
           ref={timelineScrollRef}
           style={{
@@ -593,11 +638,11 @@ export const GanttTimelineView: React.FC<GanttTimelineViewProps> = ({
                     borderTop: today ? '2px solid var(--accent-primary)' : 'none',
                     cursor: 'pointer'
                   }}
-                  title={`Nhấp để thêm nhanh sự kiện vào ngày ${dayNum}/${d.getMonth() + 1}`}
+                  title={t('gantt.click_add_event_tooltip', { day: dayNum, month: d.getMonth() + 1 })}
                 >
                   <span
                     style={{
-                      fontSize: '13px',
+                      fontSize: 'var(--type-small)',
                       fontWeight: today ? 800 : 700,
                       color: today ? 'var(--accent-primary)' : 'var(--text-primary)'
                     }}
@@ -606,7 +651,7 @@ export const GanttTimelineView: React.FC<GanttTimelineViewProps> = ({
                   </span>
                   <span
                     style={{
-                      fontSize: '10px',
+                      fontSize: 'var(--type-caption)',
                       fontWeight: today ? 700 : 500,
                       color: today ? 'var(--accent-primary)' : isWeekend ? 'var(--text-muted)' : 'var(--text-secondary)'
                     }}
@@ -700,7 +745,7 @@ export const GanttTimelineView: React.FC<GanttTimelineViewProps> = ({
                       borderRadius: '6px',
                       background: bar.bgGradient,
                       boxShadow: isHovered
-                        ? '0 4px 14px rgba(0, 0, 0, 0.4), 0 0 0 1.5px #ffffff'
+                        ? '0 2px 10px rgba(0, 0, 0, 0.35)'
                         : '0 2px 6px rgba(0, 0, 0, 0.25)',
                       border: `1px solid ${bar.borderColor}`,
                       display: 'flex',
@@ -709,7 +754,7 @@ export const GanttTimelineView: React.FC<GanttTimelineViewProps> = ({
                       cursor: 'pointer',
                       overflow: 'hidden',
                       zIndex: isHovered ? 4 : 2,
-                      transform: isHovered ? 'translateY(-1px) scale(1.01)' : 'none',
+                      transform: 'none',
                       transition: 'all 150ms ease-out'
                     }}
                   >
@@ -728,7 +773,7 @@ export const GanttTimelineView: React.FC<GanttTimelineViewProps> = ({
                     {/* Task Title */}
                     <span
                       style={{
-                        fontSize: '12px',
+                        fontSize: 'var(--type-small)',
                         fontWeight: 700,
                         color: bar.textColor,
                         whiteSpace: 'nowrap',
@@ -745,7 +790,7 @@ export const GanttTimelineView: React.FC<GanttTimelineViewProps> = ({
                       <span
                         style={{
                           marginLeft: 'auto',
-                          fontSize: '10.5px',
+                          fontSize: 'var(--type-caption)',
                           fontWeight: 700,
                           color: 'rgba(255, 255, 255, 0.9)',
                           backgroundColor: 'rgba(0, 0, 0, 0.2)',
@@ -763,6 +808,7 @@ export const GanttTimelineView: React.FC<GanttTimelineViewProps> = ({
             })}
           </div>
         </div>
+        )}
       </div>
 
       {/* Floating Tooltip Component (Matching image_128.png Tooltip Card) */}
@@ -780,37 +826,37 @@ export const GanttTimelineView: React.FC<GanttTimelineViewProps> = ({
             boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.1)',
             zIndex: 9999,
             pointerEvents: 'none',
-            fontSize: '12px',
+            fontSize: 'var(--type-small)',
             lineHeight: 1.5,
             minWidth: '180px',
             maxWidth: '280px'
           }}
         >
-          <div style={{ fontWeight: 800, fontSize: '13px', color: '#ffffff', marginBottom: '4px' }}>
+          <div style={{ fontWeight: 800, fontSize: 'var(--type-small)', color: '#ffffff', marginBottom: '4px' }}>
             {tooltipData.item.title}
           </div>
           <div style={{ color: '#94a3b8', display: 'flex', gap: '4px' }}>
-            <span>Phụ trách:</span>
+            <span>{t('gantt.tooltip_assignee')}</span>
             <span style={{ color: '#f8fafc', fontWeight: 600 }}>
-              {tooltipData.item.assignees?.[0]?.name || 'Tôi'}
+              {tooltipData.item.assignees?.[0]?.name || t('tasks.assignee_you')}
             </span>
           </div>
           <div style={{ color: '#94a3b8', display: 'flex', gap: '4px' }}>
-            <span>Thời gian:</span>
+            <span>{t('gantt.tooltip_time')}</span>
             <span style={{ color: '#f8fafc', fontWeight: 600 }}>
-              {new Date(tooltipData.item.startTime).toLocaleDateString('vi-VN')} -{' '}
-              {new Date(tooltipData.item.endTime || tooltipData.item.dueDate || tooltipData.item.startTime).toLocaleDateString('vi-VN')}
+              {formatDate(tooltipData.item.startTime)} -{' '}
+              {formatDate(tooltipData.item.endTime || tooltipData.item.dueDate || tooltipData.item.startTime)}
             </span>
           </div>
           <div style={{ color: '#94a3b8', display: 'flex', gap: '4px' }}>
-            <span>Trạng thái:</span>
+            <span>{t('gantt.tooltip_status')}</span>
             <span style={{ color: getStatusBadge(tooltipData.item).color, fontWeight: 700 }}>
               {getStatusBadge(tooltipData.item).text}
             </span>
           </div>
           {getItemSubtasksInfo(tooltipData.item) && (
             <div style={{ color: '#94a3b8', display: 'flex', gap: '4px', marginTop: '2px' }}>
-              <span>Tiến độ:</span>
+              <span>{t('gantt.tooltip_progress')}</span>
               <span style={{ color: '#38bdf8', fontWeight: 700 }}>
                 {getItemSubtasksInfo(tooltipData.item)?.percent}% ({getItemSubtasksInfo(tooltipData.item)?.done}/{getItemSubtasksInfo(tooltipData.item)?.total})
               </span>

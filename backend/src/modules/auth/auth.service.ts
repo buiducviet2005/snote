@@ -163,7 +163,8 @@ export class AuthService {
         email = payload.email.toLowerCase().trim();
         fullName = payload.name || fullName;
         avatarUrl = payload.picture || null;
-      } catch {
+      } catch (err) {
+        if (err instanceof AuthError) throw err;
         throw new AuthError('Mã xác thực Google không hợp lệ hoặc đã hết hạn');
       }
     } else if (dto.accessToken) {
@@ -180,7 +181,8 @@ export class AuthService {
         email = data.email.toLowerCase().trim();
         fullName = data.name || fullName;
         avatarUrl = data.picture || null;
-      } catch {
+      } catch (err) {
+        if (err instanceof AuthError) throw err;
         throw new AuthError('Không thể xác minh tài khoản Google');
       }
     }
@@ -211,6 +213,8 @@ export class AuthService {
           googleId: googleId || `google_${Date.now()}`
         });
       }
+    } else if (!user.avatarUrl && avatarUrl) {
+      user = await this.authRepo.updateUser(user.id, { avatarUrl });
     }
 
     if (user.status === 'SUSPENDED') {

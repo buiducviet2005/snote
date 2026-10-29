@@ -11,7 +11,7 @@
 .gantt-schedule-table {
   border-collapse: separate;
   border-spacing: 0;
-  font-size: 0.75rem;
+  font-size: var(--type-caption);
   line-height: 1rem;
   width: max-content;
   color: var(--text-primary);
@@ -33,12 +33,63 @@
   background-color: var(--bg-surface);
 }
 
+/* Staggered sticky header rows to prevent stacking collisions */
+.gantt-header-row-1 th {
+  position: sticky;
+  top: 0;
+  z-index: 25;
+}
+
+.gantt-header-row-2 th {
+  position: sticky;
+  top: 29px;
+  z-index: 24;
+}
+
+.gantt-header-row-3 th {
+  position: sticky;
+  top: 50px;
+  z-index: 23;
+}
+
+.gantt-header-row-4 th {
+  position: sticky;
+  top: 71px;
+  z-index: 22;
+}
+
+/* Sticky primary identification columns when scrolling horizontally */
+.gantt-col-sticky-wbs {
+  position: sticky;
+  left: 0;
+  z-index: 10;
+  background-color: var(--bg-surface);
+}
+
+.gantt-col-sticky-name {
+  position: sticky;
+  left: 45px;
+  z-index: 10;
+  background-color: var(--bg-surface);
+  box-shadow: 3px 0 6px -2px rgba(0, 0, 0, 0.25);
+}
+
+thead th.gantt-col-sticky-wbs {
+  z-index: 35;
+  background-color: var(--bg-secondary) !important;
+}
+
+thead th.gantt-col-sticky-name {
+  z-index: 35;
+  background-color: var(--bg-secondary) !important;
+}
+
 .gantt-cell-day {
   width: 26px;
   min-width: 26px;
   max-width: 26px;
   text-align: center;
-  font-size: 11px;
+  font-size: var(--type-caption);
 }
 
 .gantt-weekend {
@@ -57,7 +108,7 @@
   background-color: var(--bg-secondary);
   color: var(--text-secondary);
   font-family: var(--font-mono);
-  font-size: 0.6875rem;
+  font-size: var(--type-caption);
   text-align: center;
   white-space: nowrap;
   padding: 4px 6px;
@@ -66,7 +117,7 @@
 .gantt-pct-cell {
   background-color: var(--bg-secondary);
   font-family: var(--font-mono);
-  font-size: 0.6875rem;
+  font-size: var(--type-caption);
   text-align: center;
   font-weight: 700;
   color: var(--text-primary);
@@ -93,9 +144,8 @@
 }
 
 .gantt-dual-bar:hover {
-  filter: brightness(1.15);
-  transform: translateY(-2px) scale(1.02);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+  filter: brightness(1.1);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
   z-index: 15;
 }
 

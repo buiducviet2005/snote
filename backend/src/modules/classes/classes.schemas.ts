@@ -22,7 +22,8 @@ export const setGroupLeaderSchema = z.object({ userId: uuid });
 export const createClassProjectSchema = z.object({
   name: z.string().trim().min(2).max(150),
   description: z.string().trim().max(5000).optional(),
-  dueDate: z.string().datetime().optional()
+  dueDate: z.string().datetime().optional(),
+  memberIds: z.array(z.string().uuid()).max(500).optional()
 });
 export const updateClassProjectSchema = z.object({
   name: z.string().trim().min(2).max(150).optional(),
@@ -45,5 +46,4 @@ export const memberParamSchema = z.object({ id: uuid, userId: uuid });
 export const groupParamSchema = z.object({ id: uuid, groupId: uuid });
 export const groupMemberParamSchema = z.object({ id: uuid, groupId: uuid, userId: uuid });
 export const projectParamSchema = z.object({ id: uuid, projectId: uuid });
-export const groupProjectParamSchema = z.object({ id: uuid, groupId: uuid });
 export const reportParamSchema = z.object({ id: uuid, projectId: uuid, reportId: uuid });

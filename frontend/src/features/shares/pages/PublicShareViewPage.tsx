@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { api, ApiResponse } from '../../../services/api';
+import { useLanguage } from '../../../contexts/LanguageContext';
 import { MarkdownViewer } from '../../../components/common/MarkdownViewer';
 import {
   Share2,
@@ -9,7 +10,6 @@ import {
   Sparkles,
   ArrowLeft,
   Calendar,
-  BookOpen,
   User,
   ShieldCheck,
   Globe
@@ -17,6 +17,7 @@ import {
 
 export const PublicShareViewPage: React.FC = () => {
   const { token } = useParams<{ token: string }>();
+  const { t, formatDateTime, language } = useLanguage();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -31,18 +32,18 @@ export const PublicShareViewPage: React.FC = () => {
         setData(res.data);
       })
       .catch((err: any) => {
-        setError(err.message || 'Không thể tải nội dung chia sẻ. Liên kết có thể đã hết hạn hoặc không tồn tại.');
+        setError(err.message || t('shares.link_unavailable_desc'));
       })
       .finally(() => {
         setLoading(false);
       });
-  }, [token]);
+  }, [token, t]);
 
   if (loading) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backgroundColor: 'var(--bg-primary)', color: 'var(--text-muted)' }}>
         <Sparkles className="animate-spin" size={32} style={{ color: 'var(--accent-primary)', marginBottom: '12px' }} />
-        <div style={{ fontSize: '15px', fontWeight: 600 }}>Đang tải nội dung chia sẻ từ SNOTE...</div>
+        <div style={{ fontSize: 'var(--type-body)', fontWeight: 600 }}>{t('shares.public_loading')}</div>
       </div>
     );
   }
@@ -52,15 +53,15 @@ export const PublicShareViewPage: React.FC = () => {
       <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backgroundColor: 'var(--bg-primary)', padding: '24px' }}>
         <div className="snote-card" style={{ maxWidth: '480px', width: '100%', textAlign: 'center', padding: '36px 24px', borderRadius: 'var(--radius-xl)' }}>
           <Globe size={42} style={{ color: 'var(--color-danger)', margin: '0 auto 16px auto' }} />
-          <h2 style={{ fontSize: '18px', fontWeight: 700, margin: '0 0 8px 0', color: 'var(--text-primary)' }}>
-            Liên kết không khả dụng
+          <h2 style={{ fontSize: 'var(--type-section)', fontWeight: 700, margin: '0 0 8px 0', color: 'var(--text-primary)' }}>
+            {t('shares.link_unavailable')}
           </h2>
-          <p style={{ fontSize: '13.5px', color: 'var(--text-secondary)', marginBottom: '24px', lineHeight: 1.5 }}>
-            {error || 'Nội dung này không tồn tại hoặc đã bị chủ sở hữu thu hồi quyền truy cập.'}
+          <p style={{ fontSize: 'var(--type-small)', color: 'var(--text-secondary)', marginBottom: '24px', lineHeight: 1.5 }}>
+            {error || t('shares.link_unavailable_desc')}
           </p>
           <Link to="/login" className="btn btn-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
             <ArrowLeft size={16} />
-            <span>Đến trang SNOTE</span>
+            <span>{t('shares.go_to_snote')}</span>
           </Link>
         </div>
       </div>
@@ -88,18 +89,18 @@ export const PublicShareViewPage: React.FC = () => {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <span style={{ fontSize: '18px', fontWeight: 800, background: 'linear-gradient(135deg, var(--accent-primary), #60a5fa)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+          <span style={{ fontSize: 'var(--type-section)', fontWeight: 800, background: 'linear-gradient(135deg, var(--accent-primary), #60a5fa)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
             SNOTE
           </span>
-          <span className="badge badge-primary" style={{ fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+          <span className="badge badge-primary" style={{ fontSize: 'var(--type-caption)', display: 'flex', alignItems: 'center', gap: '4px' }}>
             <Globe size={11} />
-            <span>Tài liệu công khai</span>
+            <span>{t('shares.public_doc')}</span>
           </span>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <Link to="/login" className="btn btn-ghost btn-sm" style={{ fontSize: '12.5px', fontWeight: 600 }}>
-            Đăng nhập SNOTE
+          <Link to="/login" className="btn btn-ghost btn-sm" style={{ fontSize: 'var(--type-small)', fontWeight: 600 }}>
+            {t('shares.login_snote')}
           </Link>
         </div>
       </header>
@@ -118,7 +119,7 @@ export const PublicShareViewPage: React.FC = () => {
                   backgroundColor: 'var(--accent-primary)',
                   color: '#ffffff',
                   fontWeight: 700,
-                  fontSize: '13px',
+                  fontSize: 'var(--type-small)',
                   display: 'inline-flex',
                   alignItems: 'center',
                   justifyContent: 'center'
@@ -128,11 +129,11 @@ export const PublicShareViewPage: React.FC = () => {
               </span>
 
               <div>
-                <div style={{ fontSize: '13.5px', fontWeight: 700, color: 'var(--text-primary)' }}>
-                  {owner?.fullName || 'Sinh viên SNOTE'}
+                <div style={{ fontSize: 'var(--type-small)', fontWeight: 700, color: 'var(--text-primary)' }}>
+                  {owner?.fullName || (language === 'vi' ? 'Sinh viên SNOTE' : 'SNOTE Student')}
                 </div>
-                <div style={{ fontSize: '11.5px', color: 'var(--text-muted)' }}>
-                  Đã chia sẻ tài liệu học tập
+                <div style={{ fontSize: 'var(--type-caption)', color: 'var(--text-muted)' }}>
+                  {t('shares.shared_study_doc')}
                 </div>
               </div>
             </div>
@@ -140,7 +141,7 @@ export const PublicShareViewPage: React.FC = () => {
             {targetItem?.subject && (
               <span
                 style={{
-                  fontSize: '12px',
+                  fontSize: 'var(--type-small)',
                   fontWeight: 600,
                   padding: '4px 10px',
                   borderRadius: '6px',
@@ -149,27 +150,27 @@ export const PublicShareViewPage: React.FC = () => {
                   border: '1px solid rgba(56, 189, 248, 0.25)'
                 }}
               >
-                📖 {targetItem.subject.code ? `[${targetItem.subject.code}] ` : ''}{targetItem.subject.name}
+                {targetItem.subject.code ? `[${targetItem.subject.code}] ` : ''}{targetItem.subject.name}
               </span>
             )}
           </div>
 
           {/* Title */}
-          <h1 style={{ fontSize: '24px', fontWeight: 800, margin: '0 0 16px 0', color: 'var(--text-primary)', letterSpacing: '-0.02em', lineHeight: 1.3 }}>
-            {targetItem?.title || 'Tài liệu không tên'}
+          <h1 style={{ fontSize: 'var(--type-title)', fontWeight: 800, margin: '0 0 16px 0', color: 'var(--text-primary)', letterSpacing: '-0.02em', lineHeight: 1.3 }}>
+            {targetItem?.title || t('shares.untitled_doc')}
           </h1>
 
           {/* Content Body */}
-          <div style={{ fontSize: '14px', lineHeight: 1.7, color: 'var(--text-primary)' }}>
+          <div style={{ fontSize: 'var(--type-body)', lineHeight: 1.7, color: 'var(--text-primary)' }}>
             {isNote ? (
-              <MarkdownViewer content={targetItem?.content || 'Chưa có nội dung ghi chú.'} />
+              <MarkdownViewer content={targetItem?.content || t('shares.no_note_content')} />
             ) : (
               <div>
-                <p style={{ margin: '0 0 16px 0' }}>{targetItem?.description || 'Không có mô tả chi tiết.'}</p>
+                <p style={{ margin: '0 0 16px 0' }}>{targetItem?.description || t('shares.no_description')}</p>
                 {targetItem?.dueDate && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: 'var(--color-warning)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: 'var(--type-small)', color: 'var(--color-warning)' }}>
                     <Calendar size={15} />
-                    <span>Hạn chót: {new Date(targetItem.dueDate).toLocaleString('vi-VN')}</span>
+                    <span>{t('shares.deadline', { date: formatDateTime(targetItem.dueDate) })}</span>
                   </div>
                 )}
               </div>

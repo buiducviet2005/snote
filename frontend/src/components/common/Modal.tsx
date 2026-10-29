@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef, useId } from 'react';
 import { X, Maximize2, Minimize2 } from 'lucide-react';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 interface ModalProps {
   isOpen: boolean;
@@ -25,10 +26,24 @@ export const Modal: React.FC<ModalProps> = ({
   allowExpand = true,
   headerActions
 }) => {
+  const { t } = useLanguage();
   const [isExpanded, setIsExpanded] = useState(false);
+  const [keepMounted, setKeepMounted] = useState(false);
+  const isClosing = !isOpen && keepMounted;
   const modalId = useId();
   const dialogRef = useRef<HTMLDivElement>(null);
   const previousActiveElementRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      setKeepMounted(true);
+      return;
+    }
+    if (!keepMounted) return;
+    const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    const timer = window.setTimeout(() => setKeepMounted(false), reducedMotion ? 0 : 140);
+    return () => window.clearTimeout(timer);
+  }, [isOpen, keepMounted]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -126,7 +141,7 @@ export const Modal: React.FC<ModalProps> = ({
     }
   }, [isOpen]);
 
-  if (!isOpen) return null;
+  if (!isOpen && !keepMounted) return null;
 
   const resolvedMaxWidth = isExpanded
     ? 'calc(100vw - 32px)'
@@ -136,9 +151,10 @@ export const Modal: React.FC<ModalProps> = ({
 
   return (
     <div
-      className="modal-overlay"
+      className={`modal-overlay ${isClosing ? 'is-closing' : ''}`}
       onClick={onClose}
       role="presentation"
+      aria-hidden={isClosing}
     >
       <div
         ref={dialogRef}
@@ -146,7 +162,7 @@ export const Modal: React.FC<ModalProps> = ({
         aria-modal="true"
         aria-label={title}
         tabIndex={-1}
-        className={`modal-dialog ${isExpanded ? 'modal-expanded' : ''} animate-fade-in`}
+        className={`modal-dialog ${isExpanded ? 'modal-expanded' : ''}`}
         style={{ maxWidth: resolvedMaxWidth }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -157,7 +173,7 @@ export const Modal: React.FC<ModalProps> = ({
             <h3
               style={{
                 margin: 0,
-                fontSize: '17px',
+                fontSize: 'var(--type-section)',
                 fontWeight: 700,
                 color: 'var(--text-primary)',
                 whiteSpace: 'nowrap',
@@ -178,7 +194,7 @@ export const Modal: React.FC<ModalProps> = ({
                 onClick={() => setIsExpanded((prev) => !prev)}
                 className="btn btn-ghost btn-icon"
                 style={{ padding: '6px', color: 'var(--text-secondary)' }}
-                title={isExpanded ? 'Thu nhỏ kích thước tiêu chuẩn' : 'Phóng to toàn màn hình'}
+                title={isExpanded ? t('common.minimize') : t('common.maximize')}
               >
                 {isExpanded ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
               </button>
@@ -189,8 +205,8 @@ export const Modal: React.FC<ModalProps> = ({
               onClick={onClose}
               className="btn btn-ghost btn-icon"
               style={{ padding: '6px', color: 'var(--text-secondary)' }}
-              title="Đóng (Esc)"
-              aria-label="Đóng hộp thoại"
+              title={t('common.close_esc')}
+              aria-label={t('common.close_dialog')}
             >
               <X size={18} />
             </button>

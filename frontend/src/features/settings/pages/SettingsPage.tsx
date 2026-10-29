@@ -27,7 +27,6 @@ import {
   ShieldAlert,
   FileText,
   Layers,
-  BookOpen,
   RefreshCw,
   AlertCircle,
   Globe
@@ -243,14 +242,14 @@ export const SettingsPage: React.FC = () => {
       {/* Header */}
       <div style={{ marginBottom: '24px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <h1 style={{ fontSize: '22px', fontWeight: 800, margin: 0, letterSpacing: '-0.02em' }}>
+          <h1 style={{ fontSize: 'var(--type-title)', fontWeight: 800, margin: 0, letterSpacing: '-0.02em' }}>
             {t('settings.title')}
           </h1>
-          <span className={`badge ${isAdmin ? 'badge-rose' : 'badge-blue'}`} style={{ fontSize: '11px', fontWeight: 600 }}>
+          <span className={`badge ${isAdmin ? 'badge-rose' : 'badge-blue'}`} style={{ fontSize: 'var(--type-caption)', fontWeight: 600 }}>
             {isAdmin ? t('nav.admin_role') : (user as any)?.role === 'TEACHER' ? t('classes.role_teacher') : t('classes.role_student')}
           </span>
         </div>
-        <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: 'var(--text-secondary)' }}>
+        <p style={{ margin: '4px 0 0 0', fontSize: 'var(--type-small)', color: 'var(--text-secondary)' }}>
           {t('settings.subtitle')}
         </p>
       </div>
@@ -267,7 +266,7 @@ export const SettingsPage: React.FC = () => {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <User size={20} style={{ color: 'var(--accent-primary)' }} />
-            <h2 style={{ fontSize: '17px', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
+            <h2 style={{ fontSize: 'var(--type-section)', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
               {t('settings.profile_section')}
             </h2>
           </div>
@@ -280,7 +279,7 @@ export const SettingsPage: React.FC = () => {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '18px' }}>
             {/* Full Name */}
             <div>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
+              <label style={{ display: 'block', fontSize: 'var(--type-small)', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
                 {t('settings.fullname_label')}
               </label>
               <input
@@ -295,7 +294,7 @@ export const SettingsPage: React.FC = () => {
 
             {/* Email (Readonly) */}
             <div>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
+              <label style={{ display: 'block', fontSize: 'var(--type-small)', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
                 {t('settings.email_label')}
               </label>
               <input
@@ -309,7 +308,7 @@ export const SettingsPage: React.FC = () => {
 
             {/* Timezone */}
             <div>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
+              <label style={{ display: 'block', fontSize: 'var(--type-small)', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
                 {t('settings.timezone_label')}
               </label>
               <select
@@ -317,16 +316,16 @@ export const SettingsPage: React.FC = () => {
                 onChange={(e) => setTimezone(e.target.value)}
                 className="snote-select"
               >
-                <option value="Asia/Ho_Chi_Minh">Giờ Việt Nam (Asia/Ho_Chi_Minh - GMT+7)</option>
+                <option value="Asia/Ho_Chi_Minh">{language === 'vi' ? 'Giờ Việt Nam (Asia/Ho_Chi_Minh - GMT+7)' : 'Vietnam Time (Asia/Ho_Chi_Minh - GMT+7)'}</option>
                 <option value="Asia/Bangkok">Bangkok (Asia/Bangkok - GMT+7)</option>
                 <option value="Asia/Tokyo">Tokyo / Seoul (GMT+9)</option>
-                <option value="UTC">Giờ Quốc Tế (UTC)</option>
+                <option value="UTC">{language === 'vi' ? 'Giờ Quốc Tế (UTC)' : 'Coordinated Universal Time (UTC)'}</option>
               </select>
             </div>
 
             {/* User ID copy */}
             <div>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
+              <label style={{ display: 'block', fontSize: 'var(--type-small)', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
                 {t('settings.user_id_label')}
               </label>
               <div style={{ display: 'flex', gap: '8px' }}>
@@ -335,7 +334,7 @@ export const SettingsPage: React.FC = () => {
                   disabled
                   value={user?.id || ''}
                   className="snote-input"
-                  style={{ opacity: 0.7, fontSize: '11.5px', fontFamily: 'monospace' }}
+                  style={{ opacity: 0.7, fontSize: 'var(--type-caption)', fontFamily: 'monospace' }}
                 />
                 <button
                   type="button"
@@ -374,7 +373,7 @@ export const SettingsPage: React.FC = () => {
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
           <Globe size={20} style={{ color: 'var(--accent-primary)' }} />
-          <h2 style={{ fontSize: '17px', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
+          <h2 style={{ fontSize: 'var(--type-section)', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
             {t('settings.language_section')}
           </h2>
         </div>
@@ -386,10 +385,10 @@ export const SettingsPage: React.FC = () => {
             className={`btn ${language === 'vi' ? 'btn-primary' : 'btn-secondary'}`}
             style={{ padding: '12px 20px', borderRadius: 'var(--radius-lg)', flex: 1, minWidth: '180px', justifyContent: 'flex-start' }}
           >
-            <span style={{ fontSize: '20px', marginRight: '8px' }}>🇻🇳</span>
+            <span style={{ fontSize: 'var(--type-section)', marginRight: '8px' }}>🇻🇳</span>
             <div style={{ textAlign: 'left' }}>
-              <div style={{ fontSize: '14px', fontWeight: 700 }}>{t('settings.lang_vi_title')}</div>
-              <div style={{ fontSize: '11px', opacity: 0.8 }}>{t('settings.lang_vi_desc')}</div>
+              <div style={{ fontSize: 'var(--type-body)', fontWeight: 700 }}>{t('settings.lang_vi_title')}</div>
+              <div style={{ fontSize: 'var(--type-caption)', opacity: 0.8 }}>{t('settings.lang_vi_desc')}</div>
             </div>
           </button>
 
@@ -399,10 +398,10 @@ export const SettingsPage: React.FC = () => {
             className={`btn ${language === 'en' ? 'btn-primary' : 'btn-secondary'}`}
             style={{ padding: '12px 20px', borderRadius: 'var(--radius-lg)', flex: 1, minWidth: '180px', justifyContent: 'flex-start' }}
           >
-            <span style={{ fontSize: '20px', marginRight: '8px' }}>🇬🇧</span>
+            <span style={{ fontSize: 'var(--type-section)', marginRight: '8px' }}>🇬🇧</span>
             <div style={{ textAlign: 'left' }}>
-              <div style={{ fontSize: '14px', fontWeight: 700 }}>{t('settings.lang_en_title')}</div>
-              <div style={{ fontSize: '11px', opacity: 0.8 }}>{t('settings.lang_en_desc')}</div>
+              <div style={{ fontSize: 'var(--type-body)', fontWeight: 700 }}>{t('settings.lang_en_title')}</div>
+              <div style={{ fontSize: 'var(--type-caption)', opacity: 0.8 }}>{t('settings.lang_en_desc')}</div>
             </div>
           </button>
         </div>
@@ -419,7 +418,7 @@ export const SettingsPage: React.FC = () => {
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
           <Sun size={20} style={{ color: 'var(--color-warning)' }} />
-          <h2 style={{ fontSize: '17px', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
+          <h2 style={{ fontSize: 'var(--type-section)', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
             {t('settings.appearance_section')}
           </h2>
         </div>
@@ -432,8 +431,8 @@ export const SettingsPage: React.FC = () => {
           >
             <Moon size={18} />
             <div style={{ textAlign: 'left', marginLeft: '6px' }}>
-              <div style={{ fontSize: '14px', fontWeight: 700 }}>{t('settings.theme_dark_title')}</div>
-              <div style={{ fontSize: '11px', opacity: 0.8 }}>{t('settings.theme_dark_desc')}</div>
+              <div style={{ fontSize: 'var(--type-body)', fontWeight: 700 }}>{t('settings.theme_dark_title')}</div>
+              <div style={{ fontSize: 'var(--type-caption)', opacity: 0.8 }}>{t('settings.theme_dark_desc')}</div>
             </div>
           </button>
 
@@ -444,8 +443,8 @@ export const SettingsPage: React.FC = () => {
           >
             <Sun size={18} />
             <div style={{ textAlign: 'left', marginLeft: '6px' }}>
-              <div style={{ fontSize: '14px', fontWeight: 700 }}>{t('settings.theme_light_title')}</div>
-              <div style={{ fontSize: '11px', opacity: 0.8 }}>{t('settings.theme_light_desc')}</div>
+              <div style={{ fontSize: 'var(--type-body)', fontWeight: 700 }}>{t('settings.theme_light_title')}</div>
+              <div style={{ fontSize: 'var(--type-caption)', opacity: 0.8 }}>{t('settings.theme_light_desc')}</div>
             </div>
           </button>
         </div>
@@ -462,7 +461,7 @@ export const SettingsPage: React.FC = () => {
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
           <KeyRound size={20} style={{ color: 'var(--color-warning)' }} />
-          <h2 style={{ fontSize: '17px', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
+          <h2 style={{ fontSize: 'var(--type-section)', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
             {t('settings.password_section')}
           </h2>
         </div>
@@ -470,7 +469,7 @@ export const SettingsPage: React.FC = () => {
         <form onSubmit={handleChangePassword} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
             <div>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
+              <label style={{ display: 'block', fontSize: 'var(--type-small)', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
                 {t('settings.current_password')}
               </label>
               <input
@@ -484,7 +483,7 @@ export const SettingsPage: React.FC = () => {
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
+              <label style={{ display: 'block', fontSize: 'var(--type-small)', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
                 {t('settings.new_password')}
               </label>
               <input
@@ -498,7 +497,7 @@ export const SettingsPage: React.FC = () => {
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
+              <label style={{ display: 'block', fontSize: 'var(--type-small)', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
                 {t('settings.confirm_password')}
               </label>
               <input
@@ -537,12 +536,12 @@ export const SettingsPage: React.FC = () => {
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
           <Database size={20} style={{ color: 'var(--color-info)' }} />
-          <h2 style={{ fontSize: '17px', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
+          <h2 style={{ fontSize: 'var(--type-section)', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
             {t('settings.backup_section')}
           </h2>
         </div>
 
-        <p style={{ margin: '0 0 16px 0', fontSize: '13.5px', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+        <p style={{ margin: '0 0 16px 0', fontSize: 'var(--type-small)', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
           {t('settings.backup_desc')}
         </p>
 
@@ -560,7 +559,7 @@ export const SettingsPage: React.FC = () => {
             marginBottom: '16px'
           }}
         >
-          <div style={{ fontSize: '12.5px', fontWeight: 700, color: 'var(--text-primary)' }}>
+          <div style={{ fontSize: 'var(--type-small)', fontWeight: 700, color: 'var(--text-primary)' }}>
             {t('settings.backup_scope')}
           </div>
 
@@ -571,7 +570,7 @@ export const SettingsPage: React.FC = () => {
               setExportSubjectId('');
             }}
             className="snote-select"
-            style={{ fontSize: '12.5px', width: '180px' }}
+            style={{ fontSize: 'var(--type-small)', width: '180px' }}
           >
             <option value="">{t('settings.all_semesters')}</option>
             {semesters.map((s) => (
@@ -585,14 +584,14 @@ export const SettingsPage: React.FC = () => {
             value={exportSubjectId}
             onChange={(e) => setExportSubjectId(e.target.value)}
             className="snote-select"
-            style={{ fontSize: '12.5px', width: '200px' }}
+            style={{ fontSize: 'var(--type-small)', width: '200px' }}
           >
             <option value="">{t('settings.all_subjects')}</option>
             {subjects
               .filter((s) => !exportSemesterId || s.semesterId === exportSemesterId)
               .map((s) => (
                 <option key={s.id} value={s.id}>
-                  [{s.code || 'MÔN'}] {s.name}
+                  [{s.code || (language === 'vi' ? 'MÔN' : 'SUBJ')}] {s.name}
                 </option>
               ))}
           </select>
@@ -637,12 +636,12 @@ export const SettingsPage: React.FC = () => {
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
           <RefreshCw size={20} style={{ color: 'var(--color-success)' }} />
-          <h2 style={{ fontSize: '17px', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
+          <h2 style={{ fontSize: 'var(--type-section)', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
             {t('settings.restore_section')}
           </h2>
         </div>
 
-        <p style={{ margin: '0 0 16px 0', fontSize: '13.5px', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+        <p style={{ margin: '0 0 16px 0', fontSize: 'var(--type-small)', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
           {t('settings.restore_desc')}
         </p>
 
@@ -654,14 +653,14 @@ export const SettingsPage: React.FC = () => {
               accept=".json"
               onChange={(e) => setRestoreFile(e.target.files?.[0] || null)}
               className="snote-input"
-              style={{ padding: '6px 12px', fontSize: '13px', width: 'auto', flex: 1, minWidth: '240px' }}
+              style={{ padding: '6px 12px', fontSize: 'var(--type-small)', width: 'auto', flex: 1, minWidth: '240px' }}
             />
 
             <select
               value={restoreMode}
               onChange={(e) => setRestoreMode(e.target.value as any)}
               className="snote-select"
-              style={{ fontSize: '12.5px', width: '220px' }}
+              style={{ fontSize: 'var(--type-small)', width: '220px' }}
             >
               <option value="MERGE">{t('settings.restore_mode_merge')}</option>
               <option value="REPLACE" disabled>{t('settings.restore_mode_replace')}</option>
@@ -688,7 +687,7 @@ export const SettingsPage: React.FC = () => {
               backgroundColor: 'rgba(16, 185, 129, 0.1)',
               borderRadius: 'var(--radius-lg)',
               border: '1px solid rgba(16, 185, 129, 0.3)',
-              fontSize: '13px',
+              fontSize: 'var(--type-small)',
               color: 'var(--text-primary)'
             }}
           >
@@ -714,7 +713,7 @@ export const SettingsPage: React.FC = () => {
           textAlign: 'center',
           padding: '20px',
           color: 'var(--text-muted)',
-          fontSize: '12.5px'
+          fontSize: 'var(--type-small)'
         }}
       >
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '4px' }}>

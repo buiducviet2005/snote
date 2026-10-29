@@ -1,5 +1,7 @@
 # 🚀 HƯỚNG DẪN THIẾT LẬP VÀ CHẠY DỰ ÁN SNOTE TRÊN MÁY MỚI (TỪ A ĐẾN Z)
 
+> 📘 **Xem thêm cẩm nang đẩy code lên GitHub:** [HUONG_DAN_SETUP_VA_GITHUB.md](HUONG_DAN_SETUP_VA_GITHUB.md)
+
 Tài liệu này hướng dẫn chi tiết từng bước để clone và khởi chạy thành công toàn bộ hệ thống **SNOTE** (Backend API + Frontend SPA + CSDL PostgreSQL) trên bất kỳ máy tính mới nào (Windows, macOS, Linux) sau khi tải mã nguồn từ GitHub.
 
 ---

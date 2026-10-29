@@ -4,8 +4,9 @@ import { StudyDateTimePicker } from '../../../components/common/StudyDateTimePic
 import { api } from '../../../services/api';
 import { useToast } from '../../../contexts/ToastContext';
 import { useAppFilter } from '../../../contexts/AppFilterContext';
+import { useLanguage } from '../../../contexts/LanguageContext';
 import { ProjectStatus } from '@snote/shared';
-import { FolderKanban, Calendar, BookOpen, Save } from 'lucide-react';
+import { FolderKanban, Calendar, Save } from 'lucide-react';
 
 interface ProjectModalProps {
   isOpen: boolean;
@@ -21,6 +22,7 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
   projectToEdit
 }) => {
   const { subjects, selectedSemesterId } = useAppFilter();
+  const { t } = useLanguage();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [subjectId, setSubjectId] = useState<string>('');
@@ -59,7 +61,7 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
           status,
           dueDate: dueDate ? new Date(dueDate).toISOString() : undefined
         });
-        showToast('Cập nhật đồ án thành công!', 'success');
+        showToast(t('projects.update_success'), 'success');
       } else {
         await api.post('/projects', {
           name: name.trim(),
@@ -69,13 +71,13 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
           status,
           dueDate: dueDate ? new Date(dueDate).toISOString() : undefined
         });
-        showToast('Tạo đồ án mới thành công!', 'success');
+        showToast(t('projects.create_success'), 'success');
       }
 
       onSuccess();
       onClose();
     } catch (err: any) {
-      showToast(err.message || 'Lỗi khi lưu đồ án', 'error');
+      showToast(err.message || t('common.error'), 'error');
     } finally {
       setLoading(false);
     }
@@ -85,37 +87,37 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={projectToEdit ? 'Chỉnh Sửa Dự Án / Bài Tập Lớn' : 'Thêm Dự Án / Bài Tập Lớn Mới'}
+      title={projectToEdit ? t('projects.modal_edit_title') : t('projects.modal_create_title')}
       maxWidth="620px"
       icon={<FolderKanban size={20} />}
     >
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
         <div>
-          <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
-            Tên dự án / đề tài / bài tập lớn *
+          <label style={{ display: 'block', fontSize: 'var(--type-small)', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
+            {t('projects.name_label')}
           </label>
           <input
             type="text"
             required
-            placeholder="Ví dụ: Dự án Xây dựng Ứng dụng SNOTE (Modular Monolith)"
+            placeholder={t('projects.name_placeholder')}
             value={name}
             onChange={(e) => setName(e.target.value)}
             className="snote-input"
-            style={{ fontSize: '14.5px', fontWeight: 600 }}
+            style={{ fontSize: 'var(--type-body)', fontWeight: 600 }}
           />
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
           <div>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
-              Môn học liên quan
+            <label style={{ display: 'block', fontSize: 'var(--type-small)', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
+              {t('projects.subject_label')}
             </label>
             <select
               value={subjectId}
               onChange={(e) => setSubjectId(e.target.value)}
               className="snote-select"
             >
-              <option value="">-- Dự án nghiên cứu độc lập / Khởi nghiệp --</option>
+              <option value="">{t('projects.independent_subject')}</option>
               {subjects.map((sub) => (
                 <option key={sub.id} value={sub.id}>
                   {sub.code ? `[${sub.code}] ` : ''}{sub.name}
@@ -125,18 +127,18 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
-              Trạng thái dự án
+            <label style={{ display: 'block', fontSize: 'var(--type-small)', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
+              {t('projects.status_label')}
             </label>
             <select
               value={status}
               onChange={(e) => setStatus(e.target.value as ProjectStatus)}
               className="snote-select"
             >
-              <option value={ProjectStatus.PLANNED}>📋 Lên kế hoạch (PLANNED)</option>
-              <option value={ProjectStatus.ACTIVE}>⚡ Đang triển khai (ACTIVE)</option>
-              <option value={ProjectStatus.ON_HOLD}>⏸️ Tạm hoãn (ON_HOLD)</option>
-              <option value={ProjectStatus.COMPLETED}>✅ Đã hoàn thành (COMPLETED)</option>
+              <option value={ProjectStatus.PLANNED}>{t('projects.status_opt_planned')}</option>
+              <option value={ProjectStatus.ACTIVE}>{t('projects.status_opt_active')}</option>
+              <option value={ProjectStatus.ON_HOLD}>{t('projects.status_opt_on_hold')}</option>
+              <option value={ProjectStatus.COMPLETED}>{t('projects.status_opt_completed')}</option>
             </select>
           </div>
         </div>
@@ -145,18 +147,18 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
           <StudyDateTimePicker
             value={dueDate}
             onChange={setDueDate}
-            label="Hạn báo cáo / Nghiệm thu / Nộp bài"
-            placeholder="Chọn ngày hạn nộp đồ án..."
+            label={t('projects.due_date_label')}
+            placeholder={t('projects.due_date_placeholder')}
           />
         </div>
 
         <div>
-          <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
-            Mô tả mục tiêu dự án
+          <label style={{ display: 'block', fontSize: 'var(--type-small)', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
+            {t('projects.desc_label')}
           </label>
           <textarea
             rows={3}
-            placeholder="Mô tả công nghệ sử dụng, phân công nhiệm vụ, tài liệu hoặc mục tiêu đề tài..."
+            placeholder={t('projects.desc_placeholder')}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             className="snote-textarea"
@@ -169,7 +171,7 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
             onClick={onClose}
             className="btn btn-secondary"
           >
-            Hủy bỏ
+            {t('common.cancel')}
           </button>
           <button
             type="submit"
@@ -177,7 +179,7 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
             className="btn btn-primary"
           >
             <Save size={15} />
-            <span>{loading ? 'Đang lưu...' : projectToEdit ? 'Lưu Thay Đổi' : 'Tạo Dự Án'}</span>
+            <span>{loading ? t('projects.saving') : projectToEdit ? t('projects.save_changes') : t('projects.create_modal_btn')}</span>
           </button>
         </div>
       </form>

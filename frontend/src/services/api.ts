@@ -62,9 +62,18 @@ function beginSessionChange() {
   return generation;
 }
 
+function getApiErrorMessage(vi: string, en: string): string {
+  try {
+    const lang = localStorage.getItem('snote_locale_lang') || 'vi';
+    return lang === 'en' ? en : vi;
+  } catch {
+    return vi;
+  }
+}
+
 function assertCurrentSession(expected: number) {
   if (generation !== expected) {
-    throw Object.assign(new Error('Phiên đăng nhập đã thay đổi. Vui lòng thử lại.'), {
+    throw Object.assign(new Error(getApiErrorMessage('Phiên đăng nhập đã thay đổi. Vui lòng thử lại.', 'Session changed. Please try again.')), {
       status: 401, code: 'SESSION_CHANGED', details: undefined
     });
   }
@@ -83,7 +92,7 @@ function queueCookieOperation<T>(expected: number, operation: () => Promise<T>):
 async function parseResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
     const errorBody = await response.json().catch(() => ({}));
-    const message = errorBody.error?.message || errorBody.message || `Lỗi máy chủ (Mã: ${response.status})`;
+    const message = errorBody.error?.message || errorBody.message || getApiErrorMessage(`Lỗi máy chủ (Mã: ${response.status})`, `Server error (Code: ${response.status})`);
     throw Object.assign(new Error(message), {
       status: response.status, code: errorBody.error?.code, details: errorBody.error?.details
     });
@@ -123,7 +132,10 @@ async function confirmLogout<T = unknown>(expected: number): Promise<T> {
   } catch (error) {
     if ((error as { code?: string }).code === 'SESSION_CHANGED') throw error;
     throw Object.assign(new Error(
-      'Chưa thể xác nhận đăng xuất với máy chủ. Vui lòng kết nối mạng và tải lại trang để thử lại trước khi đăng nhập.'
+      getApiErrorMessage(
+        'Chưa thể xác nhận đăng xuất với máy chủ. Vui lòng kết nối mạng và tải lại trang để thử lại trước khi đăng nhập.',
+        'Could not confirm logout with the server. Please check your network and reload the page before logging in.'
+      )
     ), { code: 'LOGOUT_NOT_CONFIRMED', status: (error as { status?: number }).status ?? 0 });
   }
 }
@@ -143,7 +155,12 @@ export function refreshSession(): Promise<ApiResponse<SessionPayload>> {
     const expected = generation;
     const pending = queueCookieOperation(expected, async () => {
       if (logoutPending) {
-        throw Object.assign(new Error('Vui lòng hoàn tất đăng xuất trước khi khôi phục phiên.'), {
+        throw Object.assign(new Error(
+          getApiErrorMessage(
+            'Vui lòng hoàn tất đăng xuất trước khi khôi phục phiên.',
+            'Please complete logout before restoring the session.'
+          )
+        ), {
           code: 'LOGOUT_NOT_CONFIRMED', status: 0
         });
       }
@@ -224,7 +241,7 @@ export const api = {
 
   download: async (path: string, defaultFilename: string): Promise<void> => {
     const { response, expected } = await authorizedResponse(path, { method: 'GET' }, false);
-    if (!response.ok) throw new Error(`Tải tệp thất bại: ${response.statusText}`);
+    if (!response.ok) throw new Error(getApiErrorMessage(`Tải tệp thất bại: ${response.statusText}`, `File download failed: ${response.statusText}`));
     const blob = await response.blob();
     assertCurrentSession(expected);
     const blobUrl = window.URL.createObjectURL(blob);

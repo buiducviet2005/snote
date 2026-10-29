@@ -1,6 +1,7 @@
 import React from 'react';
 import { TaskStatus, TaskPriority } from '@snote/shared';
 import { useAuth } from '../../../contexts/AuthContext';
+import { useLanguage } from '../../../contexts/LanguageContext';
 import {
   CheckCircle2,
   Circle,
@@ -12,7 +13,6 @@ import {
   Trash2,
   ArrowRight,
   ArrowLeft,
-  Flame,
   User,
   Users,
   Lock
@@ -34,17 +34,18 @@ export const TaskCard: React.FC<TaskCardProps> = ({
   onMoveStatus
 }) => {
   const { user: currentUser } = useAuth();
+  const { t, formatDate } = useLanguage();
 
   const getPriorityBadge = (priority: TaskPriority) => {
     switch (priority) {
       case TaskPriority.URGENT:
-        return { label: 'Khẩn cấp', badgeClass: 'badge-rose', isUrgent: true };
+        return { label: t('tasks.priority_urgent'), badgeClass: 'badge-rose', isUrgent: true };
       case TaskPriority.HIGH:
-        return { label: 'Ưu tiên cao', badgeClass: 'badge-amber', isUrgent: false };
+        return { label: t('tasks.priority_high'), badgeClass: 'badge-amber', isUrgent: false };
       case TaskPriority.MEDIUM:
-        return { label: 'Trung bình', badgeClass: 'badge-blue', isUrgent: false };
+        return { label: t('tasks.priority_medium'), badgeClass: 'badge-blue', isUrgent: false };
       default:
-        return { label: 'Thấp', badgeClass: 'badge-neutral', isUrgent: false };
+        return { label: t('tasks.priority_low'), badgeClass: 'badge-neutral', isUrgent: false };
     }
   };
 
@@ -83,20 +84,21 @@ export const TaskCard: React.FC<TaskCardProps> = ({
     }
   }
 
+  const priorityStripeClass = `priority-stripe-${(task.priority || 'LOW').toLowerCase()}`;
+
   return (
     <div
-      className="snote-card stagger-card"
+      className="snote-card"
       style={{
-        padding: '16px',
+        padding: '14px 16px',
         borderRadius: 'var(--radius-lg)',
-        border: priorityBadge.isUrgent && !isDone ? '1px solid rgba(239, 68, 68, 0.4)' : '1px solid var(--border-color)',
+        border: '1px solid var(--border-color)',
         backgroundColor: isDone ? 'var(--bg-tertiary)' : 'var(--bg-card)',
         opacity: isDone ? 0.75 : 1,
-        boxShadow: 'var(--shadow-sm)',
         display: 'flex',
         flexDirection: 'column',
-        gap: '12px',
-        transition: 'all var(--transition-fast)'
+        gap: '10px',
+        transition: 'border-color var(--transition-fast)'
       }}
     >
       {/* Header & Checkbox */}
@@ -111,23 +113,33 @@ export const TaskCard: React.FC<TaskCardProps> = ({
             disabled={!canComplete}
             className="btn btn-ghost btn-icon"
             style={{
-              padding: '2px',
+              minWidth: '28px',
+              minHeight: '28px',
+              padding: '4px',
               color: isDone ? 'var(--color-success)' : canComplete ? 'var(--text-muted)' : 'var(--border-color)',
               cursor: canComplete ? 'pointer' : 'not-allowed',
-              display: 'flex',
-              flexShrink: 0,
-              marginTop: '1px'
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0
             }}
             title={
               !canComplete
-                ? '🔒 Chỉ thành viên được phân công hoặc Trưởng nhóm mới có quyền hoàn thành task này'
+                ? t('tasks.locked_complete_tooltip')
                 : isDone
-                ? 'Đánh dấu chưa hoàn thành'
-                : 'Đánh dấu hoàn thành'
+                ? t('tasks.mark_undone')
+                : t('tasks.mark_done')
+            }
+            aria-label={
+              !canComplete
+                ? t('tasks.locked_complete_tooltip')
+                : isDone
+                ? t('tasks.mark_undone')
+                : t('tasks.mark_done')
             }
           >
             {isDone ? (
-              <CheckCircle2 size={18} style={{ fill: 'rgba(16, 185, 129, 0.2)' }} />
+              <CheckCircle2 size={18} />
             ) : !canComplete ? (
               <Lock size={16} style={{ color: 'var(--text-muted)' }} />
             ) : (
@@ -137,10 +149,18 @@ export const TaskCard: React.FC<TaskCardProps> = ({
 
           <div style={{ flex: 1, minWidth: 0 }}>
             <h4
+              role="button"
+              tabIndex={0}
               onClick={() => onEdit(task)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  onEdit(task);
+                }
+              }}
               style={{
                 margin: '0 0 4px 0',
-                fontSize: '14px',
+                fontSize: 'var(--type-body)',
                 fontWeight: 700,
                 color: isDone ? 'var(--text-muted)' : 'var(--text-primary)',
                 textDecoration: isDone ? 'line-through' : 'none',
@@ -149,7 +169,8 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                 wordBreak: 'break-word',
                 overflowWrap: 'anywhere'
               }}
-              title="Nhấp để xem chi tiết công việc"
+              title={t('tasks.click_view_details')}
+              aria-label={`${t('tasks.click_view_details')}: ${task.title}`}
             >
               {task.title}
             </h4>
@@ -158,7 +179,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                 onClick={() => onEdit(task)}
                 style={{
                   margin: 0,
-                  fontSize: '12.5px',
+                  fontSize: 'var(--type-small)',
                   color: 'var(--text-secondary)',
                   lineHeight: 1.45,
                   display: '-webkit-box',
@@ -169,7 +190,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                   overflowWrap: 'anywhere',
                   cursor: 'pointer'
                 }}
-                title="Nhấp để xem chi tiết công việc"
+                title={t('tasks.click_view_details')}
               >
                 {task.description}
               </p>
@@ -178,25 +199,43 @@ export const TaskCard: React.FC<TaskCardProps> = ({
         </div>
 
         {/* Action icons */}
-        <div style={{ display: 'flex', gap: '2px', flexShrink: 0 }}>
+        <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
           {canEdit && (
             <button
               onClick={() => onEdit(task)}
               className="btn btn-ghost btn-icon"
-              style={{ padding: '4px', color: 'var(--text-muted)' }}
-              title="Chỉnh sửa công việc"
+              style={{
+                minWidth: '28px',
+                minHeight: '28px',
+                padding: '4px',
+                color: 'var(--text-muted)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+              title={t('common.edit')}
+              aria-label={t('common.edit')}
             >
-              <Edit3 size={13} />
+              <Edit3 size={14} />
             </button>
           )}
           {(isCreator || isProjectOwner) && (
             <button
               onClick={() => onDelete(task.id, task.title)}
               className="btn btn-ghost btn-icon"
-              style={{ padding: '4px', color: 'var(--color-danger)' }}
-              title="Xóa công việc"
+              style={{
+                minWidth: '28px',
+                minHeight: '28px',
+                padding: '4px',
+                color: 'var(--color-danger)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+              title={t('common.delete')}
+              aria-label={t('common.delete')}
             >
-              <Trash2 size={13} />
+              <Trash2 size={14} />
             </button>
           )}
         </div>
@@ -206,8 +245,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
           {/* Priority */}
-          <span className={`badge ${priorityBadge.badgeClass}`} style={{ fontSize: '11px', padding: '2px 7px' }}>
-            {priorityBadge.isUrgent && <Flame size={11} className="pulse-urgent" />}
+          <span className={`badge ${priorityBadge.badgeClass}`} style={{ fontSize: 'var(--type-caption)', padding: '2px 7px' }}>
             <span>{priorityBadge.label}</span>
           </span>
 
@@ -216,11 +254,11 @@ export const TaskCard: React.FC<TaskCardProps> = ({
             <span
               className="badge"
               style={{
-                fontSize: '10.5px',
+                fontSize: 'var(--type-caption)',
                 padding: '2px 7px',
-                backgroundColor: task.subject.color ? `${task.subject.color}20` : 'rgba(255,255,255,0.06)',
-                color: task.subject.color || 'var(--text-secondary)',
-                border: `1px solid ${task.subject.color ? `${task.subject.color}35` : 'var(--border-color)'}`
+                backgroundColor: 'var(--bg-secondary)',
+                color: 'var(--text-secondary)',
+                border: '1px solid var(--border-subtle)'
               }}
             >
               {task.subject.code || task.subject.name}
@@ -230,15 +268,17 @@ export const TaskCard: React.FC<TaskCardProps> = ({
           {/* Project badge */}
           {task.project && (
             <span
-              className="badge badge-purple"
+              className="badge"
               style={{
-                fontSize: '10.5px',
+                fontSize: 'var(--type-caption)',
                 padding: '2px 7px',
-                border: '1px solid rgba(168, 85, 247, 0.3)'
+                backgroundColor: 'var(--bg-secondary)',
+                color: 'var(--text-secondary)',
+                border: '1px solid var(--border-subtle)'
               }}
-              title={`Dự án / BTL: ${task.project.name}`}
+              title={t('tasks.project_label_tooltip', { name: task.project.name })}
             >
-              📁 {task.project.name}
+              {task.project.name}
             </span>
           )}
 
@@ -247,22 +287,22 @@ export const TaskCard: React.FC<TaskCardProps> = ({
             <div
               className="badge"
               style={{
-                fontSize: '10.5px',
+                fontSize: 'var(--type-caption)',
                 padding: '2px 7px',
-                backgroundColor: 'rgba(99, 102, 241, 0.15)',
-                color: 'var(--accent-primary)',
-                border: '1px solid var(--accent-border)',
+                backgroundColor: 'var(--bg-secondary)',
+                color: 'var(--text-secondary)',
+                border: '1px solid var(--border-subtle)',
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '4px'
               }}
-              title={`Thành viên tham gia: ${assigneesList.map((a: any) => a.fullName || a.email).join(', ')}`}
+              title={t('tasks.members_tooltip', { names: assigneesList.map((a: any) => a.fullName || a.email).join(', ') })}
             >
               <Users size={11} />
               <span>
                 {assigneesList.length === 1
-                  ? (assigneesList[0].id === currentUser?.id ? 'Bạn' : assigneesList[0].fullName?.split(' ').slice(-1)[0] || 'Phụ trách')
-                  : (isAssignee ? `Bạn + ${assigneesList.length - 1} người` : `${assigneesList.length} người làm`)}
+                  ? (assigneesList[0].id === currentUser?.id ? t('tasks.assignee_you') : assigneesList[0].fullName?.split(' ').slice(-1)[0] || t('tasks.assigned'))
+                  : (isAssignee ? t('tasks.assignee_you_plus', { count: assigneesList.length - 1 }) : t('tasks.assignee_count', { count: assigneesList.length }))}
               </span>
             </div>
           )}
@@ -275,13 +315,13 @@ export const TaskCard: React.FC<TaskCardProps> = ({
               display: 'flex',
               alignItems: 'center',
               gap: '4px',
-              fontSize: '11px',
-              color: dueStatus === 'OVERDUE' ? 'var(--color-danger)' : dueStatus === 'TODAY' ? 'var(--color-warning)' : 'var(--text-muted)',
-              fontWeight: dueStatus === 'OVERDUE' || dueStatus === 'TODAY' ? 700 : 500
+              fontSize: 'var(--type-caption)',
+              color: dueStatus === 'OVERDUE' ? 'var(--color-danger)' : 'var(--text-muted)',
+              fontWeight: dueStatus === 'OVERDUE' ? 700 : 500
             }}
           >
             <Calendar size={11} />
-            <span>{new Date(task.dueDate).toLocaleDateString('vi-VN')}</span>
+            <span>{formatDate(task.dueDate)}</span>
           </div>
         )}
       </div>
@@ -296,16 +336,16 @@ export const TaskCard: React.FC<TaskCardProps> = ({
             gap: '6px',
             paddingTop: '8px',
             borderTop: '1px solid var(--border-subtle)',
-            fontSize: '11.5px'
+            fontSize: 'var(--type-caption)'
           }}
         >
           {task.status === TaskStatus.TODO && (
             <button
               onClick={() => onMoveStatus(task.id, TaskStatus.IN_PROGRESS)}
               className="btn btn-secondary btn-sm"
-              style={{ fontSize: '11px', padding: '3px 8px' }}
+              style={{ fontSize: 'var(--type-caption)', padding: '3px 8px' }}
             >
-              <span>Bắt đầu làm</span>
+              <span>{t('tasks.start_doing')}</span>
               <ArrowRight size={11} />
             </button>
           )}
@@ -315,17 +355,17 @@ export const TaskCard: React.FC<TaskCardProps> = ({
               <button
                 onClick={() => onMoveStatus(task.id, TaskStatus.TODO)}
                 className="btn btn-ghost btn-sm"
-                style={{ fontSize: '11px', padding: '3px 8px', color: 'var(--text-muted)' }}
+                style={{ fontSize: 'var(--type-caption)', padding: '3px 8px', color: 'var(--text-muted)' }}
               >
                 <ArrowLeft size={11} />
-                <span>Cần làm</span>
+                <span>{t('tasks.move_to_todo')}</span>
               </button>
               <button
                 onClick={() => onMoveStatus(task.id, TaskStatus.DONE)}
                 className="btn btn-primary btn-sm"
-                style={{ fontSize: '11px', padding: '3px 8px', background: 'var(--color-success)', borderColor: 'var(--color-success)' }}
+                style={{ fontSize: 'var(--type-caption)', padding: '3px 8px' }}
               >
-                <span>Xong</span>
+                <span>{t('tasks.move_to_done')}</span>
                 <CheckCircle2 size={11} />
               </button>
             </>
@@ -335,10 +375,10 @@ export const TaskCard: React.FC<TaskCardProps> = ({
             <button
               onClick={() => onMoveStatus(task.id, TaskStatus.IN_PROGRESS)}
               className="btn btn-ghost btn-sm"
-              style={{ fontSize: '11px', padding: '3px 8px', color: 'var(--text-muted)' }}
+              style={{ fontSize: 'var(--type-caption)', padding: '3px 8px', color: 'var(--text-muted)' }}
             >
               <ArrowLeft size={11} />
-              <span>Làm lại</span>
+              <span>{t('tasks.redo')}</span>
             </button>
           )}
         </div>

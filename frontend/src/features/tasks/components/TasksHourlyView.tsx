@@ -208,10 +208,10 @@ export const TasksHourlyView: React.FC<TasksHourlyViewProps> = ({
             <CalendarIcon size={18} />
           </div>
           <div>
-            <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)' }}>
+            <div style={{ fontSize: 'var(--type-body)', fontWeight: 700, color: 'var(--text-primary)' }}>
               {headerDateStr}
             </div>
-            <div style={{ fontSize: '11.5px', color: 'var(--text-secondary)' }}>
+            <div style={{ fontSize: 'var(--type-caption)', color: 'var(--text-secondary)' }}>
               {t('schedule.title')}
             </div>
           </div>
@@ -223,7 +223,7 @@ export const TasksHourlyView: React.FC<TasksHourlyViewProps> = ({
             type="button"
             onClick={handlePrevDay}
             className="btn btn-sm btn-secondary"
-            style={{ fontSize: '11.5px', padding: '4px 10px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+            style={{ fontSize: 'var(--type-caption)', padding: '4px 10px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
             title={t('schedule.prev_day')}
           >
             <ChevronLeft size={14} />
@@ -234,7 +234,7 @@ export const TasksHourlyView: React.FC<TasksHourlyViewProps> = ({
             type="button"
             onClick={handleToday}
             className="btn btn-sm btn-ghost"
-            style={{ fontSize: '11.5px', padding: '4px 12px', fontWeight: 700, color: 'var(--accent)' }}
+            style={{ fontSize: 'var(--type-caption)', padding: '4px 12px', fontWeight: 700, color: 'var(--accent)' }}
           >
             {t('schedule.today')}
           </button>
@@ -243,7 +243,7 @@ export const TasksHourlyView: React.FC<TasksHourlyViewProps> = ({
             type="button"
             onClick={handleNextDay}
             className="btn btn-sm btn-secondary"
-            style={{ fontSize: '11.5px', padding: '4px 10px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+            style={{ fontSize: 'var(--type-caption)', padding: '4px 10px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
             title={t('schedule.next_day')}
           >
             <span>{t('schedule.next_day')}</span>
@@ -258,7 +258,7 @@ export const TasksHourlyView: React.FC<TasksHourlyViewProps> = ({
               className="snote-input"
               style={{
                 height: '28px',
-                fontSize: '11.5px',
+                fontSize: 'var(--type-caption)',
                 padding: '2px 8px',
                 borderRadius: '6px',
                 fontFamily: 'var(--font-mono)'
@@ -281,7 +281,7 @@ export const TasksHourlyView: React.FC<TasksHourlyViewProps> = ({
             display: 'flex',
             alignItems: 'center',
             gap: '6px',
-            fontSize: '11px',
+            fontSize: 'var(--type-caption)',
             fontWeight: 700,
             color: 'var(--text-secondary)',
             letterSpacing: '0.5px',
@@ -294,7 +294,7 @@ export const TasksHourlyView: React.FC<TasksHourlyViewProps> = ({
         </div>
 
         {allDayTasks.length === 0 ? (
-          <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontStyle: 'italic', padding: '6px 0' }}>
+          <div style={{ fontSize: 'var(--type-small)', color: 'var(--text-muted)', fontStyle: 'italic', padding: '6px 0' }}>
             {language === 'vi' ? 'Không có công việc nào không cố định giờ trong ngày này.' : 'No untimed tasks scheduled for this day.'}
           </div>
         ) : (
@@ -330,7 +330,7 @@ export const TasksHourlyView: React.FC<TasksHourlyViewProps> = ({
                   <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px' }}>
                     <span
                       style={{
-                        fontSize: '12.5px',
+                        fontSize: 'var(--type-small)',
                         fontWeight: 600,
                         color: 'var(--text-primary)',
                         lineHeight: 1.35,
@@ -345,7 +345,7 @@ export const TasksHourlyView: React.FC<TasksHourlyViewProps> = ({
                     </span>
                     <span
                       style={{
-                        fontSize: '10px',
+                        fontSize: 'var(--type-caption)',
                         padding: '1px 6px',
                         borderRadius: '4px',
                         backgroundColor: 'var(--bg-secondary)',
@@ -358,7 +358,7 @@ export const TasksHourlyView: React.FC<TasksHourlyViewProps> = ({
                     </span>
                   </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '11px', color: 'var(--text-muted)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 'var(--type-caption)', color: 'var(--text-muted)' }}>
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                       <User size={11} />
                       <span>{assigneeName}</span>
@@ -429,7 +429,7 @@ export const TasksHourlyView: React.FC<TasksHourlyViewProps> = ({
                 width: '60px',
                 minWidth: '60px',
                 paddingLeft: '14px',
-                fontSize: '11px',
+                fontSize: 'var(--type-caption)',
                 fontFamily: 'var(--font-mono)',
                 color: 'var(--text-muted)',
                 lineHeight: '1',
@@ -486,11 +486,11 @@ export const TasksHourlyView: React.FC<TasksHourlyViewProps> = ({
                     >
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden' }}>
                         <Clock size={12} style={{ color: priority.color, flexShrink: 0 }} />
-                        <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        <span style={{ fontSize: 'var(--type-small)', fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                           {task.title}
                         </span>
                       </div>
-                      <span style={{ fontSize: '10.5px', color: priority.color, fontWeight: 700, flexShrink: 0 }}>
+                      <span style={{ fontSize: 'var(--type-caption)', color: priority.color, fontWeight: 700, flexShrink: 0 }}>
                         {priority.label}
                       </span>
                     </div>

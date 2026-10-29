@@ -14,3 +14,12 @@ export const createProjectSchema = z.object({
 });
 
 export const updateProjectSchema = createProjectSchema.partial();
+
+export const addProjectMemberSchema = z.object({
+  emailOrUserId: z.string().trim().min(1),
+  role: z.enum(['ADMIN', 'MEMBER', 'VIEWER']).default('MEMBER')
+}).strict();
+
+export const updateProjectMemberRoleSchema = z.object({
+  role: z.enum(['OWNER', 'ADMIN', 'MEMBER', 'VIEWER'])
+}).strict();

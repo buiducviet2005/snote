@@ -1,0 +1,680 @@
+﻿/* ==========================================================================
+   SNOTE NOTES WORKBENCH 2.0 (STUDY-CENTRIC LAYOUT)
+   ========================================================================== */
+
+.snote-workbench {
+  display: flex;
+  height: 100%;
+  width: 100%;
+  background-color: var(--ws-bg-surface, #0f172a);
+  overflow: hidden;
+  position: relative;
+}
+
+/* --------------------------------------------------------------------------
+   1. LEFT SIDEBAR: STUDY VAULT EXPLORER
+   -------------------------------------------------------------------------- */
+.snote-wb-left {
+  width: 280px;
+  min-width: 260px;
+  max-width: 320px;
+  background-color: var(--ws-bg-surface, #0f172a);
+  border-right: 1px solid var(--ws-border-hairline, rgba(255, 255, 255, 0.08));
+  display: flex;
+  flex-direction: column;
+  transition: width 0.2s cubic-bezier(0.16, 1, 0.3, 1), margin-left 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+  z-index: 10;
+}
+
+.snote-wb-left.collapsed {
+  width: 0;
+  min-width: 0;
+  margin-left: -280px;
+  border-right: none;
+}
+
+.snote-wb-left-header {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--ws-border-hairline, rgba(255, 255, 255, 0.08));
+  background-color: var(--ws-bg-rail, #0b1120);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.snote-wb-left-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.snote-wb-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--type-micro, 11px);
+  font-weight: 700;
+  color: var(--ws-text-main, #f8fafc);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.snote-wb-new-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  font-size: var(--type-micro);
+  font-weight: 600;
+  border-radius: 4px;
+  background: var(--ws-accent, #38bdf8);
+  border: 1px solid var(--ws-accent, #38bdf8);
+  color: #fff;
+  cursor: pointer;
+  transition: opacity 0.12s ease;
+}
+
+.snote-wb-new-btn:hover {
+  opacity: 0.9;
+}
+
+.snote-wb-icon-btn {
+  padding: 4px;
+  background: transparent;
+  border: none;
+  color: var(--ws-text-muted, #94a3b8);
+  cursor: pointer;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.snote-wb-icon-btn:hover {
+  background: var(--ws-bg-surface-hover, rgba(255, 255, 255, 0.08));
+  color: var(--ws-text-main, #f8fafc);
+}
+
+.snote-wb-search-wrap {
+  position: relative;
+  width: 100%;
+}
+
+.snote-wb-search-icon {
+  position: absolute;
+  left: 9px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--ws-text-muted, #94a3b8);
+  pointer-events: none;
+}
+
+.snote-wb-search-input {
+  width: 100%;
+  padding: 5px 8px 5px 28px;
+  background-color: var(--ws-bg-surface, #0f172a);
+  border: 1px solid var(--ws-border-subtle, rgba(255, 255, 255, 0.1));
+  border-radius: 5px;
+  font-size: var(--type-caption);
+  color: var(--ws-text-main, #f8fafc);
+  outline: none;
+}
+
+.snote-wb-search-input:focus {
+  border-color: var(--ws-accent, #38bdf8);
+}
+
+.snote-wb-filter-pills {
+  display: flex;
+  gap: 4px;
+}
+
+.snote-wb-pill {
+  padding: 2px 8px;
+  font-size: var(--type-micro, 11px);
+  font-weight: 500;
+  border-radius: 4px;
+  background: transparent;
+  border: 1px solid var(--ws-border-hairline, rgba(255, 255, 255, 0.1));
+  color: var(--ws-text-muted, #94a3b8);
+  cursor: pointer;
+}
+
+.snote-wb-pill.active {
+  background: var(--ws-accent, #38bdf8);
+  border-color: var(--ws-accent, #38bdf8);
+  color: #fff;
+  font-weight: 600;
+}
+
+.snote-wb-notes-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.snote-wb-note-item {
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  transition: background-color 0.12s ease;
+  border-left: 2px solid transparent;
+}
+
+.snote-wb-note-item:hover {
+  background-color: var(--ws-bg-surface-hover, rgba(255, 255, 255, 0.05));
+}
+
+.snote-wb-note-item.active {
+  background-color: rgba(56, 189, 248, 0.12);
+  border-left-color: var(--ws-accent, #38bdf8);
+}
+
+.snote-wb-item-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.snote-wb-item-title {
+  font-size: var(--type-caption, 12px);
+  font-weight: 600;
+  color: var(--ws-text-main, #f8fafc);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.snote-wb-item-snippet {
+  font-size: var(--type-micro);
+  color: var(--ws-text-muted, #94a3b8);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.4;
+}
+
+.snote-wb-item-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--type-micro);
+  color: var(--ws-text-faint, #64748b);
+  margin-top: 2px;
+}
+
+.snote-wb-tag-pill {
+  color: #c084fc;
+  background: rgba(192, 132, 252, 0.1);
+  padding: 0 4px;
+  border-radius: 3px;
+}
+
+/* --------------------------------------------------------------------------
+   2. MAIN CENTER: LIVE-INLINE DOCUMENT ENGINE
+   -------------------------------------------------------------------------- */
+.snote-wb-center {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  background-color: var(--ws-bg-surface, #0f172a);
+  overflow: hidden;
+}
+
+.snote-wb-unhide-left,
+.snote-wb-unhide-right {
+  position: absolute;
+  top: 14px;
+  z-index: 20;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  background: var(--ws-bg-rail, #1e293b);
+  border: 1px solid var(--ws-border-subtle, rgba(255, 255, 255, 0.1));
+  color: var(--ws-text-muted, #94a3b8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.snote-wb-unhide-left {
+  left: 12px;
+}
+
+.snote-wb-unhide-right {
+  right: 12px;
+}
+
+.snote-wb-document-area {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  justify-content: center;
+  padding: 24px 32px 0 32px;
+}
+
+.snote-wb-page-container {
+  width: 100%;
+  max-width: 820px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.snote-workbench.focus-mode .snote-wb-page-container {
+  max-width: 740px;
+}
+
+.snote-wb-doc-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--ws-border-hairline, rgba(255, 255, 255, 0.08));
+}
+
+.snote-wb-doc-title-input {
+  flex: 1;
+  font-size: var(--type-title);
+  font-weight: 750;
+  color: var(--ws-text-main, #f8fafc);
+  background: transparent;
+  border: none;
+  outline: none;
+  padding: 4px 0;
+  letter-spacing: -0.02em;
+}
+
+.snote-wb-doc-title-input::placeholder {
+  color: var(--ws-text-faint, #64748b);
+  font-weight: 600;
+}
+
+.snote-wb-doc-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.snote-wb-tool-btn {
+  padding: 6px;
+  background: transparent;
+  border: none;
+  border-radius: 5px;
+  color: var(--ws-text-muted, #94a3b8);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.1s ease;
+}
+
+.snote-wb-tool-btn:hover {
+  background-color: var(--ws-bg-surface-hover, rgba(255, 255, 255, 0.08));
+  color: var(--ws-text-main, #f8fafc);
+}
+
+.snote-wb-tool-btn.active {
+  background-color: rgba(56, 189, 248, 0.15);
+  color: var(--ws-accent, #38bdf8);
+}
+
+.snote-wb-tool-btn.danger:hover {
+  background-color: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+.snote-wb-editor-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  margin-top: 8px;
+}
+
+.snote-wb-empty-canvas {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--ws-text-muted, #94a3b8);
+  font-size: var(--type-small, 14px);
+}
+
+/* Bottom Status Bar */
+.snote-wb-status-bar {
+  height: 32px;
+  background-color: var(--ws-bg-rail, #0b1120);
+  border-top: 1px solid var(--ws-border-hairline, rgba(255, 255, 255, 0.08));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  font-size: var(--type-micro);
+  color: var(--ws-text-muted, #94a3b8);
+  user-select: none;
+  z-index: 10;
+}
+
+.snote-wb-status-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dot-divider {
+  opacity: 0.35;
+}
+
+.snote-wb-status-right {
+  display: flex;
+  align-items: center;
+}
+
+.snote-wb-quiet-autosave {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  user-select: none;
+  color: var(--ws-text-muted, #94a3b8);
+  font-size: var(--type-micro);
+  transition: opacity 0.15s ease;
+}
+
+.snote-wb-quiet-autosave:hover {
+  background-color: var(--ws-bg-surface-hover, rgba(255, 255, 255, 0.05));
+}
+
+.quiet-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.quiet-dot.synced.on {
+  background-color: #10b981;
+}
+
+.quiet-dot.synced.off {
+  background-color: #64748b;
+}
+
+.quiet-dot.saving {
+  background-color: var(--ws-accent, #38bdf8);
+}
+
+.quiet-dot.draft {
+  background-color: #f59e0b;
+}
+
+.quiet-status-text {
+  opacity: 0.75;
+}
+
+/* --------------------------------------------------------------------------
+   3. RIGHT DRAWER: OUTLINE & CONTEXT
+   -------------------------------------------------------------------------- */
+.snote-wb-right {
+  width: 260px;
+  min-width: 240px;
+  max-width: 300px;
+  background-color: var(--ws-bg-surface, #0f172a);
+  border-left: 1px solid var(--ws-border-hairline, rgba(255, 255, 255, 0.08));
+  display: flex;
+  flex-direction: column;
+  transition: width 0.2s cubic-bezier(0.16, 1, 0.3, 1), margin-right 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+  z-index: 10;
+}
+
+.snote-wb-right.collapsed {
+  width: 0;
+  min-width: 0;
+  margin-right: -260px;
+  border-left: none;
+}
+
+.snote-wb-right-tabs {
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid var(--ws-border-hairline, rgba(255, 255, 255, 0.08));
+  background-color: var(--ws-bg-rail, #0b1120);
+  padding: 4px 6px;
+  gap: 2px;
+}
+
+.snote-wb-rtab {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 5px 4px;
+  font-size: var(--type-micro);
+  font-weight: 500;
+  color: var(--ws-text-muted, #94a3b8);
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.snote-wb-rtab.active {
+  background-color: var(--ws-bg-surface, #0f172a);
+  color: var(--ws-accent, #38bdf8);
+  font-weight: 600;
+}
+
+.snote-wb-badge {
+  font-size: var(--type-micro, 11px);
+  padding: 1px 4px;
+  border-radius: 8px;
+  background-color: rgba(56, 189, 248, 0.2);
+  color: var(--ws-accent, #38bdf8);
+}
+
+.snote-wb-right-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+}
+
+.snote-wb-outline-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.snote-wb-outline-item {
+  font-size: var(--type-micro, 11px);
+  color: var(--ws-text-main, #f8fafc);
+  padding: 3px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.snote-wb-outline-item:hover {
+  background-color: var(--ws-bg-surface-hover, rgba(255, 255, 255, 0.06));
+}
+
+.snote-wb-outline-item.depth-1 {
+  font-weight: 650;
+  padding-left: 6px;
+}
+
+.snote-wb-outline-item.depth-2 {
+  font-weight: 500;
+  padding-left: 14px;
+  color: var(--ws-text-muted, #94a3b8);
+}
+
+.snote-wb-outline-item.depth-3 {
+  font-size: var(--type-micro);
+  padding-left: 22px;
+  color: var(--ws-text-faint, #64748b);
+}
+
+.snote-wb-backlinks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.snote-wb-link-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  background-color: var(--ws-bg-rail, #1e293b);
+  border: 1px solid var(--ws-border-hairline, rgba(255, 255, 255, 0.08));
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.snote-wb-link-card:hover {
+  border-color: var(--ws-accent, #38bdf8);
+}
+
+.snote-wb-link-title {
+  font-size: var(--type-micro, 11px);
+  font-weight: 600;
+  color: var(--ws-text-main, #f8fafc);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.snote-wb-tags-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.snote-wb-tag-badge {
+  font-size: var(--type-micro, 11px);
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: rgba(192, 132, 252, 0.12);
+  color: #c084fc;
+  border: 1px solid rgba(192, 132, 252, 0.25);
+  cursor: pointer;
+}
+
+.snote-wb-empty-text {
+  font-size: var(--type-micro, 11px);
+  color: var(--ws-text-faint, #64748b);
+  font-style: italic;
+  text-align: center;
+  padding: 24px 8px;
+}
+
+/* ==========================================================================
+   STATIC SILENT TOOLBAR & REVISION HISTORY STYLES
+   ========================================================================== */
+
+.snote-wb-tool-btn.is-dirty {
+  color: var(--ws-accent, #38bdf8);
+}
+
+.snote-wb-tool-btn.history-btn {
+  position: relative;
+}
+
+.snote-wb-history-count {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  background-color: var(--ws-accent, #38bdf8);
+  color: #ffffff;
+  font-size: var(--type-micro);
+  font-weight: 700;
+  padding: 0 3px;
+  border-radius: 6px;
+  min-width: 12px;
+  text-align: center;
+  line-height: 12px;
+}
+
+.snote-wb-history-quick {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.snote-wb-full-history-btn {
+  background: transparent;
+  border: none;
+  color: var(--ws-accent, #38bdf8);
+  font-size: var(--type-micro, 11px);
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+}
+
+.snote-wb-full-history-btn:hover {
+  text-decoration: underline;
+}
+
+.snote-wb-snap-mini-card {
+  padding: 8px 10px;
+  background-color: var(--ws-bg-rail, #1e293b);
+  border: 1px solid var(--ws-border-hairline, rgba(255, 255, 255, 0.08));
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  transition: all 0.12s ease;
+}
+
+.snote-wb-snap-mini-card:hover {
+  border-color: var(--ws-accent, #38bdf8);
+  background-color: var(--ws-bg-surface-hover, rgba(255, 255, 255, 0.06));
+}
+
+.snote-wb-snap-mini-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.snote-wb-snap-mini-time {
+  font-size: var(--type-micro, 11px);
+  font-weight: 700;
+  color: var(--ws-text-main, #f8fafc);
+}
+
+.snote-wb-snap-mini-date {
+  font-size: var(--type-micro);
+  color: var(--ws-text-muted, #94a3b8);
+}
+
+.snote-wb-snap-mini-sub {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--type-micro);
+  color: var(--ws-text-faint, #64748b);
+}

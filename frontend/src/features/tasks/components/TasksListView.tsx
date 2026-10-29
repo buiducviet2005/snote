@@ -8,7 +8,6 @@ import {
   Clock,
   AlertCircle,
   Calendar,
-  BookOpen,
   FolderKanban,
   Edit3,
   Trash2,
@@ -57,27 +56,27 @@ export const TasksListView: React.FC<TasksListViewProps> = ({
   const getPriorityStyle = (priority: string) => {
     const p = (priority || '').toUpperCase();
     if (p === 'URGENT') {
-      return { label: t('tasks.priority_urgent'), color: '#ef4444', bg: 'rgba(239, 68, 68, 0.08)', border: '#ef4444' };
+      return { label: t('tasks.priority_urgent'), color: 'var(--text-primary)', bg: 'var(--bg-secondary)', border: 'var(--border-color)' };
     }
     if (p === 'HIGH') {
-      return { label: t('tasks.priority_high'), color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.08)', border: '#f59e0b' };
+      return { label: t('tasks.priority_high'), color: 'var(--text-primary)', bg: 'var(--bg-secondary)', border: 'var(--border-color)' };
     }
     if (p === 'MEDIUM') {
-      return { label: t('tasks.priority_medium'), color: '#3b82f6', bg: 'rgba(59, 130, 246, 0.08)', border: '#3b82f6' };
+      return { label: t('tasks.priority_medium'), color: 'var(--text-secondary)', bg: 'var(--bg-secondary)', border: 'var(--border-color)' };
     }
-    return { label: t('tasks.priority_low'), color: '#94a3b8', bg: 'rgba(148, 163, 184, 0.08)', border: '#94a3b8' };
+    return { label: t('tasks.priority_low'), color: 'var(--text-muted)', bg: 'var(--bg-secondary)', border: 'var(--border-subtle)' };
   };
 
   const getStatusBadge = (status: string) => {
     const s = (status || '').toUpperCase();
     if (s === 'DONE') {
-      return { label: t('tasks.status_done'), color: '#10b981', bg: 'rgba(16, 185, 129, 0.12)' };
+      return { label: t('tasks.status_done'), color: 'var(--text-secondary)', bg: 'var(--bg-secondary)' };
     }
     if (s === 'IN_PROGRESS') {
-      return { label: t('tasks.status_in_progress'), color: '#0ea5e9', bg: 'rgba(14, 165, 233, 0.12)' };
+      return { label: t('tasks.status_in_progress'), color: 'var(--text-secondary)', bg: 'var(--bg-secondary)' };
     }
     if (s === 'PENDING_REVIEW' || s === 'PENDING') {
-      return { label: t('tasks.status_pending'), color: '#8b5cf6', bg: 'rgba(139, 92, 246, 0.12)' };
+      return { label: t('tasks.status_pending'), color: 'var(--text-secondary)', bg: 'var(--bg-secondary)' };
     }
     return { label: t('tasks.status_todo'), color: 'var(--text-secondary)', bg: 'var(--bg-secondary)' };
   };
@@ -157,7 +156,7 @@ export const TasksListView: React.FC<TasksListViewProps> = ({
             alignItems: 'center',
             gap: '10px',
             cursor: 'pointer',
-            fontSize: '12.5px',
+            fontSize: 'var(--type-small)',
             fontWeight: 600,
             color: 'var(--text-primary)',
             userSelect: 'none'
@@ -183,14 +182,14 @@ export const TasksListView: React.FC<TasksListViewProps> = ({
         {/* Floating Batch Actions */}
         {selectedIds.size > 0 && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', animation: 'wsFadeIn 0.15s ease' }}>
-            <span style={{ fontSize: '11.5px', color: 'var(--text-secondary)', fontWeight: 600 }}>
+            <span style={{ fontSize: 'var(--type-caption)', color: 'var(--text-secondary)', fontWeight: 600 }}>
               {language === 'vi' ? `Đã chọn: ${selectedIds.size}` : `Selected: ${selectedIds.size}`}
             </span>
             <button
               type="button"
               onClick={handleBatchMarkDone}
               className="btn btn-sm btn-primary"
-              style={{ fontSize: '11px', padding: '3px 10px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+              style={{ fontSize: 'var(--type-caption)', padding: '3px 10px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
             >
               <Check size={13} />
               <span>{t('tasks.batch_done', { count: selectedIds.size })}</span>
@@ -199,7 +198,7 @@ export const TasksListView: React.FC<TasksListViewProps> = ({
               type="button"
               onClick={handleBatchDelete}
               className="btn btn-sm btn-danger"
-              style={{ fontSize: '11px', padding: '3px 10px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+              style={{ fontSize: 'var(--type-caption)', padding: '3px 10px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
             >
               <Trash2 size={13} />
               <span>{t('tasks.batch_delete', { count: selectedIds.size })}</span>
@@ -208,7 +207,7 @@ export const TasksListView: React.FC<TasksListViewProps> = ({
               type="button"
               onClick={() => setSelectedIds(new Set())}
               className="btn btn-sm btn-ghost"
-              style={{ fontSize: '11px', padding: '3px 8px' }}
+              style={{ fontSize: 'var(--type-caption)', padding: '3px 8px' }}
             >
               {t('common.cancel')}
             </button>
@@ -218,7 +217,7 @@ export const TasksListView: React.FC<TasksListViewProps> = ({
 
       {/* 2. Tasks List Rows (Image 3) */}
       {tasks.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '48px 0', color: 'var(--text-muted)', fontSize: '13px' }}>
+        <div style={{ textAlign: 'center', padding: '48px 0', color: 'var(--text-muted)', fontSize: 'var(--type-small)' }}>
           {t('tasks.no_tasks')}
         </div>
       ) : (
@@ -263,20 +262,17 @@ export const TasksListView: React.FC<TasksListViewProps> = ({
                 padding: '10px 14px',
                 borderRadius: '8px',
                 backgroundColor: isSelected
-                  ? 'rgba(59, 130, 246, 0.05)'
+                  ? 'var(--bg-secondary)'
                   : isDone
                   ? 'var(--bg-secondary)'
                   : 'var(--bg-primary)',
-                border: isSelected
-                  ? '1px solid var(--accent)'
-                  : '1px solid var(--border-color)',
-                borderLeft: `3.5px solid ${priorityStyle.border}`,
+                border: '1px solid var(--border-color)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 gap: '12px',
                 cursor: 'pointer',
-                transition: 'all 0.12s ease',
+                transition: 'border-color 0.12s ease',
                 opacity: isDone ? 0.75 : 1
               }}
             >
@@ -303,7 +299,7 @@ export const TasksListView: React.FC<TasksListViewProps> = ({
                   <div style={{ display: 'flex', alignItems: 'center', gap: '7px', flexWrap: 'wrap' }}>
                     <span
                       style={{
-                        fontSize: '13px',
+                        fontSize: 'var(--type-small)',
                         fontWeight: 600,
                         color: isDone ? 'var(--text-muted)' : 'var(--text-primary)',
                         textDecoration: isDone ? 'line-through' : 'none'
@@ -316,13 +312,13 @@ export const TasksListView: React.FC<TasksListViewProps> = ({
                     {isOverdue && (
                       <span
                         style={{
-                          fontSize: '10px',
+                          fontSize: 'var(--type-caption)',
                           fontWeight: 700,
                           padding: '1px 6px',
                           borderRadius: '4px',
-                          backgroundColor: 'rgba(239, 68, 68, 0.14)',
-                          color: '#ef4444',
-                          border: '1px solid rgba(239, 68, 68, 0.25)',
+                          backgroundColor: 'var(--bg-secondary)',
+                          color: 'var(--color-danger)',
+                          border: '1px solid var(--border-subtle)',
                           flexShrink: 0
                         }}
                       >
@@ -333,12 +329,13 @@ export const TasksListView: React.FC<TasksListViewProps> = ({
                     {/* Assigned Badge */}
                     <span
                       style={{
-                        fontSize: '10px',
+                        fontSize: 'var(--type-caption)',
                         fontWeight: 600,
                         padding: '1px 6px',
                         borderRadius: '4px',
-                        backgroundColor: 'rgba(59, 130, 246, 0.12)',
-                        color: '#3b82f6',
+                        backgroundColor: 'var(--bg-secondary)',
+                        color: 'var(--text-secondary)',
+                        border: '1px solid var(--border-subtle)',
                         flexShrink: 0
                       }}
                     >
@@ -349,13 +346,13 @@ export const TasksListView: React.FC<TasksListViewProps> = ({
                     {subtasks && (
                       <span
                         style={{
-                          fontSize: '10px',
+                          fontSize: 'var(--type-caption)',
                           fontFamily: 'var(--font-mono)',
                           fontWeight: 700,
                           padding: '1px 6px',
                           borderRadius: '4px',
-                          backgroundColor: subtasks.isAllDone ? 'rgba(16, 185, 129, 0.12)' : 'var(--bg-secondary)',
-                          color: subtasks.isAllDone ? '#10b981' : 'var(--text-secondary)',
+                          backgroundColor: 'var(--bg-secondary)',
+                          color: 'var(--text-secondary)',
                           border: '1px solid var(--border-color)',
                           flexShrink: 0
                         }}
@@ -373,7 +370,7 @@ export const TasksListView: React.FC<TasksListViewProps> = ({
                       alignItems: 'center',
                       gap: '8px',
                       flexWrap: 'wrap',
-                      fontSize: '11px',
+                      fontSize: 'var(--type-caption)',
                       color: 'var(--text-muted)'
                     }}
                   >
@@ -383,7 +380,7 @@ export const TasksListView: React.FC<TasksListViewProps> = ({
                     {dueStr && (
                       <>
                         <span>•</span>
-                        <span style={{ color: isOverdue ? '#ef4444' : 'inherit', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                        <span style={{ color: isOverdue ? 'var(--color-danger)' : 'inherit', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
                           <Clock size={11} />
                           <span>{dueStr}</span>
                         </span>
@@ -400,12 +397,13 @@ export const TasksListView: React.FC<TasksListViewProps> = ({
                 {/* Priority Label Tag */}
                 <span
                   style={{
-                    fontSize: '10.5px',
+                    fontSize: 'var(--type-caption)',
                     fontWeight: 700,
                     padding: '2px 8px',
                     borderRadius: '4px',
                     backgroundColor: priorityStyle.bg,
-                    color: priorityStyle.color
+                    color: priorityStyle.color,
+                    border: '1px solid var(--border-subtle)'
                   }}
                 >
                   {priorityStyle.label}
@@ -414,7 +412,7 @@ export const TasksListView: React.FC<TasksListViewProps> = ({
                 {/* Status Label Tag */}
                 <span
                   style={{
-                    fontSize: '10.5px',
+                    fontSize: 'var(--type-caption)',
                     fontWeight: 600,
                     padding: '2px 8px',
                     borderRadius: '4px',

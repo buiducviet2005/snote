@@ -1,4 +1,4 @@
-import { ProjectStatus, ProjectMemberRole } from '@prisma/client';
+import { ProjectStatus, ProjectMemberRole, ProjectMemberStatus } from '@prisma/client';
 
 export interface CreateProjectDto {
   name: string;
@@ -25,6 +25,7 @@ export interface ProjectMemberDto {
   projectId: string;
   userId: string;
   role: ProjectMemberRole;
+  status: ProjectMemberStatus;
   joinedAt: Date;
   user?: {
     id: string;

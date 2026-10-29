@@ -4,14 +4,16 @@ import type { WorkspaceSummary } from '../../../workspaces/layouts/types';
 import { api, ApiResponse } from '../../../services/api';
 import { useAppFilter } from '../../../contexts/AppFilterContext';
 import { useToast } from '../../../contexts/ToastContext';
+import { useLanguage } from '../../../contexts/LanguageContext';
 import { NoteModal, NoteModalMode } from '../components/NoteModal';
 import { TaskModal } from '../../tasks/components/TaskModal';
 import { Sparkles } from 'lucide-react';
-import { NotesObsidianWorkbench } from '../components/NotesObsidianWorkbench';
+import { NotesWorkbench } from '../components/NotesWorkbench';
 
 export const NotesListPage: React.FC = () => {
   const { currentWorkspace } = useOutletContext<{ currentWorkspace: WorkspaceSummary }>();
   const { selectedSubjectId, selectedSemesterId, subjects } = useAppFilter();
+  const { t, language } = useLanguage();
   const [notes, setNotes] = useState<any[]>([]);
   const [projects, setProjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -37,9 +39,9 @@ export const NotesListPage: React.FC = () => {
         }
       })
       .catch(() => {
-        showToast('Không tìm thấy bài ghi hoặc bạn không có quyền truy cập', 'error');
+        showToast(t('notes.deep_link_error'), 'error');
       });
-  }, [deepNoteId, showToast]);
+  }, [deepNoteId, showToast, t]);
 
   // Load Projects
   useEffect(() => {
@@ -65,11 +67,11 @@ export const NotesListPage: React.FC = () => {
         return fetchedNotes.find((n: any) => n.id === prev?.id) || fetchedNotes[0] || null;
       });
     } catch {
-      showToast('Không thể tải danh sách ghi chú bài học', 'error');
+      showToast(t('notes.fetch_error'), 'error');
     } finally {
       setLoading(false);
     }
-  }, [currentWorkspace.id, selectedSubjectId, showToast]);
+  }, [currentWorkspace.id, selectedSubjectId, showToast, t]);
 
   useEffect(() => {
     fetchNotes();
@@ -94,29 +96,29 @@ export const NotesListPage: React.FC = () => {
   }, []);
 
   const handleDelete = async (id: string, title: string) => {
-    if (!window.confirm(`Bạn có chắc chắn muốn xóa bài ghi "${title}" không?`)) return;
+    if (!window.confirm(language === 'vi' ? `Bạn có chắc chắn muốn xóa bài ghi "${title}" không?` : `Are you sure you want to delete note "${title}"?`)) return;
 
     try {
       await api.delete(`/notes/${id}`);
-      showToast(`Đã xóa bài ghi "${title}"`, 'success');
+      showToast(language === 'vi' ? `Đã xóa bài ghi "${title}"` : `Deleted note "${title}"`, 'success');
       setNotes((prev) => prev.filter((n) => n.id !== id));
       if (selectedNote?.id === id) {
         setSelectedNote(null);
       }
     } catch (err: any) {
-      showToast(err.message || 'Lỗi khi xóa bài ghi', 'error');
+      showToast(err.message || (language === 'vi' ? 'Lỗi khi xóa bài ghi' : 'Error deleting note'), 'error');
     }
   };
 
   const handleTogglePin = async (id: string) => {
     try {
       const res = await api.patch<ApiResponse<any>>(`/notes/${id}/pin`);
-      showToast(res.message || 'Đã cập nhật trạng thái ghim', 'success');
+      showToast(res.message || (language === 'vi' ? 'Đã cập nhật trạng thái ghim' : 'Updated pin status'), 'success');
       setNotes((prev) =>
         prev.map((n) => (n.id === id ? { ...n, isPinned: !n.isPinned } : n))
       );
     } catch (err: any) {
-      showToast(err.message || 'Lỗi cập nhật ghim', 'error');
+      showToast(err.message || (language === 'vi' ? 'Lỗi cập nhật ghim' : 'Error updating pin'), 'error');
     }
   };
 
@@ -124,9 +126,9 @@ export const NotesListPage: React.FC = () => {
     if (!note?.content && !note?.title) return;
     try {
       await navigator.clipboard.writeText(`${note.title || ''}\n\n${note.content || ''}`);
-      showToast('Đã sao chép nội dung bài ghi!', 'success');
+      showToast(language === 'vi' ? 'Đã sao chép nội dung bài ghi!' : 'Note content copied!', 'success');
     } catch {
-      showToast('Không thể sao chép nội dung bài ghi', 'error');
+      showToast(language === 'vi' ? 'Không thể sao chép nội dung bài ghi' : 'Failed to copy note content', 'error');
     }
   };
 
@@ -151,7 +153,7 @@ export const NotesListPage: React.FC = () => {
   const handleCreateObsidianNote = async () => {
     try {
       const res = await api.post<ApiResponse<any>>('/notes', {
-        title: 'Ghi chú mới',
+        title: language === 'vi' ? 'Ghi chú mới' : 'New Note',
         content: '',
         noteType: 'GENERAL',
         workspaceId: currentWorkspace.id || undefined,
@@ -161,7 +163,7 @@ export const NotesListPage: React.FC = () => {
       if (res.data) {
         setNotes((prev) => [res.data, ...prev]);
         setSelectedNote(res.data);
-        showToast('Đã tạo bài ghi mới', 'success');
+        showToast(language === 'vi' ? 'Đã tạo bài ghi mới' : 'Created new note', 'success');
       } else {
         fetchNotes();
       }
@@ -190,12 +192,10 @@ export const NotesListPage: React.FC = () => {
   const handleUpdateNote = async (id: string, payload: { title?: string; content?: string }) => {
     try {
       await api.put(`/notes/${id}`, payload);
+      // Quietly update notes list in background
       setNotes((prev) => prev.map((n) => (n.id === id ? { ...n, ...payload } : n)));
-      if (selectedNote?.id === id) {
-        setSelectedNote((prev: any) => ({ ...prev, ...payload }));
-      }
     } catch (err: any) {
-      showToast(err.message || 'Lỗi khi lưu bài ghi', 'error');
+      console.error('Save error:', err);
       throw err;
     }
   };
@@ -204,13 +204,13 @@ export const NotesListPage: React.FC = () => {
     <div style={{ width: '100%', height: '100%', margin: '0', display: 'flex', flexDirection: 'column' }}>
       {loading && notes.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '100px 0', color: 'var(--text-muted)' }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', fontSize: '14px' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', fontSize: 'var(--type-body)' }}>
             <Sparkles size={18} className="pulse-urgent" style={{ color: 'var(--accent-primary)' }} />
-            <span>Đang tải kho tri thức Obsidian...</span>
+            <span>{t('common.loading')}</span>
           </div>
         </div>
       ) : (
-        <NotesObsidianWorkbench
+        <NotesWorkbench
           notes={notes}
           subjects={subjects}
           projects={projects}
@@ -266,7 +266,7 @@ export const NotesListPage: React.FC = () => {
         onSuccess={() => {
           setIsTaskModalOpen(false);
           setTaskPrefillData(null);
-          showToast('Đã tạo công việc từ ghi chú thành công!', 'success');
+          showToast(language === 'vi' ? 'Đã tạo công việc từ ghi chú thành công!' : 'Task created from note successfully!', 'success');
         }}
         taskToEdit={taskPrefillData}
         initialMode="EDIT"

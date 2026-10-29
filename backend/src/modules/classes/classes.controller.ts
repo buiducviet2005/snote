@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { ClassesService } from './classes.service';
 import {
   addClassMemberSchema, addGroupMemberSchema, createClassProjectSchema, createClassSchema,
-  createGroupSchema, groupMemberParamSchema, groupParamSchema, groupProjectParamSchema,
+  createGroupSchema, groupMemberParamSchema, groupParamSchema,
   idParamSchema, memberParamSchema, projectParamSchema, reportParamSchema,
   reviewProgressSchema, setClassMemberRoleSchema, setGroupLeaderSchema,
   submitProgressSchema, updateClassProjectSchema, updateClassSchema, updateGroupSchema
@@ -102,9 +102,9 @@ export class ClassesController {
   };
 
   createProject = async (req: Request, res: Response) => {
-    const { id, groupId } = groupProjectParamSchema.parse(req.params);
+    const { id } = idParamSchema.parse(req.params);
     const data = createClassProjectSchema.parse(req.body);
-    res.status(201).json({ success: true, data: await this.service.createProject(id, groupId, req.user!.id, data) });
+    res.status(201).json({ success: true, data: await this.service.createProject(id, req.user!.id, data) });
   };
 
   updateProject = async (req: Request, res: Response) => {

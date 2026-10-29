@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Modal } from './Modal';
 import { api, ApiResponse } from '../../services/api';
 import { useToast } from '../../contexts/ToastContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 import { ShareTargetType, ShareAccessLevel } from '@snote/shared';
 import {
   Share2,
@@ -84,13 +85,6 @@ const getPublicUrl = (share: any | null, now = Date.now()): string =>
     ? `${window.location.origin}/share/${share.shareToken}`
     : '';
 
-const formatExpiry = (share: any | null): string | null => {
-  const expiresAt = getExpiryTimestamp(share);
-  return expiresAt !== null && Number.isFinite(expiresAt)
-    ? new Date(expiresAt).toLocaleString('vi-VN')
-    : null;
-};
-
 export const ShareModal: React.FC<ShareModalProps> = ({
   isOpen,
   onClose,
@@ -98,6 +92,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
   targetId,
   targetTitle
 }) => {
+  const { t, formatDateTime, language } = useLanguage();
   const [activeTab, setActiveTab] = useState<'USER' | 'LINK'>('USER');
   const [email, setEmail] = useState('');
   const [accessLevel, setAccessLevel] = useState<ShareAccessLevel>(ShareAccessLevel.VIEW);
@@ -112,6 +107,13 @@ export const ShareModal: React.FC<ShareModalProps> = ({
   const [copied, setCopied] = useState(false);
   const [expiryNow, setExpiryNow] = useState(() => Date.now());
   const { showToast } = useToast();
+
+  const formatExpiry = (share: any | null): string | null => {
+    const expiresAt = getExpiryTimestamp(share);
+    return expiresAt !== null && Number.isFinite(expiresAt)
+      ? formatDateTime(expiresAt)
+      : null;
+  };
 
   const targetKey = `${targetType}:${targetId}`;
   const targetKeyRef = useRef(targetKey);
@@ -234,7 +236,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
       } catch (error) {
         if (!isCurrentRequest()) return;
         setShareListError(
-          getErrorMessage(error, 'Không thể tải danh sách người được chia sẻ.')
+          getErrorMessage(error, t('modals.share_list_error'))
         );
         setShareListStatus('error');
       }
@@ -245,7 +247,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
       cancelled = true;
       if (sharesRequestIdRef.current === requestId) sharesRequestIdRef.current += 1;
     };
-  }, [isOpen, shareListReloadKey, targetId, targetKey, targetType]);
+  }, [isOpen, shareListReloadKey, targetId, targetKey, targetType, t]);
 
   const handleShareWithUser = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -268,13 +270,13 @@ export const ShareModal: React.FC<ShareModalProps> = ({
       if (!isCurrentAction(requestId, requestedTargetKey)) return;
 
       dataVersionRef.current += 1;
-      showToast(`Đã chia sẻ thành công với ${targetEmail}`, 'success');
+      showToast(t('modals.share_user_success', { email: targetEmail }), 'success');
       setEmail('');
       setShareListReloadKey((current) => current + 1);
     } catch (error) {
       if (!isCurrentAction(requestId, requestedTargetKey)) return;
 
-      showToast(getErrorMessage(error, 'Lỗi khi chia sẻ tài liệu'), 'error');
+      showToast(getErrorMessage(error, t('modals.share_user_error')), 'error');
     } finally {
       if (isCurrentAction(requestId, requestedTargetKey)) setPendingAction(null);
     }
@@ -308,12 +310,12 @@ export const ShareModal: React.FC<ShareModalProps> = ({
       );
       setPublicShares(nextPublicShares);
       setExpiryNow(now);
-      showToast('Đã tạo liên kết chia sẻ công khai!', 'success');
+      showToast(t('modals.create_link_success'), 'success');
       setShareListReloadKey((current) => current + 1);
     } catch (error) {
       if (!isCurrentAction(requestId, requestedTargetKey)) return;
 
-      showToast(getErrorMessage(error, 'Lỗi khi tạo liên kết công khai'), 'error');
+      showToast(getErrorMessage(error, t('modals.create_link_error')), 'error');
     } finally {
       if (isCurrentAction(requestId, requestedTargetKey)) setPendingAction(null);
     }
@@ -330,7 +332,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
       if (!isCurrentAction(requestId, requestedTargetKey)) return;
 
       dataVersionRef.current += 1;
-      showToast('Đã thu hồi quyền chia sẻ', 'info');
+      showToast(t('modals.revoke_success'), 'info');
       const revokedPublicShare = publicShares.some((share) => share.id === shareId);
       if (revokedPublicShare) {
         const now = Date.now();
@@ -353,7 +355,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
     } catch (error) {
       if (!isCurrentAction(requestId, requestedTargetKey)) return;
 
-      showToast(getErrorMessage(error, 'Lỗi khi thu hồi chia sẻ'), 'error');
+      showToast(getErrorMessage(error, t('modals.revoke_error')), 'error');
     } finally {
       if (isCurrentAction(requestId, requestedTargetKey)) setPendingAction(null);
     }
@@ -363,8 +365,8 @@ export const ShareModal: React.FC<ShareModalProps> = ({
     if (!publicUrl || !visiblePublicShare || isShareExpired(visiblePublicShare)) {
       showToast(
         visiblePublicShare && isShareExpired(visiblePublicShare)
-          ? 'Liên kết đã hết hạn và không thể sao chép.'
-          : 'Chưa có liên kết để sao chép.',
+          ? t('modals.link_expired_copy_error')
+          : t('modals.link_missing_copy_error'),
         'error'
       );
       return;
@@ -374,7 +376,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
     if (!clipboard || typeof clipboard.writeText !== 'function') {
       setCopied(false);
       showToast(
-        'Không thể sao chép vì trình duyệt không cung cấp quyền truy cập bộ nhớ tạm.',
+        t('modals.clipboard_denied_error'),
         'error'
       );
       return;
@@ -397,7 +399,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
       }
 
       setCopied(true);
-      showToast('Đã sao chép liên kết vào bộ nhớ tạm!', 'success');
+      showToast(t('modals.copied_link_toast'), 'success');
 
       if (copiedResetTimerRef.current) {
         clearTimeout(copiedResetTimerRef.current);
@@ -411,7 +413,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
 
       setCopied(false);
       showToast(
-        'Không thể sao chép liên kết. Vui lòng thử lại hoặc sao chép thủ công.',
+        t('modals.copy_failed_toast'),
         'error'
       );
     } finally {
@@ -434,11 +436,11 @@ export const ShareModal: React.FC<ShareModalProps> = ({
     >
       <Globe size={28} style={{ color: 'var(--accent-primary)', margin: '0 auto' }} />
       <div>
-        <h4 style={{ margin: '0 0 4px 0', fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)' }}>
-          Tạo liên kết công khai mới
+        <h4 style={{ margin: '0 0 4px 0', fontSize: 'var(--type-body)', fontWeight: 700, color: 'var(--text-primary)' }}>
+          {t('modals.share_public_link_title')}
         </h4>
-        <p style={{ margin: 0, fontSize: '12.5px', color: 'var(--text-muted)' }}>
-          Tạo liên kết để gửi cho bạn bè trong nhóm Zalo / Messenger mà không cần họ đăng nhập SNOTE.
+        <p style={{ margin: 0, fontSize: 'var(--type-small)', color: 'var(--text-muted)' }}>
+          {t('modals.share_public_desc')}
         </p>
       </div>
 
@@ -447,11 +449,11 @@ export const ShareModal: React.FC<ShareModalProps> = ({
           value={expiresInDays}
           onChange={(e) => setExpiresInDays(Number(e.target.value))}
           className="snote-select"
-          style={{ fontSize: '12px', width: '140px' }}
+          style={{ fontSize: 'var(--type-small)', width: '140px' }}
         >
-          <option value={7}>Hết hạn sau 7 ngày</option>
-          <option value={30}>Hết hạn sau 30 ngày</option>
-          <option value={0}>Không bao giờ hết hạn</option>
+          <option value={7}>{t('modals.expiry_7days')}</option>
+          <option value={30}>{t('modals.expiry_30days')}</option>
+          <option value={0}>{t('modals.expiry_never')}</option>
         </select>
 
         <button
@@ -461,7 +463,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
           className="btn btn-primary btn-sm"
           style={{ fontWeight: 700, padding: '7px 16px' }}
         >
-          {isCreatingPublicLink ? 'Đang tạo...' : 'Tạo Liên Kết Công Khai'}
+          {isCreatingPublicLink ? t('common.loading') : t('modals.create_share_btn')}
         </button>
       </div>
     </div>
@@ -471,21 +473,21 @@ export const ShareModal: React.FC<ShareModalProps> = ({
     visibleShareListStatus === 'loading' ? (
       <div
         role="status"
-        style={{ padding: '20px 12px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '12.5px', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)' }}
+        style={{ padding: '20px 12px', textAlign: 'center', color: 'var(--text-muted)', fontSize: 'var(--type-small)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)' }}
       >
-        Đang tải danh sách người được chia sẻ...
+        {t('common.loading')}
       </div>
     ) : visibleShareListStatus === 'error' ? (
       <div
         role="alert"
-        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px', padding: '10px 12px', color: 'var(--color-danger)', fontSize: '12.5px', border: '1px solid var(--color-danger)', borderRadius: 'var(--radius-md)' }}
+        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px', padding: '10px 12px', color: 'var(--color-danger)', fontSize: 'var(--type-small)', border: '1px solid var(--color-danger)', borderRadius: 'var(--radius-md)' }}
       >
         <span>
-          <strong>Không tải được danh sách chia sẻ.</strong>{' '}
+          <strong>{t('common.error')}</strong>{' '}
           <span style={{ color: 'var(--text-secondary)' }}>{shareListError}</span>
         </span>
         <button type="button" onClick={() => setShareListReloadKey((current) => current + 1)} className="btn btn-secondary btn-sm">
-          Thử lại
+          {t('common.retry')}
         </button>
       </div>
     ) : null;
@@ -494,7 +496,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={`Chia sẻ: ${targetTitle}`}
+      title={`${t('modals.share_title')}: ${targetTitle}`}
       maxWidth="620px"
       icon={<Share2 size={22} />}
     >
@@ -524,7 +526,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
             }}
           >
             <UserPlus size={15} />
-            <span>Chia sẻ với bạn học</span>
+            <span>{t('modals.share_tab_user')}</span>
           </button>
 
           <button
@@ -540,7 +542,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
             }}
           >
             <Globe size={15} />
-            <span>Liên kết công khai</span>
+            <span>{t('modals.share_tab_link')}</span>
           </button>
         </div>
 
@@ -550,9 +552,9 @@ export const ShareModal: React.FC<ShareModalProps> = ({
             <form onSubmit={handleShareWithUser} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <label
                 htmlFor="share-recipient-email"
-                style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}
+                style={{ fontSize: 'var(--type-small)', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}
               >
-                Nhập email của bạn học:
+                {t('modals.share_email_label')}
               </label>
 
               <div style={{ display: 'flex', gap: '8px' }}>
@@ -564,12 +566,12 @@ export const ShareModal: React.FC<ShareModalProps> = ({
                     id="share-recipient-email"
                     type="email"
                     required
-                    placeholder="banhoc@sinhvien.edu.vn"
+                    placeholder="student@snote.edu.vn"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     disabled={isActionPending}
                     className="snote-input"
-                    style={{ paddingLeft: '36px', fontSize: '13px' }}
+                    style={{ paddingLeft: '36px', fontSize: 'var(--type-small)' }}
                   />
                 </div>
 
@@ -578,10 +580,10 @@ export const ShareModal: React.FC<ShareModalProps> = ({
                   onChange={(e) => setAccessLevel(e.target.value as ShareAccessLevel)}
                   disabled={isActionPending}
                   className="snote-select"
-                  style={{ fontSize: '12.5px', width: '130px' }}
+                  style={{ fontSize: 'var(--type-small)', width: '130px' }}
                 >
-                  <option value={ShareAccessLevel.VIEW}>👁️ Chỉ xem</option>
-                  <option value={ShareAccessLevel.EDIT}>✏️ Chỉnh sửa</option>
+                  <option value={ShareAccessLevel.VIEW}>{t('modals.access_view')}</option>
+                  <option value={ShareAccessLevel.EDIT}>{t('modals.access_edit')}</option>
                 </select>
 
                 <button
@@ -590,7 +592,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
                   className="btn btn-primary btn-sm"
                   style={{ fontWeight: 700, padding: '0 16px', flexShrink: 0 }}
                 >
-                  {isSharingWithUser ? 'Đang gửi...' : 'Chia sẻ'}
+                  {isSharingWithUser ? t('common.loading') : t('modals.share_btn_submit')}
                 </button>
               </div>
             </form>
@@ -601,16 +603,16 @@ export const ShareModal: React.FC<ShareModalProps> = ({
               aria-live="polite"
               aria-busy={visibleShareListStatus === 'loading'}
             >
-              <div style={{ fontSize: '12.5px', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '8px' }}>
-                Những người đang có quyền truy cập
+              <div style={{ fontSize: 'var(--type-small)', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '8px' }}>
+                {t('modals.share_shared_list')}
                 {visibleShareListStatus === 'ready' ? ` (${visibleShares.length})` : ''}:
               </div>
 
               {listFeedback}
 
               {visibleShareListStatus === 'empty' && (
-                <div style={{ padding: '24px 12px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '12.5px', border: '1px dashed var(--border-subtle)', borderRadius: 'var(--radius-md)' }}>
-                  Chưa có bạn học nào được chia sẻ riêng tài liệu này.
+                <div style={{ padding: '24px 12px', textAlign: 'center', color: 'var(--text-muted)', fontSize: 'var(--type-small)', border: '1px dashed var(--border-subtle)', borderRadius: 'var(--radius-md)' }}>
+                  {t('modals.share_no_users')}
                 </div>
               )}
 
@@ -637,7 +639,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
                             borderRadius: '50%',
                             backgroundColor: 'var(--accent-primary)',
                             color: '#ffffff',
-                            fontSize: '11px',
+                            fontSize: 'var(--type-caption)',
                             fontWeight: 700,
                             display: 'inline-flex',
                             alignItems: 'center',
@@ -648,11 +650,11 @@ export const ShareModal: React.FC<ShareModalProps> = ({
                         </span>
 
                         <div>
-                          <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                          <div style={{ fontSize: 'var(--type-small)', fontWeight: 600, color: 'var(--text-primary)' }}>
                             {s.sharedWithUser?.fullName || s.sharedWithEmail}
                           </div>
-                          <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                            {s.accessLevel === ShareAccessLevel.EDIT ? '✏️ Quyền Chỉnh sửa' : '👁️ Quyền Chỉ xem'}
+                          <div style={{ fontSize: 'var(--type-caption)', color: 'var(--text-muted)' }}>
+                            {s.accessLevel === ShareAccessLevel.EDIT ? t('modals.access_edit') : t('modals.access_view')}
                           </div>
                         </div>
                       </div>
@@ -663,11 +665,11 @@ export const ShareModal: React.FC<ShareModalProps> = ({
                         disabled={isActionPending}
                         className="btn btn-ghost btn-icon btn-sm"
                         style={{ color: 'var(--color-danger)' }}
-                        title="Thu hồi quyền chia sẻ"
+                        title={t('modals.revoke_btn')}
                         aria-label={
                           revokingShareId === s.id
-                            ? 'Đang thu hồi quyền chia sẻ'
-                            : `Thu hồi quyền chia sẻ của ${s.sharedWithUser?.fullName || s.sharedWithEmail}`
+                            ? (language === 'vi' ? 'Đang thu hồi quyền chia sẻ' : 'Revoking share access')
+                            : (language === 'vi' ? `Thu hồi quyền chia sẻ của ${s.sharedWithUser?.fullName || s.sharedWithEmail}` : `Revoke share access for ${s.sharedWithUser?.fullName || s.sharedWithEmail}`)
                         }
                       >
                         <Trash2 size={15} aria-hidden="true" />
@@ -699,29 +701,31 @@ export const ShareModal: React.FC<ShareModalProps> = ({
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--color-danger)', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                    <span style={{ fontSize: 'var(--type-small)', fontWeight: 700, color: 'var(--color-danger)', display: 'flex', alignItems: 'center', gap: '5px' }}>
                       <Clock size={15} aria-hidden="true" />
-                      <span>Liên kết công khai đã hết hạn</span>
+                      <span>{language === 'vi' ? 'Liên kết công khai đã hết hạn' : 'Public link has expired'}</span>
                     </span>
                     <button
                       type="button"
                       onClick={() => handleRevokeShare(visiblePublicShare.id)}
                       disabled={isActionPending}
                       className="btn btn-ghost btn-sm"
-                      style={{ fontSize: '11.5px', color: 'var(--color-danger)', padding: '2px 8px' }}
+                      style={{ fontSize: 'var(--type-caption)', color: 'var(--color-danger)', padding: '2px 8px' }}
                     >
                       {revokingShareId === visiblePublicShare.id
-                        ? 'Đang vô hiệu hóa...'
-                        : 'Thu hồi liên kết'}
+                        ? (language === 'vi' ? 'Đang vô hiệu hóa...' : 'Revoking...')
+                        : (language === 'vi' ? 'Thu hồi liên kết' : 'Revoke link')}
                     </button>
                   </div>
-                  <div style={{ fontSize: '12.5px', color: 'var(--text-secondary)' }}>
+                  <div style={{ fontSize: 'var(--type-small)', color: 'var(--text-secondary)' }}>
                     {publicShareExpiry
-                      ? `Liên kết đã hết hạn lúc ${publicShareExpiry}.`
-                      : 'Liên kết không có thời hạn hợp lệ.'}
+                      ? (language === 'vi' ? `Liên kết đã hết hạn lúc ${publicShareExpiry}.` : `Link expired at ${publicShareExpiry}.`)
+                      : (language === 'vi' ? 'Liên kết không có thời hạn hợp lệ.' : 'Link has an invalid expiration.')}
                   </div>
-                  <div style={{ fontSize: '11.5px', color: 'var(--text-muted)' }}>
-                    Liên kết này không thể sao chép hoặc sử dụng. Bạn có thể tạo liên kết mới trực tiếp bên dưới.
+                  <div style={{ fontSize: 'var(--type-caption)', color: 'var(--text-muted)' }}>
+                    {language === 'vi'
+                      ? 'Liên kết này không thể sao chép hoặc sử dụng. Bạn có thể tạo liên kết mới trực tiếp bên dưới.'
+                      : 'This link cannot be copied or used. You can generate a new link below.'}
                   </div>
                 </div>
                 {createPublicLinkCard}
@@ -739,9 +743,9 @@ export const ShareModal: React.FC<ShareModalProps> = ({
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--color-success)', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <span style={{ fontSize: 'var(--type-small)', fontWeight: 700, color: 'var(--color-success)', display: 'flex', alignItems: 'center', gap: '5px' }}>
                     <Globe size={15} />
-                    <span>Liên kết công khai đang kích hoạt</span>
+                    <span>{language === 'vi' ? 'Liên kết công khai đang kích hoạt' : 'Public link is active'}</span>
                   </span>
 
                   <button
@@ -749,11 +753,11 @@ export const ShareModal: React.FC<ShareModalProps> = ({
                     onClick={() => handleRevokeShare(visiblePublicShare.id)}
                     disabled={isActionPending}
                     className="btn btn-ghost btn-sm"
-                    style={{ fontSize: '11.5px', color: 'var(--color-danger)', padding: '2px 8px' }}
+                    style={{ fontSize: 'var(--type-caption)', color: 'var(--color-danger)', padding: '2px 8px' }}
                   >
                     {revokingShareId === visiblePublicShare.id
-                      ? 'Đang vô hiệu hóa...'
-                      : 'Vô hiệu hóa link'}
+                      ? (language === 'vi' ? 'Đang vô hiệu hóa...' : 'Revoking...')
+                      : (language === 'vi' ? 'Vô hiệu hóa link' : 'Revoke link')}
                   </button>
                 </div>
 
@@ -763,7 +767,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
                     readOnly
                     value={publicUrl}
                     className="snote-input"
-                    style={{ fontSize: '12.5px', color: 'var(--text-secondary)' }}
+                    style={{ fontSize: 'var(--type-small)', color: 'var(--text-secondary)' }}
                   />
                   <button
                     type="button"
@@ -775,16 +779,18 @@ export const ShareModal: React.FC<ShareModalProps> = ({
                   >
                     {copied ? <Check size={15} aria-hidden="true" /> : <Copy size={15} aria-hidden="true" />}
                     <span>
-                      {isCopying ? 'Đang sao chép...' : copied ? 'Đã sao chép' : 'Sao chép'}
+                      {isCopying ? t('common.loading') : copied ? t('modals.copied_link_btn') : t('modals.copy_link_btn')}
                     </span>
                   </button>
                 </div>
 
-                <div style={{ fontSize: '11.5px', color: 'var(--text-muted)' }}>
+                <div style={{ fontSize: 'var(--type-caption)', color: 'var(--text-muted)' }}>
                   {publicShareExpiry
-                    ? `Có hiệu lực đến ${publicShareExpiry}. `
-                    : 'Liên kết không đặt thời hạn. '}
-                  Bất kỳ ai có liên kết này đều có thể xem nội dung tài liệu.
+                    ? (language === 'vi' ? `Có hiệu lực đến ${publicShareExpiry}. ` : `Valid until ${publicShareExpiry}. `)
+                    : (language === 'vi' ? 'Liên kết không đặt thời hạn. ' : 'Link has no expiration date. ')}
+                  {language === 'vi'
+                    ? 'Bất kỳ ai có liên kết này đều có thể xem nội dung tài liệu.'
+                    : 'Anyone with this link can view this document.'}
                 </div>
               </div>
             ) : (
@@ -801,7 +807,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
             className="btn btn-secondary"
             style={{ padding: '8px 18px' }}
           >
-            Đóng
+            {t('common.close')}
           </button>
         </div>
       </div>

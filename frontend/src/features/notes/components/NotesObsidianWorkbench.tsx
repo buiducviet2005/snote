@@ -22,11 +22,12 @@ import {
   ChevronLeft,
   ChevronRight,
   Edit3,
-  BookOpen,
+  Eye,
   Pin,
   Trash2,
   Share2,
   CheckSquare,
+  CheckCircle2,
   List,
   Link,
   Clock,
@@ -88,9 +89,9 @@ export const NotesObsidianWorkbench: React.FC<NotesObsidianWorkbenchProps> = ({
     }
   }, [activeNoteId, notes]);
 
-  // Collapsible panels
-  const [isLeftCollapsed, setIsLeftCollapsed] = useState(false);
-  const [isRightCollapsed, setIsRightCollapsed] = useState(false);
+  // Collapsible panels (responsive defaults: collapse right inspector on tablet, collapse both on mobile)
+  const [isLeftCollapsed, setIsLeftCollapsed] = useState(() => typeof window !== 'undefined' && window.innerWidth < 768);
+  const [isRightCollapsed, setIsRightCollapsed] = useState(() => typeof window !== 'undefined' && window.innerWidth < 1024);
 
   // Editor Mode: 'EDIT' (Live editor) or 'READ' (Reading view)
   const [editorMode, setEditorMode] = useState<'EDIT' | 'READ'>('EDIT');
@@ -127,11 +128,11 @@ export const NotesObsidianWorkbench: React.FC<NotesObsidianWorkbenchProps> = ({
       try {
         setIsSaving(true);
         await onUpdateNote(selectedNote.id, {
-          title: newTitle.trim() || 'Ghi chú không tên',
+          title: newTitle.trim() || t('notes.untitled'),
           content: newContent
         });
       } catch (err: any) {
-        showToast('Không thể lưu tự động', 'error');
+        showToast(language === 'vi' ? 'Không thể lưu tự động' : 'Auto-save failed', 'error');
       } finally {
         setIsSaving(false);
       }
@@ -253,9 +254,9 @@ export const NotesObsidianWorkbench: React.FC<NotesObsidianWorkbenchProps> = ({
       const targetRegex = new RegExp(`(?<!\\[\\[)(${selectedNote.title})(?!\\]\\])`, 'gi');
       const updatedContent = (sourceNote.content || '').replace(targetRegex, `[[$1]]`);
       await onUpdateNote(sourceNote.id, { content: updatedContent });
-      showToast(`Đã tạo liên kết hai chiều từ "${sourceNote.title}"!`, 'success');
+      showToast(language === 'vi' ? `Đã tạo liên kết hai chiều từ "${sourceNote.title}"!` : `Created bidirectional link from "${sourceNote.title}"!`, 'success');
     } catch {
-      showToast('Không thể tạo liên kết', 'error');
+      showToast(language === 'vi' ? 'Không thể tạo liên kết' : 'Failed to create link', 'error');
     }
   };
 
@@ -392,7 +393,7 @@ export const NotesObsidianWorkbench: React.FC<NotesObsidianWorkbenchProps> = ({
     ctx.fillStyle = '#ffffff';
     ctx.font = 'bold 10px Inter, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('Đang xem', centerX, centerY + 24);
+    ctx.fillText(language === 'vi' ? 'Đang xem' : 'Viewing', centerX, centerY + 24);
     neighborNodesRef.current = nodeCoords;
   }, [inspectorTab, isRightCollapsed, selectedNote, linkedBacklinks, outgoingLinks, notes]);
 
@@ -405,7 +406,7 @@ export const NotesObsidianWorkbench: React.FC<NotesObsidianWorkbenchProps> = ({
         <div className="obs-left-header">
           <div className="obs-left-header-top">
             <div className="obs-left-title">
-              <BookOpen size={14} style={{ color: 'var(--ws-accent)' }} />
+              <FileText size={14} style={{ color: 'var(--ws-accent)' }} />
               <span>{t('notes.vault_title')} ({notes.length})</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
@@ -470,7 +471,7 @@ export const NotesObsidianWorkbench: React.FC<NotesObsidianWorkbenchProps> = ({
         {/* Notes List */}
         <div className="obs-notes-list">
           {filteredNotes.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '30px 10px', color: 'var(--ws-text-faint)', fontSize: '11px' }}>
+            <div style={{ textAlign: 'center', padding: '30px 10px', color: 'var(--ws-text-faint)', fontSize: 'var(--type-caption)' }}>
               {t('notes.no_notes_found')}
             </div>
           ) : (
@@ -554,19 +555,51 @@ export const NotesObsidianWorkbench: React.FC<NotesObsidianWorkbenchProps> = ({
                   placeholder={t('notes.title_placeholder')}
                 />
                 <div className="obs-doc-tools">
+                  {canEditSelected && (
+                    <span
+                      style={{
+                        fontSize: 'var(--type-micro, 11px)',
+                        color: isSaving ? 'var(--accent-primary)' : 'var(--ws-text-muted)',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        padding: '2px 8px',
+                        borderRadius: 'var(--radius-full)',
+                        backgroundColor: isSaving ? 'var(--accent-subtle)' : 'transparent',
+                        whiteSpace: 'nowrap',
+                        marginRight: '4px',
+                        flexShrink: 0
+                      }}
+                      title={isSaving ? (language === 'vi' ? 'Đang lưu bài giảng...' : 'Saving note...') : (language === 'vi' ? 'Tất cả thay đổi đã được lưu' : 'All changes saved')}
+                    >
+                      {isSaving ? (
+                        <>
+                          <Sparkles size={11} className="pulse-urgent" />
+                          <span>{language === 'vi' ? 'Đang lưu...' : 'Saving...'}</span>
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle2 size={11} style={{ color: 'var(--color-success)' }} />
+                          <span>{language === 'vi' ? 'Đã lưu' : 'Saved'}</span>
+                        </>
+                      )}
+                    </span>
+                  )}
                   {canEditSelected && <button
                     type="button"
                     className={`obs-doc-tool-btn ${editorMode === 'READ' ? 'active' : ''}`}
                     onClick={() => setEditorMode(editorMode === 'EDIT' ? 'READ' : 'EDIT')}
                     title={editorMode === 'EDIT' ? t('notes.reading_mode') : t('notes.edit_mode')}
+                    aria-label={editorMode === 'EDIT' ? t('notes.reading_mode') : t('notes.edit_mode')}
                   >
-                    {editorMode === 'EDIT' ? <BookOpen size={14} /> : <Edit3 size={14} />}
+                    {editorMode === 'EDIT' ? <Eye size={14} /> : <Edit3 size={14} />}
                   </button>}
                   {canEditSelected && <button
                     type="button"
                     className={`obs-doc-tool-btn ${selectedNote.isPinned ? 'active' : ''}`}
                     onClick={() => onTogglePin(selectedNote.id)}
                     title={selectedNote.isPinned ? t('notes.unpin') : t('notes.pin')}
+                    aria-label={selectedNote.isPinned ? t('notes.unpin') : t('notes.pin')}
                   >
                     <Pin size={14} style={{ color: selectedNote.isPinned ? 'var(--ws-accent)' : undefined }} />
                   </button>}
@@ -576,6 +609,7 @@ export const NotesObsidianWorkbench: React.FC<NotesObsidianWorkbenchProps> = ({
                       className="obs-doc-tool-btn"
                       onClick={() => onConvertToTask(selectedNote)}
                       title={t('notes.convert_to_task')}
+                      aria-label={t('notes.convert_to_task')}
                     >
                       <CheckSquare size={14} />
                     </button>
@@ -586,6 +620,7 @@ export const NotesObsidianWorkbench: React.FC<NotesObsidianWorkbenchProps> = ({
                       className="obs-doc-tool-btn"
                       onClick={() => onShareNote(selectedNote)}
                       title={t('notes.share')}
+                      aria-label={t('notes.share')}
                     >
                       <Share2 size={14} />
                     </button>
@@ -595,6 +630,7 @@ export const NotesObsidianWorkbench: React.FC<NotesObsidianWorkbenchProps> = ({
                     className="obs-doc-tool-btn danger"
                     onClick={() => onDeleteNote(selectedNote.id)}
                     title={t('notes.delete_note')}
+                    aria-label={t('notes.delete_note')}
                   >
                     <Trash2 size={14} />
                   </button>}
@@ -663,49 +699,49 @@ export const NotesObsidianWorkbench: React.FC<NotesObsidianWorkbenchProps> = ({
             type="button"
             className={`obs-right-tab ${inspectorTab === 'BACKLINKS' ? 'active' : ''}`}
             onClick={() => setInspectorTab('BACKLINKS')}
-            title="Liên kết ngược (Backlinks)"
+            title={t('notes.backlinks')}
             style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}
           >
             <Link2 size={12} />
-            <span>Backlinks</span>
+            <span>{t('notes.backlinks')}</span>
             {linkedBacklinks.length > 0 && <span className="obs-badge-count">{linkedBacklinks.length}</span>}
           </button>
           <button
             type="button"
             className={`obs-right-tab ${inspectorTab === 'OUTGOING' ? 'active' : ''}`}
             onClick={() => setInspectorTab('OUTGOING')}
-            title="Liên kết trỏ đi (Outgoing)"
+            title={t('notes.outgoing')}
             style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}
           >
             <ArrowUpRight size={12} />
-            <span>Trỏ đi</span>
+            <span>{t('notes.outgoing')}</span>
             {outgoingLinks.length > 0 && <span className="obs-badge-count">{outgoingLinks.length}</span>}
           </button>
           <button
             type="button"
             className={`obs-right-tab ${inspectorTab === 'OUTLINE' ? 'active' : ''}`}
             onClick={() => setInspectorTab('OUTLINE')}
-            title="Mục lục bài viết"
+            title={t('notes.outline')}
             style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}
           >
             <ListTree size={12} />
-            <span>Mục lục</span>
+            <span>{t('notes.outline')}</span>
           </button>
           <button
             type="button"
             className={`obs-right-tab ${inspectorTab === 'GRAPH' ? 'active' : ''}`}
             onClick={() => setInspectorTab('GRAPH')}
-            title="Bản đồ mạng lưới vệ tinh (Local Graph)"
+            title={t('notes.graph')}
             style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}
           >
             <Share2 size={12} />
-            <span>Graph</span>
+            <span>{t('notes.graph')}</span>
           </button>
           <button
             type="button"
             className="obs-collapse-btn"
             onClick={() => setIsRightCollapsed(true)}
-            title="Gập ngăn thanh tra"
+            title={t('common.close')}
           >
             <ChevronRight size={13} />
           </button>
@@ -718,11 +754,11 @@ export const NotesObsidianWorkbench: React.FC<NotesObsidianWorkbenchProps> = ({
               {/* Linked Mentions */}
               <div className="obs-inspector-section">
                 <div className="obs-section-title">
-                  <span>Liên kết ngược ({linkedBacklinks.length})</span>
+                  <span>{t('notes.linked_mentions', { count: linkedBacklinks.length })}</span>
                 </div>
                 {linkedBacklinks.length === 0 ? (
-                  <div style={{ fontSize: '11px', color: 'var(--ws-text-faint)', fontStyle: 'italic' }}>
-                    Chưa có bài nào liên kết đến bài này bằng <code>[[{selectedNote?.title || 'Tên'}]]</code>.
+                  <div style={{ fontSize: 'var(--type-caption)', color: 'var(--ws-text-faint)', fontStyle: 'italic' }}>
+                    {t('notes.no_backlinks')}
                   </div>
                 ) : (
                   linkedBacklinks.map((b) => (
@@ -735,14 +771,14 @@ export const NotesObsidianWorkbench: React.FC<NotesObsidianWorkbenchProps> = ({
                       }}
                     >
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                        <span style={{ fontSize: '11.5px', fontWeight: 600, color: 'var(--ws-accent)' }}>
-                          {b.title || 'Untitled'}
+                        <span style={{ fontSize: 'var(--type-caption)', fontWeight: 600, color: 'var(--ws-accent)' }}>
+                          {b.title || t('notes.untitled')}
                         </span>
-                        <span style={{ fontSize: '10px', color: 'var(--ws-text-faint)' }}>
+                        <span style={{ fontSize: 'var(--type-caption)', color: 'var(--ws-text-faint)' }}>
                           {b.content ? b.content.slice(0, 50).replace(/[#*`[\]]/g, '') + '...' : ''}
                         </span>
                       </div>
-                      <span style={{ fontSize: '10px', color: 'var(--ws-text-faint)' }}>Mở ↗</span>
+                      <span style={{ fontSize: 'var(--type-caption)', color: 'var(--ws-text-faint)' }}>{language === 'vi' ? 'Mở ↗' : 'Open ↗'}</span>
                     </div>
                   ))
                 )}
@@ -751,26 +787,26 @@ export const NotesObsidianWorkbench: React.FC<NotesObsidianWorkbenchProps> = ({
               {/* Unlinked Mentions (Obsidian Superpower) */}
               <div className="obs-inspector-section" style={{ marginTop: '12px' }}>
                 <div className="obs-section-title">
-                  <span>Chưa liên kết ({unlinkedMentions.length})</span>
+                  <span>{t('notes.unlinked_mentions', { count: unlinkedMentions.length })}</span>
                 </div>
                 {unlinkedMentions.length === 0 ? (
-                  <div style={{ fontSize: '11px', color: 'var(--ws-text-faint)', fontStyle: 'italic' }}>
-                    Không có nhắc đến chưa liên kết.
+                  <div style={{ fontSize: 'var(--type-caption)', color: 'var(--ws-text-faint)', fontStyle: 'italic' }}>
+                    {language === 'vi' ? 'Không có nhắc đến chưa liên kết.' : 'No unlinked mentions found.'}
                   </div>
                 ) : (
                   unlinkedMentions.map((u) => (
                     <div key={u.id} className="obs-unlinked-card">
-                      <span style={{ fontSize: '11.5px', fontWeight: 600, color: 'var(--ws-text-main)' }}>
+                      <span style={{ fontSize: 'var(--type-caption)', fontWeight: 600, color: 'var(--ws-text-main)' }}>
                         {u.title}
                       </span>
                       <button
                         type="button"
                         className="obs-link-create-btn"
                         onClick={() => handleLinkMention(u)}
-                        title="Bọc tiêu đề bài vào [[...]] để tạo liên kết hai chiều"
+                        title={t('notes.one_click_link')}
                       >
                         <Link size={10} />
-                        <span>Tạo liên kết</span>
+                        <span>{t('notes.one_click_link')}</span>
                       </button>
                     </div>
                   ))
@@ -783,11 +819,11 @@ export const NotesObsidianWorkbench: React.FC<NotesObsidianWorkbenchProps> = ({
           {inspectorTab === 'OUTGOING' && (
             <div className="obs-inspector-section">
               <div className="obs-section-title">
-                <span>Liên kết trỏ đi ({outgoingLinks.length})</span>
+                <span>{t('notes.outgoing')} ({outgoingLinks.length})</span>
               </div>
               {outgoingLinks.length === 0 ? (
-                <div style={{ fontSize: '11px', color: 'var(--ws-text-faint)', fontStyle: 'italic' }}>
-                  Bài này chưa liên kết bài nào. Gõ <code>[[Tên bài]]</code> để liên kết.
+                <div style={{ fontSize: 'var(--type-caption)', color: 'var(--ws-text-faint)', fontStyle: 'italic' }}>
+                  {t('notes.no_outgoing')}
                 </div>
               ) : (
                 outgoingLinks.map((link, idx) => {
@@ -802,15 +838,15 @@ export const NotesObsidianWorkbench: React.FC<NotesObsidianWorkbenchProps> = ({
                           onSelectNote(match);
                         } else {
                           onCreateNote();
-                          showToast(`Đang tạo bài ghi mới "${link.target}"`, 'info');
+                          showToast(language === 'vi' ? `Đang tạo bài ghi mới "${link.target}"` : `Creating new note "${link.target}"`, 'info');
                         }
                       }}
                     >
-                      <span style={{ fontSize: '11.5px', fontWeight: 600, color: match ? '#38bdf8' : 'var(--text-muted)' }}>
+                      <span style={{ fontSize: 'var(--type-caption)', fontWeight: 600, color: match ? '#38bdf8' : 'var(--text-muted)' }}>
                         📎 {link.alias || link.target}
                       </span>
-                      <span style={{ fontSize: '10px', color: match ? 'var(--ws-text-faint)' : 'var(--ws-accent)' }}>
-                        {match ? 'Nhảy tới ↗' : '+ Tạo bài mới'}
+                      <span style={{ fontSize: 'var(--type-caption)', color: match ? 'var(--ws-text-faint)' : 'var(--ws-accent)' }}>
+                        {match ? (language === 'vi' ? 'Nhảy tới ↗' : 'Jump to ↗') : `+ ${t('notes.new_note')}`}
                       </span>
                     </div>
                   );
@@ -823,11 +859,11 @@ export const NotesObsidianWorkbench: React.FC<NotesObsidianWorkbenchProps> = ({
           {inspectorTab === 'OUTLINE' && (
             <div className="obs-inspector-section">
               <div className="obs-section-title">
-                <span>Mục lục bài viết ({outlineList.length})</span>
+                <span>{t('notes.outline')} ({outlineList.length})</span>
               </div>
               {outlineList.length === 0 ? (
-                <div style={{ fontSize: '11px', color: 'var(--ws-text-faint)', fontStyle: 'italic' }}>
-                  Chưa có tiêu đề. Dùng <code># Tiêu đề 1</code> hoặc <code>## Tiêu đề 2</code>.
+                <div style={{ fontSize: 'var(--type-caption)', color: 'var(--ws-text-faint)', fontStyle: 'italic' }}>
+                  {t('notes.no_outline')}
                 </div>
               ) : (
                 outlineList.map((h, idx) => (
@@ -847,7 +883,7 @@ export const NotesObsidianWorkbench: React.FC<NotesObsidianWorkbenchProps> = ({
                       borderRadius: '4px',
                       transition: 'background-color 0.1s ease'
                     }}
-                    title="Nhấn để cuộn đến tiêu đề này trong bài"
+                    title={language === 'vi' ? 'Nhấn để cuộn đến tiêu đề này trong bài' : 'Click to jump to this heading'}
                   >
                     • {h.title}
                   </div>
@@ -860,7 +896,7 @@ export const NotesObsidianWorkbench: React.FC<NotesObsidianWorkbenchProps> = ({
           {inspectorTab === 'GRAPH' && (
             <div className="obs-inspector-section" style={{ alignItems: 'center' }}>
               <div className="obs-section-title" style={{ width: '100%' }}>
-                <span>Mạng lưới vệ tinh (Local Graph)</span>
+                <span>{t('notes.graph')}</span>
               </div>
               <canvas
                 ref={canvasRef}
@@ -877,8 +913,8 @@ export const NotesObsidianWorkbench: React.FC<NotesObsidianWorkbenchProps> = ({
                   marginTop: '8px'
                 }}
               />
-              <span style={{ fontSize: '10px', color: 'var(--ws-text-faint)', marginTop: '6px' }}>
-                Click vào nút vệ tinh để mở bài ghi liên kết trực tiếp
+              <span style={{ fontSize: 'var(--type-caption)', color: 'var(--ws-text-faint)', marginTop: '6px' }}>
+                {t('notes.graph_desc')}
               </span>
             </div>
           )}

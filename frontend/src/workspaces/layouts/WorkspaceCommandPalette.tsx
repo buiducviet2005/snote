@@ -8,7 +8,7 @@ import {
   Maximize2,
   Minimize2,
   Clock,
-  BookOpen,
+  GraduationCap,
   FolderKanban,
   User,
   ArrowRight,
@@ -51,16 +51,34 @@ export const WorkspaceCommandPalette: React.FC<WorkspaceCommandPaletteProps> = (
   const { t, language, toggleLanguage } = useLanguage();
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [keepMounted, setKeepMounted] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+  const isClosing = !isOpen && keepMounted;
+
+  useEffect(() => {
+    if (isOpen) {
+      setKeepMounted(true);
+      return;
+    }
+    if (!keepMounted) return;
+    const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    const timer = window.setTimeout(() => setKeepMounted(false), reducedMotion ? 0 : 140);
+    return () => window.clearTimeout(timer);
+  }, [isOpen, keepMounted]);
 
   // Focus input when opened
   useEffect(() => {
     if (isOpen) {
+      previousFocusRef.current = document.activeElement as HTMLElement | null;
       setQuery('');
       setSelectedIndex(0);
-      setTimeout(() => inputRef.current?.focus(), 40);
+      const timer = window.setTimeout(() => inputRef.current?.focus(), 40);
+      return () => window.clearTimeout(timer);
     }
+    previousFocusRef.current?.focus();
+    previousFocusRef.current = null;
   }, [isOpen]);
 
   // Construct all possible commands
@@ -154,7 +172,7 @@ export const WorkspaceCommandPalette: React.FC<WorkspaceCommandPaletteProps> = (
         category: 'NAVIGATION',
         title: t('palette.nav_classes'),
         subtitle: t('palette.nav_classes_sub'),
-        icon: <BookOpen size={16} />,
+        icon: <GraduationCap size={16} />,
         action: () => {
           onClose();
           onSelectNav('classes');
@@ -181,7 +199,7 @@ export const WorkspaceCommandPalette: React.FC<WorkspaceCommandPaletteProps> = (
         icon = <User size={16} />;
         subtitle = t('workspaces.personal');
       } else if (ws.type === 'SUBJECT') {
-        icon = <BookOpen size={16} />;
+        icon = <GraduationCap size={16} />;
         subtitle = `${t('workspaces.subject')} [${ws.code || 'MÃ'}]`;
       } else if (ws.type === 'GROUP') {
         icon = <User size={16} />;
@@ -266,10 +284,10 @@ export const WorkspaceCommandPalette: React.FC<WorkspaceCommandPaletteProps> = (
     }
   }, [selectedIndex]);
 
-  if (!isOpen) return null;
+  if (!isOpen && !keepMounted) return null;
 
   return (
-    <div className="ws-cmd-backdrop" onClick={onClose} role="dialog" aria-modal="true">
+    <div className={`ws-cmd-backdrop ${isClosing ? 'is-closing' : ''}`} onClick={onClose} role="dialog" aria-modal="true">
       <div className="ws-cmd-dialog" onClick={(e) => e.stopPropagation()}>
         {/* Search Input Bar */}
         <div className="ws-cmd-search-bar">

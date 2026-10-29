@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { autoFormatPlainTextToMarkdown } from '../../features/notes/utils/smartNoteParser';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 interface MarkdownViewerProps {
   content: string;
@@ -20,6 +21,7 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({
   onNavigateWikiLink,
   onSelectTag
 }) => {
+  const { t } = useLanguage();
   const formattedContent = useMemo(() => {
     if (!content || !content.trim()) return '';
     return enableSmartFormatting ? autoFormatPlainTextToMarkdown(content) : content;
@@ -28,7 +30,7 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({
   let fallbackSequentialCounter = 0;
 
   if (!formattedContent) {
-    return <span style={{ color: 'var(--text-muted)', fontStyle: 'italic', fontSize: '12px' }}>Chưa có nội dung chi tiết.</span>;
+    return <span style={{ color: 'var(--text-muted)', fontStyle: 'italic', fontSize: 'var(--type-small)' }}>{t('notes.no_content_detail')}</span>;
   }
 
   return (
@@ -52,7 +54,7 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({
                     e.stopPropagation();
                     if (onNavigateWikiLink) onNavigateWikiLink(target);
                   }}
-                  title={`Mở ghi chú liên kết: ${target}`}
+                  title={t('notes.open_linked_note', { target })}
                   style={{
                     color: '#60a5fa',
                     backgroundColor: 'rgba(37, 99, 235, 0.15)',
@@ -60,7 +62,7 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({
                     padding: '1.5px 7px',
                     borderRadius: '5px',
                     fontWeight: 600,
-                    fontSize: '0.92em',
+                    fontSize: 'var(--type-small)',
                     cursor: 'pointer',
                     display: 'inline-flex',
                     alignItems: 'center',
@@ -84,7 +86,7 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({
                     e.stopPropagation();
                     if (onSelectTag) onSelectTag(tag);
                   }}
-                  title={`Lọc theo thẻ #${tag}`}
+                  title={t('notes.filter_by_tag', { tag })}
                   style={{
                     color: '#c084fc',
                     backgroundColor: 'rgba(192, 132, 252, 0.12)',
@@ -92,7 +94,7 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({
                     padding: '1px 6px',
                     borderRadius: '4px',
                     fontWeight: 600,
-                    fontSize: '0.88em',
+                    fontSize: 'var(--type-small)',
                     cursor: 'pointer',
                     display: 'inline-flex',
                     alignItems: 'center',
@@ -119,7 +121,7 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({
                   padding: '1.5px 7px',
                   borderRadius: '6px',
                   fontWeight: 600,
-                  fontSize: '0.94em',
+                  fontSize: 'var(--type-small)',
                   textDecoration: 'none',
                   display: 'inline-flex',
                   alignItems: 'center',
@@ -154,7 +156,7 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({
                     userSelect: 'text',
                     ...((props.style as any) || {})
                   }}
-                  title={onToggleTodo ? 'Nhấp để đổi trạng thái việc cần làm' : undefined}
+                  title={onToggleTodo ? t('notes.toggle_todo_tooltip') : undefined}
                 >
                   {children}
                 </li>

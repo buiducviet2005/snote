@@ -17,6 +17,7 @@ Hệ thống SNOTE được xây dựng theo mô hình **Modular Monolith** phâ
 
 ## 🚀 HƯỚNG DẪN KHỞI CHẠY NHANH (QUICK START)
 
+> 📖 **Cẩm nang Thiết lập & Đẩy code lên GitHub:** [HUONG_DAN_SETUP_VA_GITHUB.md](HUONG_DAN_SETUP_VA_GITHUB.md)  
 > 📖 **Hướng dẫn cài đặt chi tiết:** [SETUP.md](SETUP.md)
 > ⚡ **Khởi tạo tự động 1-Click:**  
 > - **Windows:** Chạy file `setup.bat`  

@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useMemo, useCallback, useRef } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import './workspaceLayout.css';
 import { WorkspaceSummary } from './types';
-import { executeWaterDropThemeTransition } from '../utils/themeTransition';
+import { executeThemeTransition } from '../utils/themeTransition';
 import { WorkspaceSidebar } from './WorkspaceSidebar';
 import { WorkspaceCommandPalette } from './WorkspaceCommandPalette';
 import { WorkspaceQuickCapture } from './WorkspaceQuickCapture';
@@ -30,9 +30,6 @@ interface WorkspaceLayoutProps {
   onLogout?: () => void;
 }
 
-const UNAVAILABLE_WORKSPACE: WorkspaceSummary = {
-  id: '', type: 'PERSONAL', name: 'Không gian làm việc', status: 'ACTIVE', role: 'MEMBER'
-};
 
 export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
   initialWorkspaceId,
@@ -77,13 +74,27 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
 
   const topbarDropdownRef = useRef<HTMLDivElement>(null);
   const previousPathRef = useRef(location.pathname);
+  const previousMotionPathRef = useRef(location.pathname);
+  const contentRef = useRef<HTMLElement>(null);
+
+  useLayoutEffect(() => {
+    if (previousMotionPathRef.current === location.pathname) return;
+    previousMotionPathRef.current = location.pathname;
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+    const animation = contentRef.current?.animate?.(
+      [{ opacity: 0.94 }, { opacity: 1 }],
+      { duration: 180, easing: 'ease-out' }
+    );
+    return () => animation?.cancel();
+  }, [location.pathname]);
 
   // Theme state: defaults to dark carbon mode (Linear / Vercel style), toggleable to light
   const { theme, setTheme } = useTheme();
 
   const toggleTheme = () => {
-    const next = theme === 'dark' ? 'light' : 'dark';
-    executeWaterDropThemeTransition(next, () => {
+    const current = document.documentElement.getAttribute('data-theme') || theme;
+    const next = current === 'dark' ? 'light' : 'dark';
+    executeThemeTransition(next, () => {
       setTheme(next);
     });
   };
@@ -170,10 +181,15 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
   const currentWorkspace = useMemo(() => {
     return (
       workspaces.find((w) => w.id === activeWorkspaceId) ||
-      workspaces[0] ||
-      UNAVAILABLE_WORKSPACE
+      workspaces[0] || {
+        id: '',
+        type: 'PERSONAL',
+        name: t('workspaces.title'),
+        status: 'ACTIVE',
+        role: 'MEMBER'
+      }
     );
-  }, [workspaces, activeWorkspaceId]);
+  }, [workspaces, activeWorkspaceId, t]);
 
   const handleSelectWorkspace = (ws: WorkspaceSummary) => {
     setActiveWorkspaceId(ws.id);
@@ -379,7 +395,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
         )}
 
         {/* Dynamic Content Canvas - Edge-to-Edge Full Bleed */}
-        <main className={`ws-content-scroll ${location.pathname.startsWith('/notes') ? 'ws-content-fullbleed' : ''} ${location.pathname.startsWith('/tasks') ? 'ws-content-tasks' : ''}`}>
+        <main ref={contentRef} className={`ws-content-scroll ${location.pathname.startsWith('/notes') ? 'ws-content-fullbleed' : ''} ${location.pathname.startsWith('/tasks') ? 'ws-content-tasks' : ''}`}>
           {children || <Outlet context={{ workspaces, currentWorkspace, onSelectWorkspace: handleSelectWorkspace, refreshWorkspaces, workspacesLoading, workspacesError }} />}
         </main>
       </div>

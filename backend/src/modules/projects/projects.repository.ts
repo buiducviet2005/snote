@@ -1,10 +1,16 @@
 import { prisma } from '../../shared/db/prismaClient';
-import { Project, ProjectMember, ProjectMemberRole } from '@prisma/client';
+import { Project, ProjectMember, ProjectMemberRole, WorkspaceRole } from '@prisma/client';
 import { CreateProjectDto, UpdateProjectDto } from './projects.types';
+import { ConflictError } from '../../shared/errors/appErrors';
+
+const workspaceRole = (role: ProjectMemberRole): WorkspaceRole =>
+  role === 'ADMIN' ? 'MANAGER' : role;
 
 export class ProjectsRepository {
+  constructor(private readonly db: typeof prisma = prisma) {}
+
   async findByUserId(userId: string, semesterId?: string, subjectId?: string): Promise<any[]> {
-    return prisma.project.findMany({
+    return this.db.project.findMany({
       where: {
         OR: [
           { userId },
@@ -47,7 +53,7 @@ export class ProjectsRepository {
   }
 
   async findInvitations(userId: string): Promise<any[]> {
-    return prisma.project.findMany({
+    return this.db.project.findMany({
       where: {
         deletedAt: null,
         classId: null,
@@ -74,20 +80,32 @@ export class ProjectsRepository {
   }
 
   async respondToInvitation(projectId: string, userId: string, accept: boolean): Promise<any> {
-    if (accept) {
-      return prisma.projectMember.updateMany({
-        where: { projectId, userId, status: 'PENDING', project: { classId: null, deletedAt: null } },
-        data: { status: 'ACCEPTED', joinedAt: new Date() }
+    return this.db.$transaction(async (tx) => {
+      const where = { projectId, userId, status: 'PENDING' as const, project: { classId: null, deletedAt: null } };
+      if (!accept) return tx.projectMember.deleteMany({ where });
+      const result = await tx.projectMember.updateMany({
+        where, data: { status: 'ACCEPTED', joinedAt: new Date() }
       });
-    } else {
-      return prisma.projectMember.deleteMany({
-        where: { projectId, userId, status: 'PENDING', project: { classId: null, deletedAt: null } }
+      if (!result.count) return result;
+      const project = await tx.project.findUnique({
+        where: { id: projectId }, select: { workspace: { select: { id: true } } }
       });
-    }
+      if (project?.workspace) {
+        const member = await tx.projectMember.findUniqueOrThrow({
+          where: { projectId_userId: { projectId, userId } }, select: { role: true }
+        });
+        await tx.workspaceMember.upsert({
+          where: { workspaceId_userId: { workspaceId: project.workspace.id, userId } },
+          create: { workspaceId: project.workspace.id, userId, role: workspaceRole(member.role), status: 'ACCEPTED', joinedAt: new Date() },
+          update: { role: workspaceRole(member.role), status: 'ACCEPTED', joinedAt: new Date() }
+        });
+      }
+      return result;
+    });
   }
 
   async findByIdAndUserId(id: string, userId: string): Promise<any | null> {
-    return prisma.project.findFirst({
+    return this.db.project.findFirst({
       where: {
         id,
         OR: [
@@ -128,7 +146,7 @@ export class ProjectsRepository {
   }
 
   async findWorkspaceById(id: string, userId: string): Promise<any | null> {
-    return prisma.project.findFirst({
+    return this.db.project.findFirst({
       where: {
         id,
         OR: [
@@ -207,7 +225,7 @@ export class ProjectsRepository {
   }
 
   async create(userId: string, data: CreateProjectDto): Promise<any> {
-    return prisma.project.create({
+    return this.db.project.create({
       data: {
         userId,
         semesterId: data.semesterId,
@@ -239,7 +257,7 @@ export class ProjectsRepository {
   }
 
   async update(id: string, userId: string, data: UpdateProjectDto): Promise<any> {
-    return prisma.project.update({
+    return this.db.project.update({
       where: { id },
       data: {
         semesterId: data.semesterId,
@@ -266,7 +284,7 @@ export class ProjectsRepository {
   }
 
   async softDelete(id: string, userId: string): Promise<void> {
-    await prisma.project.updateMany({
+    await this.db.project.updateMany({
       where: { id, userId },
       data: { deletedAt: new Date() }
     });
@@ -278,32 +296,67 @@ export class ProjectsRepository {
     role: ProjectMemberRole = 'MEMBER',
     status: 'PENDING' | 'ACCEPTED' = 'PENDING'
   ): Promise<ProjectMember> {
-    return prisma.projectMember.upsert({
-      where: {
-        projectId_userId: { projectId, userId: targetUserId }
-      },
-      update: { role, status },
-      create: {
-        projectId,
-        userId: targetUserId,
-        role,
-        status
+    return this.db.$transaction(async (tx) => {
+      const key = { projectId_userId: { projectId, userId: targetUserId } };
+      const existing = await tx.projectMember.findUnique({ where: key });
+      if (existing && existing.status !== 'DECLINED') {
+        throw new ConflictError('Người này đã là thành viên hoặc đã có lời mời đang chờ');
       }
+      return tx.projectMember.upsert({
+        where: key,
+        update: { role, status },
+        create: { projectId, userId: targetUserId, role, status }
+      });
     });
   }
 
-  async updateMemberRole(projectId: string, targetUserId: string, role: ProjectMemberRole): Promise<ProjectMember> {
-    return prisma.projectMember.update({
-      where: {
-        projectId_userId: { projectId, userId: targetUserId }
-      },
-      data: { role }
+  async updateMemberRole(projectId: string, targetUserId: string, role: ProjectMemberRole, oldOwnerId: string): Promise<ProjectMember> {
+    return this.db.$transaction(async (tx) => {
+      const project = await tx.project.findUniqueOrThrow({
+        where: { id: projectId }, select: { workspace: { select: { id: true } } }
+      });
+      if (role === 'OWNER' && oldOwnerId !== targetUserId) {
+        const transferred = await tx.project.updateMany({
+          where: { id: projectId, userId: oldOwnerId }, data: { userId: targetUserId }
+        });
+        if (!transferred.count) throw new ConflictError('Chủ dự án đã thay đổi; hãy tải lại danh sách thành viên');
+        await tx.projectMember.updateMany({
+          where: { projectId, userId: oldOwnerId, status: 'ACCEPTED' }, data: { role: 'MEMBER' }
+        });
+        if (project.workspace) {
+          await tx.workspace.update({ where: { id: project.workspace.id }, data: { ownerId: targetUserId } });
+          await tx.workspaceMember.updateMany({
+            where: { workspaceId: project.workspace.id, userId: oldOwnerId }, data: { role: 'MEMBER' }
+          });
+        }
+      }
+      const member = await tx.projectMember.upsert({
+        where: { projectId_userId: { projectId, userId: targetUserId } },
+        update: { role },
+        create: { projectId, userId: targetUserId, role, status: 'ACCEPTED' }
+      });
+      if (project.workspace) {
+        await tx.workspaceMember.upsert({
+          where: { workspaceId_userId: { workspaceId: project.workspace.id, userId: targetUserId } },
+          create: { workspaceId: project.workspace.id, userId: targetUserId, role: workspaceRole(role), status: 'ACCEPTED', joinedAt: new Date() },
+          update: { role: workspaceRole(role), status: 'ACCEPTED' }
+        });
+      }
+      return member;
     });
   }
 
   async removeMember(projectId: string, targetUserId: string): Promise<void> {
-    await prisma.projectMember.deleteMany({
-      where: { projectId, userId: targetUserId }
+    await this.db.$transaction(async (tx) => {
+      const project = await tx.project.findUniqueOrThrow({
+        where: { id: projectId }, select: { userId: true, workspace: { select: { id: true } } }
+      });
+      await tx.taskAssignee.deleteMany({ where: { userId: targetUserId, task: { projectId } } });
+      await tx.task.updateMany({ where: { projectId, userId: targetUserId }, data: { userId: project.userId } });
+      await tx.projectMember.deleteMany({ where: { projectId, userId: targetUserId } });
+      if (project.workspace) {
+        await tx.workspaceMember.deleteMany({ where: { workspaceId: project.workspace.id, userId: targetUserId } });
+      }
     });
   }
 }

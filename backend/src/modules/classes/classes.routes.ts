@@ -23,7 +23,7 @@ router.delete('/:id/groups/:groupId', asyncBoundary(controller.deleteGroup));
 router.post('/:id/groups/:groupId/members', asyncBoundary(controller.addGroupMember));
 router.delete('/:id/groups/:groupId/members/:userId', asyncBoundary(controller.removeGroupMember));
 router.put('/:id/groups/:groupId/leader', asyncBoundary(controller.setLeader));
-router.post('/:id/groups/:groupId/projects', asyncBoundary(controller.createProject));
+router.post('/:id/projects', asyncBoundary(controller.createProject));
 router.put('/:id/projects/:projectId', asyncBoundary(controller.updateProject));
 router.delete('/:id/projects/:projectId', asyncBoundary(controller.deleteProject));
 router.get('/:id/projects/:projectId/reports', asyncBoundary(controller.listReports));

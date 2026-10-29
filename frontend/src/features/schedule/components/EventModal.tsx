@@ -5,13 +5,14 @@ import { api, ApiResponse } from '../../../services/api';
 import { useToast } from '../../../contexts/ToastContext';
 import { useAppFilter } from '../../../contexts/AppFilterContext';
 import { useAuth } from '../../../contexts/AuthContext';
+import { useLanguage } from '../../../contexts/LanguageContext';
 import { ScheduleEventType } from '@snote/shared';
 import {
   Calendar,
   Clock,
   MapPin,
   Save,
-  BookOpen,
+  Presentation,
   GraduationCap,
   Users,
   User,
@@ -65,6 +66,7 @@ export const EventModal: React.FC<EventModalProps> = ({
   const [loading, setLoading] = useState(false);
   const { showToast } = useToast();
   const { user } = useAuth();
+  const { t, formatDateTime } = useLanguage();
 
   useEffect(() => {
     // Fetch user projects for Group Meeting mode
@@ -117,26 +119,26 @@ export const EventModal: React.FC<EventModalProps> = ({
 
   const handleSubjectChange = (subId: string) => {
     setSubjectId(subId);
-    if (!title || title.startsWith('Tiết học')) {
+    if (!title || title.startsWith(t('schedule.class_prefix')) || title.startsWith('Tiết học')) {
       const found = subjects.find((s) => s.id === subId);
       if (found) {
-        setTitle(`Tiết học ${found.name}`);
+        setTitle(t('schedule.class_title_auto', { name: found.name }));
       }
     }
   };
 
   const handleDelete = async () => {
     if (!eventToEdit?.id) return;
-    if (!window.confirm(`Bạn có chắc muốn xóa sự kiện "${eventToEdit.title}" không?`)) return;
+    if (!window.confirm(t('schedule.delete_confirm_named', { title: eventToEdit.title }))) return;
 
     setLoading(true);
     try {
       await api.delete(`/schedule/${eventToEdit.id}`);
-      showToast('Đã xóa sự kiện lịch trình', 'success');
+      showToast(t('schedule.delete_success'), 'success');
       onSuccess();
       onClose();
     } catch (err: any) {
-      showToast(err.message || 'Lỗi khi xóa sự kiện', 'error');
+      showToast(err.message || t('schedule.delete_error'), 'error');
     } finally {
       setLoading(false);
     }
@@ -145,7 +147,7 @@ export const EventModal: React.FC<EventModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) {
-      showToast('Vui lòng nhập tên sự kiện', 'warning');
+      showToast(t('schedule.enter_title_warning'), 'warning');
       return;
     }
 
@@ -154,16 +156,16 @@ export const EventModal: React.FC<EventModalProps> = ({
       let finalLocation = location.trim();
       if (eventType === ScheduleEventType.EXAM && examFormat) {
         const formatMap: Record<string, string> = {
-          MULTIPLE_CHOICE: 'Trắc nghiệm',
-          ESSAY: 'Tự luận',
-          ORAL: 'Vấn đáp',
-          PROJECT_DEFENSE: 'Báo cáo đồ án'
+          MULTIPLE_CHOICE: t('schedule.exam_format_mc'),
+          ESSAY: t('schedule.exam_format_essay'),
+          ORAL: t('schedule.exam_format_oral'),
+          PROJECT_DEFENSE: t('schedule.exam_format_defense')
         };
         const formatLabel = formatMap[examFormat] || examFormat;
         if (finalLocation) {
           finalLocation = `${finalLocation} (${formatLabel})`;
         } else {
-          finalLocation = `Hình thức: ${formatLabel}`;
+          finalLocation = t('schedule.format_label', { format: formatLabel });
         }
       }
 
@@ -179,7 +181,7 @@ export const EventModal: React.FC<EventModalProps> = ({
           location: finalLocation || undefined,
           isRecurring
         });
-        showToast('Cập nhật sự kiện lịch trình thành công!', 'success');
+        showToast(t('schedule.update_success'), 'success');
       } else {
         await api.post('/schedule', {
           semesterId: defaultWorkspaceId ? undefined : selectedSemesterId || undefined,
@@ -196,35 +198,35 @@ export const EventModal: React.FC<EventModalProps> = ({
         });
 
         if (isRecurring && repeatWeeks > 1) {
-          showToast(`🎉 Đã tạo lịch lặp lại cho ${repeatWeeks} tuần học kỳ thành công!`, 'success');
+          showToast(t('schedule.repeat_created_success', { count: repeatWeeks }), 'success');
         } else {
-          showToast('Thêm sự kiện lịch trình thành công!', 'success');
+          showToast(t('schedule.create_success'), 'success');
         }
       }
 
       onSuccess();
       onClose();
     } catch (err: any) {
-      showToast(err.message || 'Lỗi khi lưu lịch trình', 'error');
+      showToast(err.message || t('schedule.save_error'), 'error');
     } finally {
       setLoading(false);
     }
   };
 
   const eventTypeTabs = [
-    { type: ScheduleEventType.CLASS, label: '📖 Tiết Học', icon: BookOpen, color: '#38bdf8' },
-    { type: ScheduleEventType.EXAM, label: '🎯 Lịch Thi', icon: GraduationCap, color: '#ef4444' },
-    { type: ScheduleEventType.GROUP_MEETING, label: '👥 Họp Nhóm', icon: Users, color: '#a855f7' },
-    { type: ScheduleEventType.PERSONAL, label: '👤 Việc Cá Nhân', icon: User, color: '#10b981' }
+    { type: ScheduleEventType.CLASS, label: t('schedule.type_class'), icon: Presentation, color: '#38bdf8' },
+    { type: ScheduleEventType.EXAM, label: t('schedule.type_exam'), icon: GraduationCap, color: '#ef4444' },
+    { type: ScheduleEventType.GROUP_MEETING, label: t('schedule.type_meeting'), icon: Users, color: '#a855f7' },
+    { type: ScheduleEventType.PERSONAL, label: t('schedule.type_personal'), icon: User, color: '#10b981' }
   ];
 
   if (eventToEdit?.userId && eventToEdit.userId !== user?.id) {
-    return <Modal isOpen={isOpen} onClose={onClose} title="Sự kiện của nhóm" maxWidth="560px" icon={<Calendar size={22} />}>
+    return <Modal isOpen={isOpen} onClose={onClose} title={t('schedule.group_event_title')} maxWidth="560px" icon={<Calendar size={22} />}>
       <div style={{ display: 'grid', gap: '12px', padding: '8px 0', color: 'var(--text-primary)' }}>
         <strong>{eventToEdit.title}</strong>
-        <span>{new Date(eventToEdit.startTime).toLocaleString('vi-VN')} – {new Date(eventToEdit.endTime).toLocaleString('vi-VN')}</span>
+        <span>{formatDateTime(eventToEdit.startTime)} – {formatDateTime(eventToEdit.endTime)}</span>
         {eventToEdit.location && <span>{eventToEdit.location}</span>}
-        <p style={{ margin: 0, color: 'var(--text-muted)' }}>Chỉ người tạo có thể chỉnh sửa lịch này.</p>
+        <p style={{ margin: 0, color: 'var(--text-muted)' }}>{t('schedule.group_event_readonly')}</p>
       </div>
     </Modal>;
   }
@@ -233,7 +235,7 @@ export const EventModal: React.FC<EventModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={eventToEdit ? 'Chỉnh Sửa Sự Kiện Lịch Trình' : 'Đặt Lịch Học Tập Thông Minh'}
+      title={eventToEdit ? t('schedule.edit_event_title') : t('schedule.smart_schedule_title')}
       maxWidth="720px"
       icon={<Calendar size={22} />}
     >
@@ -259,7 +261,7 @@ export const EventModal: React.FC<EventModalProps> = ({
                 onClick={() => setEventType(tab.type)}
                 className="btn btn-sm"
                 style={{
-                  fontSize: '12.5px',
+                  fontSize: 'var(--type-small)',
                   fontWeight: isSelected ? 700 : 500,
                   backgroundColor: isSelected ? 'var(--accent-primary)' : 'transparent',
                   color: isSelected ? '#ffffff' : 'var(--text-secondary)',
@@ -291,10 +293,10 @@ export const EventModal: React.FC<EventModalProps> = ({
             gap: '8px'
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '11.5px', color: 'var(--text-secondary)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 'var(--type-caption)', color: 'var(--text-secondary)' }}>
             <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 600, color: 'var(--accent-primary)' }}>
               <Clock size={13} />
-              <span>Chọn nhanh Ca / Tiết học đại học:</span>
+              <span>{t('schedule.quick_slots_label')}</span>
             </span>
           </div>
 
@@ -303,8 +305,8 @@ export const EventModal: React.FC<EventModalProps> = ({
               type="button"
               onClick={() => applyShiftPreset(7, 0, 9, 25)}
               className="btn btn-ghost btn-sm"
-              style={{ fontSize: '11.5px', padding: '3px 9px', borderRadius: '6px', border: '1px solid var(--border-subtle)' }}
-              title="Tiết 1-3 (Sáng sớm)"
+              style={{ fontSize: 'var(--type-caption)', padding: '3px 9px', borderRadius: '6px', border: '1px solid var(--border-subtle)' }}
+              title={t('schedule.slot_1_3')}
             >
               🌅 Ca 1 (07:00 - 09:25)
             </button>
@@ -312,8 +314,8 @@ export const EventModal: React.FC<EventModalProps> = ({
               type="button"
               onClick={() => applyShiftPreset(9, 35, 12, 0)}
               className="btn btn-ghost btn-sm"
-              style={{ fontSize: '11.5px', padding: '3px 9px', borderRadius: '6px', border: '1px solid var(--border-subtle)' }}
-              title="Tiết 4-6 (Giữa sáng)"
+              style={{ fontSize: 'var(--type-caption)', padding: '3px 9px', borderRadius: '6px', border: '1px solid var(--border-subtle)' }}
+              title={t('schedule.slot_4_6')}
             >
               ☀️ Ca 2 (09:35 - 12:00)
             </button>
@@ -321,8 +323,8 @@ export const EventModal: React.FC<EventModalProps> = ({
               type="button"
               onClick={() => applyShiftPreset(12, 30, 14, 55)}
               className="btn btn-ghost btn-sm"
-              style={{ fontSize: '11.5px', padding: '3px 9px', borderRadius: '6px', border: '1px solid var(--border-subtle)' }}
-              title="Tiết 7-9 (Đầu chiều)"
+              style={{ fontSize: 'var(--type-caption)', padding: '3px 9px', borderRadius: '6px', border: '1px solid var(--border-subtle)' }}
+              title={t('schedule.slot_7_9')}
             >
               🌤️ Ca 3 (12:30 - 14:55)
             </button>
@@ -330,8 +332,8 @@ export const EventModal: React.FC<EventModalProps> = ({
               type="button"
               onClick={() => applyShiftPreset(15, 5, 17, 30)}
               className="btn btn-ghost btn-sm"
-              style={{ fontSize: '11.5px', padding: '3px 9px', borderRadius: '6px', border: '1px solid var(--border-subtle)' }}
-              title="Tiết 10-12 (Cuối chiều)"
+              style={{ fontSize: 'var(--type-caption)', padding: '3px 9px', borderRadius: '6px', border: '1px solid var(--border-subtle)' }}
+              title={t('schedule.slot_10_12')}
             >
               🌆 Ca 4 (15:05 - 17:30)
             </button>
@@ -339,8 +341,8 @@ export const EventModal: React.FC<EventModalProps> = ({
               type="button"
               onClick={() => applyShiftPreset(18, 0, 20, 30)}
               className="btn btn-ghost btn-sm"
-              style={{ fontSize: '11.5px', padding: '3px 9px', borderRadius: '6px', border: '1px solid var(--border-subtle)' }}
-              title="Tiết 13-15 (Tối)"
+              style={{ fontSize: 'var(--type-caption)', padding: '3px 9px', borderRadius: '6px', border: '1px solid var(--border-subtle)' }}
+              title={t('schedule.slot_13_15')}
             >
               🌙 Ca 5 (18:00 - 20:30)
             </button>
@@ -349,41 +351,41 @@ export const EventModal: React.FC<EventModalProps> = ({
 
         {/* 3. Event Title */}
         <div>
-          <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '6px' }}>
-            Tên sự kiện / Tiết học *
+          <label style={{ display: 'block', fontSize: 'var(--type-small)', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '6px' }}>
+            {t('schedule.event_title_input')}
           </label>
           <input
             type="text"
             required
             placeholder={
               eventType === ScheduleEventType.CLASS
-                ? 'Ví dụ: Tiết học Lập trình Web nâng cao'
+                ? t('schedule.placeholder_class')
                 : eventType === ScheduleEventType.EXAM
-                ? 'Ví dụ: Thi cuối kỳ Mạng máy tính'
+                ? t('schedule.placeholder_exam')
                 : eventType === ScheduleEventType.GROUP_MEETING
-                ? 'Ví dụ: Họp Sprint Review đồ án SNOTE'
-                : 'Ví dụ: Học nhóm tại Thư viện trung tâm'
+                ? t('schedule.placeholder_meeting')
+                : t('schedule.placeholder_personal')
             }
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             className="snote-input"
-            style={{ fontSize: '14px', padding: '10px 14px' }}
+            style={{ fontSize: 'var(--type-body)', padding: '10px 14px' }}
           />
         </div>
 
         {/* 4. Contextual Selectors */}
         {!defaultWorkspaceId && <div style={{ display: 'grid', gridTemplateColumns: eventType === ScheduleEventType.GROUP_MEETING ? '1fr 1fr' : '1fr', gap: '14px' }}>
           <div>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
-              Môn học liên quan
+            <label style={{ display: 'block', fontSize: 'var(--type-small)', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
+              {t('schedule.related_subject')}
             </label>
             <select
               value={subjectId}
               onChange={(e) => handleSubjectChange(e.target.value)}
               className="snote-select"
-              style={{ fontSize: '13.5px', padding: '9px 12px' }}
+              style={{ fontSize: 'var(--type-small)', padding: '9px 12px' }}
             >
-              <option value="">-- Không thuộc môn cụ thể --</option>
+              <option value="">{t('schedule.no_subject_option')}</option>
               {subjects.map((sub) => (
                 <option key={sub.id} value={sub.id}>
                   {sub.code ? `[${sub.code}] ` : ''}{sub.name}
@@ -394,17 +396,17 @@ export const EventModal: React.FC<EventModalProps> = ({
 
           {eventType === ScheduleEventType.GROUP_MEETING && (
             <div>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
-                Đồ án nhóm liên quan
+              <label style={{ display: 'block', fontSize: 'var(--type-small)', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
+                {t('schedule.related_project')}
               </label>
               <select
                 value={projectId}
                 onChange={(e) => setProjectId(e.target.value)}
                 disabled={Boolean(defaultProjectId)}
                 className="snote-select"
-                style={{ fontSize: '13.5px', padding: '9px 12px' }}
+                style={{ fontSize: 'var(--type-small)', padding: '9px 12px' }}
               >
-                <option value="">-- Chọn đồ án (Tùy chọn) --</option>
+                <option value="">{t('schedule.select_project_option')}</option>
                 {projects.map((p) => (
                   <option key={p.id} value={p.id}>
                     📁 {p.name}
@@ -428,40 +430,40 @@ export const EventModal: React.FC<EventModalProps> = ({
               gap: '10px'
             }}
           >
-            <div style={{ fontSize: '12.5px', fontWeight: 700, color: '#ef4444', display: 'flex', alignItems: 'center', gap: '5px' }}>
+            <div style={{ fontSize: 'var(--type-small)', fontWeight: 700, color: '#ef4444', display: 'flex', alignItems: 'center', gap: '5px' }}>
               <Flame size={15} />
-              <span>Thông tin phòng thi & Hình thức đánh giá</span>
+              <span>{t('schedule.exam_info_header')}</span>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
               <div>
-                <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px' }}>
-                  Hình thức thi:
+                <label style={{ display: 'block', fontSize: 'var(--type-small)', color: 'var(--text-secondary)', marginBottom: '4px' }}>
+                  {t('schedule.exam_format_label')}
                 </label>
                 <select
                   value={examFormat}
                   onChange={(e) => setExamFormat(e.target.value)}
                   className="snote-select"
-                  style={{ fontSize: '12.5px', padding: '7px 10px' }}
+                  style={{ fontSize: 'var(--type-small)', padding: '7px 10px' }}
                 >
-                  <option value="MULTIPLE_CHOICE">📝 Trắc nghiệm trên máy</option>
-                  <option value="ESSAY">✍️ Tự luận trên giấy</option>
-                  <option value="ORAL">🗣️ Vấn đáp trực tiếp</option>
-                  <option value="PROJECT_DEFENSE">💻 Báo cáo bảo vệ đồ án</option>
+                  <option value="MULTIPLE_CHOICE">{t('schedule.exam_mc_opt')}</option>
+                  <option value="ESSAY">{t('schedule.exam_essay_opt')}</option>
+                  <option value="ORAL">{t('schedule.exam_oral_opt')}</option>
+                  <option value="PROJECT_DEFENSE">{t('schedule.exam_defense_opt')}</option>
                 </select>
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px' }}>
-                  Phòng thi / Số báo danh:
+                <label style={{ display: 'block', fontSize: 'var(--type-small)', color: 'var(--text-secondary)', marginBottom: '4px' }}>
+                  {t('schedule.exam_room_label')}
                 </label>
                 <input
                   type="text"
-                  placeholder="Ví dụ: P.501-A2 | SBD: 45"
+                  placeholder={t('schedule.exam_room_placeholder')}
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
                   className="snote-input"
-                  style={{ fontSize: '12.5px', padding: '7px 10px' }}
+                  style={{ fontSize: 'var(--type-small)', padding: '7px 10px' }}
                 />
               </div>
             </div>
@@ -473,8 +475,8 @@ export const EventModal: React.FC<EventModalProps> = ({
           <StudyDateTimePicker
             value={startTime}
             onChange={setStartTime}
-            label="Thời gian bắt đầu"
-            placeholder="Chọn giờ bắt đầu..."
+            label={t('schedule.start_time_label')}
+            placeholder={t('schedule.start_time_placeholder')}
             required
             align="left"
           />
@@ -482,8 +484,8 @@ export const EventModal: React.FC<EventModalProps> = ({
           <StudyDateTimePicker
             value={endTime}
             onChange={setEndTime}
-            label="Thời gian kết thúc"
-            placeholder="Chọn giờ kết thúc..."
+            label={t('schedule.end_time_label')}
+            placeholder={t('schedule.end_time_placeholder')}
             required
             align="right"
           />
@@ -492,8 +494,8 @@ export const EventModal: React.FC<EventModalProps> = ({
         {/* 7. Location (if not already rendered in Exam mode) */}
         {eventType !== ScheduleEventType.EXAM && (
           <div>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
-              {eventType === ScheduleEventType.GROUP_MEETING ? 'Link họp online / Phòng học' : 'Địa điểm / Phòng học'}
+            <label style={{ display: 'block', fontSize: 'var(--type-small)', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
+              {eventType === ScheduleEventType.GROUP_MEETING ? t('schedule.meet_link_or_room') : t('schedule.location_or_room')}
             </label>
             <div style={{ position: 'relative' }}>
               <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', display: 'flex' }}>
@@ -503,13 +505,13 @@ export const EventModal: React.FC<EventModalProps> = ({
                 type="text"
                 placeholder={
                   eventType === ScheduleEventType.GROUP_MEETING
-                    ? 'Ví dụ: meet.google.com/abc-xyz hoặc P.Tự học Thư viện'
-                    : 'Ví dụ: Phòng 302-G2 hoặc Giảng đường 1'
+                    ? t('schedule.meet_link_placeholder')
+                    : t('schedule.location_placeholder')
                 }
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
                 className="snote-input"
-                style={{ paddingLeft: '38px', fontSize: '13.5px', padding: '9px 12px 9px 38px' }}
+                style={{ paddingLeft: '38px', fontSize: 'var(--type-small)', padding: '9px 12px 9px 38px' }}
               />
             </div>
           </div>
@@ -534,7 +536,7 @@ export const EventModal: React.FC<EventModalProps> = ({
                   display: 'flex',
                   alignItems: 'center',
                   gap: '8px',
-                  fontSize: '13px',
+                  fontSize: 'var(--type-small)',
                   fontWeight: 600,
                   color: 'var(--text-primary)',
                   cursor: 'pointer',
@@ -549,31 +551,30 @@ export const EventModal: React.FC<EventModalProps> = ({
                 />
                 <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
                   <Repeat size={14} style={{ color: 'var(--accent-primary)' }} />
-                  <span>Lặp lại hàng tuần cho cả Học kỳ</span>
+                  <span>{t('schedule.repeat_weekly_label')}</span>
                 </span>
               </label>
 
               {isRecurring && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px' }}>
-                  <span style={{ color: 'var(--text-secondary)' }}>Trong</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: 'var(--type-small)' }}>
                   <select
                     value={repeatWeeks}
                     onChange={(e) => setRepeatWeeks(Number(e.target.value))}
                     className="snote-select"
-                    style={{ fontSize: '12px', padding: '3px 8px', height: '28px', width: '90px' }}
+                    style={{ fontSize: 'var(--type-small)', padding: '3px 8px', height: '28px', width: '90px' }}
                   >
-                    <option value={5}>5 tuần</option>
-                    <option value={10}>10 tuần</option>
-                    <option value={15}>15 tuần</option>
-                    <option value={18}>18 tuần</option>
+                    <option value={5}>{t('schedule.repeat_weeks_option', { count: 5 })}</option>
+                    <option value={10}>{t('schedule.repeat_weeks_option', { count: 10 })}</option>
+                    <option value={15}>{t('schedule.repeat_weeks_option', { count: 15 })}</option>
+                    <option value={18}>{t('schedule.repeat_weeks_option', { count: 18 })}</option>
                   </select>
                 </div>
               )}
             </div>
 
             {isRecurring && (
-              <div style={{ fontSize: '11.5px', color: 'var(--text-muted)', lineHeight: 1.4 }}>
-                💡 SNOTE sẽ tự động sinh lịch học đều đặn vào ngày này hàng tuần trong {repeatWeeks} tuần tới. Bạn không cần phải tạo lại từng tuần!
+              <div style={{ fontSize: 'var(--type-caption)', color: 'var(--text-muted)', lineHeight: 1.4 }}>
+                {t('schedule.repeat_tip', { count: repeatWeeks })}
               </div>
             )}
           </div>
@@ -590,7 +591,7 @@ export const EventModal: React.FC<EventModalProps> = ({
               style={{ color: 'var(--color-danger)', gap: '4px', padding: '8px 12px' }}
             >
               <Trash2 size={15} />
-              <span>Xóa Sự Kiện</span>
+              <span>{t('schedule.delete_event_btn')}</span>
             </button>
           ) : <div />}
 
@@ -601,7 +602,7 @@ export const EventModal: React.FC<EventModalProps> = ({
               className="btn btn-secondary"
               style={{ padding: '9px 18px' }}
             >
-              Hủy
+              {t('common.cancel')}
             </button>
             <button
               type="submit"
@@ -610,7 +611,7 @@ export const EventModal: React.FC<EventModalProps> = ({
               style={{ fontWeight: 700, padding: '9px 22px', gap: '6px' }}
             >
               <Save size={16} />
-              <span>{loading ? 'Đang lưu...' : eventToEdit ? 'Lưu Thay Đổi' : 'Tạo Lịch Học'}</span>
+              <span>{loading ? t('common.loading') : eventToEdit ? t('schedule.save_changes') : t('schedule.create_class_btn')}</span>
             </button>
           </div>
         </div>

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useLanguage } from '../../../contexts/LanguageContext';
 import {
   AlertTriangle,
   ClipboardList,
@@ -10,9 +11,6 @@ import {
   TrendingUp,
   ChevronDown,
   ChevronUp,
-  UserCheck,
-  ShieldCheck,
-  Zap,
   Users
 } from 'lucide-react';
 
@@ -44,11 +42,7 @@ export type OverviewProject = {
   status: string;
   dueDate: string | null;
   groupId: string | null;
-  studyGroup: {
-    id?: string;
-    name: string;
-    leader: { id?: string; fullName: string; email?: string };
-  } | null;
+  members?: Array<{ userId: string; role: string; user: { id: string; fullName: string; email: string } }>;
   _count: { tasks: number; progressReports: number };
   latestReport: {
     id: string;
@@ -78,20 +72,22 @@ type Props = {
 };
 
 const finished = new Set(['COMPLETED', 'ARCHIVED']);
-const statusLabels: Record<string, string> = {
-  PLANNED: 'Lên kế hoạch',
-  ACTIVE: 'Đang làm',
-  ON_HOLD: 'Tạm dừng',
-  COMPLETED: 'Hoàn thành',
-  ARCHIVED: 'Lưu trữ'
-};
 
 function isOverdue(project: OverviewProject, today: string) {
   return Boolean(project.dueDate && project.dueDate.slice(0, 10) < today && !finished.has(project.status));
 }
 
 export function ClassProgressOverview({ projects, loading, isManager, onOpenReports, onOpenWorkspace }: Props) {
+  const { t, formatDate } = useLanguage();
   const [expandedTasksProjectId, setExpandedTasksProjectId] = useState<string | null>(null);
+
+  const statusLabels: Record<string, string> = {
+    PLANNED: t('classes.status_planned'),
+    ACTIVE: t('classes.status_active'),
+    ON_HOLD: t('classes.status_on_hold'),
+    COMPLETED: t('classes.status_completed'),
+    ARCHIVED: t('classes.status_archived')
+  };
 
   const now = new Date();
   const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
@@ -121,46 +117,46 @@ export function ClassProgressOverview({ projects, loading, isManager, onOpenRepo
       <div className="classes-section-head">
         <div>
           <h2 id="classes-overview-heading">
-            <ClipboardList size={18} /> Tổng quan tiến độ & Năng suất các nhóm
+            <ClipboardList size={18} /> {t('classes.overview_header')}
           </h2>
           <p>
             {isManager
-              ? 'Giảng viên & Lớp trưởng có thẩm quyền giám sát toàn bộ tasks, tiến độ làm việc và năng suất của từng thành viên trong mỗi nhóm.'
-              : 'Theo dõi dự án, công việc và báo cáo của nhóm bạn.'}
+              ? t('classes.overview_desc_teacher')
+              : t('classes.overview_desc_student')}
           </p>
         </div>
       </div>
 
       {!loading && (
-        <div className="classes-metrics" aria-label="Thống kê tiến độ">
+        <div className="classes-metrics" aria-label={t('classes.tab_overview')}>
           <div>
             <strong>{projects.length}</strong>
-            <span>Nhóm dự án</span>
+            <span>{t('classes.metric_groups')}</span>
           </div>
           <div>
             <strong style={{ color: 'var(--color-info)' }}>{totalClassTasks}</strong>
-            <span>Tổng số việc ({totalClassCompletedTasks} xong)</span>
+            <span>{t('classes.metric_tasks', { count: totalClassCompletedTasks })}</span>
           </div>
           <div>
             <strong style={{ color: totalClassOverdueTasks > 0 ? 'var(--color-danger)' : 'inherit' }}>
               {totalClassOverdueTasks}
             </strong>
-            <span>Việc trễ hạn</span>
+            <span>{t('classes.metric_overdue')}</span>
           </div>
           <div>
             <strong style={{ color: pending > 0 ? 'var(--color-warning)' : 'inherit' }}>{pending}</strong>
-            <span>Báo cáo chờ duyệt</span>
+            <span>{t('classes.metric_pending_reports')}</span>
           </div>
         </div>
       )}
 
-      {loading && <p role="status">Đang tải dữ liệu tiến độ & năng suất...</p>}
+      {loading && <p role="status">{t('classes.loading_metrics')}</p>}
 
       {!loading && projects.length === 0 && (
         <p>
           {isManager
-            ? 'Lớp chưa có dự án nhóm nào. Hãy tạo nhóm và giao dự án ở tab "Nhóm & dự án".'
-            : 'Nhóm của bạn chưa có dự án, hoặc bạn chưa được phân nhóm.'}
+            ? t('classes.no_projects_teacher')
+            : t('classes.no_projects_student')}
         </p>
       )}
 
@@ -179,28 +175,23 @@ export function ClassProgressOverview({ projects, loading, isManager, onOpenRepo
                 <div>
                   <small style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <Users size={13} style={{ color: 'var(--accent-primary)' }} />
-                    <b>{project.studyGroup?.name || 'Nhóm'}</b>
-                    <span>·</span>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                      <ShieldCheck size={12} style={{ color: 'var(--color-warning)' }} />
-                      Trưởng nhóm: <b>{project.studyGroup?.leader.fullName || 'Chưa phân công'}</b>
-                    </span>
+                    <b>{t('classes.students_count', { count: project.members?.length ?? project.memberProductivity?.length ?? 0 })}</b>
                   </small>
                   <h3>{project.name}</h3>
                 </div>
                 <div className="classes-progress-flags">
                   {late && (
                     <span className="classes-flag classes-flag-danger">
-                      <AlertTriangle size={14} /> Trễ hạn
+                      <AlertTriangle size={14} /> {t('classes.flag_overdue')}
                     </span>
                   )}
-                  {blockers && <span className="classes-flag classes-flag-warning">Có vướng mắc</span>}
+                  {blockers && <span className="classes-flag classes-flag-warning">{t('classes.flag_blockers')}</span>}
                   {project.pendingReviews > 0 && (
-                    <span className="classes-flag">{project.pendingReviews} báo cáo chờ duyệt</span>
+                    <span className="classes-flag">{t('classes.pending_reviews_flag', { count: project.pendingReviews })}</span>
                   )}
                   {project.overdueTasks !== undefined && project.overdueTasks > 0 && (
                     <span className="classes-flag classes-flag-danger">
-                      {project.overdueTasks} việc quá hạn
+                      {t('classes.overdue_tasks_count', { count: project.overdueTasks })}
                     </span>
                   )}
                 </div>
@@ -209,21 +200,21 @@ export function ClassProgressOverview({ projects, loading, isManager, onOpenRepo
               {/* 2. Dual Progress: Real Tasks Progress vs Self-Reported */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '14px', margin: '4px 0' }}>
                 <div className="classes-progress-track">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--type-small)' }}>
                     <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
-                      Tiến độ hoàn thành công việc:
+                      {t('classes.task_progress_title')}
                     </span>
                     <strong style={{ color: 'var(--color-success)' }}>
-                      {taskRate}% ({project.completedTasks ?? 0}/{project.totalTasks ?? project._count.tasks} việc)
+                      {t('classes.task_progress_detail', { percent: taskRate, completed: project.completedTasks ?? 0, total: project.totalTasks ?? project._count.tasks })}
                     </strong>
                   </div>
                   <progress max={100} value={taskRate} style={{ accentColor: 'var(--color-success)' }} />
                 </div>
 
                 <div className="classes-progress-track">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
-                    <span style={{ color: 'var(--text-secondary)' }}>Nhóm tự báo cáo định kỳ:</span>
-                    <strong>{percent === undefined ? 'Chưa báo cáo' : `${percent}%`}</strong>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--type-small)' }}>
+                    <span style={{ color: 'var(--text-secondary)' }}>{t('classes.periodic_self_report')}</span>
+                    <strong>{percent === undefined ? t('classes.unreported') : `${percent}%`}</strong>
                   </div>
                   <progress max={100} value={percent ?? 0} />
                 </div>
@@ -231,21 +222,21 @@ export function ClassProgressOverview({ projects, loading, isManager, onOpenRepo
 
               {/* 3. Meta details */}
               <p className="classes-progress-meta">
-                <span>Trạng thái: <b>{statusLabels[project.status] || project.status}</b></span>
+                <span>{t('classes.status_prefix', { status: statusLabels[project.status] || project.status })}</span>
                 {' · '}
-                <span>{project.dueDate ? `Hạn nộp: ${new Date(project.dueDate).toLocaleDateString('vi-VN')}` : 'Chưa có hạn'}</span>
+                <span>{project.dueDate ? t('classes.due_prefix', { date: formatDate(project.dueDate) }) : t('classes.no_due')}</span>
                 {' · '}
-                <span>{project.totalTasks ?? project._count.tasks} công việc</span>
+                <span>{t('classes.tasks_count_metric', { count: project.totalTasks ?? project._count.tasks })}</span>
                 {' · '}
-                <span>{project._count.progressReports} báo cáo tiến độ</span>
+                <span>{t('classes.reports_count_metric', { count: project._count.progressReports })}</span>
                 {project.latestReport?.reviewScore !== null && project.latestReport?.reviewScore !== undefined
-                  ? ` · Điểm báo cáo mới nhất: ${project.latestReport.reviewScore}/100`
+                  ? t('classes.latest_score', { score: project.latestReport.reviewScore })
                   : ''}
               </p>
 
               {blockers && (
                 <p className="classes-progress-blocker" style={{ backgroundColor: 'rgba(239, 68, 68, 0.08)', padding: '6px 10px', borderRadius: '6px' }}>
-                  <strong>⚠️ Vướng mắc nhóm ghi nhận:</strong> {blockers}
+                  {t('classes.blockers_notice', { text: blockers })}
                 </p>
               )}
 
@@ -268,25 +259,25 @@ export function ClassProgressOverview({ projects, loading, isManager, onOpenRepo
                       marginBottom: '8px'
                     }}
                   >
-                    <span style={{ fontSize: '12.5px', fontWeight: 700, color: 'var(--text-primary)', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ fontSize: 'var(--type-small)', fontWeight: 700, color: 'var(--text-primary)', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                       <TrendingUp size={14} style={{ color: 'var(--accent-primary)' }} />
-                      Năng suất từng thành viên ({project.memberProductivity.length} người)
+                      {t('classes.member_productivity_title', { count: project.memberProductivity.length })}
                     </span>
-                    <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                      Tỷ lệ hoàn thành công việc được giao
+                    <span style={{ fontSize: 'var(--type-caption)', color: 'var(--text-muted)' }}>
+                      {t('classes.member_completion_rate')}
                     </span>
                   </div>
 
                   <div style={{ overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--type-small)' }}>
                       <thead>
                         <tr style={{ borderBottom: '1px solid var(--border-subtle)', textAlign: 'left', color: 'var(--text-muted)' }}>
-                          <th style={{ padding: '4px 8px' }}>Thành viên</th>
-                          <th style={{ padding: '4px 8px' }}>Được giao</th>
-                          <th style={{ padding: '4px 8px' }}>Đã xong</th>
-                          <th style={{ padding: '4px 8px' }}>Đang làm</th>
-                          <th style={{ padding: '4px 8px' }}>Trễ hạn</th>
-                          <th style={{ padding: '4px 8px', minWidth: '130px' }}>Biểu đồ năng suất</th>
+                          <th style={{ padding: '4px 8px' }}>{t('classes.th_member')}</th>
+                          <th style={{ padding: '4px 8px' }}>{t('classes.th_assigned')}</th>
+                          <th style={{ padding: '4px 8px' }}>{t('classes.th_done')}</th>
+                          <th style={{ padding: '4px 8px' }}>{t('classes.th_doing')}</th>
+                          <th style={{ padding: '4px 8px' }}>{t('classes.th_overdue')}</th>
+                          <th style={{ padding: '4px 8px', minWidth: '130px' }}>{t('classes.th_chart')}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -308,14 +299,14 @@ export function ClassProgressOverview({ projects, loading, isManager, onOpenRepo
                                   {member.isLeader && (
                                     <span
                                       className="badge badge-amber"
-                                      style={{ fontSize: '10px', padding: '1px 5px', fontWeight: 700 }}
-                                      title="Trưởng nhóm"
+                                      style={{ fontSize: 'var(--type-caption)', padding: '1px 5px', fontWeight: 700 }}
+                                      title={t('classes.leader_tag')}
                                     >
-                                      Trưởng nhóm
+                                      {t('classes.leader_tag')}
                                     </span>
                                   )}
                                 </div>
-                                <small style={{ color: 'var(--text-muted)', fontSize: '10.5px' }}>{member.email}</small>
+                                <small style={{ color: 'var(--text-muted)', fontSize: 'var(--type-caption)' }}>{member.email}</small>
                               </td>
                               <td style={{ padding: '6px 8px', fontWeight: 600 }}>{member.assignedCount}</td>
                               <td style={{ padding: '6px 8px', color: 'var(--color-success)', fontWeight: 600 }}>
@@ -348,7 +339,7 @@ export function ClassProgressOverview({ projects, loading, isManager, onOpenRepo
                                       }}
                                     />
                                   </div>
-                                  <span style={{ fontSize: '11px', fontWeight: 700, color: barColor, minWidth: '32px' }}>
+                                  <span style={{ fontSize: 'var(--type-caption)', fontWeight: 700, color: barColor, minWidth: '32px' }}>
                                     {member.productivityPercent}%
                                   </span>
                                 </div>
@@ -374,23 +365,23 @@ export function ClassProgressOverview({ projects, loading, isManager, onOpenRepo
                   }}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                    <span style={{ fontSize: '12.5px', fontWeight: 700, color: 'var(--text-primary)', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ fontSize: 'var(--type-small)', fontWeight: 700, color: 'var(--text-primary)', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                       <ListTodo size={14} style={{ color: 'var(--accent-primary)' }} />
-                      Chi tiết công việc nhóm ({project.tasks.length})
+                      {t('classes.group_tasks_detail', { count: project.tasks.length })}
                     </span>
                     <button
                       type="button"
                       className="btn btn-ghost btn-sm"
-                      style={{ fontSize: '11px', padding: '2px 8px' }}
+                      style={{ fontSize: 'var(--type-caption)', padding: '2px 8px' }}
                       onClick={() => toggleExpandTasks(project.id)}
                     >
-                      Đóng danh sách
+                      {t('classes.close_list')}
                     </button>
                   </div>
 
                   {project.tasks.length === 0 ? (
-                    <div style={{ padding: '12px 0', textAlign: 'center', color: 'var(--text-muted)', fontSize: '11.5px' }}>
-                      Nhóm chưa lập công việc cụ thể nào trong dự án này.
+                    <div style={{ padding: '12px 0', textAlign: 'center', color: 'var(--text-muted)', fontSize: 'var(--type-caption)' }}>
+                      {t('classes.no_tasks_in_project')}
                     </div>
                   ) : (
                     <div style={{ display: 'grid', gap: '6px' }}>
@@ -421,27 +412,27 @@ export function ClassProgressOverview({ projects, loading, isManager, onOpenRepo
                               ) : (
                                 <Clock size={14} style={{ color: 'var(--color-warning)', flexShrink: 0 }} />
                               )}
-                              <span style={{ fontSize: '12px', fontWeight: 600, textDecoration: isDone ? 'line-through' : 'none', color: isDone ? 'var(--text-muted)' : 'var(--text-primary)' }}>
+                              <span style={{ fontSize: 'var(--type-small)', fontWeight: 600, textDecoration: isDone ? 'line-through' : 'none', color: isDone ? 'var(--text-muted)' : 'var(--text-primary)' }}>
                                 {task.title}
                               </span>
                             </div>
 
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '11px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: 'var(--type-caption)' }}>
                               <span style={{ color: 'var(--text-muted)' }}>
-                                Phụ trách: <b>{task.assignees.map((a) => a.user.fullName).join(', ') || 'Chưa phân'}</b>
+                                {t('classes.assignee_prefix', { names: task.assignees.map((a) => a.user.fullName).join(', ') || t('classes.unassigned_text') })}
                               </span>
                               {task.dueDate && (
                                 <span style={{ color: isOver ? 'var(--color-danger)' : 'var(--text-muted)', fontWeight: isOver ? 700 : 500 }}>
-                                  Hạn: {new Date(task.dueDate).toLocaleDateString('vi-VN')}
+                                  {t('classes.due_label', { date: formatDate(task.dueDate) })}
                                 </span>
                               )}
                               <span
                                 className={`badge ${
                                   isDone ? 'badge-green' : task.status === 'IN_PROGRESS' ? 'badge-amber' : 'badge-neutral'
                                 }`}
-                                style={{ fontSize: '10.5px' }}
+                                style={{ fontSize: 'var(--type-caption)' }}
                               >
-                                {isDone ? 'Hoàn thành' : task.status === 'IN_PROGRESS' ? 'Đang làm' : 'Cần làm'}
+                                {isDone ? t('classes.status_completed') : task.status === 'IN_PROGRESS' ? t('classes.status_active') : t('tasks.status_todo')}
                               </span>
                             </div>
                           </div>
@@ -458,10 +449,10 @@ export function ClassProgressOverview({ projects, loading, isManager, onOpenRepo
                   type="button"
                   className="btn btn-secondary btn-sm"
                   onClick={() => toggleExpandTasks(project.id)}
-                  title="Xem toàn bộ danh sách công việc của nhóm"
+                  title={t('classes.view_tasks', { count: project.totalTasks ?? project._count.tasks })}
                 >
                   <ListTodo size={14} />
-                  <span>{isTasksExpanded ? 'Ẩn công việc' : `Xem ${project.totalTasks ?? project._count.tasks} công việc`}</span>
+                  <span>{isTasksExpanded ? t('classes.hide_tasks') : t('classes.view_tasks', { count: project.totalTasks ?? project._count.tasks })}</span>
                   {isTasksExpanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
                 </button>
                 <button
@@ -470,7 +461,7 @@ export function ClassProgressOverview({ projects, loading, isManager, onOpenRepo
                   onClick={() => onOpenReports(project)}
                 >
                   <ClipboardList size={14} />
-                  <span>Báo cáo tiến độ ({project._count.progressReports})</span>
+                  <span>{t('classes.reports_count_metric', { count: project._count.progressReports })}</span>
                 </button>
                 <button
                   type="button"
@@ -478,7 +469,7 @@ export function ClassProgressOverview({ projects, loading, isManager, onOpenRepo
                   onClick={() => onOpenWorkspace(project.id)}
                 >
                   <Eye size={14} />
-                  <span>Mở Workspace Đồ Án</span>
+                  <span>{t('classes.open_project_workspace')}</span>
                 </button>
               </div>
             </article>
@@ -488,7 +479,7 @@ export function ClassProgressOverview({ projects, loading, isManager, onOpenRepo
 
       {!loading && projects.length > 0 && (
         <p className="classes-overview-hint">
-          <FolderKanban size={14} /> Tiến độ công việc được tính toán tự động dựa trên số tasks thực tế; giảng viên đánh giá riêng các mốc báo cáo tiến độ.
+          <FolderKanban size={14} /> {t('classes.calc_note')}
         </p>
       )}
     </section>

@@ -8,13 +8,13 @@ import {
   CheckCircle2,
   Circle,
   Plus,
-  BookOpen,
   FolderKanban,
   Edit3,
   Trash2,
   ListTodo
 } from 'lucide-react';
 import { extractNoteFeatures } from '../../notes/utils/smartNoteParser';
+import { useLanguage } from '../../../contexts/LanguageContext';
 
 interface TasksEisenhowerViewProps {
   tasks: any[];
@@ -33,6 +33,7 @@ export const TasksEisenhowerView: React.FC<TasksEisenhowerViewProps> = ({
   onMoveStatus,
   onOpenCreate
 }) => {
+  const { t, language, formatDate } = useLanguage();
   // Categorize active tasks into 4 Quadrants
   const quadrants = useMemo(() => {
     const now = new Date();
@@ -85,8 +86,7 @@ export const TasksEisenhowerView: React.FC<TasksEisenhowerViewProps> = ({
           border: '1px solid var(--border-subtle)',
           display: 'flex',
           flexDirection: 'column',
-          gap: '6px',
-          boxShadow: 'var(--shadow-sm)'
+          gap: '6px'
         }}
       >
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
@@ -94,21 +94,35 @@ export const TasksEisenhowerView: React.FC<TasksEisenhowerViewProps> = ({
             onClick={() => onToggleStatus(task.id, task.status)}
             className="btn btn-ghost btn-icon"
             style={{
-              padding: '2px',
+              minWidth: '28px',
+              minHeight: '28px',
+              padding: '4px',
               color: isDone ? 'var(--color-success)' : 'var(--text-muted)',
               cursor: 'pointer',
               flexShrink: 0,
-              marginTop: '1px'
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center'
             }}
+            title={isDone ? t('tasks.mark_undone') : t('tasks.mark_done')}
+            aria-label={isDone ? t('tasks.mark_undone') : t('tasks.mark_done')}
           >
             {isDone ? <CheckCircle2 size={16} /> : <Circle size={16} />}
           </button>
 
           <div style={{ flex: 1, minWidth: 0 }}>
             <span
+              role="button"
+              tabIndex={0}
               onClick={() => onEdit(task)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  onEdit(task);
+                }
+              }}
               style={{
-                fontSize: '13px',
+                fontSize: 'var(--type-small)',
                 fontWeight: 600,
                 color: 'var(--text-primary)',
                 cursor: 'pointer',
@@ -117,33 +131,51 @@ export const TasksEisenhowerView: React.FC<TasksEisenhowerViewProps> = ({
                 display: 'block'
               }}
               title={task.title}
+              aria-label={`${t('common.edit')}: ${task.title}`}
             >
               {task.title}
             </span>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '2px', flexShrink: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
             <button
               onClick={() => onEdit(task)}
               className="btn btn-ghost btn-icon btn-sm"
-              style={{ padding: '2px' }}
-              title="Chỉnh sửa"
+              style={{
+                minWidth: '28px',
+                minHeight: '28px',
+                padding: '4px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+              title={t('common.edit')}
+              aria-label={t('common.edit')}
             >
-              <Edit3 size={13} />
+              <Edit3 size={14} />
             </button>
             <button
               onClick={() => onDelete(task.id, task.title)}
               className="btn btn-ghost btn-icon btn-sm"
-              style={{ padding: '2px', color: 'var(--color-danger)' }}
-              title="Xóa"
+              style={{
+                minWidth: '28px',
+                minHeight: '28px',
+                padding: '4px',
+                color: 'var(--color-danger)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+              title={t('common.delete')}
+              aria-label={t('common.delete')}
             >
-              <Trash2 size={13} />
+              <Trash2 size={14} />
             </button>
           </div>
         </div>
 
         {/* Footer Meta */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px', fontSize: '11px', color: 'var(--text-muted)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px', fontSize: 'var(--type-caption)', color: 'var(--text-muted)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', overflow: 'hidden' }}>
             {task.subject && (
               <span
@@ -168,7 +200,7 @@ export const TasksEisenhowerView: React.FC<TasksEisenhowerViewProps> = ({
 
           {task.dueDate && (
             <span style={{ flexShrink: 0, fontWeight: 500 }}>
-              {new Date(task.dueDate).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })}
+              {formatDate(task.dueDate, { day: '2-digit', month: '2-digit' })}
             </span>
           )}
         </div>
@@ -179,42 +211,30 @@ export const TasksEisenhowerView: React.FC<TasksEisenhowerViewProps> = ({
   const matrixConfigs = [
     {
       id: 'q1',
-      title: 'Q1: Khẩn Cấp & Quan Trọng',
-      subtitle: 'Làm Ngay (Do First) — Hạn sát nút, kỳ thi',
+      title: t('tasks.matrix_q1_title'),
+      subtitle: t('tasks.matrix_q1_desc'),
       icon: Flame,
-      color: '#ef4444',
-      bg: 'rgba(239, 68, 68, 0.04)',
-      border: 'rgba(239, 68, 68, 0.3)',
       items: quadrants.q1
     },
     {
       id: 'q2',
-      title: 'Q2: Quan Trọng Nhưng Chưa Gấp',
-      subtitle: 'Lên Kế Hoạch (Schedule) — Đồ án, nghiên cứu',
+      title: t('tasks.matrix_q2_title'),
+      subtitle: t('tasks.matrix_q2_desc'),
       icon: Calendar,
-      color: '#f59e0b',
-      bg: 'rgba(245, 158, 11, 0.04)',
-      border: 'rgba(245, 158, 11, 0.3)',
       items: quadrants.q2
     },
     {
       id: 'q3',
-      title: 'Q3: Khẩn Cấp Nhưng Ít Quan Trọng',
-      subtitle: 'Giải Quyết Nhanh (Delegate / Quick) — Thủ tục, form',
+      title: t('tasks.matrix_q3_title'),
+      subtitle: t('tasks.matrix_q3_desc'),
       icon: Zap,
-      color: '#0ea5e9',
-      bg: 'rgba(14, 165, 233, 0.04)',
-      border: 'rgba(14, 165, 233, 0.3)',
       items: quadrants.q3
     },
     {
       id: 'q4',
-      title: 'Q4: Không Gấp & Không Quan Trọng',
-      subtitle: 'Xem Xét Sau (Eliminate / Later) — Đọc thêm ngoài lề',
+      title: t('tasks.matrix_q4_title'),
+      subtitle: t('tasks.matrix_q4_desc'),
       icon: Coffee,
-      color: '#8b5cf6',
-      bg: 'rgba(139, 92, 246, 0.04)',
-      border: 'rgba(139, 92, 246, 0.3)',
       items: quadrants.q4
     }
   ];
@@ -224,7 +244,7 @@ export const TasksEisenhowerView: React.FC<TasksEisenhowerViewProps> = ({
       style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))',
-        gap: '16px',
+        gap: '12px',
         alignItems: 'stretch'
       }}
     >
@@ -235,27 +255,27 @@ export const TasksEisenhowerView: React.FC<TasksEisenhowerViewProps> = ({
             key={q.id}
             className="snote-card"
             style={{
-              backgroundColor: q.bg,
-              border: `1px solid ${q.border}`,
-              borderRadius: 'var(--radius-xl)',
-              padding: '16px',
+              backgroundColor: 'var(--bg-secondary)',
+              border: '1px solid var(--border-color)',
+              borderRadius: 'var(--radius-lg)',
+              padding: '14px',
               display: 'flex',
               flexDirection: 'column',
-              gap: '12px',
-              minHeight: '340px'
+              gap: '10px',
+              minHeight: '320px'
             }}
           >
             {/* Quadrant Header */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '10px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '8px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ color: q.color, display: 'flex' }}>
-                  <Icon size={18} />
+                <span style={{ color: 'var(--text-secondary)', display: 'flex' }}>
+                  <Icon size={16} />
                 </span>
                 <div>
-                  <h4 style={{ margin: 0, fontSize: '13.5px', fontWeight: 800, color: 'var(--text-primary)' }}>
+                  <h4 style={{ margin: 0, fontSize: 'var(--type-small)', fontWeight: 700, color: 'var(--text-primary)' }}>
                     {q.title}
                   </h4>
-                  <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                  <div style={{ fontSize: 'var(--type-caption)', color: 'var(--text-muted)' }}>
                     {q.subtitle}
                   </div>
                 </div>
@@ -263,12 +283,13 @@ export const TasksEisenhowerView: React.FC<TasksEisenhowerViewProps> = ({
 
               <span
                 style={{
-                  fontSize: '11.5px',
-                  fontWeight: 800,
-                  padding: '2px 8px',
+                  fontSize: 'var(--type-caption)',
+                  fontWeight: 700,
+                  padding: '1px 7px',
                   borderRadius: '999px',
-                  backgroundColor: `${q.color}25`,
-                  color: q.color
+                  backgroundColor: 'var(--bg-primary)',
+                  color: 'var(--text-secondary)',
+                  fontFamily: 'var(--font-mono)'
                 }}
               >
                 {q.items.length}
@@ -283,14 +304,14 @@ export const TasksEisenhowerView: React.FC<TasksEisenhowerViewProps> = ({
                     padding: '30px 12px',
                     textAlign: 'center',
                     color: 'var(--text-muted)',
-                    fontSize: '12.5px',
+                    fontSize: 'var(--type-small)',
                     border: '1px dashed var(--border-subtle)',
                     borderRadius: 'var(--radius-lg)',
                     marginTop: 'auto',
                     marginBottom: 'auto'
                   }}
                 >
-                  Không có việc trong góc này
+                  {t('tasks.matrix_empty')}
                 </div>
               ) : (
                 q.items.map((t) => renderTaskMiniCard(t))

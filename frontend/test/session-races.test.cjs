@@ -442,6 +442,7 @@ function authFormLifecycle(client) {
   });
   const { LoginPage } = load('../src/features/auth/pages/LoginPage.tsx', {
     '../../../contexts/AuthContext': auth,
+    '../../../contexts/LanguageContext': { useLanguage: () => ({ t: (k) => k, language: 'vi', toggleLanguage: () => {} }) },
     'react-router-dom': { useNavigate: () => () => {}, Link: 'Link' }
   });
   function render() {

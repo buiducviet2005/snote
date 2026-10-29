@@ -29,14 +29,14 @@ export class ClassesService {
     const access = await this.access(classId, userId);
     const project = await prisma.project.findFirst({
       where: { id: projectId, classId, deletedAt: null },
-      include: { studyGroup: { include: { members: { where: { userId } } } } }
+      include: { members: { where: { userId } } }
     });
-    if (!project || !project.studyGroup) throw new NotFoundError('Không tìm thấy dự án trong lớp');
-    const isGroupMember = project.studyGroup.members.length > 0;
-    if (!classroomPermissions({ isTeacher: access.isTeacher, classRole: access.memberRole, isGroupMember }).viewGroupProject) {
-      throw new ForbiddenError('Bạn không thuộc nhóm của dự án này');
+    if (!project) throw new NotFoundError('Không tìm thấy dự án trong lớp');
+    const isProjectMember = project.members.length > 0;
+    if (!classroomPermissions({ isTeacher: access.isTeacher, classRole: access.memberRole, isGroupMember: isProjectMember }).viewGroupProject) {
+      throw new ForbiddenError('Bạn không thuộc dự án này');
     }
-    return { ...access, project, isGroupMember, isLeader: project.studyGroup.leaderId === userId };
+    return { ...access, project, isProjectMember };
   }
 
   async joinClass(userId: string, codeOrId: string) {
@@ -105,14 +105,17 @@ export class ClassesService {
         groups: {
           include: {
             leader: { select: publicUser },
-            members: { include: { user: { select: publicUser } } },
-            projects: {
-              where: classroomProjectWhere(classId, userId, access.isManager),
-              include: { _count: { select: { tasks: true, notes: true, progressReports: true } } },
-              orderBy: { createdAt: 'desc' }
-            }
+            members: { include: { user: { select: publicUser } } }
           },
           orderBy: { createdAt: 'asc' }
+        },
+        projects: {
+          where: classroomProjectWhere(classId, userId, access.isManager),
+          include: {
+            members: { where: { status: 'ACCEPTED' }, select: { userId: true } },
+            _count: { select: { tasks: true, notes: true, progressReports: true } }
+          },
+          orderBy: { createdAt: 'desc' }
         }
       }
     });
@@ -130,16 +133,11 @@ export class ClassesService {
           status: true,
           dueDate: true,
           groupId: true,
-          studyGroup: {
+          members: {
+            where: { status: 'ACCEPTED' },
             select: {
-              id: true,
-              name: true,
-              leader: { select: publicUser },
-              members: {
-                select: {
-                  user: { select: publicUser }
-                }
-              }
+              role: true,
+              user: { select: publicUser }
             }
           },
           tasks: {
@@ -191,10 +189,9 @@ export class ClassesService {
       const overdueTasks = tasks.filter((t) => t.status !== 'DONE' && t.dueDate && new Date(t.dueDate) < now).length;
       const taskCompletionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
-      const groupMembers = project.studyGroup?.members.map((m) => m.user) || [];
-      const leaderId = project.studyGroup?.leader?.id;
+      const projectMembers = project.members?.map((m) => m.user) || [];
 
-      const memberProductivity = groupMembers.map((member) => {
+      const memberProductivity = projectMembers.map((member) => {
         const assigned = tasks.filter((t) => t.assignees.some((a) => a.user.id === member.id));
         const assignedCount = assigned.length;
         const doneCount = assigned.filter((t) => t.status === 'DONE').length;
@@ -206,7 +203,7 @@ export class ClassesService {
           fullName: member.fullName,
           email: member.email,
           avatarUrl: member.avatarUrl,
-          isLeader: member.id === leaderId,
+          isLeader: false,
           assignedCount,
           doneCount,
           inProgressCount,
@@ -281,9 +278,12 @@ export class ClassesService {
     if (led) throw new ConflictError('Hãy chuyển vai trò trưởng nhóm trước khi xóa sinh viên khỏi lớp');
     await prisma.$transaction(async (tx) => {
       const groupMembership = await tx.studyGroupMember.findUnique({ where: { classId_userId: { classId, userId: targetId } }, include: { group: { include: { workspace: { select: { id: true } } } } } });
-      const groupProjects = await tx.project.findMany({ where: { classId, groupId: { not: null } }, select: { id: true } });
+      const groupProjects = await tx.project.findMany({ where: { classId, deletedAt: null }, select: { id: true, userId: true } });
       const projectIds = groupProjects.map((p) => p.id);
       await tx.taskAssignee.deleteMany({ where: { userId: targetId, task: { projectId: { in: projectIds } } } });
+      for (const project of groupProjects) {
+        await tx.task.updateMany({ where: { projectId: project.id, userId: targetId }, data: { userId: project.userId } });
+      }
       await tx.taskAssignee.deleteMany({ where: { userId: targetId, task: { workspace: { group: { classId } } } } });
       if (groupMembership?.group.workspace) await tx.task.updateMany({
         where: { workspaceId: groupMembership.group.workspace.id, userId: targetId },
@@ -329,8 +329,6 @@ export class ClassesService {
   async deleteGroup(classId: string, groupId: string, userId: string) {
     const access = await this.groupAccess(classId, groupId, userId);
     if (!access.isTeacher) throw new ForbiddenError('Chỉ giảng viên được xóa nhóm');
-    const projects = await prisma.project.count({ where: { groupId, deletedAt: null } });
-    if (projects) throw new ConflictError('Hãy xử lý các dự án của nhóm trước khi xóa nhóm');
     const workspace = await prisma.workspace.findUnique({ where: { groupId }, select: { id: true } });
     if (workspace) {
       const [tasks, notes, events] = await Promise.all([
@@ -360,14 +358,6 @@ export class ClassesService {
         create: { workspaceId: groupWorkspace.id, userId: targetId, role: 'MEMBER', status: 'ACCEPTED', joinedAt: new Date() },
         update: { role: 'MEMBER', status: 'ACCEPTED', joinedAt: new Date() }
       });
-      const projects = await tx.project.findMany({ where: { groupId, deletedAt: null }, select: { id: true } });
-      for (const project of projects) {
-        await tx.projectMember.upsert({
-          where: { projectId_userId: { projectId: project.id, userId: targetId } },
-          create: { projectId: project.id, userId: targetId, role: 'MEMBER', status: 'ACCEPTED' },
-          update: { role: 'MEMBER', status: 'ACCEPTED' }
-        });
-      }
       return membership;
     });
   }
@@ -387,10 +377,6 @@ export class ClassesService {
         await tx.task.updateMany({ where: { workspaceId: groupWorkspace.id, userId: targetId }, data: { userId: access.group.leaderId } });
         await tx.workspaceMember.deleteMany({ where: { workspaceId: groupWorkspace.id, userId: targetId } });
       }
-      const projects = await tx.project.findMany({ where: { groupId }, select: { id: true } });
-      const projectIds = projects.map((p) => p.id);
-      await tx.taskAssignee.deleteMany({ where: { userId: targetId, task: { projectId: { in: projectIds } } } });
-      await tx.projectMember.deleteMany({ where: { userId: targetId, projectId: { in: projectIds } } });
     });
   }
 
@@ -407,38 +393,37 @@ export class ClassesService {
         await tx.workspaceMember.updateMany({ where: { workspaceId: groupWorkspace.id, userId: access.group.leaderId }, data: { role: 'MEMBER' } });
         await tx.workspaceMember.updateMany({ where: { workspaceId: groupWorkspace.id, userId: targetId }, data: { role: 'OWNER' } });
       }
-      const projects = await tx.project.findMany({ where: { groupId }, select: { id: true } });
-      for (const project of projects) {
-        await tx.projectMember.updateMany({ where: { projectId: project.id, userId: access.group.leaderId }, data: { role: 'MEMBER' } });
-        await tx.projectMember.updateMany({ where: { projectId: project.id, userId: targetId }, data: { role: 'OWNER' } });
-        await tx.project.update({ where: { id: project.id }, data: { userId: targetId } });
-      }
     });
   }
 
-  async createProject(classId: string, groupId: string, userId: string, data: { name: string; description?: string; dueDate?: string }) {
-    const access = await this.groupAccess(classId, groupId, userId);
-    if (!classroomPermissions({ isTeacher: access.isTeacher, classRole: access.memberRole, isLeader: access.isLeader }).manageProject) {
-      throw new ForbiddenError('Chỉ quản lý lớp hoặc trưởng nhóm được lập dự án nhóm');
+  async createProject(classId: string, userId: string, data: { name: string; description?: string; dueDate?: string; memberIds?: string[] }) {
+    const access = await this.access(classId, userId);
+    if (!access.isManager) throw new ForbiddenError('Chỉ quản lý lớp được tạo dự án lớp');
+    let memberIds: string[];
+    if (data.memberIds?.length) {
+      memberIds = Array.from(new Set(data.memberIds));
+      const valid = await prisma.classMember.count({ where: { classId, userId: { in: memberIds } } });
+      if (valid !== memberIds.length) throw new ValidationError('Thành viên dự án phải là sinh viên trong lớp');
+    } else {
+      const roster = await prisma.classMember.findMany({ where: { classId }, select: { userId: true } });
+      memberIds = roster.map((m) => m.userId);
     }
-    const members = await prisma.studyGroupMember.findMany({ where: { groupId }, select: { userId: true } });
     return prisma.project.create({
       data: {
-        userId: access.group.leaderId,
+        userId,
         classId,
-        groupId,
         name: data.name,
         description: data.description,
         dueDate: data.dueDate ? new Date(data.dueDate) : null,
-        members: { create: members.map((m) => ({ userId: m.userId, role: (m.userId === access.group.leaderId ? 'OWNER' : 'MEMBER') as ProjectMemberRole, status: 'ACCEPTED' as const })) }
+        members: { create: memberIds.map((id) => ({ userId: id, role: 'MEMBER' as ProjectMemberRole, status: 'ACCEPTED' as const })) }
       }
     });
   }
 
   async updateProject(classId: string, projectId: string, userId: string, data: { name?: string; description?: string | null; dueDate?: string | null; status?: 'PLANNED' | 'ACTIVE' | 'ON_HOLD' | 'COMPLETED' | 'ARCHIVED' }) {
     const access = await this.projectAccess(classId, projectId, userId);
-    if (!classroomPermissions({ isTeacher: access.isTeacher, classRole: access.memberRole, isLeader: access.isLeader }).manageProject) {
-      throw new ForbiddenError('Chỉ quản lý lớp hoặc trưởng nhóm được sửa dự án');
+    if (!classroomPermissions({ isTeacher: access.isTeacher, classRole: access.memberRole }).manageProject) {
+      throw new ForbiddenError('Chỉ quản lý lớp được sửa dự án');
     }
     return prisma.project.update({ where: { id: projectId }, data: { ...data, dueDate: data.dueDate === undefined ? undefined : data.dueDate ? new Date(data.dueDate) : null } });
   }
@@ -460,7 +445,7 @@ export class ClassesService {
 
   async submitReport(classId: string, projectId: string, userId: string, data: { progressPercent: number; summary: string; blockers?: string }) {
     const access = await this.projectAccess(classId, projectId, userId);
-    if (!classroomPermissions({ isTeacher: access.isTeacher, classRole: access.memberRole, isGroupMember: access.isGroupMember }).submitReport) {
+    if (!classroomPermissions({ isTeacher: access.isTeacher, classRole: access.memberRole, isGroupMember: access.isProjectMember }).submitReport) {
       throw new ForbiddenError('Chỉ thành viên nhóm được báo cáo tiến độ');
     }
     return prisma.progressReport.create({ data: { projectId, submittedById: userId, ...data } });

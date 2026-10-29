@@ -53,7 +53,7 @@ export const WorkspaceArchivedBanner: React.FC<ArchivedBannerProps> = ({ isOwner
           onClick={onReopen}
           className="btn btn-secondary btn-sm"
           style={{
-            fontSize: '11.5px',
+            fontSize: 'var(--type-caption)',
             padding: '3px 10px',
             background: 'var(--bg-card)',
             borderColor: '#d97706',
@@ -93,7 +93,7 @@ export const WorkspaceEmptyState: React.FC<EmptyStateProps> = ({
       <div className="ws-state-icon empty">
         <Inbox size={28} />
       </div>
-      <h3 className="ws-state-title" style={{ fontSize: '16px' }}>{displayTitle}</h3>
+      <h3 className="ws-state-title" style={{ fontSize: 'var(--type-body)' }}>{displayTitle}</h3>
       <p className="ws-state-desc">{displayDesc}</p>
       {actionLabel && onAction && (
         <button
@@ -125,7 +125,7 @@ export const WorkspaceLoadingState: React.FC = () => {
           marginBottom: '14px'
         }}
       />
-      <div style={{ fontSize: '13px', color: 'var(--text-muted, #64748b)', fontWeight: 500 }}>
+      <div style={{ fontSize: 'var(--type-small)', color: 'var(--text-muted, #64748b)', fontWeight: 500 }}>
         {t('common.loading')}
       </div>
     </div>

@@ -9,7 +9,7 @@ import { EventModal } from '../components/EventModal';
 import { TaskModal } from '../../tasks/components/TaskModal';
 import { GanttTimelineView, GanttItem } from '../components/GanttTimelineView';
 import { TasksHourlyView } from '../../tasks/components/TasksHourlyView';
-import { Plus, Sparkles, BookOpen, Clock, Calendar, TrendingUp } from 'lucide-react';
+import { Plus, Sparkles, Clock, Calendar, TrendingUp } from 'lucide-react';
 
 export const ScheduleWeekPage: React.FC = () => {
   const { currentWorkspace } = useOutletContext<{ currentWorkspace: WorkspaceSummary }>();
@@ -44,11 +44,11 @@ export const ScheduleWeekPage: React.FC = () => {
       const res = await api.get<ApiResponse<any[]>>(`/schedule?${params.toString()}`);
       setEvents(res.data || []);
     } catch {
-      showToast(language === 'vi' ? 'Không thể tải dữ liệu lịch trình học tập' : 'Failed to fetch schedule data', 'error');
+      showToast(t('schedule.fetch_error'), 'error');
     } finally {
       setLoading(false);
     }
-  }, [currentGanttDate, currentWorkspace.id, selectedSubjectId, selectedSemesterId, showToast, language]);
+  }, [currentGanttDate, currentWorkspace.id, selectedSubjectId, selectedSemesterId, showToast, t]);
 
   useEffect(() => {
     fetchEvents();
@@ -105,7 +105,7 @@ export const ScheduleWeekPage: React.FC = () => {
               style={{
                 padding: '4px 12px',
                 borderRadius: '6px',
-                fontSize: '11.5px',
+                fontSize: 'var(--type-caption)',
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '5px',
@@ -114,7 +114,7 @@ export const ScheduleWeekPage: React.FC = () => {
               }}
             >
               <Clock size={14} />
-              <span>{language === 'vi' ? 'Khung giờ hàng ngày' : 'Daily Hourly'}</span>
+              <span>{t('schedule.daily_hourly')}</span>
             </button>
 
             <button
@@ -123,7 +123,7 @@ export const ScheduleWeekPage: React.FC = () => {
               style={{
                 padding: '4px 12px',
                 borderRadius: '6px',
-                fontSize: '11.5px',
+                fontSize: 'var(--type-caption)',
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '5px',
@@ -132,12 +132,12 @@ export const ScheduleWeekPage: React.FC = () => {
               }}
             >
               <Calendar size={14} />
-              <span>{language === 'vi' ? 'Sơ đồ tháng (Gantt)' : 'Monthly Gantt'}</span>
+              <span>{t('schedule.monthly_gantt')}</span>
             </button>
           </div>
 
-          <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 500 }}>
-            {events.length} {language === 'vi' ? 'mốc sự kiện & lịch trình' : 'schedule milestones'}
+          <span style={{ fontSize: 'var(--type-small)', color: 'var(--text-muted)', fontWeight: 500 }}>
+            {t('schedule.milestones_count', { count: events.length })}
           </span>
         </div>
 

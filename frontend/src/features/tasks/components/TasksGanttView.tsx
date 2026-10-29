@@ -118,7 +118,7 @@ export const TasksGanttView: React.FC<TasksGanttViewProps> = ({
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: 'var(--type-small)', fontWeight: 700, color: 'var(--text-primary)' }}>
             <TrendingUp size={16} style={{ color: 'var(--accent)' }} />
             <span>{t('gantt.title')}</span>
           </div>
@@ -129,7 +129,7 @@ export const TasksGanttView: React.FC<TasksGanttViewProps> = ({
               display: 'flex',
               alignItems: 'center',
               gap: '12px',
-              fontSize: '11px',
+              fontSize: 'var(--type-caption)',
               color: 'var(--text-secondary)',
               borderLeft: '1px solid var(--border-color)',
               paddingLeft: '12px'
@@ -156,7 +156,7 @@ export const TasksGanttView: React.FC<TasksGanttViewProps> = ({
             type="button"
             onClick={() => setGanttWeekOffset((prev) => prev - 1)}
             className="btn btn-sm btn-secondary"
-            style={{ fontSize: '11.5px', padding: '4px 10px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+            style={{ fontSize: 'var(--type-caption)', padding: '4px 10px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
             title={t('gantt.prev_week')}
           >
             <ChevronLeft size={14} />
@@ -166,7 +166,7 @@ export const TasksGanttView: React.FC<TasksGanttViewProps> = ({
             type="button"
             onClick={() => setGanttWeekOffset(0)}
             className="btn btn-sm btn-ghost"
-            style={{ fontSize: '11.5px', padding: '4px 12px', fontWeight: 700, color: 'var(--accent)' }}
+            style={{ fontSize: 'var(--type-caption)', padding: '4px 12px', fontWeight: 700, color: 'var(--accent)' }}
             title={t('gantt.today')}
           >
             {t('gantt.today')}
@@ -175,7 +175,7 @@ export const TasksGanttView: React.FC<TasksGanttViewProps> = ({
             type="button"
             onClick={() => setGanttWeekOffset((prev) => prev + 1)}
             className="btn btn-sm btn-secondary"
-            style={{ fontSize: '11.5px', padding: '4px 10px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+            style={{ fontSize: 'var(--type-caption)', padding: '4px 10px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
             title={t('gantt.next_week')}
           >
             <span>{t('gantt.next_week')}</span>
@@ -189,9 +189,9 @@ export const TasksGanttView: React.FC<TasksGanttViewProps> = ({
         <table className="gantt-schedule-table">
           <thead>
             {/* Row 1: Left Columns + Week Headers */}
-            <tr className="gantt-sticky-header" style={{ backgroundColor: 'var(--bg-secondary)', borderBottom: '1px solid var(--border-color)' }}>
-              <th rowSpan={4} style={{ width: '45px', minWidth: '45px', padding: '4px', textAlign: 'center', fontWeight: 700 }}>{t('gantt.wbs')}</th>
-              <th rowSpan={4} style={{ width: '220px', minWidth: '220px', padding: '4px 10px', textAlign: 'left', fontWeight: 700 }}>{t('gantt.task_name')}</th>
+            <tr className="gantt-header-row-1" style={{ backgroundColor: 'var(--bg-secondary)', borderBottom: '1px solid var(--border-color)' }}>
+              <th rowSpan={4} className="gantt-col-sticky-wbs" style={{ width: '45px', minWidth: '45px', padding: '4px', textAlign: 'center', fontWeight: 700 }}>{t('gantt.wbs')}</th>
+              <th rowSpan={4} className="gantt-col-sticky-name" style={{ width: '220px', minWidth: '220px', padding: '4px 10px', textAlign: 'left', fontWeight: 700 }}>{t('gantt.task_name')}</th>
               <th rowSpan={4} style={{ width: '90px', minWidth: '90px', padding: '4px', textAlign: 'center', fontWeight: 700 }}>{t('gantt.priority')}</th>
               <th rowSpan={4} style={{ width: '110px', minWidth: '110px', padding: '4px 8px', textAlign: 'left', fontWeight: 700 }}>{t('gantt.assignee')}</th>
               <th rowSpan={4} style={{ width: '80px', minWidth: '80px', padding: '4px', textAlign: 'center', fontWeight: 700 }}>{t('gantt.start')}</th>
@@ -216,7 +216,7 @@ export const TasksGanttView: React.FC<TasksGanttViewProps> = ({
             </tr>
 
             {/* Row 2: Week Start Date */}
-            <tr className="gantt-sticky-header" style={{ backgroundColor: 'var(--bg-surface)', fontSize: '10px' }}>
+            <tr className="gantt-header-row-2" style={{ backgroundColor: 'var(--bg-surface)', fontSize: 'var(--type-caption)' }}>
               {weeks.map((w) => (
                 <th
                   key={w.number}
@@ -235,7 +235,7 @@ export const TasksGanttView: React.FC<TasksGanttViewProps> = ({
             </tr>
 
             {/* Row 3: Day Numbers */}
-            <tr className="gantt-sticky-header" style={{ backgroundColor: 'var(--bg-surface)', fontSize: '11px', fontWeight: 600 }}>
+            <tr className="gantt-header-row-3" style={{ backgroundColor: 'var(--bg-surface)', fontSize: 'var(--type-caption)', fontWeight: 600 }}>
               {days.map((d, idx) => {
                 const isToday = toLocalDateString(d) === todayStr;
                 return (
@@ -255,7 +255,7 @@ export const TasksGanttView: React.FC<TasksGanttViewProps> = ({
             </tr>
 
             {/* Row 4: Day Names (CN, T2..T7) */}
-            <tr className="gantt-sticky-header" style={{ backgroundColor: 'var(--bg-secondary)', fontSize: '9px', fontWeight: 500 }}>
+            <tr className="gantt-header-row-4" style={{ backgroundColor: 'var(--bg-secondary)', fontSize: 'var(--type-caption)', fontWeight: 500 }}>
               {days.map((d, idx) => {
                 const dayIdx = d.getDay();
                 const isWeekend = dayIdx === 0 || dayIdx === 6;
@@ -278,7 +278,7 @@ export const TasksGanttView: React.FC<TasksGanttViewProps> = ({
           <tbody>
             {tasks.length === 0 ? (
               <tr>
-                <td colSpan={8 + totalDays} style={{ padding: '36px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '12px' }}>
+                <td colSpan={8 + totalDays} style={{ padding: '36px', textAlign: 'center', color: 'var(--text-muted)', fontSize: 'var(--type-small)' }}>
                   {t('tasks.no_tasks')}
                 </td>
               </tr>
@@ -357,13 +357,15 @@ export const TasksGanttView: React.FC<TasksGanttViewProps> = ({
                   >
                     <td
                       onClick={() => onSelectTask(task)}
-                      style={{ textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}
+                      className="gantt-col-sticky-wbs"
+                      style={{ textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 'var(--type-caption)', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}
                     >
                       {wbs}
                     </td>
 
                     <td
                       onClick={() => onSelectTask(task)}
+                      className="gantt-col-sticky-name"
                       style={{ padding: '6px 10px', fontWeight: 600, color: 'var(--text-primary)', cursor: 'pointer', maxWidth: '220px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
                       title={task.title}
                     >
@@ -374,7 +376,7 @@ export const TasksGanttView: React.FC<TasksGanttViewProps> = ({
                       <span
                         className="badge"
                         style={{
-                          fontSize: '10px',
+                          fontSize: 'var(--type-caption)',
                           padding: '2px 6px',
                           backgroundColor: task.priority === 'URGENT' ? 'rgba(239, 68, 68, 0.15)' : 'var(--bg-secondary)',
                           color: task.priority === 'URGENT' ? '#ef4444' : 'var(--text-secondary)'
@@ -384,7 +386,7 @@ export const TasksGanttView: React.FC<TasksGanttViewProps> = ({
                       </span>
                     </td>
 
-                    <td style={{ padding: '4px 8px', fontSize: '11px', color: 'var(--text-secondary)', maxWidth: '110px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    <td style={{ padding: '4px 8px', fontSize: 'var(--type-caption)', color: 'var(--text-secondary)', maxWidth: '110px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       {lead}
                     </td>
 

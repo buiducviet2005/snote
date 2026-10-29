@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
-import { api } from '../../../services/api';
+import { api, ApiResponse } from '../../../services/api';
 import { useToast } from '../../../contexts/ToastContext';
+import { useLanguage } from '../../../contexts/LanguageContext';
 import { TaskPriority } from '@snote/shared';
-import { Plus, Calendar, BookOpen, Flame, Zap, Check } from 'lucide-react';
+import { Plus, Calendar, Flame } from 'lucide-react';
 
 interface QuickTaskBarProps {
   subjects: any[];
   defaultSubjectId?: string;
   defaultProjectId?: string;
   defaultWorkspaceId?: string;
-  onTaskCreated: () => void;
+  onTaskCreated?: () => void;
+  onTaskAdded?: (task: any) => void;
 }
 
 export const QuickTaskBar: React.FC<QuickTaskBarProps> = ({
@@ -17,7 +19,8 @@ export const QuickTaskBar: React.FC<QuickTaskBarProps> = ({
   defaultSubjectId,
   defaultProjectId,
   defaultWorkspaceId,
-  onTaskCreated
+  onTaskCreated,
+  onTaskAdded
 }) => {
   const [title, setTitle] = useState('');
   const [subjectId, setSubjectId] = useState(defaultSubjectId || '');
@@ -25,14 +28,15 @@ export const QuickTaskBar: React.FC<QuickTaskBarProps> = ({
   const [dueDate, setDueDate] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const { showToast } = useToast();
+  const { t, language } = useLanguage();
 
   const handleQuickSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim()) return;
+    if (!title.trim() || loading) return;
 
     setLoading(true);
     try {
-      await api.post('/tasks', {
+      const res = await api.post<ApiResponse<any>>('/tasks', {
         title: title.trim(),
         subjectId: subjectId || undefined,
         projectId: defaultProjectId || undefined,
@@ -44,10 +48,13 @@ export const QuickTaskBar: React.FC<QuickTaskBarProps> = ({
 
       setTitle('');
       setDueDate('');
-      showToast('✨ Đã tạo công việc mới thành công!', 'success');
-      onTaskCreated();
+      if (onTaskAdded && res?.data) {
+        onTaskAdded(res.data);
+      } else if (onTaskCreated) {
+        onTaskCreated();
+      }
     } catch (err: any) {
-      showToast(err.message || 'Lỗi khi tạo công việc nhanh', 'error');
+      showToast(err.message || (language === 'vi' ? 'Lỗi khi tạo công việc nhanh' : 'Error creating quick task'), 'error');
     } finally {
       setLoading(false);
     }
@@ -69,38 +76,20 @@ export const QuickTaskBar: React.FC<QuickTaskBarProps> = ({
   return (
     <form
       onSubmit={handleQuickSubmit}
-      className="snote-card"
       style={{
-        padding: '12px 16px',
-        backgroundColor: 'var(--bg-secondary)',
-        borderRadius: 'var(--radius-xl)',
+        padding: '10px 14px',
+        backgroundColor: 'var(--bg-surface)',
+        borderRadius: 'var(--radius-lg)',
         border: '1px solid var(--border-color)',
         display: 'flex',
         flexDirection: 'column',
-        gap: '10px',
-        boxShadow: '0 2px 10px rgba(0, 0, 0, 0.1)'
+        gap: '8px'
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-        <span
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: '28px',
-            height: '28px',
-            borderRadius: '6px',
-            backgroundColor: 'rgba(56, 189, 248, 0.15)',
-            color: 'var(--accent-primary)',
-            flexShrink: 0
-          }}
-        >
-          <Zap size={16} />
-        </span>
-
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
         <input
           type="text"
-          placeholder="Thêm nhanh công việc mới... (Nhập tiêu đề và nhấn Enter)"
+          placeholder={t('tasks.quick_task_placeholder')}
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           disabled={loading}
@@ -108,7 +97,7 @@ export const QuickTaskBar: React.FC<QuickTaskBarProps> = ({
           style={{
             flex: 1,
             backgroundColor: 'var(--bg-primary)',
-            fontSize: '13.5px',
+            fontSize: 'var(--type-small)',
             fontWeight: 500,
             border: '1px solid var(--border-subtle)',
             borderRadius: 'var(--radius-md)'
@@ -121,29 +110,28 @@ export const QuickTaskBar: React.FC<QuickTaskBarProps> = ({
           className="btn btn-primary btn-sm"
           style={{
             fontWeight: 700,
-            gap: '5px',
-            padding: '7px 16px',
+            gap: '4px',
+            padding: '6px 14px',
             borderRadius: 'var(--radius-md)',
             flexShrink: 0
           }}
         >
-          <Plus size={15} />
-          <span>Thêm</span>
+          <Plus size={14} />
+          <span>{t('tasks.add_btn')}</span>
         </button>
       </div>
 
       {/* Quick Attributes Row */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px', fontSize: '12px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px', fontSize: 'var(--type-small)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
           {/* Subject selector */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <BookOpen size={13} style={{ color: 'var(--text-muted)' }} />
             <select
               value={subjectId}
               onChange={(e) => setSubjectId(e.target.value)}
               className="snote-select"
               style={{
-                fontSize: '11.5px',
+                fontSize: 'var(--type-caption)',
                 padding: '3px 8px',
                 height: '28px',
                 backgroundColor: 'var(--bg-primary)',
@@ -151,10 +139,10 @@ export const QuickTaskBar: React.FC<QuickTaskBarProps> = ({
                 border: '1px solid var(--border-subtle)'
               }}
             >
-              <option value="">Chung (Không chọn môn)</option>
+              <option value="">{language === 'vi' ? 'Chung (Không chọn môn)' : 'General (No subject)'}</option>
               {subjects.map((s) => (
                 <option key={s.id} value={s.id}>
-                  [{s.code || 'MÔN'}] {s.name}
+                  [{s.code || (language === 'vi' ? 'MÔN' : 'SUBJ')}] {s.name}
                 </option>
               ))}
             </select>
@@ -168,7 +156,7 @@ export const QuickTaskBar: React.FC<QuickTaskBarProps> = ({
               onChange={(e) => setPriority(e.target.value as TaskPriority)}
               className="snote-select"
               style={{
-                fontSize: '11.5px',
+                fontSize: 'var(--type-caption)',
                 padding: '3px 8px',
                 height: '28px',
                 backgroundColor: 'var(--bg-primary)',
@@ -176,10 +164,10 @@ export const QuickTaskBar: React.FC<QuickTaskBarProps> = ({
                 border: '1px solid var(--border-subtle)'
               }}
             >
-              <option value={TaskPriority.URGENT}>🔴 Khẩn cấp</option>
-              <option value={TaskPriority.HIGH}>🟠 Cao</option>
-              <option value={TaskPriority.MEDIUM}>🟡 Trung bình</option>
-              <option value={TaskPriority.LOW}>🟢 Thấp</option>
+              <option value={TaskPriority.URGENT}>{t('tasks.priority_urgent')}</option>
+              <option value={TaskPriority.HIGH}>{t('tasks.priority_high')}</option>
+              <option value={TaskPriority.MEDIUM}>{t('tasks.priority_medium')}</option>
+              <option value={TaskPriority.LOW}>{t('tasks.priority_low')}</option>
             </select>
           </div>
 
@@ -192,7 +180,7 @@ export const QuickTaskBar: React.FC<QuickTaskBarProps> = ({
               onChange={(e) => setDueDate(e.target.value)}
               className="snote-input"
               style={{
-                fontSize: '11.5px',
+                fontSize: 'var(--type-caption)',
                 padding: '2px 8px',
                 height: '28px',
                 backgroundColor: 'var(--bg-primary)',
@@ -205,30 +193,30 @@ export const QuickTaskBar: React.FC<QuickTaskBarProps> = ({
 
         {/* Quick Date Presets */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-          <span style={{ color: 'var(--text-muted)', fontSize: '11px', marginRight: '2px' }}>Nhanh:</span>
+          <span style={{ color: 'var(--text-muted)', fontSize: 'var(--type-caption)', marginRight: '2px' }}>{language === 'vi' ? 'Nhanh:' : 'Quick:'}</span>
           <button
             type="button"
             onClick={() => setQuickDueDate('TODAY')}
             className="btn btn-ghost btn-sm"
-            style={{ fontSize: '11px', padding: '2px 7px', height: '24px', borderRadius: '4px' }}
+            style={{ fontSize: 'var(--type-caption)', padding: '2px 7px', height: '24px', borderRadius: '4px' }}
           >
-            Hôm nay
+            {language === 'vi' ? 'Hôm nay' : 'Today'}
           </button>
           <button
             type="button"
             onClick={() => setQuickDueDate('TOMORROW')}
             className="btn btn-ghost btn-sm"
-            style={{ fontSize: '11px', padding: '2px 7px', height: '24px', borderRadius: '4px' }}
+            style={{ fontSize: 'var(--type-caption)', padding: '2px 7px', height: '24px', borderRadius: '4px' }}
           >
-            Ngày mai
+            {language === 'vi' ? 'Ngày mai' : 'Tomorrow'}
           </button>
           <button
             type="button"
             onClick={() => setQuickDueDate('NEXT_WEEK')}
             className="btn btn-ghost btn-sm"
-            style={{ fontSize: '11px', padding: '2px 7px', height: '24px', borderRadius: '4px' }}
+            style={{ fontSize: 'var(--type-caption)', padding: '2px 7px', height: '24px', borderRadius: '4px' }}
           >
-            Tuần sau
+            {language === 'vi' ? 'Tuần sau' : 'Next week'}
           </button>
         </div>
       </div>

@@ -208,7 +208,7 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
                 <div className="ws-tooltip-user-name">{currentUser?.fullName || 'SNOTE User'}</div>
                 <div className="ws-tooltip-user-email">{currentUser?.email || ''}</div>
                 {isAdmin && (
-                  <span style={{ fontSize: '9.5px', color: 'var(--ws-accent-blue)', marginTop: '2px', fontWeight: 600 }}>
+                  <span style={{ fontSize: 'var(--type-caption)', color: 'var(--ws-accent-blue)', marginTop: '2px', fontWeight: 600 }}>
                     {t('nav.admin_role')}
                   </span>
                 )}
