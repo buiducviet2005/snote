@@ -6,7 +6,6 @@ import { executeWaterDropThemeTransition } from '../utils/themeTransition';
 import { WorkspaceSidebar } from './WorkspaceSidebar';
 import { WorkspaceSwitcher } from './WorkspaceSwitcher';
 import { WorkspaceCommandPalette } from './WorkspaceCommandPalette';
-import { WorkspaceTimer } from './WorkspaceTimer';
 import { WorkspaceQuickCapture } from './WorkspaceQuickCapture';
 import { WorkspaceArchivedBanner } from './WorkspaceStates';
 import { useAuth } from '../../contexts/AuthContext';
@@ -118,7 +117,6 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isQuickCaptureOpen, setIsQuickCaptureOpen] = useState(false);
-  const [isZenMode, setIsZenMode] = useState(false);
   const [isActionMenuOpen, setIsActionMenuOpen] = useState(false);
   const [isTopbarWorkspaceOpen, setIsTopbarWorkspaceOpen] = useState(false);
   const [invitationsCount, setInvitationsCount] = useState(0);
@@ -225,9 +223,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
         setIsCommandPaletteOpen((prev) => !prev);
-      } else if (!isInput && e.key.toLowerCase() === 'z') {
-        e.preventDefault();
-        setIsZenMode((prev) => !prev);
+
       } else if (!isInput && e.key.toLowerCase() === 'q') {
         e.preventDefault();
         setIsQuickCaptureOpen((prev) => !prev);
@@ -271,7 +267,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
   };
 
   return (
-    <div className={`ws-shell theme-${theme} ${isZenMode ? 'zen-mode' : ''}`}>
+    <div className={`ws-shell theme-${theme} `}>
       {/* 1. Icon-Only Rail Navigation with Rounded Floating Tooltips */}
       <WorkspaceSidebar
         currentWorkspace={currentWorkspace}
@@ -287,8 +283,6 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
         isMobileOpen={isMobileSidebarOpen}
         onCloseMobile={() => setIsMobileSidebarOpen(false)}
         onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
-        onToggleZenMode={() => setIsZenMode(!isZenMode)}
-        isZenMode={isZenMode}
         theme={theme}
         onToggleTheme={toggleTheme}
       />
@@ -308,17 +302,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
               <Menu size={18} />
             </button>
 
-            {isZenMode && (
-              <button
-                type="button"
-                className="ws-zen-exit-btn"
-                onClick={() => setIsZenMode(false)}
-                title="Hiện lại thanh bên (Z)"
-              >
-                <Minimize2 size={13} />
-                <span>Thoát Zen Mode</span>
-              </button>
-            )}
+            
 
             {/* Prominent Workspace Selector with Word 'WORKSPACE' and Dropdown Arrow */}
             <div className="ws-topbar-selector-wrap" ref={topbarDropdownRef}>
@@ -384,7 +368,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
               <kbd>Ctrl K</kbd>
             </button>
 
-            <WorkspaceTimer />
+            
 
             {/* Language Toggle (VI / EN) */}
             <button
@@ -488,9 +472,6 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
         }}
         onOpenCreateNote={handleCreateNote}
         onOpenCreateTask={handleCreateTask}
-        isZenMode={isZenMode}
-        onToggleZenMode={() => setIsZenMode(!isZenMode)}
-        onToggleTimer={() => { window.dispatchEvent(new CustomEvent('snote_toggle_timer')); }}
       />
 
       {/* Global Quick Capture Scratchpad (Q) */}

@@ -287,7 +287,14 @@ export class WorkspaceRepository implements WorkspaceRepositoryPort {
           subjectId: input.subjectId ?? null,
           status: input.status ?? 'ACTIVE',
           startDate: input.startDate ? new Date(`${input.startDate}T00:00:00.000Z`) : null,
-          dueDate: input.dueDate ? new Date(`${input.dueDate}T00:00:00.000Z`) : null
+          dueDate: input.dueDate ? new Date(`${input.dueDate}T00:00:00.000Z`) : null,
+          members: {
+            create: {
+              userId,
+              role: 'OWNER',
+              status: 'ACCEPTED'
+            }
+          }
         }
       });
 
@@ -386,7 +393,8 @@ export class WorkspaceRepository implements WorkspaceRepositoryPort {
 
   async acceptInvitation(memberId: string, userId: string): Promise<string> {
     const membership = await prisma.workspaceMember.findFirst({
-      where: { id: memberId, userId, status: 'PENDING' }
+      where: { id: memberId, userId, status: 'PENDING' },
+      include: { workspace: true }
     });
     if (!membership) {
       throw new NotFoundError('Không tìm thấy lời mời tham gia hoặc lời mời đã được xử lý');
@@ -398,6 +406,26 @@ export class WorkspaceRepository implements WorkspaceRepositoryPort {
         joinedAt: new Date()
       }
     });
+    if (membership.workspace.projectId) {
+      await prisma.projectMember.upsert({
+        where: {
+          projectId_userId: {
+            projectId: membership.workspace.projectId,
+            userId
+          }
+        },
+        create: {
+          projectId: membership.workspace.projectId,
+          userId,
+          role: membership.role === 'MANAGER' ? 'ADMIN' : 'MEMBER',
+          status: 'ACCEPTED'
+        },
+        update: {
+          role: membership.role === 'MANAGER' ? 'ADMIN' : 'MEMBER',
+          status: 'ACCEPTED'
+        }
+      });
+    }
     return membership.workspaceId;
   }
 
@@ -423,10 +451,21 @@ export class WorkspaceRepository implements WorkspaceRepositoryPort {
   ): Promise<WorkspaceMemberRecord> {
     const member = await prisma.workspaceMember.findFirst({
       where: { id: memberId, workspaceId },
-      select: memberSelect
+      include: { workspace: true }
     });
     if (!member) {
       throw new NotFoundError('Không tìm thấy thành viên trong Không gian làm việc');
+    }
+    if (member.workspace?.projectId) {
+      await prisma.projectMember.updateMany({
+        where: {
+          projectId: member.workspace.projectId,
+          userId: member.userId
+        },
+        data: {
+          role: newRole === 'MANAGER' ? 'ADMIN' : (newRole === 'OWNER' ? 'OWNER' : 'MEMBER')
+        }
+      });
     }
     return prisma.workspaceMember.update({
       where: { id: memberId },
@@ -440,7 +479,8 @@ export class WorkspaceRepository implements WorkspaceRepositoryPort {
     memberId: string
   ): Promise<void> {
     const member = await prisma.workspaceMember.findFirst({
-      where: { id: memberId, workspaceId }
+      where: { id: memberId, workspaceId },
+      include: { workspace: true }
     });
     if (!member) {
       throw new NotFoundError('Không tìm thấy thành viên trong Không gian làm việc');
@@ -452,6 +492,14 @@ export class WorkspaceRepository implements WorkspaceRepositoryPort {
       where: { id: memberId },
       data: { status: 'REMOVED' }
     });
+    if (member.workspace?.projectId) {
+      await prisma.projectMember.deleteMany({
+        where: {
+          projectId: member.workspace.projectId,
+          userId: member.userId
+        }
+      });
+    }
   }
 
   async getWorkspaceProgress(workspaceId: string) {
@@ -557,6 +605,25 @@ export class WorkspaceRepository implements WorkspaceRepositoryPort {
 
     if (existing) {
       if (existing.status === 'ACCEPTED') {
+        if (workspace.projectId) {
+          await prisma.projectMember.upsert({
+            where: {
+              projectId_userId: {
+                projectId: workspace.projectId,
+                userId
+              }
+            },
+            create: {
+              projectId: workspace.projectId,
+              userId,
+              role: 'MEMBER',
+              status: 'ACCEPTED'
+            },
+            update: {
+              status: 'ACCEPTED'
+            }
+          });
+        }
         return workspace.id;
       }
       await prisma.workspaceMember.update({
@@ -566,6 +633,25 @@ export class WorkspaceRepository implements WorkspaceRepositoryPort {
           joinedAt: new Date()
         }
       });
+      if (workspace.projectId) {
+        await prisma.projectMember.upsert({
+          where: {
+            projectId_userId: {
+              projectId: workspace.projectId,
+              userId
+            }
+          },
+          create: {
+            projectId: workspace.projectId,
+            userId,
+            role: 'MEMBER',
+            status: 'ACCEPTED'
+          },
+          update: {
+            status: 'ACCEPTED'
+          }
+        });
+      }
       return workspace.id;
     }
 
@@ -578,6 +664,25 @@ export class WorkspaceRepository implements WorkspaceRepositoryPort {
         joinedAt: new Date()
       }
     });
+    if (workspace.projectId) {
+      await prisma.projectMember.upsert({
+        where: {
+          projectId_userId: {
+            projectId: workspace.projectId,
+            userId
+          }
+        },
+        create: {
+          projectId: workspace.projectId,
+          userId,
+          role: 'MEMBER',
+          status: 'ACCEPTED'
+        },
+        update: {
+          status: 'ACCEPTED'
+        }
+      });
+    }
     return workspace.id;
   }
 }

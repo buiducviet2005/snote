@@ -34,9 +34,6 @@ interface WorkspaceCommandPaletteProps {
   onSelectNav: (navId: string) => void;
   onOpenCreateNote?: () => void;
   onOpenCreateTask?: () => void;
-  isZenMode: boolean;
-  onToggleZenMode: () => void;
-  onToggleTimer: () => void;
 }
 
 export const WorkspaceCommandPalette: React.FC<WorkspaceCommandPaletteProps> = ({
@@ -48,9 +45,6 @@ export const WorkspaceCommandPalette: React.FC<WorkspaceCommandPaletteProps> = (
   onSelectNav,
   onOpenCreateNote,
   onOpenCreateTask,
-  isZenMode,
-  onToggleZenMode,
-  onToggleTimer
 }) => {
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -94,30 +88,8 @@ export const WorkspaceCommandPalette: React.FC<WorkspaceCommandPaletteProps> = (
           if (onOpenCreateTask) onOpenCreateTask();
         }
       },
-      {
-        id: 'action-zen',
-        category: 'ACTIONS',
-        title: isZenMode ? 'Tắt chế độ Zen (Hiện thanh bên)' : 'Bật chế độ Zen (Tập trung toàn màn hình)',
-        subtitle: 'Ẩn hoàn toàn phân tâm, tối đa hóa không gian học tập',
-        icon: isZenMode ? <Minimize2 size={16} /> : <Maximize2 size={16} />,
-        shortcut: 'Z',
-        action: () => {
-          onClose();
-          onToggleZenMode();
-        }
-      },
-      {
-        id: 'action-timer',
-        category: 'ACTIONS',
-        title: 'Bật / Dừng đồng hồ tập trung Pomodoro',
-        subtitle: 'Chu kỳ 25 phút học tập sâu sắc (Deep Study)',
-        icon: <Clock size={16} />,
-        shortcut: 'P',
-        action: () => {
-          onClose();
-          onToggleTimer();
-        }
-      },
+      
+      
 
       // 2. Navigation within workspace
       {
@@ -211,12 +183,9 @@ export const WorkspaceCommandPalette: React.FC<WorkspaceCommandPaletteProps> = (
   }, [
     currentWorkspace,
     workspaces,
-    isZenMode,
     onClose,
     onOpenCreateNote,
     onOpenCreateTask,
-    onToggleZenMode,
-    onToggleTimer,
     onSelectNav,
     onSelectWorkspace
   ]);

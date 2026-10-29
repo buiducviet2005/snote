@@ -2,6 +2,55 @@ import { prisma } from '../../shared/db/prismaClient';
 import { CreateTaskDto, UpdateTaskDto, TaskFilter } from './tasks.types';
 import { visibleTasks } from '../../shared/security/studyAccess';
 
+const projectInclude = {
+  select: {
+    id: true,
+    name: true,
+    userId: true,
+    members: {
+      include: {
+        user: {
+          select: { id: true, fullName: true, email: true, avatarUrl: true }
+        }
+      }
+    },
+    workspace: {
+      select: {
+        id: true,
+        name: true,
+        ownerId: true,
+        members: {
+          include: {
+            user: {
+              select: { id: true, fullName: true, email: true, avatarUrl: true }
+            }
+          }
+        }
+      }
+    }
+  }
+};
+
+const taskIncludes = {
+  user: {
+    select: { id: true, fullName: true, email: true, avatarUrl: true }
+  },
+  assignees: {
+    include: {
+      user: {
+        select: { id: true, fullName: true, email: true, avatarUrl: true }
+      }
+    }
+  },
+  subject: {
+    select: { id: true, name: true, code: true, color: true }
+  },
+  project: projectInclude,
+  taskTags: {
+    include: { tag: true }
+  }
+};
+
 export class TasksRepository {
   async findMany(userId: string, filter?: TaskFilter): Promise<{ tasks: any[]; total: number }> {
     const page = filter?.page || 1;
@@ -42,38 +91,7 @@ export class TasksRepository {
         skip,
         take: limit,
         orderBy: [{ dueDate: 'asc' }, { priority: 'desc' }, { createdAt: 'desc' }],
-        include: {
-          user: {
-            select: { id: true, fullName: true, email: true, avatarUrl: true }
-          },
-          assignees: {
-            include: {
-              user: {
-                select: { id: true, fullName: true, email: true, avatarUrl: true }
-              }
-            }
-          },
-          subject: {
-            select: { id: true, name: true, code: true, color: true }
-          },
-          project: {
-            select: {
-              id: true,
-              name: true,
-              userId: true,
-              members: {
-                include: {
-                  user: {
-                    select: { id: true, fullName: true, email: true, avatarUrl: true }
-                  }
-                }
-              }
-            }
-          },
-          taskTags: {
-            include: { tag: true }
-          }
-        }
+        include: taskIncludes
       })
     ]);
 
@@ -87,38 +105,7 @@ export class TasksRepository {
         deletedAt: null,
         ...visibleTasks(userId)
       },
-      include: {
-        user: {
-          select: { id: true, fullName: true, email: true, avatarUrl: true }
-        },
-        assignees: {
-          include: {
-            user: {
-              select: { id: true, fullName: true, email: true, avatarUrl: true }
-            }
-          }
-        },
-        subject: {
-          select: { id: true, name: true, code: true, color: true }
-        },
-        project: {
-          select: {
-            id: true,
-            name: true,
-            userId: true,
-            members: {
-              include: {
-                user: {
-                  select: { id: true, fullName: true, email: true, avatarUrl: true }
-                }
-              }
-            }
-          }
-        },
-        taskTags: {
-          include: { tag: true }
-        }
-      }
+      include: taskIncludes
     });
   }
 
@@ -173,38 +160,7 @@ export class TasksRepository {
           create: uniqueAssignees.map((uid) => ({ userId: uid }))
         }
       },
-      include: {
-        user: {
-          select: { id: true, fullName: true, email: true, avatarUrl: true }
-        },
-        assignees: {
-          include: {
-            user: {
-              select: { id: true, fullName: true, email: true, avatarUrl: true }
-            }
-          }
-        },
-        subject: {
-          select: { id: true, name: true, code: true, color: true }
-        },
-        project: {
-          select: {
-            id: true,
-            name: true,
-            userId: true,
-            members: {
-              include: {
-                user: {
-                  select: { id: true, fullName: true, email: true, avatarUrl: true }
-                }
-              }
-            }
-          }
-        },
-        taskTags: {
-          include: { tag: true }
-        }
-      }
+      include: taskIncludes
     });
   }
 
@@ -258,38 +214,7 @@ export class TasksRepository {
         taskTags: taskTagsUpdate,
         assignees: assigneesUpdate
       },
-      include: {
-        user: {
-          select: { id: true, fullName: true, email: true, avatarUrl: true }
-        },
-        assignees: {
-          include: {
-            user: {
-              select: { id: true, fullName: true, email: true, avatarUrl: true }
-            }
-          }
-        },
-        subject: {
-          select: { id: true, name: true, code: true, color: true }
-        },
-        project: {
-          select: {
-            id: true,
-            name: true,
-            userId: true,
-            members: {
-              include: {
-                user: {
-                  select: { id: true, fullName: true, email: true, avatarUrl: true }
-                }
-              }
-            }
-          }
-        },
-        taskTags: {
-          include: { tag: true }
-        }
-      }
+      include: taskIncludes
     });
   }
 
@@ -300,7 +225,9 @@ export class TasksRepository {
         OR: [
           { userId },
           { project: { userId } },
-          { project: { members: { some: { userId, role: 'OWNER' } } } }
+          { project: { members: { some: { userId, role: 'OWNER' } } } },
+          { project: { workspace: { ownerId: userId } } },
+          { project: { workspace: { members: { some: { userId, role: 'OWNER' } } } } }
         ]
       },
       data: { deletedAt: new Date() }

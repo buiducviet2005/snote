@@ -15,6 +15,24 @@ export class ProjectsService {
   constructor(private readonly repo: ProjectsRepository = new ProjectsRepository()) {}
 
   private mapDto(project: any): ProjectResponseDto {
+    const existingUserIds = new Set((project.members || []).map((m: any) => m.userId));
+    const mergedMembers = [...(project.members || [])];
+    if (project.workspace?.members) {
+      for (const wm of project.workspace.members) {
+        if (!existingUserIds.has(wm.userId)) {
+          existingUserIds.add(wm.userId);
+          mergedMembers.push({
+            id: wm.id,
+            projectId: project.id,
+            userId: wm.userId,
+            role: wm.role === 'OWNER' ? 'OWNER' : (wm.role === 'MANAGER' ? 'ADMIN' : 'MEMBER'),
+            joinedAt: wm.joinedAt,
+            user: wm.user
+          });
+        }
+      }
+    }
+
     return {
       id: project.id,
       userId: project.userId,
@@ -29,8 +47,8 @@ export class ProjectsService {
       dueDate: project.dueDate,
       notesCount: project._count?.notes ?? 0,
       tasksCount: project._count?.tasks ?? 0,
-      membersCount: project._count?.members ?? (project.members?.length ?? 0),
-      members: project.members?.map((m: any): ProjectMemberDto => ({
+      membersCount: mergedMembers.length,
+      members: mergedMembers.map((m: any): ProjectMemberDto => ({
         id: m.id,
         projectId: m.projectId,
         userId: m.userId,

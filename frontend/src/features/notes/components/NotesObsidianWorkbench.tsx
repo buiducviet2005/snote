@@ -12,6 +12,9 @@ import {
 import { handleSmartListKeyDown } from '../utils/smartKeyboard';
 import { useToast } from '../../../contexts/ToastContext';
 import {
+  Link2,
+  ArrowUpRight,
+  ListTree,
   Search,
   Plus,
   ChevronLeft,
@@ -251,8 +254,64 @@ export const NotesObsidianWorkbench: React.FC<NotesObsidianWorkbenchProps> = ({
     }
   };
 
-  // Canvas Local Graph Ref
+  // Canvas Local Graph Ref & Hit Regions
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const neighborNodesRef = useRef<Array<{ id: string; x: number; y: number; r: number; label: string }>>([]);
+
+  const handleJumpToHeading = (headingTitle: string) => {
+    if (textareaRef.current) {
+      const text = textareaRef.current.value;
+      const index = text.indexOf(headingTitle);
+      if (index !== -1) {
+        textareaRef.current.focus();
+        textareaRef.current.setSelectionRange(index, index + headingTitle.length);
+        const lineCountBefore = text.substring(0, index).split('\n').length;
+        const approxScroll = (lineCountBefore - 2) * 22;
+        textareaRef.current.scrollTop = Math.max(0, approxScroll);
+      }
+    }
+    const viewerHeadings = document.querySelectorAll(
+      '.markdown-body h1, .markdown-body h2, .markdown-body h3, .obs-center-pane h1, .obs-center-pane h2, .obs-center-pane h3'
+    );
+    for (const h of Array.from(viewerHeadings)) {
+      if (h.textContent?.includes(headingTitle)) {
+        h.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        break;
+      }
+    }
+  };
+
+  const handleCanvasMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const hit = neighborNodesRef.current.some((node) => {
+      const dist = Math.hypot(node.x - x, node.y - y);
+      return dist <= node.r + 4;
+    });
+    canvas.style.cursor = hit ? 'pointer' : 'default';
+  };
+
+  const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const hit = neighborNodesRef.current.find((node) => {
+      const dist = Math.hypot(node.x - x, node.y - y);
+      return dist <= node.r + 6;
+    });
+    if (hit) {
+      const targetNote = notes.find((n) => n.id === hit.id);
+      if (targetNote) {
+        setSelectedNote(targetNote);
+        onSelectNote(targetNote);
+      }
+    }
+  };
 
   // Render Mini Local Graph in Right Pane
   useEffect(() => {
@@ -281,12 +340,17 @@ export const NotesObsidianWorkbench: React.FC<NotesObsidianWorkbenchProps> = ({
     const neighbors = Array.from(neighborMap.values());
     const count = neighbors.length;
 
+    // Store neighbor node hit regions
+    const nodeCoords: Array<{ id: string; x: number; y: number; r: number; label: string }> = [];
+
     // Draw lines & orbiting nodes
     neighbors.forEach((neighbor, i) => {
       const angle = (i / Math.max(count, 1)) * Math.PI * 2;
       const radius = Math.min(width, height) * 0.35;
       const nx = centerX + Math.cos(angle) * radius;
       const ny = centerY + Math.sin(angle) * radius;
+
+      nodeCoords.push({ id: neighbor.id, x: nx, y: ny, r: 7, label: neighbor.label });
 
       // Draw spring line
       ctx.beginPath();
@@ -324,6 +388,7 @@ export const NotesObsidianWorkbench: React.FC<NotesObsidianWorkbenchProps> = ({
     ctx.font = 'bold 10px Inter, sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText('Đang xem', centerX, centerY + 24);
+    neighborNodesRef.current = nodeCoords;
   }, [inspectorTab, isRightCollapsed, selectedNote, linkedBacklinks, outgoingLinks, notes]);
 
   return (
@@ -593,7 +658,9 @@ export const NotesObsidianWorkbench: React.FC<NotesObsidianWorkbenchProps> = ({
             className={`obs-right-tab ${inspectorTab === 'BACKLINKS' ? 'active' : ''}`}
             onClick={() => setInspectorTab('BACKLINKS')}
             title="Liên kết ngược (Backlinks)"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}
           >
+            <Link2 size={12} />
             <span>Backlinks</span>
             {linkedBacklinks.length > 0 && <span className="obs-badge-count">{linkedBacklinks.length}</span>}
           </button>
@@ -602,7 +669,9 @@ export const NotesObsidianWorkbench: React.FC<NotesObsidianWorkbenchProps> = ({
             className={`obs-right-tab ${inspectorTab === 'OUTGOING' ? 'active' : ''}`}
             onClick={() => setInspectorTab('OUTGOING')}
             title="Liên kết trỏ đi (Outgoing)"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}
           >
+            <ArrowUpRight size={12} />
             <span>Trỏ đi</span>
             {outgoingLinks.length > 0 && <span className="obs-badge-count">{outgoingLinks.length}</span>}
           </button>
@@ -611,7 +680,9 @@ export const NotesObsidianWorkbench: React.FC<NotesObsidianWorkbenchProps> = ({
             className={`obs-right-tab ${inspectorTab === 'OUTLINE' ? 'active' : ''}`}
             onClick={() => setInspectorTab('OUTLINE')}
             title="Mục lục bài viết"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}
           >
+            <ListTree size={12} />
             <span>Mục lục</span>
           </button>
           <button
@@ -619,7 +690,9 @@ export const NotesObsidianWorkbench: React.FC<NotesObsidianWorkbenchProps> = ({
             className={`obs-right-tab ${inspectorTab === 'GRAPH' ? 'active' : ''}`}
             onClick={() => setInspectorTab('GRAPH')}
             title="Bản đồ mạng lưới vệ tinh (Local Graph)"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}
           >
+            <Share2 size={12} />
             <span>Graph</span>
           </button>
           <button
@@ -655,9 +728,14 @@ export const NotesObsidianWorkbench: React.FC<NotesObsidianWorkbenchProps> = ({
                         onSelectNote(b);
                       }}
                     >
-                      <span style={{ fontSize: '11.5px', fontWeight: 600, color: 'var(--ws-accent)' }}>
-                        {b.title || 'Untitled'}
-                      </span>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                        <span style={{ fontSize: '11.5px', fontWeight: 600, color: 'var(--ws-accent)' }}>
+                          {b.title || 'Untitled'}
+                        </span>
+                        <span style={{ fontSize: '10px', color: 'var(--ws-text-faint)' }}>
+                          {b.content ? b.content.slice(0, 50).replace(/[#*`[\]]/g, '') + '...' : ''}
+                        </span>
+                      </div>
                       <span style={{ fontSize: '10px', color: 'var(--ws-text-faint)' }}>Mở ↗</span>
                     </div>
                   ))
@@ -706,26 +784,31 @@ export const NotesObsidianWorkbench: React.FC<NotesObsidianWorkbenchProps> = ({
                   Bài này chưa liên kết bài nào. Gõ <code>[[Tên bài]]</code> để liên kết.
                 </div>
               ) : (
-                outgoingLinks.map((link, idx) => (
-                  <div
-                    key={idx}
-                    className="obs-link-card"
-                    onClick={() => {
-                      const match = notes.find((n) => n.title?.trim().toLowerCase() === link.target.toLowerCase());
-                      if (match) {
-                        setSelectedNote(match);
-                        onSelectNote(match);
-                      } else {
-                        showToast(`Chưa có bài ghi "${link.target}"`, 'info');
-                      }
-                    }}
-                  >
-                    <span style={{ fontSize: '11.5px', fontWeight: 600, color: '#38bdf8' }}>
-                      📎 {link.alias || link.target}
-                    </span>
-                    <span style={{ fontSize: '10px', color: 'var(--ws-text-faint)' }}>Nhảy tới ↗</span>
-                  </div>
-                ))
+                outgoingLinks.map((link, idx) => {
+                  const match = notes.find((n) => n.title?.trim().toLowerCase() === link.target.toLowerCase());
+                  return (
+                    <div
+                      key={idx}
+                      className="obs-link-card"
+                      onClick={() => {
+                        if (match) {
+                          setSelectedNote(match);
+                          onSelectNote(match);
+                        } else {
+                          onCreateNote();
+                          showToast(`Đang tạo bài ghi mới "${link.target}"`, 'info');
+                        }
+                      }}
+                    >
+                      <span style={{ fontSize: '11.5px', fontWeight: 600, color: match ? '#38bdf8' : 'var(--text-muted)' }}>
+                        📎 {link.alias || link.target}
+                      </span>
+                      <span style={{ fontSize: '10px', color: match ? 'var(--ws-text-faint)' : 'var(--ws-accent)' }}>
+                        {match ? 'Nhảy tới ↗' : '+ Tạo bài mới'}
+                      </span>
+                    </div>
+                  );
+                })
               )}
             </div>
           )}
@@ -744,13 +827,21 @@ export const NotesObsidianWorkbench: React.FC<NotesObsidianWorkbenchProps> = ({
                 outlineList.map((h, idx) => (
                   <div
                     key={idx}
+                    onClick={() => handleJumpToHeading(h.title)}
+                    className="obs-outline-item"
                     style={{
                       paddingLeft: `${(h.level - 1) * 14}px`,
                       fontSize: h.level === 1 ? '12px' : '11px',
                       fontWeight: h.level === 1 ? 700 : 500,
                       color: h.level === 1 ? 'var(--ws-text-main)' : 'var(--ws-text-muted)',
-                      lineHeight: 1.4
+                      lineHeight: 1.6,
+                      cursor: 'pointer',
+                      paddingTop: '3px',
+                      paddingBottom: '3px',
+                      borderRadius: '4px',
+                      transition: 'background-color 0.1s ease'
                     }}
+                    title="Nhấn để cuộn đến tiêu đề này trong bài"
                   >
                     • {h.title}
                   </div>
@@ -769,6 +860,8 @@ export const NotesObsidianWorkbench: React.FC<NotesObsidianWorkbenchProps> = ({
                 ref={canvasRef}
                 width={260}
                 height={220}
+                onMouseMove={handleCanvasMouseMove}
+                onClick={handleCanvasClick}
                 style={{
                   width: '100%',
                   height: '220px',
@@ -779,7 +872,7 @@ export const NotesObsidianWorkbench: React.FC<NotesObsidianWorkbenchProps> = ({
                 }}
               />
               <span style={{ fontSize: '10px', color: 'var(--ws-text-faint)', marginTop: '6px' }}>
-                Hiển thị bài đang xem và các bài liên kết trực tiếp
+                Click vào nút vệ tinh để mở bài ghi liên kết trực tiếp
               </span>
             </div>
           )}
@@ -788,4 +881,3 @@ export const NotesObsidianWorkbench: React.FC<NotesObsidianWorkbenchProps> = ({
     </div>
   );
 };
-

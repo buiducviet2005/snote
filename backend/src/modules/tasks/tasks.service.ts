@@ -23,7 +23,9 @@ export class TasksService {
       const isAssignee = assigneesList.some((u: any) => u.id === currentUserId);
       const isProjectOwner =
         task.project?.userId === currentUserId ||
-        (task.project?.members || []).some((m: any) => m.userId === currentUserId && m.role === 'OWNER');
+        (task.project?.members || []).some((m: any) => m.userId === currentUserId && m.role === 'OWNER') ||
+        task.project?.workspace?.ownerId === currentUserId ||
+        (task.project?.workspace?.members || []).some((m: any) => m.userId === currentUserId && m.role === 'OWNER');
 
       canComplete = isCreator || isAssignee || isProjectOwner;
       canEdit = isCreator || isAssignee || isProjectOwner;
@@ -76,8 +78,19 @@ export class TasksService {
     const project = dto.projectId ? await writableProject(dto.projectId, userId) : null;
     if (dto.subjectId) await allowedSubject(dto.subjectId, userId, project?.subjectId);
     const requested = dto.assigneeIds?.length ? dto.assigneeIds : dto.assigneeId ? [dto.assigneeId] : [];
-    if (requested.length) allowedAssignees(requested, userId, project?.members);
-    const defaultAssignee = project && !project.members.some((member) => member.userId === userId)
+    if (requested.length) {
+      allowedAssignees(
+        requested,
+        userId,
+        project?.members,
+        project?.workspace?.members,
+        project?.userId
+      );
+    }
+    const hasMembership =
+      (project?.members || []).some((member) => member.userId === userId) ||
+      (project?.workspace?.members || []).some((member) => member.userId === userId);
+    const defaultAssignee = project && !hasMembership && project.userId !== userId
       ? project.userId : userId;
     const task = await this.repository.create(userId, requested.length ? dto : { ...dto, assigneeIds: [defaultAssignee] });
     return this.mapDto(task, userId);
@@ -94,7 +107,9 @@ export class TasksService {
     const isAssignee = assigneesList.some((u: any) => u.id === userId);
     const isProjectOwner =
       task.project?.userId === userId ||
-      (task.project?.members || []).some((m: any) => m.userId === userId && m.role === 'OWNER');
+      (task.project?.members || []).some((m: any) => m.userId === userId && m.role === 'OWNER') ||
+      task.project?.workspace?.ownerId === userId ||
+      (task.project?.workspace?.members || []).some((m: any) => m.userId === userId && m.role === 'OWNER');
 
     if (!isCreator && !isAssignee && !isProjectOwner) {
       throw new ForbiddenError('Chỉ thành viên phụ trách công việc này hoặc Trưởng nhóm mới có quyền chỉnh sửa');
@@ -104,7 +119,15 @@ export class TasksService {
     const project = projectId ? await writableProject(projectId, userId) : null;
     if (dto.subjectId) await allowedSubject(dto.subjectId, userId, project?.subjectId);
     const requested = dto.assigneeIds !== undefined ? dto.assigneeIds : dto.assigneeId ? [dto.assigneeId] : null;
-    if (requested) allowedAssignees(requested, userId, project?.members);
+    if (requested) {
+      allowedAssignees(
+        requested,
+        userId,
+        project?.members,
+        project?.workspace?.members,
+        project?.userId
+      );
+    }
 
     const updated = await this.repository.update(id, userId, dto);
     return this.mapDto(updated, userId);
@@ -119,7 +142,9 @@ export class TasksService {
     const isCreator = task.userId === userId;
     const isProjectOwner =
       task.project?.userId === userId ||
-      (task.project?.members || []).some((m: any) => m.userId === userId && m.role === 'OWNER');
+      (task.project?.members || []).some((m: any) => m.userId === userId && m.role === 'OWNER') ||
+      task.project?.workspace?.ownerId === userId ||
+      (task.project?.workspace?.members || []).some((m: any) => m.userId === userId && m.role === 'OWNER');
 
     if (!isCreator && !isProjectOwner) {
       throw new ForbiddenError('Chỉ người tạo công việc hoặc Trưởng nhóm mới có quyền xóa');
@@ -139,7 +164,9 @@ export class TasksService {
     const isAssignee = assigneesList.some((u: any) => u.id === userId);
     const isProjectOwner =
       task.project?.userId === userId ||
-      (task.project?.members || []).some((m: any) => m.userId === userId && m.role === 'OWNER');
+      (task.project?.members || []).some((m: any) => m.userId === userId && m.role === 'OWNER') ||
+      task.project?.workspace?.ownerId === userId ||
+      (task.project?.workspace?.members || []).some((m: any) => m.userId === userId && m.role === 'OWNER');
 
     if (!isCreator && !isAssignee && !isProjectOwner) {
       throw new ForbiddenError('Chỉ thành viên được giao việc hoặc Trưởng nhóm mới có quyền cập nhật trạng thái công việc này');

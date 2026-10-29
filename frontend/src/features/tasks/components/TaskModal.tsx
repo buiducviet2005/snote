@@ -55,6 +55,14 @@ export const TaskModal: React.FC<TaskModalProps> = ({
   const [projects, setProjects] = useState<any[]>([]);
   const [projectMembers, setProjectMembers] = useState<any[]>([]);
   const [title, setTitle] = useState('');
+  const [slotLimit, setSlotLimit] = useState(1);
+  const [allowSelfAssign, setAllowSelfAssign] = useState(true);
+  const [startDate, setStartDate] = useState('');
+  const [startTime, setStartTime] = useState('08:00');
+  const [dueDateOnly, setDueDateOnly] = useState('');
+  const [dueTimeOnly, setDueTimeOnly] = useState('18:00');
+  const [checklistText, setChecklistText] = useState('');
+  const [markdownDetails, setMarkdownDetails] = useState('');
   const [description, setDescription] = useState('');
   const [subjectId, setSubjectId] = useState<string>('');
   const [projectId, setProjectId] = useState<string>('');
@@ -67,6 +75,40 @@ export const TaskModal: React.FC<TaskModalProps> = ({
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [loadingMembers, setLoadingMembers] = useState(false);
+
+  const parseDescriptionParts = (fullDesc: string) => {
+    if (!fullDesc) return { check: '', md: '' };
+    const lines = fullDesc.split('\n');
+    const checkLines: string[] = [];
+    const mdLines: string[] = [];
+    let inChecklist = true;
+    for (const l of lines) {
+      if (/^-\s*\[[ xX]\]\s*/.test(l.trim()) || (/^-\s+/.test(l.trim()) && inChecklist)) {
+        checkLines.push(l.trim().replace(/^-\s*\[[ xX]\]\s*/, '- '));
+      } else {
+        inChecklist = false;
+        mdLines.push(l);
+      }
+    }
+    return {
+      check: checkLines.join('\n'),
+      md: mdLines.join('\n').trim()
+    };
+  };
+
+  const combineDescriptionParts = (check: string, md: string) => {
+    const formattedCheck = check
+      .split('\n')
+      .map((l) => l.trim())
+      .filter(Boolean)
+      .map((l) => (l.startsWith('- ') ? `- [ ] ${l.slice(2)}` : `- [ ] ${l}`))
+      .join('\n');
+    if (formattedCheck && md.trim()) {
+      return `${formattedCheck}\n\n${md.trim()}`;
+    }
+    return formattedCheck || md.trim();
+  };
+
   const isSavedRef = useRef(false);
   const wasOpenRef = useRef(false);
   const lastTaskIdRef = useRef<string | null | undefined>(undefined);
@@ -175,6 +217,37 @@ export const TaskModal: React.FC<TaskModalProps> = ({
 
     if (taskToEdit) {
       const initTitle = taskToEdit.title || '';
+      const { check: parsedCheck, md: parsedMd } = parseDescriptionParts(taskToEdit.description || '');
+      setChecklistText(parsedCheck);
+      setMarkdownDetails(parsedMd);
+
+      if (taskToEdit.dueDate) {
+        const d = new Date(taskToEdit.dueDate);
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        const hh = String(d.getHours()).padStart(2, '0');
+        const min = String(d.getMinutes()).padStart(2, '0');
+        setDueDateOnly(`${yyyy}-${mm}-${dd}`);
+        setDueTimeOnly(`${hh}:${min}`);
+      } else {
+        setDueDateOnly('');
+        setDueTimeOnly('18:00');
+      }
+
+      if (taskToEdit.startDate) {
+        const d = new Date(taskToEdit.startDate);
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        const hh = String(d.getHours()).padStart(2, '0');
+        const min = String(d.getMinutes()).padStart(2, '0');
+        setStartDate(`${yyyy}-${mm}-${dd}`);
+        setStartTime(`${hh}:${min}`);
+      } else {
+        setStartDate('');
+        setStartTime('08:00');
+      }
       const initDescription = taskToEdit.description || '';
       const initSubjectId = taskToEdit.subjectId || '';
       const initProjectId = taskToEdit.projectId || '';
@@ -231,6 +304,14 @@ export const TaskModal: React.FC<TaskModalProps> = ({
 
       setTitle('');
       setDescription('');
+      setChecklistText('');
+      setMarkdownDetails('');
+      setStartDate('');
+      setStartTime('08:00');
+      setDueDateOnly('');
+      setDueTimeOnly('18:00');
+      setSlotLimit(1);
+      setAllowSelfAssign(true);
       setSubjectId(initSubjectId);
       setProjectId(initProjectId);
       setSelectedAssigneeIds(initAssignees);
@@ -363,6 +444,15 @@ export const TaskModal: React.FC<TaskModalProps> = ({
       return;
     }
 
+    const finalDesc = combineDescriptionParts(checklistText, markdownDetails);
+    let finalDueDate: string | undefined = undefined;
+    if (dueDateOnly) {
+      finalDueDate = new Date(`${dueDateOnly}T${dueTimeOnly || '18:00'}:00`).toISOString();
+    }
+    let finalStartDate: string | undefined = undefined;
+    if (startDate) {
+      finalStartDate = new Date(`${startDate}T${startTime || '08:00'}:00`).toISOString();
+    }
     const tagNames = tagsInput
       .split(',')
       .map((t) => t.trim())
@@ -373,26 +463,28 @@ export const TaskModal: React.FC<TaskModalProps> = ({
       if (taskToEdit) {
         await api.put(`/tasks/${taskToEdit.id}`, {
           title: title.trim(),
-          description: description.trim() || undefined,
+          description: finalDesc || undefined,
           subjectId: subjectId || null,
           projectId: projectId || null,
           assigneeIds: selectedAssigneeIds.length > 0 ? selectedAssigneeIds : undefined,
           status,
           priority,
-          dueDate: dueDate ? new Date(dueDate).toISOString() : null,
+          dueDate: finalDueDate || null,
+          startDate: finalStartDate || null,
           tagNames
         });
         showToast('Cập nhật công việc thành công!', 'success');
       } else {
         await api.post('/tasks', {
           title: title.trim(),
-          description: description.trim() || undefined,
+          description: finalDesc || undefined,
           subjectId: subjectId || undefined,
           projectId: projectId || undefined,
           assigneeIds: selectedAssigneeIds.length > 0 ? selectedAssigneeIds : undefined,
           status,
           priority,
-          dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
+          dueDate: finalDueDate || undefined,
+          startDate: finalStartDate || undefined,
           tagNames
         });
         showToast('Tạo công việc và giao việc thành công!', 'success');
@@ -552,74 +644,36 @@ export const TaskModal: React.FC<TaskModalProps> = ({
         ) : (
           /* EDIT / CREATE MODE: Full inputs and form controls */
           <>
-            {/* Project Header context if inside project */}
-            {defaultProjectId && currentProjectName && (
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  padding: '10px 14px',
-                  backgroundColor: 'rgba(168, 85, 247, 0.1)',
-                  border: '1px solid rgba(168, 85, 247, 0.3)',
-                  borderRadius: 'var(--radius-md)'
-                }}
-              >
-                <FolderKanban size={16} style={{ color: 'var(--color-purple)' }} />
-                <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)' }}>
-                  Đang tạo nhiệm vụ trong dự án: <b>{currentProjectName}</b>
-                </span>
-              </div>
-            )}
-
-            {/* Title */}
+            {/* Tiêu đề công việc (*) */}
             <div>
               <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
-                Tên công việc / Nhiệm vụ cần làm *
+                Tiêu đề công việc (*)
               </label>
               <input
                 type="text"
                 required
-                placeholder="Ví dụ: Thiết kế Database & Pipeline tích hợp API"
+                placeholder="Nhập tiêu đề công việc..."
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 className="snote-input"
-                style={{ fontSize: '14.5px', fontWeight: 600 }}
+                style={{ fontSize: '14px', borderRadius: '10px' }}
               />
             </div>
 
-            {/* Subject & Project Linkage */}
+            {/* Không gian lưu trữ & Độ ưu tiên (Row) */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
-                  Môn học liên quan
-                </label>
-                <select
-                  value={subjectId}
-                  onChange={(e) => setSubjectId(e.target.value)}
-                  className="snote-select"
-                >
-                  <option value="">📝 Việc cá nhân (Không thuộc môn học)</option>
-                  {subjects.map((sub) => (
-                    <option key={sub.id} value={sub.id}>
-                      {sub.code ? `[${sub.code}] ` : ''}{sub.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
-                  <FolderKanban size={13} style={{ color: 'var(--color-purple)' }} />
-                  <span>Dự án / Bài tập lớn</span>
+                  Khong gian luu tru
                 </label>
                 <select
                   value={projectId}
                   onChange={(e) => setProjectId(e.target.value)}
                   className="snote-select"
                   disabled={Boolean(defaultProjectId)}
+                  style={{ borderRadius: '10px' }}
                 >
-                  <option value="">-- Không gắn dự án (Việc cá nhân) --</option>
+                  <option value="">Viec ca nhan (Personal Space)</option>
                   {projects.map((proj) => (
                     <option key={proj.id} value={proj.id}>
                       📁 {proj.name}
@@ -627,9 +681,66 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                   ))}
                 </select>
               </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
+                  Do uu tien
+                </label>
+                <select
+                  value={priority}
+                  onChange={(e) => setPriority(e.target.value as TaskPriority)}
+                  className="snote-select"
+                  style={{ borderRadius: '10px' }}
+                >
+                  <option value={TaskPriority.MEDIUM}>Trung binh (Medium)</option>
+                  <option value={TaskPriority.HIGH}>Cao (High)</option>
+                  <option value={TaskPriority.URGENT}>Khan cap (Urgent)</option>
+                  <option value={TaskPriority.LOW}>Thap (Low)</option>
+                </select>
+              </div>
             </div>
 
-            {/* Multi-Assignee Selection */}
+            {/* Số người nhận tối đa (Slot limit) Card */}
+            <div
+              style={{
+                backgroundColor: 'rgba(241, 245, 249, 0.6)',
+                border: '1px solid var(--border-color)',
+                borderRadius: '12px',
+                padding: '12px 16px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '12px'
+              }}
+            >
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1, minWidth: '180px' }}>
+                <span style={{ fontSize: '12.5px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                  Số người nhận tối đa (Slot limit)
+                </span>
+                <input
+                  type="number"
+                  min="1"
+                  max="50"
+                  value={slotLimit}
+                  onChange={(e) => setSlotLimit(Math.max(1, parseInt(e.target.value) || 1))}
+                  className="snote-input"
+                  style={{ width: '100%', maxWidth: '240px', height: '34px', borderRadius: '8px' }}
+                />
+              </div>
+
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '12.5px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                <input
+                  type="checkbox"
+                  checked={allowSelfAssign}
+                  onChange={(e) => setAllowSelfAssign(e.target.checked)}
+                  style={{ width: '16px', height: '16px', accentColor: '#2563eb', cursor: 'pointer' }}
+                />
+                <span>Mở cho thành viên tự nhận việc</span>
+              </label>
+            </div>
+
+            {/* Multi-Assignee Selection if inside project */}
             {projectId && loadingMembers && (
               <div style={{ backgroundColor: 'var(--accent-subtle)', padding: '10px 14px', borderRadius: 'var(--radius-md)', border: '1px solid var(--accent-border)', fontSize: '12.5px', color: 'var(--text-muted)' }}>
                 ⏳ Đang tải danh sách thành viên dự án...
@@ -637,23 +748,16 @@ export const TaskModal: React.FC<TaskModalProps> = ({
             )}
 
             {projectId && !loadingMembers && projectMembers.length > 0 && (
-              <div style={{ backgroundColor: 'var(--accent-subtle)', padding: '14px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--accent-border)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 700, color: 'var(--accent-primary)', margin: 0 }}>
-                    <Users size={16} />
-                    <span>Thành viên tham gia thực hiện ({selectedAssigneeIds.length} người)</span>
+              <div style={{ backgroundColor: 'var(--accent-subtle)', padding: '12px', borderRadius: '10px', border: '1px solid var(--accent-border)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 700, color: 'var(--accent-primary)', margin: 0 }}>
+                    <Users size={14} />
+                    <span>Giao trực tiếp cho thành viên ({selectedAssigneeIds.length} người)</span>
                   </label>
-                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                    Click để chọn 1 hoặc nhiều người
-                  </span>
                 </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '8px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '6px' }}>
                   {projectMembers.map((m: any) => {
-                    const isLeader = m.role === 'OWNER';
-                    const isMe = m.userId === currentUser?.id;
                     const isSelected = selectedAssigneeIds.includes(m.userId);
-
                     return (
                       <div
                         key={m.userId}
@@ -661,46 +765,19 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                         style={{
                           display: 'flex',
                           alignItems: 'center',
-                          gap: '8px',
-                          padding: '8px 12px',
-                          borderRadius: 'var(--radius-md)',
+                          gap: '6px',
+                          padding: '6px 10px',
+                          borderRadius: '6px',
                           cursor: 'pointer',
                           backgroundColor: isSelected ? 'var(--bg-secondary)' : 'rgba(255,255,255,0.03)',
                           border: isSelected ? '1.5px solid var(--accent-primary)' : '1px solid var(--border-color)',
-                          boxShadow: isSelected ? 'var(--shadow-sm)' : 'none',
-                          transition: 'all var(--transition-fast)'
+                          fontSize: '12px'
                         }}
                       >
-                        <div
-                          style={{
-                            width: '18px',
-                            height: '18px',
-                            borderRadius: 'var(--radius-sm)',
-                            border: isSelected ? 'none' : '1px solid var(--border-color)',
-                            backgroundColor: isSelected ? 'var(--accent-primary)' : 'transparent',
-                            color: '#fff',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            flexShrink: 0
-                          }}
-                        >
-                          {isSelected && <Check size={12} strokeWidth={3} />}
-                        </div>
-
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <span style={{ fontSize: '12.5px', fontWeight: isSelected ? 700 : 500, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                              {m.user?.fullName || m.user?.email}
-                            </span>
-                            {isMe && <span style={{ fontSize: '10px', color: 'var(--accent-primary)', fontWeight: 700 }}>(Tôi)</span>}
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <span style={{ fontSize: '10.5px', color: 'var(--text-muted)' }}>
-                              {isLeader ? '👑 Trưởng nhóm' : 'Thành viên'}
-                            </span>
-                          </div>
-                        </div>
+                        <input type="checkbox" checked={isSelected} readOnly style={{ accentColor: 'var(--accent-primary)' }} />
+                        <span style={{ fontWeight: isSelected ? 700 : 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {m.user?.fullName || m.user?.email}
+                        </span>
                       </div>
                     );
                   })}
@@ -708,88 +785,86 @@ export const TaskModal: React.FC<TaskModalProps> = ({
               </div>
             )}
 
-            {/* Status & Priority */}
+            {/* Ngày & Giờ bắt đầu & Hạn chót (Row) */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
-                  Trạng thái
+                  Ngày & Giờ bắt đầu
                 </label>
-                <select
-                  value={status}
-                  onChange={(e) => setStatus(e.target.value as TaskStatus)}
-                  className="snote-select"
-                >
-                  <option value={TaskStatus.TODO}>⭕ Cần làm (To-Do)</option>
-                  <option value={TaskStatus.IN_PROGRESS}>⚡ Đang làm (In Progress)</option>
-                  <option value={TaskStatus.DONE}>✅ Đã hoàn thành (Done)</option>
-                </select>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+                  <input
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    className="snote-input"
+                    style={{ borderRadius: '8px', fontSize: '12px' }}
+                  />
+                  <input
+                    type="time"
+                    value={startTime}
+                    onChange={(e) => setStartTime(e.target.value)}
+                    className="snote-input"
+                    style={{ borderRadius: '8px', fontSize: '12px' }}
+                  />
+                </div>
               </div>
 
               <div>
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
-                  Mức độ ưu tiên
+                  Hạn chót (Ngày & Giờ)
                 </label>
-                <select
-                  value={priority}
-                  onChange={(e) => setPriority(e.target.value as TaskPriority)}
-                  className="snote-select"
-                >
-                  <option value={TaskPriority.LOW}>🟢 Thấp (Low)</option>
-                  <option value={TaskPriority.MEDIUM}>🔵 Trung bình (Medium)</option>
-                  <option value={TaskPriority.HIGH}>🟠 Cao (High)</option>
-                  <option value={TaskPriority.URGENT}>🔴 Khẩn cấp (Urgent)</option>
-                </select>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+                  <input
+                    type="date"
+                    value={dueDateOnly}
+                    onChange={(e) => setDueDateOnly(e.target.value)}
+                    className="snote-input"
+                    style={{ borderRadius: '8px', fontSize: '12px' }}
+                  />
+                  <input
+                    type="time"
+                    value={dueTimeOnly}
+                    onChange={(e) => setDueTimeOnly(e.target.value)}
+                    className="snote-input"
+                    style={{ borderRadius: '8px', fontSize: '12px' }}
+                  />
+                </div>
               </div>
             </div>
 
-            {/* Tactile Study DateTime Picker for Deadline */}
-            <div>
-              <StudyDateTimePicker
-                value={dueDate}
-                onChange={setDueDate}
-                label="Hạn chót nộp bài / Hoàn thành (Deadline)"
-                placeholder="Chọn ngày giờ hạn nộp bài tập..."
-              />
-            </div>
-
-            {/* Description */}
+            {/* Danh sách đầu việc Checklist (mỗi dòng 1 mục) */}
             <div>
               <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
-                Mô tả chi tiết công việc (Hỗ trợ Markdown)
+                Danh sách đầu việc Checklist (mỗi dòng 1 mục)
               </label>
               <textarea
-                rows={4}
-                placeholder="Ghi chú chi tiết yêu cầu, tiêu chuẩn bàn giao, link tài liệu tham khảo..."
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
+                rows={3}
+                placeholder={"- Phân tích yêu cầu bài tập\n- Lập trình giao diện web\n- Kiểm thử và hoàn thiện"}
+                value={checklistText}
+                onChange={(e) => setChecklistText(e.target.value)}
                 className="snote-textarea"
                 style={{
-                  lineHeight: '1.5',
-                  maxHeight: '200px',
-                  resize: 'vertical',
-                  wordBreak: 'break-word'
+                  fontFamily: 'var(--font-mono, monospace)',
+                  fontSize: '12px',
+                  borderRadius: '10px',
+                  lineHeight: '1.6'
                 }}
               />
             </div>
 
-            {/* Tags */}
+            {/* Nội dung chi tiết (Hỗ trợ Markdown) */}
             <div>
               <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
-                Thẻ phân loại tags (Phân cách bằng dấu phẩy)
+                Nội dung chi tiết (Hỗ trợ Markdown)
               </label>
-              <div style={{ position: 'relative' }}>
-                <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', display: 'flex' }}>
-                  <Tag size={15} />
-                </span>
-                <input
-                  type="text"
-                  placeholder="Backend, Frontend, Report, Slide"
-                  value={tagsInput}
-                  onChange={(e) => setTagsInput(e.target.value)}
-                  className="snote-input"
-                  style={{ paddingLeft: '36px' }}
-                />
-              </div>
+              <textarea
+                rows={4}
+                placeholder="Nhập mô tả chi tiết, hướng dẫn thực hiện hoặc link tham khảo..."
+                value={markdownDetails}
+                onChange={(e) => setMarkdownDetails(e.target.value)}
+                className="snote-textarea"
+                style={{ borderRadius: '10px', lineHeight: '1.5' }}
+              />
             </div>
           </>
         )}

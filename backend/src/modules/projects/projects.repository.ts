@@ -9,6 +9,8 @@ export class ProjectsRepository {
         OR: [
           { userId },
           { members: { some: { userId, status: 'ACCEPTED' } } },
+          { workspace: { ownerId: userId } },
+          { workspace: { members: { some: { userId, status: 'ACCEPTED' } } } },
           { courseClass: { teacherId: userId, deletedAt: null } },
           { courseClass: { members: { some: { userId, role: 'CLASS_ADMIN' } }, deletedAt: null } }
         ],
@@ -20,6 +22,18 @@ export class ProjectsRepository {
       include: {
         _count: {
           select: { notes: true, tasks: true, members: true }
+        },
+        workspace: {
+          include: {
+            members: {
+              where: { status: 'ACCEPTED' },
+              include: {
+                user: {
+                  select: { id: true, email: true, fullName: true, avatarUrl: true }
+                }
+              }
+            }
+          }
         },
         members: {
           include: {
@@ -79,6 +93,8 @@ export class ProjectsRepository {
         OR: [
           { userId },
           { members: { some: { userId, status: 'ACCEPTED' } } },
+          { workspace: { ownerId: userId } },
+          { workspace: { members: { some: { userId, status: 'ACCEPTED' } } } },
           { courseClass: { teacherId: userId, deletedAt: null } },
           { courseClass: { members: { some: { userId, role: 'CLASS_ADMIN' } }, deletedAt: null } }
         ],
@@ -87,6 +103,18 @@ export class ProjectsRepository {
       include: {
         _count: {
           select: { notes: true, tasks: true, members: true }
+        },
+        workspace: {
+          include: {
+            members: {
+              where: { status: 'ACCEPTED' },
+              include: {
+                user: {
+                  select: { id: true, email: true, fullName: true, avatarUrl: true }
+                }
+              }
+            }
+          }
         },
         members: {
           include: {
@@ -106,6 +134,8 @@ export class ProjectsRepository {
         OR: [
           { userId },
           { members: { some: { userId, status: 'ACCEPTED' } } },
+          { workspace: { ownerId: userId } },
+          { workspace: { members: { some: { userId, status: 'ACCEPTED' } } } },
           { courseClass: { teacherId: userId, deletedAt: null } },
           { courseClass: { members: { some: { userId, role: 'CLASS_ADMIN' } }, deletedAt: null } }
         ],
@@ -120,6 +150,18 @@ export class ProjectsRepository {
         },
         _count: {
           select: { notes: true, tasks: true, members: true }
+        },
+        workspace: {
+          include: {
+            members: {
+              where: { status: 'ACCEPTED' },
+              include: {
+                user: {
+                  select: { id: true, email: true, fullName: true, avatarUrl: true }
+                }
+              }
+            }
+          }
         },
         members: {
           include: {

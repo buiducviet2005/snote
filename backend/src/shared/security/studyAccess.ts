@@ -10,11 +10,20 @@ export async function writableProject(projectId: string, userId: string) {
       OR: [
         { userId },
         { members: { some: { userId, status: 'ACCEPTED', role: { in: ['OWNER', 'ADMIN', 'MEMBER'] } } } },
+        { workspace: { ownerId: userId } },
+        { workspace: { members: { some: { userId, status: 'ACCEPTED', role: { in: ['OWNER', 'MANAGER', 'MEMBER'] } } } } },
         { courseClass: { teacherId: userId, deletedAt: null } },
         { courseClass: { members: { some: { userId, role: 'CLASS_ADMIN' } }, deletedAt: null } }
       ]
     },
-    include: { members: { where: { status: 'ACCEPTED' }, select: { userId: true } } }
+    include: {
+      members: { where: { status: 'ACCEPTED' }, select: { userId: true } },
+      workspace: {
+        include: {
+          members: { where: { status: 'ACCEPTED' }, select: { userId: true } }
+        }
+      }
+    }
   });
   if (!project) throw new ForbiddenError('Bạn không có quyền thêm nội dung vào dự án này');
   return project;
@@ -26,8 +35,21 @@ export async function allowedSubject(subjectId: string, userId: string, projectS
   if (!subject) throw new ForbiddenError('Môn học này không thuộc tài khoản của bạn');
 }
 
-export function allowedAssignees(ids: string[], userId: string, projectMembers?: Array<{ userId: string }>) {
-  const allowed = projectMembers ? new Set(projectMembers.map((member) => member.userId)) : new Set([userId]);
+export function allowedAssignees(
+  ids: string[],
+  userId: string,
+  projectMembers?: Array<{ userId: string }>,
+  workspaceMembers?: Array<{ userId: string }>,
+  projectOwnerId?: string
+) {
+  const allowed = new Set<string>([userId]);
+  if (projectOwnerId) allowed.add(projectOwnerId);
+  if (projectMembers) {
+    projectMembers.forEach((member) => allowed.add(member.userId));
+  }
+  if (workspaceMembers) {
+    workspaceMembers.forEach((member) => allowed.add(member.userId));
+  }
   if (ids.some((id) => !allowed.has(id))) {
     throw new ForbiddenError('Chỉ được giao việc cho thành viên dự án đã tham gia');
   }
@@ -40,6 +62,8 @@ export function visibleTasks(userId: string): Prisma.TaskWhereInput {
       { assignees: { some: { userId } } },
       { project: { userId } },
       { project: { members: { some: { userId, status: 'ACCEPTED' } } } },
+      { project: { workspace: { ownerId: userId } } },
+      { project: { workspace: { members: { some: { userId, status: 'ACCEPTED' } } } } },
       { project: { courseClass: { teacherId: userId, deletedAt: null } } },
       { project: { courseClass: { members: { some: { userId, role: 'CLASS_ADMIN' } }, deletedAt: null } } }
     ],
@@ -49,6 +73,7 @@ export function visibleTasks(userId: string): Prisma.TaskWhereInput {
       { project: { classId: { not: null }, OR: [
         { userId },
         { members: { some: { userId, status: 'ACCEPTED' } } },
+        { workspace: { members: { some: { userId, status: 'ACCEPTED' } } } },
         { courseClass: { teacherId: userId, deletedAt: null } },
         { courseClass: { members: { some: { userId, role: 'CLASS_ADMIN' } }, deletedAt: null } }
       ] } }

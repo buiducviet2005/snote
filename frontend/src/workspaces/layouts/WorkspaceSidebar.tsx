@@ -29,8 +29,6 @@ interface WorkspaceSidebarProps {
   isMobileOpen?: boolean;
   onCloseMobile?: () => void;
   onOpenCommandPalette?: () => void;
-  onToggleZenMode?: () => void;
-  isZenMode?: boolean;
   theme?: 'dark' | 'light';
   onToggleTheme?: () => void;
 }
@@ -46,8 +44,6 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
   isMobileOpen,
   onCloseMobile,
   onOpenCommandPalette,
-  onToggleZenMode,
-  isZenMode,
   theme = 'dark',
   onToggleTheme
 }) => {

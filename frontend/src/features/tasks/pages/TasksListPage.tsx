@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { api, ApiResponse } from '../../../services/api';
 import { useAppFilter } from '../../../contexts/AppFilterContext';
 import { useToast } from '../../../contexts/ToastContext';
+import { useAuth } from '../../../contexts/AuthContext';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { TaskCard } from '../components/TaskCard';
 import { TaskModal } from '../components/TaskModal';
@@ -56,6 +57,8 @@ export const TasksListPage: React.FC = () => {
   const [filterAssignee, setFilterAssignee] = useState<string>('ALL');
   const [filterDatePreset, setFilterDatePreset] = useState<string>('ALL');
   const [filterProjectId, setFilterProjectId] = useState<string>('ALL');
+  const [sortMode, setSortMode] = useState<'today_first' | 'priority_first' | 'due_asc' | 'created_desc'>('today_first');
+  const { user: currentUser } = useAuth();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<any | null>(null);
@@ -219,14 +222,14 @@ export const TasksListPage: React.FC = () => {
     return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
   }, [tasks]);
 
-  // 2. Multi-dimensional Reactive Task Filtering
+  // 2. Multi-dimensional Reactive Task Filtering & Sorting
   const filteredTasks = useMemo(() => {
     const now = new Date();
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0).getTime();
     const todayEnd = todayStart + 86400000;
     const weekEnd = todayStart + 7 * 86400000;
 
-    return tasks.filter((t) => {
+    const filtered = tasks.filter((t) => {
       // 1. Metric Tab Filter
       if (metricTab === 'TODAY') {
         if (!t.dueDate) return false;
@@ -253,9 +256,19 @@ export const TasksListPage: React.FC = () => {
 
       // 3. Assignee Filter
       if (filterAssignee !== 'ALL') {
-        const arr = t.assignees || (t.assignee ? [t.assignee] : []);
-        const has = arr.some((a: any) => (a.id || a.userId || a.name) === filterAssignee);
-        if (!has) return false;
+        if (filterAssignee === 'me') {
+          const arr = t.assignees || (t.assignee ? [t.assignee] : []);
+          const isAssignee = arr.some((a: any) => (a.id || a.userId) === currentUser?.id);
+          const isCreator = t.userId === currentUser?.id;
+          if (!isAssignee && !isCreator) return false;
+        } else if (filterAssignee === 'UNASSIGNED' || filterAssignee === 'unassigned') {
+          const arr = t.assignees || (t.assignee ? [t.assignee] : []);
+          if (arr.length > 0) return false;
+        } else {
+          const arr = t.assignees || (t.assignee ? [t.assignee] : []);
+          const has = arr.some((a: any) => (a.id || a.userId || a.name) === filterAssignee);
+          if (!has) return false;
+        }
       }
 
       // 4. Date Preset Filter
@@ -288,7 +301,28 @@ export const TasksListPage: React.FC = () => {
 
       return true;
     });
-  }, [tasks, metricTab, filterPriority, filterAssignee, filterDatePreset, search]);
+
+    const sorted = [...filtered];
+    if (sortMode === 'today_first') {
+      sorted.sort((a, b) => {
+        const aDue = a.dueDate ? new Date(a.dueDate).getTime() : Infinity;
+        const bDue = b.dueDate ? new Date(b.dueDate).getTime() : Infinity;
+        return aDue - bDue;
+      });
+    } else if (sortMode === 'priority_first') {
+      const pWeight: Record<string, number> = { URGENT: 4, HIGH: 3, MEDIUM: 2, LOW: 1 };
+      sorted.sort((a, b) => (pWeight[b.priority] || 0) - (pWeight[a.priority] || 0));
+    } else if (sortMode === 'due_asc') {
+      sorted.sort((a, b) => {
+        const aDue = a.dueDate ? new Date(a.dueDate).getTime() : Infinity;
+        const bDue = b.dueDate ? new Date(b.dueDate).getTime() : Infinity;
+        return aDue - bDue;
+      });
+    } else if (sortMode === 'created_desc') {
+      sorted.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    }
+    return sorted;
+  }, [tasks, metricTab, filterPriority, filterAssignee, filterDatePreset, search, sortMode, currentUser?.id]);
 
   const todoTasks = filteredTasks.filter((t) => t.status === TaskStatus.TODO);
   const inProgressTasks = filteredTasks.filter((t) => t.status === TaskStatus.IN_PROGRESS);
@@ -326,12 +360,12 @@ export const TasksListPage: React.FC = () => {
 
   return (
     <div style={{ maxWidth: '1440px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-      {/* 1. UNIVERSAL METRIC PILLS & MULTI-DIMENSIONAL FILTER BAR (Images 1, 2, 3 Header) */}
+      {/* 1. TOP VIEW MODE SWITCHER & PRIMARY ACTION BAR */}
       <div
         className="snote-card"
         style={{
-          padding: '8px 12px',
-          borderRadius: '10px',
+          padding: '8px 14px',
+          borderRadius: '12px',
           backgroundColor: 'var(--bg-surface)',
           border: '1px solid var(--border-color)',
           display: 'flex',
@@ -341,253 +375,8 @@ export const TasksListPage: React.FC = () => {
           gap: '12px'
         }}
       >
-        {/* Left: Metric Pills Strip */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            overflowX: 'auto',
-            paddingBottom: '2px',
-            scrollbarWidth: 'none'
-          }}
-        >
-          {/* Tất cả */}
-          <button
-            type="button"
-            onClick={() => setMetricTab('ALL')}
-            className={`btn btn-sm ${metricTab === 'ALL' ? 'btn-primary' : 'btn-ghost'}`}
-            style={{
-              padding: '4px 10px',
-              borderRadius: '999px',
-              fontSize: '11.5px',
-              fontWeight: 600,
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px'
-            }}
-          >
-            <span>{t('tasks.all_count')}</span>
-            <span style={{ fontSize: '10px', opacity: 0.85, fontFamily: 'var(--font-mono)' }}>{metrics.total}</span>
-          </button>
-
-          {/* Hôm nay */}
-          <button
-            type="button"
-            onClick={() => setMetricTab('TODAY')}
-            className={`btn btn-sm ${metricTab === 'TODAY' ? 'btn-primary' : 'btn-ghost'}`}
-            style={{
-              padding: '4px 10px',
-              borderRadius: '999px',
-              fontSize: '11.5px',
-              fontWeight: 600,
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px'
-            }}
-          >
-            <Clock size={12} />
-            <span>{t('tasks.today_count')}</span>
-            <span style={{ fontSize: '10px', opacity: 0.85, fontFamily: 'var(--font-mono)' }}>{metrics.today}</span>
-          </button>
-
-          {/* Đang làm */}
-          <button
-            type="button"
-            onClick={() => setMetricTab('IN_PROGRESS')}
-            className={`btn btn-sm ${metricTab === 'IN_PROGRESS' ? 'btn-primary' : 'btn-ghost'}`}
-            style={{
-              padding: '4px 10px',
-              borderRadius: '999px',
-              fontSize: '11.5px',
-              fontWeight: 600,
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px'
-            }}
-          >
-            <span>{t('tasks.in_progress_count')}</span>
-            <span style={{ fontSize: '10px', opacity: 0.85, fontFamily: 'var(--font-mono)' }}>{metrics.inProgress}</span>
-          </button>
-
-          {/* Chờ duyệt */}
-          <button
-            type="button"
-            onClick={() => setMetricTab('PENDING')}
-            className={`btn btn-sm ${metricTab === 'PENDING' ? 'btn-primary' : 'btn-ghost'}`}
-            style={{
-              padding: '4px 10px',
-              borderRadius: '999px',
-              fontSize: '11.5px',
-              fontWeight: 600,
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px'
-            }}
-          >
-            <span>{t('tasks.pending_count')}</span>
-            <span style={{ fontSize: '10px', opacity: 0.85, fontFamily: 'var(--font-mono)' }}>{metrics.pending}</span>
-          </button>
-
-          {/* Đã xong */}
-          <button
-            type="button"
-            onClick={() => setMetricTab('DONE')}
-            className={`btn btn-sm ${metricTab === 'DONE' ? 'btn-primary' : 'btn-ghost'}`}
-            style={{
-              padding: '4px 10px',
-              borderRadius: '999px',
-              fontSize: '11.5px',
-              fontWeight: 600,
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px'
-            }}
-          >
-            <span>{t('tasks.done_count')}</span>
-            <span style={{ fontSize: '10px', color: '#10b981', fontWeight: 700, fontFamily: 'var(--font-mono)' }}>{metrics.donePercent}%</span>
-          </button>
-
-          {/* Đã lưu trữ */}
-          <button
-            type="button"
-            onClick={() => setMetricTab('ARCHIVED')}
-            className={`btn btn-sm ${metricTab === 'ARCHIVED' ? 'btn-primary' : 'btn-ghost'}`}
-            style={{
-              padding: '4px 10px',
-              borderRadius: '999px',
-              fontSize: '11.5px',
-              fontWeight: 600,
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px'
-            }}
-          >
-            <Archive size={12} />
-            <span>{t('tasks.archived_count')}</span>
-            <span style={{ fontSize: '10px', opacity: 0.85, fontFamily: 'var(--font-mono)' }}>{metrics.archived}</span>
-          </button>
-
-          {/* + Chưa giao */}
-          <button
-            type="button"
-            onClick={() => setMetricTab('UNASSIGNED')}
-            className={`btn btn-sm ${metricTab === 'UNASSIGNED' ? 'btn-primary' : 'btn-ghost'}`}
-            style={{
-              padding: '4px 10px',
-              borderRadius: '999px',
-              fontSize: '11.5px',
-              fontWeight: 600,
-              border: '1px solid rgba(245, 158, 11, 0.4)',
-              color: metricTab === 'UNASSIGNED' ? '#fff' : '#f59e0b',
-              backgroundColor: metricTab === 'UNASSIGNED' ? '#f59e0b' : 'rgba(245, 158, 11, 0.08)',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '5px'
-            }}
-          >
-            <span>+ {t('tasks.unassigned_count')} ({metrics.unassigned})</span>
-          </button>
-        </div>
-
-        {/* Right: Multi-dimensional Filter Dropdowns & Quick Search */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-          {/* Quick Search */}
-          <div style={{ position: 'relative', width: '210px' }}>
-            <span style={{ position: 'absolute', left: '9px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', display: 'flex' }}>
-              <Search size={13} />
-            </span>
-            <input
-              type="text"
-              placeholder={t('tasks.search_placeholder')}
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="snote-input"
-              style={{
-                paddingLeft: '28px',
-                paddingRight: search ? '26px' : '8px',
-                height: '30px',
-                fontSize: '11.5px',
-                borderRadius: '6px'
-              }}
-            />
-            {search && (
-              <button
-                type="button"
-                onClick={() => setSearch('')}
-                style={{
-                  position: 'absolute',
-                  right: '6px',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  color: 'var(--text-muted)'
-                }}
-              >
-                <X size={12} />
-              </button>
-            )}
-          </div>
-
-          {/* Assignee Filter Dropdown */}
-          <select
-            value={filterAssignee}
-            onChange={(e) => setFilterAssignee(e.target.value)}
-            className="snote-select"
-            style={{ height: '30px', fontSize: '11.5px', padding: '0 8px', borderRadius: '6px', maxWidth: '140px' }}
-          >
-            <option value="ALL">{t('tasks.filter_assignee_all')}</option>
-            {distinctAssignees.map((a) => (
-              <option key={a.id} value={a.id}>
-                {a.name}
-              </option>
-            ))}
-          </select>
-
-          {/* Date Preset Filter Dropdown */}
-          <select
-            value={filterDatePreset}
-            onChange={(e) => setFilterDatePreset(e.target.value)}
-            className="snote-select"
-            style={{ height: '30px', fontSize: '11.5px', padding: '0 8px', borderRadius: '6px', maxWidth: '150px' }}
-          >
-            <option value="ALL">{t('tasks.filter_date_all')}</option>
-            <option value="TODAY_OVERDUE">{t('tasks.filter_date_today_overdue')}</option>
-            <option value="TODAY">{t('tasks.filter_date_today')}</option>
-            <option value="WEEK">{t('tasks.filter_date_week')}</option>
-            <option value="OVERDUE">{t('tasks.filter_date_overdue')}</option>
-          </select>
-
-          {/* Priority Filter Dropdown */}
-          <select
-            value={filterPriority}
-            onChange={(e) => setFilterPriority(e.target.value)}
-            className="snote-select"
-            style={{ height: '30px', fontSize: '11.5px', padding: '0 8px', borderRadius: '6px', maxWidth: '130px' }}
-          >
-            <option value="ALL">{t('tasks.filter_priority_all')}</option>
-            <option value={TaskPriority.URGENT}>{t('tasks.priority_urgent')}</option>
-            <option value={TaskPriority.HIGH}>{t('tasks.priority_high')}</option>
-            <option value={TaskPriority.MEDIUM}>{t('tasks.priority_medium')}</option>
-            <option value={TaskPriority.LOW}>{t('tasks.priority_low')}</option>
-          </select>
-        </div>
-      </div>
-
-      {/* 2. SECONDARY CONTROLS BAR: VIEW MODE SWITCHER & QUICK ACTIONS */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: '10px'
-        }}
-      >
-        {/* Left: View Mode Segmented Controls */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        {/* Left: View Mode Controls (Hourly removed as requested) */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
           <div
             style={{
               display: 'inline-flex',
@@ -599,7 +388,7 @@ export const TasksListPage: React.FC = () => {
               gap: '2px'
             }}
           >
-            {/* GANTT (Image 1) */}
+            {/* GANTT */}
             <button
               onClick={() => handleSelectViewMode('GANTT')}
               className={`btn btn-sm ${viewMode === 'GANTT' ? 'btn-primary' : 'btn-ghost'}`}
@@ -619,27 +408,7 @@ export const TasksListPage: React.FC = () => {
               <span>Gantt (7W)</span>
             </button>
 
-            {/* HOURLY (Image 2) */}
-            <button
-              onClick={() => handleSelectViewMode('HOURLY')}
-              className={`btn btn-sm ${viewMode === 'HOURLY' ? 'btn-primary' : 'btn-ghost'}`}
-              style={{
-                padding: '4px 10px',
-                borderRadius: '6px',
-                fontSize: '11.5px',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '5px',
-                backgroundColor: viewMode === 'HOURLY' ? 'var(--accent)' : 'transparent',
-                color: viewMode === 'HOURLY' ? '#ffffff' : 'var(--text-secondary)'
-              }}
-              title={t('tasks.view_hourly')}
-            >
-              <Clock size={14} />
-              <span>{language === 'vi' ? 'Khung giờ' : 'Hourly'}</span>
-            </button>
-
-            {/* LIST (Image 3) */}
+            {/* LIST */}
             <button
               onClick={() => handleSelectViewMode('LIST')}
               className={`btn btn-sm ${viewMode === 'LIST' ? 'btn-primary' : 'btn-ghost'}`}
@@ -707,21 +476,21 @@ export const TasksListPage: React.FC = () => {
           </span>
         </div>
 
-        {/* Right: Quick Add Toggle + New Task Button */}
+        {/* Right: Quick Add Toggle + New Task Primary Button */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <button
             type="button"
             onClick={() => setIsQuickAddOpen(!isQuickAddOpen)}
             className="btn btn-sm btn-ghost"
             style={{
-              height: '30px',
+              height: '32px',
               fontSize: '11.5px',
               padding: '0 10px',
               display: 'inline-flex',
               alignItems: 'center',
               gap: '4px',
               border: '1px solid var(--border-color)',
-              borderRadius: '6px',
+              borderRadius: '8px',
               color: isQuickAddOpen ? 'var(--accent)' : 'var(--text-secondary)'
             }}
           >
@@ -734,19 +503,217 @@ export const TasksListPage: React.FC = () => {
             onClick={handleOpenCreate}
             className="btn btn-sm btn-primary"
             style={{
-              height: '30px',
-              fontSize: '11.5px',
-              padding: '0 12px',
+              height: '32px',
+              fontSize: '12px',
+              padding: '0 14px',
               fontWeight: 700,
               display: 'inline-flex',
               alignItems: 'center',
-              gap: '4px',
-              borderRadius: '6px'
+              gap: '6px',
+              borderRadius: '8px',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
             }}
           >
-            <Plus size={14} />
-            <span>{t('tasks.create_task')}</span>
+            <Plus size={14} strokeWidth={2.5} />
+            <span>{language === 'vi' ? '+ Tạo công việc mới' : '+ New Task'}</span>
           </button>
+        </div>
+      </div>
+
+      {/* 2. 1-CLICK STATUS FILTER PILLS & MULTI-DIMENSIONAL CONTROLS (Exact requested style) */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 mb-3 bg-white dark:bg-slate-900 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 text-xs shadow-2xs">
+        {/* 1-Click Status Filter Pills */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 sm:pb-0 custom-scrollbar">
+          <button
+            type="button"
+            onClick={() => setMetricTab('ALL')}
+            title="Xem tất cả công việc"
+            className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 ${
+              metricTab === 'ALL'
+                ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 font-bold'
+                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+            }`}
+          >
+            <span>Tất cả</span>
+            <span
+              className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${
+                metricTab === 'ALL'
+                  ? 'bg-white/20 text-white dark:bg-slate-900/20 dark:text-slate-900'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+              }`}
+            >
+              {metrics.total}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setMetricTab('TODAY')}
+            title="Chỉ xem công việc cần làm hôm nay hoặc quá hạn"
+            className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 ${
+              metricTab === 'TODAY'
+                ? 'bg-blue-600 text-white font-bold'
+                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+            }`}
+          >
+            <Clock size={14} />
+            <span>Hôm nay</span>
+            <span className="px-1.5 py-0.2 rounded-full text-[10px] font-mono bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 font-bold">
+              {metrics.today}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setMetricTab('IN_PROGRESS')}
+            title="Lọc công việc đang làm"
+            className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 ${
+              metricTab === 'IN_PROGRESS'
+                ? 'bg-blue-600 text-white font-bold'
+                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+            }`}
+          >
+            <span>Đang làm</span>
+            <span className="px-1.5 py-0.2 rounded-full text-[10px] font-mono bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400">
+              {metrics.inProgress}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setMetricTab('PENDING')}
+            title="Lọc công việc chờ duyệt"
+            className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 ${
+              metricTab === 'PENDING'
+                ? 'bg-purple-600 text-white font-bold'
+                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+            }`}
+          >
+            <span>Chờ duyệt</span>
+            <span className="px-1.5 py-0.2 rounded-full text-[10px] font-mono bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400">
+              {metrics.pending}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setMetricTab('DONE')}
+            title="Lọc công việc đã xong"
+            className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 ${
+              metricTab === 'DONE'
+                ? 'bg-emerald-600 text-white font-bold'
+                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+            }`}
+          >
+            <span>Đã xong</span>
+            <span className="px-1.5 py-0.2 rounded-full text-[10px] font-mono bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400">
+              {metrics.donePercent}%
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setMetricTab('ARCHIVED')}
+            title="Xem danh sách công việc đã lưu trữ (Archived Vault)"
+            className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 ${
+              metricTab === 'ARCHIVED'
+                ? 'bg-slate-700 text-white font-bold'
+                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+            }`}
+          >
+            <Archive size={14} />
+            <span>Đã lưu trữ</span>
+            <span className="px-1.5 py-0.2 rounded-full text-[10px] font-mono bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+              {metrics.archived}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setMetricTab('UNASSIGNED')}
+            title="Xem việc chưa có người nhận"
+            className={`px-2.5 py-1 rounded-lg font-semibold transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 ${
+              metricTab === 'UNASSIGNED'
+                ? 'bg-amber-600 text-white font-bold'
+                : 'bg-amber-500/10 dark:bg-amber-950/40 hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30 dark:border-amber-700/50'
+            }`}
+          >
+            <UserCheck size={14} className="text-amber-600 dark:text-amber-400" />
+            <span>Chưa giao ({metrics.unassigned})</span>
+          </button>
+        </div>
+
+        {/* Search & Filter Controls */}
+        <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+          <div className="relative flex-1 sm:w-52">
+            <span className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-slate-400">
+              <Search size={14} />
+            </span>
+            <input
+              type="text"
+              id="global-search-input"
+              placeholder="Tìm việc, người làm, checklist... [/]"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-8 pr-7 py-1 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-blue-500 transition-colors"
+            />
+            {search && (
+              <button
+                type="button"
+                id="btn-clear-search"
+                onClick={() => setSearch('')}
+                title="Xóa tìm kiếm (Esc)"
+                className="absolute inset-y-0 right-0 pr-2 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+              >
+                <X size={14} />
+              </button>
+            )}
+          </div>
+
+          {/* Lọc theo Người phụ trách */}
+          <select
+            id="filter-assignee-select"
+            value={filterAssignee}
+            onChange={(e) => setFilterAssignee(e.target.value)}
+            className="text-xs py-1 pl-2 pr-5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 focus:outline-none cursor-pointer shrink-0 max-w-[115px] sm:max-w-[135px] truncate"
+            title="Lọc công việc theo người phụ trách"
+          >
+            <option value="ALL">Tất cả người làm</option>
+            <option value="me">Việc của tôi</option>
+            <option value="UNASSIGNED">Chưa phân công ({metrics.unassigned})</option>
+            {distinctAssignees.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.name}
+              </option>
+            ))}
+          </select>
+
+          {/* Tùy chọn Sắp xếp (Sort Mode) */}
+          <select
+            value={sortMode}
+            onChange={(e) => setSortMode(e.target.value as any)}
+            className="text-xs py-1 pl-2 pr-5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 focus:outline-none cursor-pointer shrink-0 max-w-[125px] sm:max-w-[145px] truncate font-medium"
+            title="Thứ tự sắp xếp công việc"
+          >
+            <option value="today_first">Hôm nay & Hạn chót</option>
+            <option value="priority_first">Độ quan trọng</option>
+            <option value="due_asc">Hạn chót gần nhất</option>
+            <option value="created_desc">Mới tạo gần nhất</option>
+          </select>
+
+          {/* Lọc theo Mức độ ưu tiên */}
+          <select
+            value={filterPriority}
+            onChange={(e) => setFilterPriority(e.target.value)}
+            className="text-xs py-1 pl-2 pr-5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 focus:outline-none cursor-pointer shrink-0 max-w-[95px] truncate"
+            title="Lọc theo mức độ ưu tiên"
+          >
+            <option value="ALL">Mọi ưu tiên</option>
+            <option value={TaskPriority.URGENT}>Khẩn cấp</option>
+            <option value={TaskPriority.HIGH}>Cao</option>
+            <option value={TaskPriority.MEDIUM}>Trung bình</option>
+            <option value={TaskPriority.LOW}>Thấp</option>
+          </select>
         </div>
       </div>
 

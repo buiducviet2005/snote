@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { BookOpen, FolderKanban, Plus, Users, ClipboardList, GraduationCap, Trash2, Eye, Filter } from 'lucide-react';
+import { BookOpen, FolderKanban, Plus, Users, ClipboardList, GraduationCap, Copy, Trash2, Eye, Filter } from 'lucide-react';
 import { api, ApiResponse } from '../../../services/api';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useToast } from '../../../contexts/ToastContext';
@@ -317,7 +317,6 @@ export const ClassesPage: React.FC = () => {
     <header className="classes-heading">
       <div><span className="badge badge-blue"><GraduationCap size={14} /> Không gian lớp học</span>
         <h1>Lớp học, nhóm và dự án môn học</h1>
-        <p>Giảng viên theo dõi các nhóm; sinh viên vẫn có thể tạo dự án độc lập ở mục Dự án & BTL.</p>
       </div>
     </header>
 
@@ -337,9 +336,6 @@ export const ClassesPage: React.FC = () => {
               onChange={(e) => setJoinCode(e.target.value)}
               placeholder="Dán UID lớp (UUID) hoặc nhập Mã lớp (ví dụ: CSDL-01)..."
             />
-            <small style={{ color: 'var(--text-muted)', fontSize: '11px', marginTop: '2px' }}>
-              💡 Khuyên dùng: Dán UID lớp học để đảm bảo 100% không bị trùng lặp giữa các giảng viên và học kỳ.
-            </small>
           </label>
           <button className="btn btn-primary" disabled={busy || !joinCode.trim()}>
             Tham gia lớp
@@ -402,7 +398,7 @@ export const ClassesPage: React.FC = () => {
         )}
         {loading && <p>Đang tải lớp học...</p>}
         {classesError && <p role="alert">Không tải được danh sách lớp: {classesError} <button type="button" className="btn btn-secondary btn-sm" onClick={() => setClassesReloadKey((current) => current + 1)}>Thử lại</button></p>}
-        {!loading && !classesError && classes.length === 0 && <p>Bạn chưa tham gia lớp nào. Giảng viên có thể tạo lớp, hoặc quản lý lớp sẽ thêm bạn bằng email.</p>}
+        {!loading && !classesError && classes.length === 0 && <p>Chưa có lớp học nào.</p>}
         {!loading && !classesError && classes.length > 0 && filteredClasses.length === 0 && <p>Không tìm thấy lớp phù hợp.</p>}
         {filteredClasses.map((item) => <button key={item.id} type="button" className={`classes-list-item ${selectedId === item.id ? 'active' : ''}`} aria-current={selectedId === item.id ? 'page' : undefined} onClick={() => selectClass(item.id)}>
           <strong>{item.name}</strong><span>{item.code || 'Chưa có mã'} · {item.term || 'Chưa ghi học kỳ'}</span>
@@ -427,40 +423,27 @@ export const ClassesPage: React.FC = () => {
                   <span>·</span>
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                     Mã lớp: <code>{detail.code || 'Chưa có mã'}</code>
-                    {detail.code && (
-                      <button
-                        type="button"
-                        className="btn btn-ghost btn-sm"
-                        style={{ fontSize: '11px', padding: '1px 6px' }}
-                        onClick={() => {
-                          navigator.clipboard.writeText(detail.code || '');
-                          showToast('Đã sao chép Mã lớp!', 'success');
-                        }}
-                        title="Sao chép Mã lớp"
-                      >
-                        Sao chép mã
-                      </button>
-                    )}
+                    
                   </span>
                   <span>·</span>
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                    UID lớp: <code style={{ fontSize: '11px' }}>{detail.id}</code>
+                    UID lớp: <code style={{ fontSize: '11.5px', fontWeight: 600, color: 'var(--text-primary)' }}>{detail.id}</code>
                     <button
                       type="button"
-                      className="btn btn-ghost btn-sm"
-                      style={{ fontSize: '11px', padding: '1px 6px' }}
+                      className="btn btn-primary btn-sm"
+                      style={{ fontSize: '11px', padding: '2px 9px', fontWeight: 700, borderRadius: '6px', display: 'inline-flex', alignItems: 'center', gap: '4px', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }}
                       onClick={() => {
                         navigator.clipboard.writeText(detail.id);
                         showToast('Đã sao chép UID lớp độc nhất!', 'success');
                       }}
                       title="Sao chép UID duy nhất không bao giờ trùng lặp của lớp"
                     >
-                      Sao chép UID
+                      <Copy size={12} />
+                      <span>Sao chép UID</span>
                     </button>
                   </span>
                 </div>
               </div>
-              <BookOpen size={24} aria-hidden="true" />
             </div>
             {detail.description && <p>{detail.description}</p>}
             {isTeacher && <details>
@@ -517,7 +500,7 @@ export const ClassesPage: React.FC = () => {
               <label>Trưởng nhóm<select className="snote-select" required value={groupLeaderId} onChange={(e) => setGroupLeaderId(e.target.value)}><option value="">Chọn sinh viên</option>{detail.members.filter((member) => !detail.groups.some((group) => group.members.some((m) => m.userId === member.userId))).map((member) => <option value={member.userId} key={member.userId}>{member.user.fullName}</option>)}</select></label>
               <button className="btn btn-primary" disabled={busy}>Tạo nhóm</button>
             </form>}
-            {detail.groups.length === 0 && <p>Chưa có nhóm. Quản lý lớp có thể chia sinh viên thành các nhóm nhỏ.</p>}
+            {detail.groups.length === 0 && <p>Chưa có nhóm học tập.</p>}
             <div className="classes-groups">{detail.groups.map((group) => {
               const isLeader = group.leaderId === user?.id;
               const canManageGroup = isManager || isLeader;
