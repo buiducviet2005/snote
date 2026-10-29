@@ -32,6 +32,7 @@ const projectInclude = {
 };
 
 const taskIncludes = {
+  workspace: { select: { id: true, type: true, ownerId: true } },
   user: {
     select: { id: true, fullName: true, email: true, avatarUrl: true }
   },
@@ -62,9 +63,13 @@ export class TasksRepository {
       deletedAt: null,
       subjectId: filter?.subjectId || undefined,
       projectId: filter?.projectId || undefined,
+      workspaceId: filter?.groupWorkspaceId || undefined,
       status: filter?.status || undefined,
       priority: filter?.priority || undefined
     };
+    if (filter?.personalScope) {
+      where.AND.push({ OR: [{ userId }, { assignees: { some: { userId } } }] });
+    }
 
     if (filter?.assigneeId) {
       where.AND.push({ OR: [
@@ -150,6 +155,7 @@ export class TasksRepository {
         description: data.description,
         subjectId: data.subjectId || null,
         projectId: data.projectId || null,
+        workspaceId: data.workspaceId || null,
         status: data.status || 'TODO',
         priority: data.priority || 'MEDIUM',
         dueDate: data.dueDate ? new Date(data.dueDate) : null,

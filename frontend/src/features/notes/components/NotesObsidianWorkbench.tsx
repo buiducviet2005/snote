@@ -11,6 +11,7 @@ import {
 } from '../utils/smartNoteParser';
 import { handleSmartListKeyDown } from '../utils/smartKeyboard';
 import { useToast } from '../../../contexts/ToastContext';
+import { useAuth } from '../../../contexts/AuthContext';
 import {
   Link2,
   ArrowUpRight,
@@ -63,9 +64,11 @@ export const NotesObsidianWorkbench: React.FC<NotesObsidianWorkbenchProps> = ({
   onShareNote
 }) => {
   const { showToast } = useToast();
+  const { user } = useAuth();
 
   // Active note selection
   const [selectedNote, setSelectedNote] = useState<any | null>(null);
+  const canEditSelected = !selectedNote || selectedNote.userId === user?.id;
 
   useEffect(() => {
     if (activeNoteId) {
@@ -116,7 +119,7 @@ export const NotesObsidianWorkbench: React.FC<NotesObsidianWorkbenchProps> = ({
 
   // Autosave Debounce (750ms)
   const triggerAutosave = (newTitle: string, newContent: string) => {
-    if (!selectedNote) return;
+    if (!selectedNote || !canEditSelected) return;
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
     saveTimeoutRef.current = setTimeout(async () => {
       try {
@@ -545,26 +548,27 @@ export const NotesObsidianWorkbench: React.FC<NotesObsidianWorkbenchProps> = ({
                   className="obs-doc-title-input"
                   value={editTitle}
                   onChange={handleTitleChange}
+                  readOnly={!canEditSelected}
                   placeholder="Ghi chú không tên..."
                 />
                 <div className="obs-doc-tools">
-                  <button
+                  {canEditSelected && <button
                     type="button"
                     className={`obs-doc-tool-btn ${editorMode === 'READ' ? 'active' : ''}`}
                     onClick={() => setEditorMode(editorMode === 'EDIT' ? 'READ' : 'EDIT')}
                     title={editorMode === 'EDIT' ? 'Chuyển sang chế độ đọc tĩnh (Ctrl+E)' : 'Chuyển sang chế độ soạn thảo (Ctrl+E)'}
                   >
                     {editorMode === 'EDIT' ? <BookOpen size={14} /> : <Edit3 size={14} />}
-                  </button>
-                  <button
+                  </button>}
+                  {canEditSelected && <button
                     type="button"
                     className={`obs-doc-tool-btn ${selectedNote.isPinned ? 'active' : ''}`}
                     onClick={() => onTogglePin(selectedNote.id)}
                     title={selectedNote.isPinned ? 'Bỏ ghim bài ghi' : 'Ghim bài ghi'}
                   >
                     <Pin size={14} style={{ color: selectedNote.isPinned ? 'var(--ws-accent)' : undefined }} />
-                  </button>
-                  {onConvertToTask && (
+                  </button>}
+                  {canEditSelected && onConvertToTask && (
                     <button
                       type="button"
                       className="obs-doc-tool-btn"
@@ -584,18 +588,18 @@ export const NotesObsidianWorkbench: React.FC<NotesObsidianWorkbenchProps> = ({
                       <Share2 size={14} />
                     </button>
                   )}
-                  <button
+                  {canEditSelected && <button
                     type="button"
                     className="obs-doc-tool-btn danger"
                     onClick={() => onDeleteNote(selectedNote.id)}
                     title="Xóa ghi chú"
                   >
                     <Trash2 size={14} />
-                  </button>
+                  </button>}
                 </div>
               </div>
 
-              {editorMode === 'EDIT' ? (
+              {editorMode === 'EDIT' && canEditSelected ? (
             <textarea
               ref={textareaRef}
               className="obs-editor-textarea"

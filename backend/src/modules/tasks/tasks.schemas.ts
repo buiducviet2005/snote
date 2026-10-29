@@ -14,6 +14,7 @@ export const createTaskSchema = z.object({
   description: z.string().optional(),
   subjectId: optionalUuid,
   projectId: optionalUuid,
+  workspaceId: optionalUuid,
   assigneeId: optionalUuid,
   assigneeIds: z.array(z.string().uuid('ID người tham gia không hợp lệ')).optional(),
   status: z.enum(['TODO', 'IN_PROGRESS', 'DONE', 'CANCELLED']).optional().default('TODO'),

@@ -180,6 +180,7 @@ export const ClassesPage: React.FC = () => {
     setBusy(true);
     try {
       await action();
+      window.dispatchEvent(new Event('snote_refresh_workspaces'));
       showToast(message, 'success');
       await loadClasses();
       if (selectedId) await Promise.all([loadClass(selectedId), loadOverview(selectedId)]);

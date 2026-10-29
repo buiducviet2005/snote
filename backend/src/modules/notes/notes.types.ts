@@ -1,6 +1,7 @@
 import { NoteType } from '@prisma/client';
 
 export interface CreateNoteDto {
+  workspaceId?: string;
   title?: string;
   content: string;
   subjectId?: string | null;
@@ -22,6 +23,9 @@ export interface UpdateNoteDto {
 }
 
 export interface NoteFilter {
+  workspaceId?: string;
+  personalScope?: boolean;
+  groupWorkspaceId?: string;
   subjectId?: string;
   projectId?: string;
   noteType?: NoteType;
@@ -43,6 +47,7 @@ export interface NoteResponseDto {
   userId: string;
   subjectId: string | null;
   projectId: string | null;
+  workspaceId?: string | null;
   title: string;
   content: string;
   noteType: NoteType;

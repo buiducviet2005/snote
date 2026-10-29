@@ -9,7 +9,8 @@ export class ScheduleRepository {
     startDate?: Date,
     endDate?: Date,
     semesterId?: string,
-    subjectId?: string
+    subjectId?: string,
+    scope?: { id: string; type: 'PERSONAL' | 'SUBJECT' | 'PROJECT' | 'GROUP'; subjectId: string | null; projectId: string | null }
   ): Promise<UnifiedScheduleItemDto[]> {
     const eventWhere: any = {
       userId,
@@ -17,6 +18,18 @@ export class ScheduleRepository {
       semesterId: semesterId || undefined,
       subjectId: subjectId || undefined
     };
+    if (scope?.type === 'PERSONAL') eventWhere.subjectId = null;
+    if (scope?.type === 'SUBJECT') eventWhere.subjectId = scope.subjectId;
+    if (scope?.type === 'PERSONAL') {
+      eventWhere.projectId = null;
+      eventWhere.OR = [{ workspaceId: null }, { workspace: { type: 'PERSONAL' } }];
+    }
+    if (scope?.type === 'SUBJECT') eventWhere.projectId = null;
+    if (scope?.type === 'PROJECT') eventWhere.projectId = scope.projectId;
+    if (scope?.type === 'GROUP') {
+      delete eventWhere.userId;
+      eventWhere.workspaceId = scope.id;
+    }
 
     if (startDate && endDate) {
       eventWhere.startTime = { gte: startDate, lte: endDate };
@@ -35,6 +48,7 @@ export class ScheduleRepository {
 
     const unifiedList: UnifiedScheduleItemDto[] = events.map((e: any) => ({
       id: e.id,
+      userId: e.userId,
       itemType: 'EVENT',
       title: e.title,
       location: e.location,
@@ -44,19 +58,25 @@ export class ScheduleRepository {
       isRecurring: e.isRecurring,
       recurrenceRule: e.recurrenceRule,
       subjectId: e.subjectId,
+      projectId: e.projectId,
       subject: e.subject
     }));
 
     // 2. Fetch Tasks with due date in range
     // 2. Fetch Tasks with due date in range or created in range
     if (startDate && endDate) {
-      const tasks = await prisma.task.findMany({
-        where: {
+      const taskWhere: any = {
           AND: [visibleTasks(userId)],
           deletedAt: null,
           dueDate: { gte: startDate, lte: endDate },
           subjectId: subjectId || undefined
-        },
+      };
+      if (scope?.type === 'PERSONAL') taskWhere.AND.push({ OR: [{ userId }, { assignees: { some: { userId } } }] });
+      if (scope?.type === 'SUBJECT') taskWhere.subjectId = scope.subjectId;
+      if (scope?.type === 'PROJECT') taskWhere.projectId = scope.projectId;
+      if (scope?.type === 'GROUP') taskWhere.workspaceId = scope.id;
+      const tasks = await prisma.task.findMany({
+        where: taskWhere,
         include: {
           user: {
             select: { id: true, fullName: true, avatarUrl: true }
@@ -125,7 +145,9 @@ export class ScheduleRepository {
           ],
           deletedAt: null,
           dueDate: { gte: startDate, lte: endDate },
-          subjectId: subjectId || undefined
+          subjectId: scope?.type === 'SUBJECT' ? scope.subjectId : subjectId || undefined,
+          id: scope?.type === 'PROJECT' ? scope.projectId! : undefined,
+          ...(scope?.type === 'GROUP' || scope?.type === 'PERSONAL' ? { id: { in: [] } } : {})
         },
         include: {
           subject: {
@@ -163,7 +185,7 @@ export class ScheduleRepository {
 
   async findByIdAndUserId(id: string, userId: string): Promise<ScheduleEvent | null> {
     return prisma.scheduleEvent.findFirst({
-      where: { id, userId, deletedAt: null }
+      where: { id, deletedAt: null, OR: [{ userId }, { workspace: { type: 'GROUP', members: { some: { userId, status: 'ACCEPTED' } } } }] }
     });
   }
 
@@ -173,6 +195,8 @@ export class ScheduleRepository {
         userId,
         semesterId: data.semesterId || null,
         subjectId: data.subjectId || null,
+        projectId: data.projectId || null,
+        workspaceId: data.workspaceId || null,
         title: data.title,
         location: data.location || null,
         eventType: data.eventType || 'CLASS',
@@ -190,6 +214,7 @@ export class ScheduleRepository {
       data: {
         semesterId: data.semesterId !== undefined ? (data.semesterId || null) : undefined,
         subjectId: data.subjectId !== undefined ? (data.subjectId || null) : undefined,
+        projectId: data.projectId !== undefined ? (data.projectId || null) : undefined,
         title: data.title,
         location: data.location,
         eventType: data.eventType,

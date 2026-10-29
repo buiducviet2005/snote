@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useOutletContext } from 'react-router-dom';
+import type { WorkspaceSummary } from '../../../workspaces/layouts/types';
 import { api, ApiResponse } from '../../../services/api';
 import { useAppFilter } from '../../../contexts/AppFilterContext';
 import { useToast } from '../../../contexts/ToastContext';
@@ -10,6 +12,7 @@ import { TasksHourlyView } from '../../tasks/components/TasksHourlyView';
 import { Plus, Sparkles, BookOpen, Clock, Calendar, TrendingUp } from 'lucide-react';
 
 export const ScheduleWeekPage: React.FC = () => {
+  const { currentWorkspace } = useOutletContext<{ currentWorkspace: WorkspaceSummary }>();
   const { selectedSubjectId, selectedSemesterId, subjects } = useAppFilter();
   const { t, language } = useLanguage();
   const [scheduleViewMode, setScheduleViewMode] = useState<'HOURLY' | 'MONTHLY'>('HOURLY');
@@ -34,8 +37,9 @@ export const ScheduleWeekPage: React.FC = () => {
       const params = new URLSearchParams();
       params.append('startDate', startDate.toISOString());
       params.append('endDate', endDate.toISOString());
-      if (selectedSubjectId) params.append('subjectId', selectedSubjectId);
-      if (selectedSemesterId) params.append('semesterId', selectedSemesterId);
+      if (currentWorkspace.id) params.append('workspaceId', currentWorkspace.id);
+      else if (selectedSubjectId) params.append('subjectId', selectedSubjectId);
+      if (!currentWorkspace.id && selectedSemesterId) params.append('semesterId', selectedSemesterId);
 
       const res = await api.get<ApiResponse<any[]>>(`/schedule?${params.toString()}`);
       setEvents(res.data || []);
@@ -44,7 +48,7 @@ export const ScheduleWeekPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [currentGanttDate, selectedSubjectId, selectedSemesterId, showToast, language]);
+  }, [currentGanttDate, currentWorkspace.id, selectedSubjectId, selectedSemesterId, showToast, language]);
 
   useEffect(() => {
     fetchEvents();
@@ -188,6 +192,9 @@ export const ScheduleWeekPage: React.FC = () => {
         onSuccess={fetchEvents}
         defaultDate={selectedDateForNewEvent}
         eventToEdit={eventToEdit}
+        defaultProjectId={currentWorkspace.type === 'PROJECT' ? currentWorkspace.projectId : undefined}
+        defaultSubjectId={currentWorkspace.type === 'SUBJECT' ? currentWorkspace.subjectId : undefined}
+        defaultWorkspaceId={currentWorkspace.type === 'GROUP' ? currentWorkspace.id : undefined}
       />
 
       {/* Task Detail Modal from Schedule */}

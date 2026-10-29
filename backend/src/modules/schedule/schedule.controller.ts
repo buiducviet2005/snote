@@ -7,13 +7,14 @@ export class ScheduleController {
 
   getEvents = async (req: Request, res: Response): Promise<void> => {
     const userId = req.user!.id;
-    const { startDate, endDate, semesterId, subjectId } = req.query;
+    const { startDate, endDate, semesterId, subjectId, workspaceId } = req.query;
     const data = await this.service.getEvents(
       userId,
       startDate as string | undefined,
       endDate as string | undefined,
       semesterId as string | undefined,
-      subjectId as string | undefined
+      subjectId as string | undefined,
+      workspaceId as string | undefined
     );
     res.status(200).json({
       success: true,

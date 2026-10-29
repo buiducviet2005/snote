@@ -4,6 +4,7 @@ export * from './contracts/auth.contract';
 export * from './contracts/semesters.contract';
 export * from './contracts/subjects.contract';
 export * from './contracts/projects.contract';
+export * from './contracts/workspaces.contract';
 export * from './contracts/notes.contract';
 export * from './contracts/tasks.contract';
 export * from './contracts/schedule.contract';

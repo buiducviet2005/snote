@@ -7,9 +7,10 @@ export class NotesController {
 
   getNotes = async (req: Request, res: Response): Promise<void> => {
     const userId = req.user!.id;
-    const { subjectId, projectId, noteType, isPinned, isArchived, search, page, limit } = req.query;
+    const { workspaceId, subjectId, projectId, noteType, isPinned, isArchived, search, page, limit } = req.query;
 
     const filter = {
+      workspaceId: workspaceId as string,
       subjectId: subjectId as string,
       projectId: projectId as string,
       noteType: noteType as any,

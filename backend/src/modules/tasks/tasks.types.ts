@@ -1,6 +1,7 @@
 import { TaskStatus, TaskPriority } from '@prisma/client';
 
 export interface CreateTaskDto {
+  workspaceId?: string;
   title: string;
   description?: string;
   subjectId?: string | null;
@@ -27,6 +28,9 @@ export interface UpdateTaskDto {
 }
 
 export interface TaskFilter {
+  workspaceId?: string;
+  personalScope?: boolean;
+  groupWorkspaceId?: string;
   subjectId?: string;
   projectId?: string;
   assigneeId?: string;
@@ -55,6 +59,7 @@ export interface TaskResponseDto {
   userId: string;
   subjectId: string | null;
   projectId: string | null;
+  workspaceId?: string | null;
   title: string;
   description: string | null;
   status: TaskStatus;

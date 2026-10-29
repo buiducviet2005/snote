@@ -280,10 +280,17 @@ export class ClassesService {
     const led = await prisma.studyGroup.count({ where: { classId, leaderId: targetId } });
     if (led) throw new ConflictError('Hãy chuyển vai trò trưởng nhóm trước khi xóa sinh viên khỏi lớp');
     await prisma.$transaction(async (tx) => {
+      const groupMembership = await tx.studyGroupMember.findUnique({ where: { classId_userId: { classId, userId: targetId } }, include: { group: { include: { workspace: { select: { id: true } } } } } });
       const groupProjects = await tx.project.findMany({ where: { classId, groupId: { not: null } }, select: { id: true } });
       const projectIds = groupProjects.map((p) => p.id);
       await tx.taskAssignee.deleteMany({ where: { userId: targetId, task: { projectId: { in: projectIds } } } });
+      await tx.taskAssignee.deleteMany({ where: { userId: targetId, task: { workspace: { group: { classId } } } } });
+      if (groupMembership?.group.workspace) await tx.task.updateMany({
+        where: { workspaceId: groupMembership.group.workspace.id, userId: targetId },
+        data: { userId: groupMembership.group.leaderId }
+      });
       await tx.projectMember.deleteMany({ where: { userId: targetId, projectId: { in: projectIds } } });
+      await tx.workspaceMember.deleteMany({ where: { userId: targetId, workspace: { group: { classId } } } });
       await tx.studyGroupMember.deleteMany({ where: { classId, userId: targetId } });
       await tx.classMember.delete({ where: { classId_userId: { classId, userId: targetId } } });
     });
@@ -296,16 +303,27 @@ export class ClassesService {
     if (!leader) throw new ValidationError('Trưởng nhóm phải là sinh viên trong lớp');
     const existingGroup = await prisma.studyGroupMember.findUnique({ where: { classId_userId: { classId, userId: data.leaderId } } });
     if (existingGroup) throw new ConflictError('Sinh viên đã thuộc một nhóm khác trong lớp');
-    return prisma.studyGroup.create({
-      data: { classId, name: data.name, leaderId: data.leaderId, members: { create: { classId, userId: data.leaderId } } },
-      include: { leader: { select: publicUser }, members: { include: { user: { select: publicUser } } } }
+    return prisma.$transaction(async (tx) => {
+      const group = await tx.studyGroup.create({
+        data: { classId, name: data.name, leaderId: data.leaderId, members: { create: { classId, userId: data.leaderId } } },
+        include: { leader: { select: publicUser }, members: { include: { user: { select: publicUser } } } }
+      });
+      await tx.workspace.create({
+        data: { type: 'GROUP', name: group.name, ownerId: data.leaderId, groupId: group.id,
+          members: { create: { userId: data.leaderId, role: 'OWNER', status: 'ACCEPTED', joinedAt: new Date() } } }
+      });
+      return group;
     });
   }
 
   async updateGroup(classId: string, groupId: string, userId: string, name: string) {
     const access = await this.groupAccess(classId, groupId, userId);
     if (!access.isManager) throw new ForbiddenError('Chỉ quản lý lớp được đổi tên nhóm');
-    return prisma.studyGroup.update({ where: { id: groupId }, data: { name } });
+    return prisma.$transaction(async (tx) => {
+      const group = await tx.studyGroup.update({ where: { id: groupId }, data: { name } });
+      await tx.workspace.updateMany({ where: { groupId }, data: { name } });
+      return group;
+    });
   }
 
   async deleteGroup(classId: string, groupId: string, userId: string) {
@@ -313,6 +331,15 @@ export class ClassesService {
     if (!access.isTeacher) throw new ForbiddenError('Chỉ giảng viên được xóa nhóm');
     const projects = await prisma.project.count({ where: { groupId, deletedAt: null } });
     if (projects) throw new ConflictError('Hãy xử lý các dự án của nhóm trước khi xóa nhóm');
+    const workspace = await prisma.workspace.findUnique({ where: { groupId }, select: { id: true } });
+    if (workspace) {
+      const [tasks, notes, events] = await Promise.all([
+        prisma.task.count({ where: { workspaceId: workspace.id, deletedAt: null } }),
+        prisma.note.count({ where: { workspaceId: workspace.id, deletedAt: null } }),
+        prisma.scheduleEvent.count({ where: { workspaceId: workspace.id, deletedAt: null } })
+      ]);
+      if (tasks || notes || events) throw new ConflictError('Không thể xóa nhóm còn công việc, ghi chú hoặc lịch trình');
+    }
     await prisma.studyGroup.delete({ where: { id: groupId } });
   }
 
@@ -327,6 +354,12 @@ export class ClassesService {
     if (existing) throw new ConflictError('Sinh viên đã thuộc một nhóm trong lớp');
     return prisma.$transaction(async (tx) => {
       const membership = await tx.studyGroupMember.create({ data: { groupId, classId, userId: targetId } });
+      const groupWorkspace = await tx.workspace.findUnique({ where: { groupId }, select: { id: true } });
+      if (groupWorkspace) await tx.workspaceMember.upsert({
+        where: { workspaceId_userId: { workspaceId: groupWorkspace.id, userId: targetId } },
+        create: { workspaceId: groupWorkspace.id, userId: targetId, role: 'MEMBER', status: 'ACCEPTED', joinedAt: new Date() },
+        update: { role: 'MEMBER', status: 'ACCEPTED', joinedAt: new Date() }
+      });
       const projects = await tx.project.findMany({ where: { groupId, deletedAt: null }, select: { id: true } });
       for (const project of projects) {
         await tx.projectMember.upsert({
@@ -348,6 +381,12 @@ export class ClassesService {
     await prisma.$transaction(async (tx) => {
       const result = await tx.studyGroupMember.deleteMany({ where: { groupId, userId: targetId } });
       if (!result.count) throw new NotFoundError('Sinh viên không thuộc nhóm');
+      const groupWorkspace = await tx.workspace.findUnique({ where: { groupId }, select: { id: true } });
+      if (groupWorkspace) {
+        await tx.taskAssignee.deleteMany({ where: { userId: targetId, task: { workspaceId: groupWorkspace.id } } });
+        await tx.task.updateMany({ where: { workspaceId: groupWorkspace.id, userId: targetId }, data: { userId: access.group.leaderId } });
+        await tx.workspaceMember.deleteMany({ where: { workspaceId: groupWorkspace.id, userId: targetId } });
+      }
       const projects = await tx.project.findMany({ where: { groupId }, select: { id: true } });
       const projectIds = projects.map((p) => p.id);
       await tx.taskAssignee.deleteMany({ where: { userId: targetId, task: { projectId: { in: projectIds } } } });
@@ -362,6 +401,12 @@ export class ClassesService {
     if (!member) throw new ValidationError('Trưởng nhóm mới phải thuộc nhóm này');
     await prisma.$transaction(async (tx) => {
       await tx.studyGroup.update({ where: { id: groupId }, data: { leaderId: targetId } });
+      const groupWorkspace = await tx.workspace.findUnique({ where: { groupId }, select: { id: true } });
+      if (groupWorkspace) {
+        await tx.workspace.update({ where: { id: groupWorkspace.id }, data: { ownerId: targetId } });
+        await tx.workspaceMember.updateMany({ where: { workspaceId: groupWorkspace.id, userId: access.group.leaderId }, data: { role: 'MEMBER' } });
+        await tx.workspaceMember.updateMany({ where: { workspaceId: groupWorkspace.id, userId: targetId }, data: { role: 'OWNER' } });
+      }
       const projects = await tx.project.findMany({ where: { groupId }, select: { id: true } });
       for (const project of projects) {
         await tx.projectMember.updateMany({ where: { projectId: project.id, userId: access.group.leaderId }, data: { role: 'MEMBER' } });

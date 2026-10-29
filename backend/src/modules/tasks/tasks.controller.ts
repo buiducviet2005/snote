@@ -8,9 +8,10 @@ export class TasksController {
 
   getTasks = async (req: Request, res: Response): Promise<void> => {
     const userId = req.user!.id;
-    const { subjectId, projectId, status, priority, search, page, limit } = req.query;
+    const { workspaceId, subjectId, projectId, status, priority, search, page, limit } = req.query;
 
     const filter = {
+      workspaceId: workspaceId as string,
       subjectId: subjectId as string,
       projectId: projectId as string,
       status: status as any,

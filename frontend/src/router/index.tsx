@@ -14,6 +14,7 @@ import { SettingsPage } from '../features/settings';
 import { SystemStatusPage } from '../features/status';
 import { ClassesPage } from '../features/classes/pages/ClassesPage';
 import { WorkspaceLayout } from '../workspaces/layouts';
+import { WorkspacesPage } from '../workspaces/pages/WorkspacesPage';
 
 export const AppRouter: React.FC = () => {
   return (
@@ -30,6 +31,7 @@ export const AppRouter: React.FC = () => {
           <Route path="/ws" element={<Navigate to="/notes" replace />} />
           <Route path="/workspace-preview" element={<Navigate to="/notes" replace />} />
           <Route path="/notes" element={<NotesListPage />} />
+          <Route path="/workspaces" element={<WorkspacesPage />} />
           <Route path="/tasks" element={<TasksListPage />} />
           <Route path="/schedule" element={<ScheduleWeekPage />} />
           <Route path="/classes" element={<ClassesPage />} />

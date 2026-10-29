@@ -26,6 +26,9 @@ const workspaceRelations = {
       semesterId: true,
       code: true
     }
+  },
+  group: {
+    select: { id: true, classId: true, leaderId: true, courseClass: { select: { name: true } } }
   }
 } satisfies Prisma.WorkspaceInclude;
 
@@ -508,6 +511,8 @@ export class WorkspaceRepository implements WorkspaceRepositoryPort {
       select: {
         id: true,
         type: true,
+        ownerId: true,
+        subjectId: true,
         projectId: true,
         members: {
           where: { status: 'ACCEPTED' },
@@ -524,9 +529,18 @@ export class WorkspaceRepository implements WorkspaceRepositoryPort {
       throw new NotFoundError('Không tìm thấy Không gian làm việc');
     }
 
-    const tasks = workspace.projectId
+    const taskScope = workspace.type === 'GROUP'
+      ? { workspaceId }
+      : workspace.type === 'PROJECT' && workspace.projectId
+        ? { projectId: workspace.projectId }
+        : workspace.type === 'PERSONAL'
+          ? { OR: [{ userId: workspace.ownerId }, { assignees: { some: { userId: workspace.ownerId } } }] }
+          : workspace.type === 'SUBJECT' && workspace.subjectId
+            ? { subjectId: workspace.subjectId }
+            : null;
+    const tasks = taskScope
       ? await prisma.task.findMany({
-          where: { projectId: workspace.projectId, deletedAt: null },
+          where: { ...taskScope, deletedAt: null },
           select: {
             id: true,
             status: true,
@@ -593,6 +607,7 @@ export class WorkspaceRepository implements WorkspaceRepositoryPort {
     if (!workspace) {
       throw new NotFoundError('Không tìm thấy Không gian làm việc với mã hoặc ID này');
     }
+    if (workspace.type === 'GROUP') throw new ConflictError('Hãy tham gia lớp học để vào nhóm');
 
     const existing = await prisma.workspaceMember.findUnique({
       where: {

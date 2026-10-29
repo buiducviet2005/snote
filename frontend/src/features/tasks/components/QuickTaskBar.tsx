@@ -7,12 +7,16 @@ import { Plus, Calendar, BookOpen, Flame, Zap, Check } from 'lucide-react';
 interface QuickTaskBarProps {
   subjects: any[];
   defaultSubjectId?: string;
+  defaultProjectId?: string;
+  defaultWorkspaceId?: string;
   onTaskCreated: () => void;
 }
 
 export const QuickTaskBar: React.FC<QuickTaskBarProps> = ({
   subjects,
   defaultSubjectId,
+  defaultProjectId,
+  defaultWorkspaceId,
   onTaskCreated
 }) => {
   const [title, setTitle] = useState('');
@@ -31,6 +35,8 @@ export const QuickTaskBar: React.FC<QuickTaskBarProps> = ({
       await api.post('/tasks', {
         title: title.trim(),
         subjectId: subjectId || undefined,
+        projectId: defaultProjectId || undefined,
+        workspaceId: defaultWorkspaceId || undefined,
         priority,
         dueDate: dueDate ? new Date(`${dueDate}T23:59:59`).toISOString() : undefined,
         status: 'TODO'

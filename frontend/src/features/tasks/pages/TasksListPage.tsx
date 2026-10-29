@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useOutletContext, useSearchParams } from 'react-router-dom';
+import type { WorkspaceSummary } from '../../../workspaces/layouts/types';
 import { api, ApiResponse } from '../../../services/api';
 import { useAppFilter } from '../../../contexts/AppFilterContext';
 import { useToast } from '../../../contexts/ToastContext';
@@ -12,6 +13,7 @@ import { TasksListView } from '../components/TasksListView';
 import { TasksEisenhowerView } from '../components/TasksEisenhowerView';
 import { TasksGanttView } from '../components/TasksGanttView';
 import { TasksHourlyView } from '../components/TasksHourlyView';
+import './TasksListPage.css';
 import { TaskStatus, TaskPriority } from '@snote/shared';
 import {
   CheckSquare,
@@ -40,6 +42,7 @@ type ViewMode = 'GANTT' | 'HOURLY' | 'LIST' | 'KANBAN' | 'EISENHOWER';
 type MetricTab = 'ALL' | 'TODAY' | 'IN_PROGRESS' | 'PENDING' | 'DONE' | 'ARCHIVED' | 'UNASSIGNED';
 
 export const TasksListPage: React.FC = () => {
+  const { currentWorkspace } = useOutletContext<{ currentWorkspace: WorkspaceSummary }>();
   const { selectedSubjectId, selectedSemesterId, subjects } = useAppFilter();
   const { t, language } = useLanguage();
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
@@ -47,7 +50,6 @@ export const TasksListPage: React.FC = () => {
   });
 
   const [tasks, setTasks] = useState<any[]>([]);
-  const [projects, setProjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   
   // Universal Filters
@@ -56,7 +58,6 @@ export const TasksListPage: React.FC = () => {
   const [filterPriority, setFilterPriority] = useState<string>('ALL');
   const [filterAssignee, setFilterAssignee] = useState<string>('ALL');
   const [filterDatePreset, setFilterDatePreset] = useState<string>('ALL');
-  const [filterProjectId, setFilterProjectId] = useState<string>('ALL');
   const [sortMode, setSortMode] = useState<'today_first' | 'priority_first' | 'due_asc' | 'created_desc'>('today_first');
   const { user: currentUser } = useAuth();
 
@@ -98,18 +99,12 @@ export const TasksListPage: React.FC = () => {
     localStorage.setItem('snote_tasks_view_mode', mode);
   };
 
-  useEffect(() => {
-    api.get<ApiResponse<any[]>>('/projects')
-      .then((res) => setProjects(res.data || []))
-      .catch(() => {});
-  }, []);
-
   const fetchTasks = useCallback(async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
-      if (selectedSubjectId) params.append('subjectId', selectedSubjectId);
-      if (filterProjectId !== 'ALL') params.append('projectId', filterProjectId);
+      if (currentWorkspace.id) params.append('workspaceId', currentWorkspace.id);
+      if (!currentWorkspace.id && selectedSubjectId) params.append('subjectId', selectedSubjectId);
 
       const res = await api.get<ApiResponse<any[]>>(`/tasks?${params.toString()}`);
       setTasks(res.data || []);
@@ -118,7 +113,7 @@ export const TasksListPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [selectedSubjectId, filterProjectId, showToast, language]);
+  }, [currentWorkspace.id, selectedSubjectId, showToast, language]);
 
   useEffect(() => {
     fetchTasks();
@@ -367,12 +362,12 @@ export const TasksListPage: React.FC = () => {
   ];
 
   return (
-    <div style={{ maxWidth: '1440px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+    <div className="tasks-page">
       {/* 1. TOP VIEW MODE SWITCHER & PRIMARY ACTION BAR */}
       <div
         className="snote-card"
         style={{
-          padding: '8px 14px',
+          padding: '6px 10px',
           borderRadius: '12px',
           backgroundColor: 'var(--bg-surface)',
           border: '1px solid var(--border-color)',
@@ -380,7 +375,7 @@ export const TasksListPage: React.FC = () => {
           alignItems: 'center',
           justifyContent: 'space-between',
           flexWrap: 'wrap',
-          gap: '12px'
+          gap: '8px'
         }}
       >
         {/* Left: View Mode Controls (Hourly removed as requested) */}
@@ -537,24 +532,26 @@ export const TasksListPage: React.FC = () => {
           alignItems: 'center',
           justifyContent: 'space-between',
           flexWrap: 'wrap',
-          gap: '10px',
-          padding: '8px 12px',
+          gap: '8px',
+          padding: '6px 10px',
           borderRadius: '12px',
           backgroundColor: 'var(--bg-surface)',
           border: '1px solid var(--border-color)',
           fontSize: '12px',
-          marginBottom: '12px'
+          marginBottom: 0
         }}
       >
         {/* 1-Click Status Filter Pills */}
         <div
+          className="tasks-status-filters"
           style={{
             display: 'flex',
             alignItems: 'center',
             gap: '6px',
             overflowX: 'auto',
             paddingBottom: '2px',
-            scrollbarWidth: 'none'
+            flex: '1 1 420px',
+            minWidth: 0
           }}
         >
           <button
@@ -789,7 +786,7 @@ export const TasksListPage: React.FC = () => {
         </div>
 
         {/* Search & Filter Controls */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+        <div className="tasks-filter-controls" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
           <div style={{ position: 'relative', flex: 1, minWidth: '180px', maxWidth: '240px' }}>
             <span
               style={{
@@ -916,8 +913,10 @@ export const TasksListPage: React.FC = () => {
       {isQuickAddOpen && (
         <div style={{ animation: 'wsFadeIn 0.14s ease-out' }}>
           <QuickTaskBar
-            subjects={subjects}
-            defaultSubjectId={selectedSubjectId || undefined}
+            subjects={currentWorkspace.type === 'SUBJECT' ? subjects : []}
+            defaultSubjectId={currentWorkspace.type === 'SUBJECT' ? currentWorkspace.subjectId : undefined}
+            defaultProjectId={currentWorkspace.type === 'PROJECT' ? currentWorkspace.projectId : undefined}
+            defaultWorkspaceId={currentWorkspace.type === 'GROUP' ? currentWorkspace.id : undefined}
             onTaskCreated={() => {
               fetchTasks();
               setIsQuickAddOpen(false);
@@ -966,7 +965,7 @@ export const TasksListPage: React.FC = () => {
         />
       ) : (
         /* KANBAN BOARD VIEW */
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(290px, 1fr))', gap: '14px', alignItems: 'start' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(290px, 1fr))', gap: '10px', alignItems: 'start' }}>
           {columns.map((col) => {
             const Icon = col.icon;
             return (
@@ -980,7 +979,7 @@ export const TasksListPage: React.FC = () => {
                   overflow: 'hidden',
                   display: 'flex',
                   flexDirection: 'column',
-                  maxHeight: 'calc(100vh - 240px)'
+                  maxHeight: 'calc(100dvh - 185px)'
                 }}
               >
                 <div
@@ -1051,7 +1050,10 @@ export const TasksListPage: React.FC = () => {
         <TaskModal
           isOpen={isModalOpen}
           taskToEdit={taskToEdit}
-          defaultSubjectId={selectedSubjectId || undefined}
+          defaultProjectId={currentWorkspace.type === 'PROJECT' ? currentWorkspace.projectId : undefined}
+          defaultWorkspaceId={currentWorkspace.type === 'GROUP' ? currentWorkspace.id : undefined}
+          defaultWorkspaceName={currentWorkspace.type === 'GROUP' ? currentWorkspace.name : undefined}
+          defaultSubjectId={currentWorkspace.type === 'SUBJECT' ? currentWorkspace.subjectId : undefined}
           onClose={() => setIsModalOpen(false)}
           onSuccess={() => {
             setIsModalOpen(false);

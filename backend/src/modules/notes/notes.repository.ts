@@ -18,12 +18,21 @@ export class NotesRepository {
       isPinned: filter?.isPinned !== undefined ? filter.isPinned : undefined,
       isArchived: filter?.isArchived !== undefined ? filter.isArchived : undefined
     };
+    if (filter?.personalScope) {
+      where.subjectId = null;
+      where.projectId = null;
+      where.OR = [{ workspaceId: null }, { workspace: { type: 'PERSONAL' } }];
+    }
+    if (filter?.groupWorkspaceId) {
+      delete where.userId;
+      where.workspaceId = filter.groupWorkspaceId;
+    }
 
     if (filter?.search) {
-      where.OR = [
+      where.AND = [...(where.AND || []), { OR: [
         { title: { contains: filter.search, mode: 'insensitive' } },
         { content: { contains: filter.search, mode: 'insensitive' } }
-      ];
+      ] }];
     }
 
     const [total, notes] = await Promise.all([
@@ -60,7 +69,7 @@ export class NotesRepository {
       }
     });
 
-    return this.db.note.findFirst({
+    const note = await this.db.note.findFirst({
       where: {
         id,
         deletedAt: null,
@@ -78,10 +87,27 @@ export class NotesRepository {
         }
       }
     });
+    if (note) {
+      if (!note.workspaceId || hasShare || !this.db.workspace) return note;
+      const group = await this.db.workspace.findFirst({ where: { id: note.workspaceId, type: 'GROUP' }, select: { id: true } });
+      if (!group) return note;
+      const member = await this.db.workspaceMember.findFirst({ where: { workspaceId: group.id, userId, status: 'ACCEPTED' }, select: { id: true } });
+      return member ? note : null;
+    }
+    if (hasShare || !this.db.workspace) return null;
+    return this.db.note.findFirst({
+      where: { id, deletedAt: null, workspace: { type: 'GROUP', members: { some: { userId, status: 'ACCEPTED' } } } },
+      include: { subject: { select: { id: true, name: true, code: true, color: true } }, project: { select: { id: true, name: true } }, noteTags: { include: { tag: true } } }
+    });
   }
 
   async findOwnedById(id: string, userId: string): Promise<any | null> {
-    return this.db.note.findFirst({ where: { id, userId, deletedAt: null } });
+    const note = await this.db.note.findFirst({ where: { id, userId, deletedAt: null } });
+    if (!note?.workspaceId || !this.db.workspace) return note;
+    const group = await this.db.workspace.findFirst({ where: { id: note.workspaceId, type: 'GROUP' }, select: { id: true } });
+    if (!group) return note;
+    const member = await this.db.workspaceMember.findFirst({ where: { workspaceId: group.id, userId, status: 'ACCEPTED' }, select: { id: true } });
+    return member ? note : null;
   }
 
   private async getOrCreateTags(userId: string, tagNames: string[]): Promise<string[]> {
@@ -112,6 +138,7 @@ export class NotesRepository {
         content: data.content,
         subjectId: data.subjectId || null,
         projectId: data.projectId || null,
+        workspaceId: data.workspaceId || null,
         noteType: data.noteType || 'GENERAL',
         isPinned: data.isPinned ?? false,
         noteTags: {

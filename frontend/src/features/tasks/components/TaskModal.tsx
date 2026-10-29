@@ -40,6 +40,8 @@ interface TaskModalProps {
   initialMode?: 'VIEW' | 'EDIT';
   defaultProjectId?: string | null;
   defaultSubjectId?: string | null;
+  defaultWorkspaceId?: string | null;
+  defaultWorkspaceName?: string;
 }
 
 export const TaskModal: React.FC<TaskModalProps> = ({
@@ -49,7 +51,9 @@ export const TaskModal: React.FC<TaskModalProps> = ({
   taskToEdit,
   initialMode,
   defaultProjectId,
-  defaultSubjectId
+  defaultSubjectId,
+  defaultWorkspaceId,
+  defaultWorkspaceName
 }) => {
   const { user: currentUser } = useAuth();
   const { subjects, selectedSubjectId } = useAppFilter();
@@ -141,15 +145,16 @@ export const TaskModal: React.FC<TaskModalProps> = ({
   useEffect(() => {
     if (!isOpen) return;
 
-    if (projectId) {
+    const groupWorkspaceId = !projectId && (taskToEdit?.workspaceId || defaultWorkspaceId);
+    if (projectId || groupWorkspaceId) {
       const gen = ++workspaceGenRef.current;
       setLoadingMembers(true);
 
-      api.get<ApiResponse<any>>(`/projects/${projectId}/workspace`)
+      api.get<ApiResponse<any>>(projectId ? `/projects/${projectId}/workspace` : `/workspaces/${groupWorkspaceId}/members`)
         .then((res) => {
           if (gen !== workspaceGenRef.current) return;
           setLoadingMembers(false);
-          const members = res.data?.members || [];
+          const members = projectId ? (res.data?.members || []) : (Array.isArray(res.data) ? res.data : []);
           setProjectMembers(members);
           const memberUserIds = new Set(members.map((m: any) => m.userId));
 
@@ -195,7 +200,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
         return next;
       });
     }
-  }, [isOpen, projectId, currentUser]);
+  }, [isOpen, projectId, defaultWorkspaceId, taskToEdit?.workspaceId, currentUser]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -486,6 +491,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
           description: finalDesc || undefined,
           subjectId: subjectId || undefined,
           projectId: projectId || undefined,
+          workspaceId: defaultWorkspaceId || undefined,
           assigneeIds: selectedAssigneeIds.length > 0 ? selectedAssigneeIds : undefined,
           status,
           priority,
@@ -691,10 +697,10 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                   value={projectId}
                   onChange={(e) => setProjectId(e.target.value)}
                   className="snote-select"
-                  disabled={Boolean(defaultProjectId)}
+                  disabled={Boolean(defaultProjectId || defaultWorkspaceId)}
                   style={{ borderRadius: '10px' }}
                 >
-                  <option value="">Việc cá nhân (Personal Space)</option>
+                  <option value="">{defaultWorkspaceId ? `Nhóm: ${defaultWorkspaceName || 'hiện tại'}` : 'Việc cá nhân'}</option>
                   {projects.map((proj) => (
                     <option key={proj.id} value={proj.id}>
                       📁 {proj.name}
@@ -762,13 +768,13 @@ export const TaskModal: React.FC<TaskModalProps> = ({
             </div>
 
             {/* Multi-Assignee Selection if inside project */}
-            {projectId && loadingMembers && (
+            {(projectId || defaultWorkspaceId || taskToEdit?.workspaceId) && loadingMembers && (
               <div style={{ backgroundColor: 'var(--accent-subtle)', padding: '10px 14px', borderRadius: 'var(--radius-md)', border: '1px solid var(--accent-border)', fontSize: '12.5px', color: 'var(--text-muted)' }}>
                 ⏳ Đang tải danh sách thành viên dự án...
               </div>
             )}
 
-            {projectId && !loadingMembers && projectMembers.length > 0 && (
+            {(projectId || defaultWorkspaceId || taskToEdit?.workspaceId) && !loadingMembers && projectMembers.length > 0 && (
               <div style={{ backgroundColor: 'var(--accent-subtle)', padding: '12px', borderRadius: '10px', border: '1px solid var(--accent-border)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
                   <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 700, color: 'var(--accent-primary)', margin: 0 }}>
@@ -780,9 +786,8 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                   {projectMembers.map((m: any) => {
                     const isSelected = selectedAssigneeIds.includes(m.userId);
                     return (
-                      <div
+                      <label
                         key={m.userId}
-                        onClick={() => toggleAssignee(m.userId)}
                         style={{
                           display: 'flex',
                           alignItems: 'center',
@@ -795,11 +800,11 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                           fontSize: '12px'
                         }}
                       >
-                        <input type="checkbox" checked={isSelected} readOnly style={{ accentColor: 'var(--accent-primary)' }} />
+                        <input type="checkbox" checked={isSelected} onChange={() => toggleAssignee(m.userId)} style={{ accentColor: 'var(--accent-primary)' }} />
                         <span style={{ fontWeight: isSelected ? 700 : 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                           {m.user?.fullName || m.user?.email}
                         </span>
-                      </div>
+                      </label>
                     );
                   })}
                 </div>

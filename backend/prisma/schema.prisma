@@ -74,6 +74,7 @@ enum WorkspaceType {
   PERSONAL
   SUBJECT
   PROJECT
+  GROUP
 
   @@map("workspace_type")
 }
@@ -326,6 +327,7 @@ model StudyGroup {
   leader      User               @relation("GroupLeader", fields: [leaderId], references: [id])
   members     StudyGroupMember[]
   projects    Project[]
+  workspace   Workspace?
 
   @@index([classId])
   @@map("study_groups")
@@ -369,6 +371,7 @@ model Project {
   members         ProjectMember[]
   notes           Note[]
   tasks           Task[]
+  scheduleEvents  ScheduleEvent[]
   courseClass     CourseClass?     @relation(fields: [classId], references: [id], onDelete: SetNull)
   studyGroup      StudyGroup?      @relation(fields: [groupId], references: [id], onDelete: SetNull)
   progressReports ProgressReport[]
@@ -431,6 +434,7 @@ model Workspace {
   version   Int             @default(1)
   subjectId String?         @unique @map("subject_id") @db.Uuid
   projectId String?         @unique @map("project_id") @db.Uuid
+  groupId   String?         @unique @map("group_id") @db.Uuid
   createdAt DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
   deletedAt DateTime?       @map("deleted_at") @db.Timestamptz(6)
@@ -438,7 +442,11 @@ model Workspace {
   owner   User              @relation("WorkspaceOwner", fields: [ownerId], references: [id], onDelete: Restrict)
   subject Subject?          @relation(fields: [subjectId], references: [id], onDelete: Restrict)
   project Project?          @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  group   StudyGroup?       @relation(fields: [groupId], references: [id], onDelete: Cascade)
   members WorkspaceMember[]
+  notes   Note[]
+  tasks   Task[]
+  events  ScheduleEvent[]
 
   @@index([ownerId])
   @@index([type, status, deletedAt])
@@ -477,6 +485,7 @@ model Note {
   userId     String    @map("user_id") @db.Uuid
   subjectId  String?   @map("subject_id") @db.Uuid
   projectId  String?   @map("project_id") @db.Uuid
+  workspaceId String?  @map("workspace_id") @db.Uuid
   title      String    @db.VarChar(255)
   content    String    @db.Text
   noteType   NoteType  @default(LECTURE) @map("note_type")
@@ -489,12 +498,14 @@ model Note {
   user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   subject   Subject?       @relation(fields: [subjectId], references: [id], onDelete: Cascade)
   project   Project?       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  workspace Workspace?     @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
   noteTags  NoteTag[]
   taskLinks TaskNoteLink[]
 
   @@index([userId])
   @@index([subjectId])
   @@index([projectId])
+  @@index([workspaceId, deletedAt])
   @@index([userId, deletedAt])
   @@index([userId, subjectId, deletedAt])
   @@index([userId, isPinned, deletedAt])
@@ -534,6 +545,7 @@ model Task {
   userId      String       @map("user_id") @db.Uuid
   subjectId   String?      @map("subject_id") @db.Uuid
   projectId   String?      @map("project_id") @db.Uuid
+  workspaceId String?      @map("workspace_id") @db.Uuid
   title       String       @db.VarChar(255)
   description String?      @db.Text
   status      TaskStatus   @default(TODO)
@@ -547,6 +559,7 @@ model Task {
   user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   subject   Subject?       @relation(fields: [subjectId], references: [id], onDelete: Cascade)
   project   Project?       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  workspace Workspace?     @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
   assignees TaskAssignee[]
   taskTags  TaskTag[]
   noteLinks TaskNoteLink[]
@@ -554,6 +567,7 @@ model Task {
   @@index([userId])
   @@index([subjectId])
   @@index([projectId])
+  @@index([workspaceId, deletedAt])
   @@index([status])
   @@index([userId, deletedAt])
   @@index([userId, status, deletedAt])
@@ -603,6 +617,8 @@ model ScheduleEvent {
   userId         String            @map("user_id") @db.Uuid
   semesterId     String?           @map("semester_id") @db.Uuid
   subjectId      String?           @map("subject_id") @db.Uuid
+  projectId      String?           @map("project_id") @db.Uuid
+  workspaceId    String?           @map("workspace_id") @db.Uuid
   title          String            @db.VarChar(150)
   location       String?           @db.VarChar(150)
   eventType      ScheduleEventType @default(CLASS) @map("event_type")
@@ -617,9 +633,13 @@ model ScheduleEvent {
   user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   semester Semester? @relation(fields: [semesterId], references: [id], onDelete: SetNull)
   subject  Subject?  @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+  project  Project?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  workspace Workspace? @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
 
   @@index([userId])
   @@index([semesterId])
+  @@index([projectId, deletedAt])
+  @@index([workspaceId, deletedAt])
   @@index([startTime, endTime])
   @@index([userId, deletedAt])
   @@index([userId, startTime, endTime, deletedAt])

@@ -3,6 +3,8 @@ import { z } from 'zod';
 export const createScheduleEventSchema = z.object({
   semesterId: z.string().uuid('ID học kỳ không hợp lệ').optional(),
   subjectId: z.string().uuid('ID môn học không hợp lệ').optional(),
+  projectId: z.string().uuid('ID dự án không hợp lệ').optional(),
+  workspaceId: z.string().uuid('ID không gian không hợp lệ').optional(),
   title: z
     .string({ error: 'Tiêu đề sự kiện là bắt buộc' })
     .min(1, 'Tiêu đề sự kiện không được để trống')

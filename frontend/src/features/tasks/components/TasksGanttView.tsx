@@ -107,7 +107,7 @@ export const TasksGanttView: React.FC<TasksGanttViewProps> = ({
       {/* Top Gantt Toolbar (Directly from Vertex42 / Image 1) */}
       <div
         style={{
-          padding: '10px 14px',
+          padding: '6px 10px',
           backgroundColor: 'var(--bg-secondary)',
           borderBottom: '1px solid var(--border-color)',
           display: 'flex',

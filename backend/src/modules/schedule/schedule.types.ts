@@ -1,8 +1,10 @@
 import { ScheduleEventType } from '@prisma/client';
 
 export interface CreateScheduleEventDto {
+  workspaceId?: string;
   semesterId?: string;
   subjectId?: string;
+  projectId?: string;
   title: string;
   location?: string;
   eventType?: ScheduleEventType;
@@ -17,6 +19,7 @@ export interface CreateScheduleEventDto {
 export interface UpdateScheduleEventDto {
   semesterId?: string;
   subjectId?: string;
+  projectId?: string;
   title?: string;
   location?: string;
   eventType?: ScheduleEventType;
@@ -28,8 +31,11 @@ export interface UpdateScheduleEventDto {
 
 export interface ScheduleEventResponseDto {
   id: string;
+  userId: string;
   semesterId: string | null;
   subjectId: string | null;
+  projectId: string | null;
+  workspaceId: string | null;
   title: string;
   location: string | null;
   eventType: ScheduleEventType;
@@ -43,6 +49,7 @@ export interface ScheduleEventResponseDto {
 
 export interface UnifiedScheduleItemDto {
   id: string;
+  userId?: string;
   itemType: 'EVENT' | 'TASK' | 'PROJECT';
   title: string;
   description?: string | null;

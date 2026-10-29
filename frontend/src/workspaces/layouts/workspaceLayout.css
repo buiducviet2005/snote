@@ -274,8 +274,7 @@
   border-bottom: 1px solid var(--ws-border-strong);
 }
 
-.ws-rail-item-wrapper:hover .ws-rail-tooltip,
-.ws-switcher-rail-wrapper:hover .ws-rail-tooltip {
+.ws-rail-item-wrapper:hover .ws-rail-tooltip {
   opacity: 1 !important;
   visibility: visible !important;
   transform: translateY(-50%) translateX(0) !important;
@@ -355,265 +354,6 @@
 }
 
 /* ==========================================================================
-   3. WORKSPACE SWITCHER (COMPACT RAIL FLYOUT)
-   ========================================================================== */
-.ws-switcher-rail-wrapper {
-  position: relative;
-}
-
-.ws-switcher-rail-btn {
-  width: 40px;
-  height: 40px;
-  border-radius: 9px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--ws-bg-surface);
-  border: 1px solid var(--ws-border-hairline);
-  color: var(--ws-text-main);
-  cursor: pointer;
-  transition: all 0.14s ease;
-}
-
-.ws-switcher-rail-btn:hover,
-.ws-switcher-rail-btn:focus-visible {
-  border-color: var(--ws-accent);
-  background: var(--ws-bg-surface-hover);
-  outline: none;
-}
-
-.ws-switcher-monogram {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  color: var(--ws-text-main);
-}
-
-/* Flyout Popover Menu to the right of the rail */
-.ws-switcher-flyout {
-  position: absolute;
-  top: 0;
-  left: calc(100% + 10px);
-  width: 300px;
-  background: var(--ws-bg-surface);
-  border: 1px solid var(--ws-border-hairline);
-  border-radius: 8px;
-  box-shadow: var(--ws-shadow-lg);
-  z-index: 1000;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  animation: wsFadeIn 0.12s ease-out;
-}
-
-@keyframes wsFadeIn {
-  from { opacity: 0; transform: translateX(-4px); }
-  to { opacity: 1; transform: translateX(0); }
-}
-
-.ws-flyout-search-wrap {
-  padding: 8px 10px;
-  border-bottom: 1px solid var(--ws-border-hairline);
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.ws-search-icon {
-  position: absolute;
-  left: 18px;
-  color: var(--ws-text-faint);
-}
-
-.ws-flyout-search-input {
-  width: 100%;
-  padding: 6px 8px 6px 28px;
-  font-size: 12px;
-  border-radius: 5px;
-  border: 1px solid var(--ws-border-hairline);
-  background: var(--ws-bg-app);
-  color: var(--ws-text-main);
-  outline: none;
-}
-
-.ws-flyout-search-input:focus {
-  border-color: var(--ws-accent);
-}
-
-.ws-flyout-tabs {
-  display: flex;
-  padding: 4px 6px;
-  background: var(--ws-bg-rail);
-  border-bottom: 1px solid var(--ws-border-hairline);
-  gap: 3px;
-}
-
-.ws-flyout-tab {
-  flex: 1;
-  border: none;
-  background: transparent;
-  padding: 4px 6px;
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--ws-text-muted);
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.1s ease;
-}
-
-.ws-flyout-tab:hover {
-  color: var(--ws-text-main);
-  background: var(--ws-bg-surface-hover);
-}
-
-.ws-flyout-tab.active {
-  background: var(--ws-bg-surface);
-  color: var(--ws-accent);
-  box-shadow: var(--ws-shadow-sm);
-  border: 1px solid var(--ws-border-hairline);
-}
-
-.ws-flyout-list {
-  overflow-y: auto;
-  max-height: 250px;
-  padding: 6px;
-}
-
-.ws-flyout-empty {
-  padding: 20px 10px;
-  text-align: center;
-  font-size: 11.5px;
-  color: var(--ws-text-faint);
-}
-
-.ws-flyout-item {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 7px 8px;
-  border-radius: 6px;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  text-align: left;
-  transition: background 0.1s ease;
-  color: var(--ws-text-main);
-}
-
-.ws-flyout-item:hover,
-.ws-flyout-item.focused {
-  background: var(--ws-bg-surface-hover);
-  outline: none;
-}
-
-.ws-flyout-item.selected {
-  background: var(--ws-accent-soft);
-}
-
-.ws-item-monochrome-icon {
-  width: 26px;
-  height: 26px;
-  border-radius: 5px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  background: var(--ws-bg-surface-elevated);
-  border: 1px solid var(--ws-border-hairline);
-  color: var(--ws-text-muted);
-}
-
-.ws-flyout-item.selected .ws-item-monochrome-icon {
-  color: var(--ws-accent);
-  border-color: var(--ws-accent-border);
-}
-
-.ws-item-info {
-  flex: 1;
-  min-width: 0;
-}
-
-.ws-item-title-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.ws-item-name {
-  font-size: 12px;
-  font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.ws-mono-tag {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 9px;
-  padding: 0 4px;
-  background: var(--ws-bg-surface-elevated);
-  border-radius: 3px;
-  color: var(--ws-text-muted);
-}
-
-.ws-item-sub-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 2px;
-}
-
-.ws-role-text,
-.ws-member-text {
-  font-size: 9.5px;
-  color: var(--ws-text-faint);
-}
-
-.ws-archived-pill {
-  font-size: 8.5px;
-  padding: 0 4px;
-  background: var(--ws-bg-surface-elevated);
-  border: 1px solid var(--ws-border-hairline);
-  color: var(--ws-text-faint);
-  border-radius: 3px;
-}
-
-.ws-item-check-icon {
-  color: var(--ws-accent);
-  margin-left: auto;
-}
-
-.ws-flyout-footer {
-  padding: 8px 10px;
-  border-top: 1px solid var(--ws-border-hairline);
-  background: var(--ws-bg-rail);
-}
-
-.ws-create-btn {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 6px;
-  font-size: 11px;
-  font-weight: 700;
-  border-radius: 5px;
-  border: 1px dashed var(--ws-border-hairline);
-  background: var(--ws-bg-surface);
-  color: var(--ws-accent);
-  cursor: pointer;
-  transition: all 0.14s ease;
-}
-
-.ws-create-btn:hover {
-  background: var(--ws-bg-surface-hover);
-  border-color: var(--ws-accent);
-}
-
-/* ==========================================================================
    4. MAIN WORKSPACE CANVAS & TOPBAR
    ========================================================================== */
 .ws-main {
@@ -643,6 +383,8 @@
   align-items: center;
   gap: 10px;
 }
+
+.ws-mobile-menu-btn { display: none; }
 
 
 
@@ -1196,6 +938,10 @@
   padding: 0 !important;
   overflow: hidden !important;
   height: calc(100vh - 48px);
+}
+
+.ws-content-scroll.ws-content-tasks {
+  padding: 10px 12px 20px;
 }
 
 .ws-content-inner {
@@ -2339,6 +2085,10 @@
 }
 
 @media (max-width: 768px) {
+  .ws-mobile-menu-btn { display: inline-flex; }
+  .ws-breadcrumbs, .ws-quick-search-pill, .ws-lang-toggle-btn, .ws-topbar-tools > .ws-tool-btn { display: none; }
+  .ws-topbar-ws-name { max-width: 130px; }
+  .ws-topbar-tools { gap: 4px; }
   .ws-icon-rail {
     position: fixed;
     top: 0;
@@ -2361,6 +2111,10 @@
 
   .ws-content-scroll {
     padding: 14px;
+  }
+
+  .ws-content-scroll.ws-content-tasks {
+    padding: 8px;
   }
 
   .ws-topbar {
@@ -2400,6 +2154,12 @@
     border-right: none;
     border-bottom: 1px solid var(--ws-border-hairline);
   }
+}
+
+@media (max-width: 480px) {
+  .ws-topbar-ws-name { max-width: 92px; }
+  .ws-create-workspace-btn span, .ws-new-item-btn span { display: none; }
+  .ws-create-workspace-btn, .ws-new-item-btn { min-width: 34px; min-height: 34px; justify-content: center; padding: 6px; }
 }
 
 
@@ -2491,353 +2251,16 @@
   z-index: 99999;
 }
 
-.ws-topbar-dropdown-popover .ws-switcher-flyout {
-  position: static;
-  width: 350px;
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.65);
-}
+.ws-workspace-options{width:min(320px,calc(100vw - 32px));max-height:min(420px,65vh);overflow-y:auto;background:var(--ws-bg-surface);border:1px solid var(--ws-border-hairline);border-radius:9px;box-shadow:var(--ws-shadow-lg);padding:6px}
+.ws-workspace-option{width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:44px;padding:9px 11px;border:0;border-radius:6px;background:transparent;color:var(--ws-text-main);text-align:left;cursor:pointer}
+.ws-workspace-option:hover,.ws-workspace-option.selected{background:var(--ws-accent-soft)}
+.ws-workspace-option:focus-visible{outline:2px solid var(--ws-accent);outline-offset:-2px}
+.ws-workspace-option-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+.ws-workspace-option-type{flex:none;color:var(--ws-text-muted);font-size:11px}
+.ws-workspace-empty{padding:8px;color:var(--ws-text-muted)}
+.ws-create-workspace-btn{margin-right:8px}
 
-/* Rail Monogram indicator */
-.ws-rail-chevron-indicator {
-  position: absolute;
-  bottom: 2px;
-  right: 2px;
-  color: var(--ws-text-faint);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
 
-.ws-rail-badge-ping {
-  position: absolute;
-  top: 3px;
-  right: 3px;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: #f59e0b;
-  box-shadow: 0 0 6px #f59e0b;
-}
-
-/* Header row in flyout */
-.ws-flyout-header-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 12px;
-  border-bottom: 1px solid var(--ws-border-hairline);
-  background: var(--ws-bg-rail);
-}
-
-.ws-flyout-header-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.ws-tag-mono {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 9.5px;
-  font-weight: 800;
-  padding: 2px 5px;
-  border-radius: 4px;
-  background: var(--ws-accent-soft);
-  color: var(--ws-accent);
-}
-
-.ws-header-text {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--ws-text-main);
-}
-
-.ws-flyout-close-btn {
-  background: transparent;
-  border: none;
-  color: var(--ws-text-muted);
-  cursor: pointer;
-  padding: 3px;
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.12s ease;
-}
-
-.ws-flyout-close-btn:hover {
-  background: var(--ws-bg-surface-hover);
-  color: var(--ws-text-main);
-}
-
-/* Actions Row (Create, Join, Add Member) */
-.ws-flyout-actions-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 10px;
-  background: var(--ws-bg-surface);
-  border-bottom: 1px solid var(--ws-border-hairline);
-}
-
-.ws-action-pill-btn {
-  flex: 1;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
-  padding: 5px 8px;
-  font-size: 11px;
-  font-weight: 600;
-  border-radius: 5px;
-  border: 1px solid var(--ws-border-hairline);
-  background: var(--ws-bg-app);
-  color: var(--ws-text-main);
-  cursor: pointer;
-  transition: all 0.12s ease;
-}
-
-.ws-action-pill-btn:hover {
-  background: var(--ws-bg-surface-hover);
-  border-color: var(--ws-accent);
-}
-
-.ws-action-pill-btn.active {
-  background: var(--ws-accent-soft);
-  color: var(--ws-accent);
-  border-color: var(--ws-accent-border);
-}
-
-/* Sub-form Styles */
-.ws-subform-box {
-  padding: 12px;
-  background: var(--ws-bg-app);
-  border-bottom: 1px solid var(--ws-border-hairline);
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  animation: wsFadeIn 0.12s ease-out;
-}
-
-.ws-subform-title {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--ws-text-main);
-}
-
-.ws-subform-hint {
-  font-size: 11px;
-  color: var(--ws-text-muted);
-  margin: 0;
-  line-height: 1.4;
-}
-
-.ws-subform-hint code {
-  font-family: 'JetBrains Mono', monospace;
-  background: var(--ws-bg-surface);
-  padding: 1px 4px;
-  border-radius: 3px;
-  color: var(--ws-accent);
-}
-
-.ws-type-segmented-wrap {
-  display: flex;
-  gap: 5px;
-}
-
-.ws-type-opt {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  padding: 6px 4px;
-  font-size: 10.5px;
-  font-weight: 600;
-  border-radius: 6px;
-  background: var(--ws-bg-surface);
-  border: 1px solid var(--ws-border-hairline);
-  color: var(--ws-text-muted);
-  cursor: pointer;
-  transition: all 0.12s ease;
-}
-
-.ws-type-opt:hover {
-  color: var(--ws-text-main);
-  border-color: var(--ws-accent);
-}
-
-.ws-type-opt.active {
-  background: var(--ws-accent-soft);
-  color: var(--ws-accent);
-  border-color: var(--ws-accent-border);
-}
-
-.ws-form-field {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.ws-form-field label {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--ws-text-muted);
-}
-
-.ws-form-field input,
-.ws-form-field textarea,
-.ws-select-field {
-  width: 100%;
-  padding: 6px 9px;
-  font-size: 12px;
-  border-radius: 5px;
-  border: 1px solid var(--ws-border-hairline);
-  background: var(--ws-bg-surface);
-  color: var(--ws-text-main);
-  outline: none;
-  font-family: inherit;
-}
-
-.ws-form-field input:focus,
-.ws-form-field textarea:focus,
-.ws-select-field:focus {
-  border-color: var(--ws-accent);
-}
-
-.ws-subform-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 7px;
-  margin-top: 4px;
-}
-
-.ws-btn-cancel {
-  padding: 5px 10px;
-  font-size: 11.5px;
-  font-weight: 600;
-  border-radius: 5px;
-  background: transparent;
-  border: 1px solid var(--ws-border-hairline);
-  color: var(--ws-text-muted);
-  cursor: pointer;
-  transition: all 0.12s ease;
-}
-
-.ws-btn-cancel:hover {
-  background: var(--ws-bg-surface-hover);
-  color: var(--ws-text-main);
-}
-
-.ws-btn-submit {
-  padding: 5px 12px;
-  font-size: 11.5px;
-  font-weight: 700;
-  border-radius: 5px;
-  background: var(--ws-accent);
-  border: 1px solid var(--ws-accent);
-  color: #fff;
-  cursor: pointer;
-  transition: all 0.12s ease;
-}
-
-.ws-btn-submit:hover:not(:disabled) {
-  opacity: 0.92;
-}
-
-.ws-btn-submit:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-/* Invitations Tab & Cards */
-.ws-flyout-tab.has-invites {
-  color: #f59e0b;
-  font-weight: 700;
-}
-
-.ws-invite-card {
-  padding: 9px;
-  margin-bottom: 6px;
-  background: var(--ws-bg-app);
-  border: 1px solid var(--ws-border-hairline);
-  border-radius: 6px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.ws-invite-meta {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-}
-
-.ws-invite-details {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.ws-invite-title {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--ws-text-main);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.ws-invite-sub {
-  font-size: 10.5px;
-  color: var(--ws-text-muted);
-}
-
-.ws-invite-actions {
-  display: flex;
-  gap: 6px;
-}
-
-.ws-invite-accept-btn {
-  flex: 1;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  padding: 4px 8px;
-  font-size: 11px;
-  font-weight: 600;
-  border-radius: 4px;
-  background: var(--ws-accent);
-  border: none;
-  color: #fff;
-  cursor: pointer;
-  transition: opacity 0.12s ease;
-}
-
-.ws-invite-accept-btn:hover {
-  opacity: 0.9;
-}
-
-.ws-invite-decline-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  padding: 4px 8px;
-  font-size: 11px;
-  font-weight: 600;
-  border-radius: 4px;
-  background: transparent;
-  border: 1px solid var(--ws-border-hairline);
-  color: var(--ws-text-muted);
-  cursor: pointer;
-  transition: all 0.12s ease;
-}
-
-.ws-invite-decline-btn:hover {
-  background: var(--ws-bg-surface-hover);
-  color: var(--ws-text-main);
-}
 
 .ws-topbar-ws-tag.tag-subject {
   background: rgba(16, 185, 129, 0.15);
@@ -2849,6 +2272,12 @@
   background: rgba(245, 158, 11, 0.15);
   color: #f59e0b;
   border-color: rgba(245, 158, 11, 0.3);
+}
+
+.ws-topbar-ws-tag.tag-group {
+  background: rgba(56, 189, 248, 0.14);
+  color: var(--ws-text-main);
+  border-color: rgba(56, 189, 248, 0.32);
 }
 
 .ws-topbar-ws-tag.tag-personal {
@@ -2893,220 +2322,4 @@
 
 .ws-water-drop-ripple.fade-out {
   opacity: 0;
-}
-
-/* ==========================================================================
-   WORKSPACE GOVERNANCE & PROGRESS OBSERVATION FLYOUT STYLES
-   ========================================================================== */
-.ws-manage-box {
-  padding: 12px 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  background-color: var(--ws-bg-surface);
-}
-
-.ws-manage-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-bottom: 1px solid var(--ws-border-hairline);
-  padding-bottom: 8px;
-}
-
-.ws-manage-tabs {
-  display: flex;
-  background: var(--ws-bg-rail);
-  border: 1px solid var(--ws-border-hairline);
-  border-radius: 6px;
-  padding: 2px;
-  gap: 2px;
-}
-
-.ws-manage-tab {
-  flex: 1;
-  padding: 5px 8px;
-  font-size: 11px;
-  font-weight: 600;
-  border: none;
-  background: transparent;
-  color: var(--ws-text-muted);
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.1s ease;
-  text-align: center;
-}
-
-.ws-manage-tab.active {
-  background: var(--ws-bg-surface);
-  color: var(--ws-accent);
-  box-shadow: var(--ws-shadow-sm);
-}
-
-.ws-manage-progress-pane {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.ws-progress-summary-card {
-  background: var(--ws-bg-surface-elevated);
-  border: 1px solid var(--ws-border-hairline);
-  border-radius: 6px;
-  padding: 10px 12px;
-}
-
-.ws-progress-bar-bg {
-  width: 100%;
-  height: 6px;
-  background: var(--ws-bg-app);
-  border-radius: 999px;
-  overflow: hidden;
-}
-
-.ws-progress-bar-fill {
-  height: 100%;
-  background: var(--ws-accent);
-  border-radius: 999px;
-  transition: width 0.3s ease;
-}
-
-.ws-progress-counters {
-  display: flex;
-  gap: 10px;
-  margin-top: 8px;
-  font-size: 11px;
-  color: var(--ws-text-muted);
-}
-
-.ws-member-prod-section {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.ws-prod-member-item {
-  background: var(--ws-bg-surface-elevated);
-  border: 1px solid var(--ws-border-hairline);
-  border-radius: 6px;
-  padding: 8px 10px;
-}
-
-.ws-members-list-scroll {
-  max-height: 200px;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding-bottom: 6px;
-}
-
-.ws-manage-member-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 6px 8px;
-  background: var(--ws-bg-surface-elevated);
-  border: 1px solid var(--ws-border-hairline);
-  border-radius: 5px;
-}
-
-.ws-member-info {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  flex: 1;
-}
-
-.ws-member-name {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--ws-text-main);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.ws-member-email {
-  font-size: 10px;
-  color: var(--ws-text-faint);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.ws-member-role-actions {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.ws-role-tag {
-  font-size: 10px;
-  font-weight: 700;
-  padding: 2px 6px;
-  border-radius: 4px;
-  background: var(--ws-bg-surface);
-  border: 1px solid var(--ws-border-hairline);
-  color: var(--ws-text-muted);
-}
-
-.ws-role-tag.owner {
-  background: rgba(59, 130, 246, 0.12);
-  border-color: rgba(59, 130, 246, 0.3);
-  color: var(--ws-accent);
-}
-
-.ws-role-select {
-  font-size: 10.5px;
-  padding: 2px 4px;
-  border-radius: 4px;
-  background: var(--ws-bg-surface);
-  border: 1px solid var(--ws-border-hairline);
-  color: var(--ws-text-main);
-  outline: none;
-}
-
-.ws-member-kick-btn {
-  padding: 3px;
-  background: transparent;
-  border: none;
-  color: var(--ws-text-faint);
-  cursor: pointer;
-  border-radius: 3px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.ws-member-kick-btn:hover {
-  background: rgba(239, 68, 68, 0.15);
-  color: #ef4444;
-}
-
-.ws-add-member-mini-form {
-  padding-top: 8px;
-  border-top: 1px solid var(--ws-border-hairline);
-}
-
-.ws-mini-input {
-  flex: 1;
-  padding: 4px 6px;
-  font-size: 11px;
-  border-radius: 4px;
-  border: 1px solid var(--ws-border-hairline);
-  background: var(--ws-bg-app);
-  color: var(--ws-text-main);
-  outline: none;
-}
-
-.ws-mini-select {
-  font-size: 11px;
-  padding: 4px;
-  border-radius: 4px;
-  border: 1px solid var(--ws-border-hairline);
-  background: var(--ws-bg-app);
-  color: var(--ws-text-main);
-  outline: none;
 }

@@ -60,6 +60,7 @@ export function visibleTasks(userId: string): Prisma.TaskWhereInput {
     OR: [
       { userId },
       { assignees: { some: { userId } } },
+      { workspace: { type: 'GROUP', members: { some: { userId, status: 'ACCEPTED' } } } },
       { project: { userId } },
       { project: { members: { some: { userId, status: 'ACCEPTED' } } } },
       { project: { workspace: { ownerId: userId } } },
@@ -77,6 +78,10 @@ export function visibleTasks(userId: string): Prisma.TaskWhereInput {
         { courseClass: { teacherId: userId, deletedAt: null } },
         { courseClass: { members: { some: { userId, role: 'CLASS_ADMIN' } }, deletedAt: null } }
       ] } }
+    ] }, { OR: [
+      { workspaceId: null },
+      { workspace: { type: { not: 'GROUP' } } },
+      { workspace: { type: 'GROUP', members: { some: { userId, status: 'ACCEPTED' } } } }
     ] }]
   };
 }

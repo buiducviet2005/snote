@@ -4,7 +4,6 @@ import './workspaceLayout.css';
 import { WorkspaceSummary } from './types';
 import { executeWaterDropThemeTransition } from '../utils/themeTransition';
 import { WorkspaceSidebar } from './WorkspaceSidebar';
-import { WorkspaceSwitcher } from './WorkspaceSwitcher';
 import { WorkspaceCommandPalette } from './WorkspaceCommandPalette';
 import { WorkspaceQuickCapture } from './WorkspaceQuickCapture';
 import { WorkspaceArchivedBanner } from './WorkspaceStates';
@@ -53,7 +52,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
   const { user: authUser, logout: authLogout, isAdmin } = useAuth();
   const { showToast } = useToast();
   const { subjects, setSelectedSubjectId } = useAppFilter();
-  const { t, language, toggleLanguage } = useLanguage();
+  const { language, toggleLanguage } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -72,7 +71,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
 
   const [workspaces, setWorkspaces] = useState<WorkspaceSummary[]>([]);
   const [activeWorkspaceId, setActiveWorkspaceId] = useState<string>(
-    initialWorkspaceId || ''
+    initialWorkspaceId || (authUser?.id ? localStorage.getItem(`snote_workspace_${authUser.id}`) : '') || ''
   );
   const [workspacesLoading, setWorkspacesLoading] = useState(true);
   const [workspacesError, setWorkspacesError] = useState(false);
@@ -82,9 +81,9 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
   const [isQuickCaptureOpen, setIsQuickCaptureOpen] = useState(false);
   const [isActionMenuOpen, setIsActionMenuOpen] = useState(false);
   const [isTopbarWorkspaceOpen, setIsTopbarWorkspaceOpen] = useState(false);
-  const [invitationsCount, setInvitationsCount] = useState(0);
 
   const topbarDropdownRef = useRef<HTMLDivElement>(null);
+  const previousPathRef = useRef(location.pathname);
 
   // Theme state: defaults to dark carbon mode (Linear / Vercel style), toggleable to light
   const { theme, setTheme } = useTheme();
@@ -109,15 +108,20 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
         cursor = res.meta?.hasMore ? res.meta.nextCursor : null;
       } while (cursor);
       // The list endpoint omits membership role; context is the authority for UI permissions.
-      const contexts = await Promise.all(list.map((workspace: { id: string }) =>
+      const contexts = await Promise.allSettled(list.map((workspace: { id: string }) =>
         api.get<any>(`/workspaces/${workspace.id}/context`)
       ));
-      const summaries: WorkspaceSummary[] = contexts.map((result) => {
+      const summaries: WorkspaceSummary[] = contexts.filter((result): result is PromiseFulfilledResult<any> => result.status === 'fulfilled').map((entry) => {
+        const result = entry.value;
         const { workspace, membership } = result.data;
         return {
           id: workspace.id,
           type: workspace.type,
           name: workspace.name,
+          projectId: workspace.project?.id || undefined,
+          subjectId: workspace.subject?.id || undefined,
+          groupId: workspace.group?.id || undefined,
+          className: workspace.group?.courseClass?.name || undefined,
           status: workspace.status,
           role: membership.role,
           code: workspace.subject?.code || undefined,
@@ -126,8 +130,8 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
         };
       });
       setWorkspaces(summaries);
-      setWorkspacesError(false);
-      setActiveWorkspaceId((current) => summaries.some((w) => w.id === current) ? current : (summaries[0]?.id || ''));
+      setWorkspacesError(contexts.some((result) => result.status === 'rejected'));
+      setActiveWorkspaceId((current) => summaries.some((w) => w.id === current) ? current : (summaries.find((w) => w.type === 'PERSONAL')?.id || summaries[0]?.id || ''));
     } catch {
       setWorkspacesError(true);
       setWorkspaces([]);
@@ -136,22 +140,19 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
     }
   }, []);
 
-  const fetchInvitationsCount = useCallback(async () => {
-    try {
-      const res = await api.get<any>('/workspaces/invitations');
-      const list = res.data?.data || res.data || [];
-      if (Array.isArray(list)) {
-        setInvitationsCount(list.length);
-      }
-    } catch {
-      // Non-blocking
-    }
-  }, []);
-
   useEffect(() => {
     refreshWorkspaces();
-    fetchInvitationsCount();
-  }, [refreshWorkspaces, fetchInvitationsCount]);
+  }, [refreshWorkspaces]);
+
+  useEffect(() => {
+    window.addEventListener('snote_refresh_workspaces', refreshWorkspaces);
+    return () => window.removeEventListener('snote_refresh_workspaces', refreshWorkspaces);
+  }, [refreshWorkspaces]);
+
+  useEffect(() => {
+    if (location.pathname !== previousPathRef.current && location.pathname === '/workspaces') void refreshWorkspaces();
+    previousPathRef.current = location.pathname;
+  }, [location.pathname, refreshWorkspaces]);
 
   // Close topbar dropdown when clicking outside
   useEffect(() => {
@@ -160,11 +161,16 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
         setIsTopbarWorkspaceOpen(false);
       }
     };
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsTopbarWorkspaceOpen(false);
+    };
     if (isTopbarWorkspaceOpen) {
       document.addEventListener('mousedown', handleOutsideClick);
+      document.addEventListener('keydown', handleEscape);
     }
     return () => {
       document.removeEventListener('mousedown', handleOutsideClick);
+      document.removeEventListener('keydown', handleEscape);
     };
   }, [isTopbarWorkspaceOpen]);
 
@@ -178,14 +184,16 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
 
   const handleSelectWorkspace = (ws: WorkspaceSummary) => {
     setActiveWorkspaceId(ws.id);
+    if (authUser?.id) localStorage.setItem(`snote_workspace_${authUser.id}`, ws.id);
     if (ws.type === 'SUBJECT') {
-      const matched = subjects.find((s) => (ws.code && s.code === ws.code) || s.name === ws.name || s.id === ws.id);
+      const matched = subjects.find((s) => s.id === ws.subjectId);
       if (matched) {
         setSelectedSubjectId(matched.id);
       }
     } else {
       setSelectedSubjectId(null);
     }
+    if (location.pathname === '/workspaces') navigate('/tasks');
   };
 
   // Keyboard Shortcuts (Ctrl+K: Command, Z: Zen, Q: Quick Capture)
@@ -211,6 +219,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
   // Compute Breadcrumb Title from current route
   const getBreadcrumbTitle = (path: string) => {
     if (path.startsWith('/notes')) return 'Ghi chú';
+    if (path.startsWith('/workspaces')) return 'Không gian';
     if (path.startsWith('/tasks')) return 'Công việc';
     if (path.startsWith('/schedule')) return 'Thời khóa biểu';
     if (path.startsWith('/classes')) return 'Lớp học';
@@ -244,19 +253,11 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
     <div className={`ws-shell theme-${theme} `}>
       {/* 1. Icon-Only Rail Navigation with Rounded Floating Tooltips */}
       <WorkspaceSidebar
-        currentWorkspace={currentWorkspace}
-        workspaces={workspaces}
-        onSelectWorkspace={handleSelectWorkspace}
-        onRefreshWorkspaces={() => {
-          refreshWorkspaces();
-          fetchInvitationsCount();
-        }}
         currentUser={currentUser}
         isAdmin={isAdmin}
         onLogout={handleLogout}
         isMobileOpen={isMobileSidebarOpen}
         onCloseMobile={() => setIsMobileSidebarOpen(false)}
-        onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
         theme={theme}
         onToggleTheme={toggleTheme}
       />
@@ -268,10 +269,10 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
           <div className="ws-topbar-left">
             <button
               type="button"
-              className="icon-button"
+              className="icon-button ws-mobile-menu-btn"
               onClick={() => setIsMobileSidebarOpen(true)}
-              style={{ display: 'none' }}
               title="Mở menu"
+              aria-label="Mở menu điều hướng"
             >
               <Menu size={18} />
             </button>
@@ -284,20 +285,18 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                 type="button"
                 className={`ws-topbar-workspace-btn ${isTopbarWorkspaceOpen ? 'active' : ''}`}
                 onClick={() => setIsTopbarWorkspaceOpen(!isTopbarWorkspaceOpen)}
-                title="Chọn và quản lý Không gian làm việc (Workspace)"
-                aria-haspopup="true"
+                title="Chọn không gian làm việc"
+                aria-label={`Chọn không gian làm việc, hiện tại: ${currentWorkspace.name}`}
+                aria-haspopup="listbox"
                 aria-expanded={isTopbarWorkspaceOpen}
               >
                 <span className={`ws-topbar-ws-tag tag-${currentWorkspace.type.toLowerCase()}`}>
-                  {currentWorkspace.type === 'SUBJECT' ? 'LỚP HỌC' : currentWorkspace.type === 'PROJECT' ? 'ĐỒ ÁN' : 'CÁ NHÂN'}
+                  {currentWorkspace.type === 'GROUP' ? 'NHÓM' : currentWorkspace.type === 'SUBJECT' ? 'MÔN HỌC' : currentWorkspace.type === 'PROJECT' ? 'DỰ ÁN' : 'CÁ NHÂN'}
                 </span>
                 <span className="ws-topbar-ws-name">
                   {workspacesLoading && workspaces.length === 0 ? 'Đang tải không gian...' :
-                    workspacesError ? 'Không thể tải không gian' : currentWorkspace.name}
+                    workspacesError && workspaces.length === 0 ? 'Không thể tải không gian' : currentWorkspace.name}
                 </span>
-                {invitationsCount > 0 && (
-                  <span className="ws-topbar-ws-badge">{invitationsCount} lời mời</span>
-                )}
                 <ChevronDown size={14} className={`ws-topbar-ws-arrow ${isTopbarWorkspaceOpen ? 'open' : ''}`} />
               </button>
 
@@ -309,21 +308,17 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                       Tải lại danh sách không gian
                     </button>
                   )}
-                  <WorkspaceSwitcher
-                    currentWorkspace={currentWorkspace}
-                    workspaces={workspaces}
-                    onSelectWorkspace={(ws) => {
-                      handleSelectWorkspace(ws);
-                      setIsTopbarWorkspaceOpen(false);
-                    }}
-                    onRefreshWorkspaces={() => {
-                      refreshWorkspaces();
-                      fetchInvitationsCount();
-                    }}
-                    isOpen={true}
-                    onOpenChange={(open) => setIsTopbarWorkspaceOpen(open)}
-                    triggerMode="none"
-                  />
+                  <div className="ws-workspace-options" role="listbox" aria-label="Chọn không gian">
+                    {workspaces.map((ws) => (
+                      <button key={ws.id} type="button" role="option" aria-selected={ws.id === currentWorkspace.id}
+                        className={`ws-workspace-option ${ws.id === currentWorkspace.id ? 'selected' : ''}`}
+                        onClick={() => { handleSelectWorkspace(ws); setIsTopbarWorkspaceOpen(false); }}>
+                        <span className="ws-workspace-option-name">{ws.name}</span>
+                        <span className="ws-workspace-option-type">{ws.type === 'PERSONAL' ? 'Cá nhân' : ws.type === 'PROJECT' ? 'Dự án' : ws.type === 'GROUP' ? 'Nhóm' : 'Môn học'}</span>
+                      </button>
+                    ))}
+                    {workspaces.length === 0 && !workspacesLoading && <p className="ws-workspace-empty">Chưa có không gian nào.</p>}
+                  </div>
                 </div>
               )}
             </div>
@@ -339,6 +334,9 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
 
           {/* Topbar Tools */}
           <div className="ws-topbar-tools">
+            <button type="button" className="ws-new-item-btn ws-create-workspace-btn" onClick={() => navigate('/workspaces?create=1')} aria-label="Tạo không gian dự án cá nhân" title="Tạo không gian dự án cá nhân">
+              <Plus size={14} /> <span>Tạo không gian</span>
+            </button>
             <button
               type="button"
               className="ws-quick-search-pill"
@@ -389,6 +387,9 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                   type="button"
                   className="ws-new-item-btn"
                   onClick={() => setIsActionMenuOpen(!isActionMenuOpen)}
+                  aria-label="Tạo ghi chú hoặc công việc"
+                  aria-expanded={isActionMenuOpen}
+                  title="Tạo ghi chú hoặc công việc"
                 >
                   <Plus size={13} />
                   <span>Tạo mới</span>
@@ -429,8 +430,8 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
         )}
 
         {/* Dynamic Content Canvas - Edge-to-Edge Full Bleed */}
-        <main className={`ws-content-scroll ${location.pathname.startsWith('/notes') ? 'ws-content-fullbleed' : ''}`}>
-          {children || <Outlet />}
+        <main className={`ws-content-scroll ${location.pathname.startsWith('/notes') ? 'ws-content-fullbleed' : ''} ${location.pathname.startsWith('/tasks') ? 'ws-content-tasks' : ''}`}>
+          {children || <Outlet context={{ workspaces, currentWorkspace, onSelectWorkspace: handleSelectWorkspace, refreshWorkspaces, workspacesLoading, workspacesError }} />}
         </main>
       </div>
 
@@ -465,9 +466,10 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
             await api.post('/notes', {
               title: firstLine || 'Ghi chép nhanh',
               content: noteContent,
-              noteType: 'GENERAL'
+              noteType: 'GENERAL',
+              workspaceId: workspaces.find((workspace) => workspace.type === 'PERSONAL')?.id
             });
-            showToast('Đã lưu bài ghi vào Kho ghi chú!', 'success');
+            showToast('Đã lưu vào ghi chú cá nhân', 'success');
             setIsQuickCaptureOpen(false);
             window.dispatchEvent(new CustomEvent('snote_refresh_notes'));
           } catch (err: any) {

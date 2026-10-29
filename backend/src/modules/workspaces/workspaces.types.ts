@@ -16,7 +16,7 @@ export interface ProjectWorkspaceInput {
 }
 
 export interface CreateWorkspaceInput {
-  type: WorkspaceType;
+  type: Exclude<WorkspaceType, 'GROUP'>;
   name: string;
   timezone?: string;
   subject?: { subjectId: string };
@@ -55,6 +55,7 @@ export interface WorkspaceDto {
   timezone: string;
   project: WorkspaceProjectDto | null;
   subject: WorkspaceSubjectDto | null;
+  group: { id: string; classId: string; leaderId: string; courseClass: { name: string } } | null;
   version: number;
   createdAt: Date;
   updatedAt: Date;

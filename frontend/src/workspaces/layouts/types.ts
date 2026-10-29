@@ -1,11 +1,14 @@
-export type WorkspaceType = 'PERSONAL' | 'SUBJECT' | 'PROJECT';
-export type WorkspaceStatus = 'ACTIVE' | 'ARCHIVED';
-export type WorkspaceRole = 'OWNER' | 'MANAGER' | 'MEMBER' | 'VIEWER';
+import type { WorkspaceType, WorkspaceStatus, WorkspaceRole } from '@snote/shared';
+export type { WorkspaceType, WorkspaceStatus, WorkspaceRole } from '@snote/shared';
 
 export interface WorkspaceSummary {
   id: string;
   type: WorkspaceType;
   name: string;
+  projectId?: string;
+  subjectId?: string;
+  groupId?: string;
+  className?: string;
   code?: string;
   description?: string;
   status: WorkspaceStatus;

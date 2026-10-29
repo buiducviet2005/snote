@@ -66,7 +66,7 @@ export const createWorkspaceSchema = z
 
 export const listWorkspacesSchema = z
   .object({
-    type: z.enum(['PERSONAL', 'SUBJECT', 'PROJECT']).optional(),
+    type: z.enum(['PERSONAL', 'SUBJECT', 'PROJECT', 'GROUP']).optional(),
     status: z.enum(['ACTIVE', 'ARCHIVED']).optional(),
     cursor: z.string().max(1000).optional(),
     limit: z.coerce.number().int().min(1).max(100).default(50)

@@ -47,6 +47,7 @@ export class WorkspacesService {
       timezone: workspace.timezone,
       project: workspace.project,
       subject: workspace.subject,
+      group: workspace.group,
       version: workspace.version,
       createdAt: workspace.createdAt,
       updatedAt: workspace.updatedAt
@@ -259,6 +260,7 @@ export class WorkspacesService {
     if (!workspace) {
       throw new NotFoundError('Không tìm thấy workspace hoặc bạn chưa là thành viên');
     }
+    if (workspace.type === 'GROUP') throw new ForbiddenError('Thành viên nhóm được quản lý trong lớp học');
     this.assertAction(workspace, 'member.invite');
     const member = await this.repo.addMember(
       workspaceId,
@@ -306,6 +308,7 @@ export class WorkspacesService {
     if (!workspace) {
       throw new NotFoundError('Không tìm thấy Không gian làm việc');
     }
+    if (workspace.type === 'GROUP') throw new ForbiddenError('Vai trò nhóm được quản lý trong lớp học');
     this.assertAction(workspace, 'role.assign');
 
     const updated = await this.repo.updateMemberRole(workspaceId, memberId, role);
@@ -321,6 +324,7 @@ export class WorkspacesService {
     if (!workspace) {
       throw new NotFoundError('Không tìm thấy Không gian làm việc');
     }
+    if (workspace.type === 'GROUP') throw new ForbiddenError('Thành viên nhóm được quản lý trong lớp học');
     this.assertAction(workspace, 'member.manage');
 
     await this.repo.removeMember(workspaceId, memberId);

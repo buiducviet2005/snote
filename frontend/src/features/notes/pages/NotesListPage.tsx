@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useOutletContext, useSearchParams } from 'react-router-dom';
+import type { WorkspaceSummary } from '../../../workspaces/layouts/types';
 import { api, ApiResponse } from '../../../services/api';
 import { useAppFilter } from '../../../contexts/AppFilterContext';
 import { useToast } from '../../../contexts/ToastContext';
@@ -9,6 +10,7 @@ import { Sparkles } from 'lucide-react';
 import { NotesObsidianWorkbench } from '../components/NotesObsidianWorkbench';
 
 export const NotesListPage: React.FC = () => {
+  const { currentWorkspace } = useOutletContext<{ currentWorkspace: WorkspaceSummary }>();
   const { selectedSubjectId, selectedSemesterId, subjects } = useAppFilter();
   const [notes, setNotes] = useState<any[]>([]);
   const [projects, setProjects] = useState<any[]>([]);
@@ -51,7 +53,8 @@ export const NotesListPage: React.FC = () => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
-      if (selectedSubjectId) params.append('subjectId', selectedSubjectId);
+      if (currentWorkspace.id) params.append('workspaceId', currentWorkspace.id);
+      else if (selectedSubjectId) params.append('subjectId', selectedSubjectId);
       params.append('isArchived', 'false');
 
       const res = await api.get<ApiResponse<any[]>>(`/notes?${params.toString()}`);
@@ -66,7 +69,7 @@ export const NotesListPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [selectedSubjectId, showToast]);
+  }, [currentWorkspace.id, selectedSubjectId, showToast]);
 
   useEffect(() => {
     fetchNotes();
@@ -151,7 +154,9 @@ export const NotesListPage: React.FC = () => {
         title: 'Ghi chú mới',
         content: '',
         noteType: 'GENERAL',
-        subjectId: selectedSubjectId || undefined
+        workspaceId: currentWorkspace.id || undefined,
+        subjectId: currentWorkspace.type === 'SUBJECT' ? currentWorkspace.subjectId : undefined,
+        projectId: currentWorkspace.type === 'PROJECT' ? currentWorkspace.projectId : undefined
       });
       if (res.data) {
         setNotes((prev) => [res.data, ...prev]);
@@ -241,6 +246,9 @@ export const NotesListPage: React.FC = () => {
           fetchNotes();
         }}
         noteToEdit={noteToEdit}
+        defaultProjectId={currentWorkspace.type === 'PROJECT' ? currentWorkspace.projectId : undefined}
+        defaultWorkspaceId={currentWorkspace.type === 'GROUP' ? currentWorkspace.id : undefined}
+        defaultSubjectId={currentWorkspace.type === 'SUBJECT' ? currentWorkspace.subjectId : undefined}
         initialMode={modalMode}
         allNotes={notes}
         onOpenNote={(n: any) => {

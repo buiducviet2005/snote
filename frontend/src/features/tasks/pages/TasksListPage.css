@@ -1,0 +1,47 @@
+.tasks-page {
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tasks-status-filters {
+  scrollbar-width: thin;
+}
+
+@media (max-width: 900px) {
+  .tasks-status-filters,
+  .tasks-filter-controls {
+    width: 100%;
+  }
+
+  .tasks-filter-controls > div:first-child {
+    max-width: none !important;
+  }
+}
+
+@media (max-width: 600px) {
+  .tasks-page > .snote-card:first-child {
+    align-items: stretch !important;
+  }
+
+  .tasks-page > .snote-card:first-child > div {
+    justify-content: space-between;
+  }
+
+  .tasks-filter-controls {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .tasks-filter-controls > div:first-child {
+    grid-column: 1 / -1;
+  }
+
+  .tasks-filter-controls select {
+    width: 100%;
+    max-width: none !important;
+    min-width: 0 !important;
+  }
+}

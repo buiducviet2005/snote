@@ -1,7 +1,5 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { WorkspaceSummary } from './types';
-import { WorkspaceSwitcher } from './WorkspaceSwitcher';
 import { useLanguage } from '../../contexts/LanguageContext';
 import {
   FileText,
@@ -17,33 +15,21 @@ import {
 } from 'lucide-react';
 
 interface WorkspaceSidebarProps {
-  currentWorkspace: WorkspaceSummary;
-  workspaces: WorkspaceSummary[];
-  activeNavId?: string;
-  onSelectNav?: (navId: string) => void;
-  onSelectWorkspace: (ws: WorkspaceSummary) => void;
-  onRefreshWorkspaces?: () => void;
   currentUser?: { fullName?: string; email?: string } | null;
   isAdmin?: boolean;
   onLogout?: () => void;
   isMobileOpen?: boolean;
   onCloseMobile?: () => void;
-  onOpenCommandPalette?: () => void;
   theme?: 'dark' | 'light';
   onToggleTheme?: () => void;
 }
 
 export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
-  currentWorkspace,
-  workspaces,
-  onSelectWorkspace,
-  onRefreshWorkspaces,
   currentUser,
   isAdmin = false,
   onLogout,
   isMobileOpen,
   onCloseMobile,
-  onOpenCommandPalette,
   theme = 'dark',
   onToggleTheme
 }) => {
@@ -54,6 +40,7 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
 
   const isTeacher = (currentUser as any)?.role === 'TEACHER';
   const navItems = [
+    { id: 'workspaces', label: 'Không gian', icon: Layers, path: '/workspaces' },
     { id: 'notes', label: t('nav.notes'), icon: FileText, path: '/notes' },
     { id: 'tasks', label: t('nav.tasks'), icon: CheckSquare, path: '/tasks' },
     { id: 'schedule', label: t('nav.schedule'), icon: Calendar, path: '/schedule' },

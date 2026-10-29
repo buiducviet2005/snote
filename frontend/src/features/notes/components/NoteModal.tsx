@@ -31,6 +31,7 @@ interface NoteModalProps {
   initialMode?: NoteModalMode;
   defaultProjectId?: string | null;
   defaultSubjectId?: string | null;
+  defaultWorkspaceId?: string | null;
   onConvertToTask?: (note: any) => void;
   allNotes?: any[];
   onOpenNote?: (note: any) => void;
@@ -44,6 +45,7 @@ export const NoteModal: React.FC<NoteModalProps> = ({
   initialMode,
   defaultProjectId,
   defaultSubjectId,
+  defaultWorkspaceId,
   onConvertToTask,
   allNotes,
   onOpenNote
@@ -285,6 +287,7 @@ export const NoteModal: React.FC<NoteModalProps> = ({
           content,
           subjectId: subjectId || undefined,
           projectId: projectId || undefined,
+          workspaceId: defaultWorkspaceId || undefined,
           noteType,
           tagNames
         });
@@ -517,7 +520,7 @@ export const NoteModal: React.FC<NoteModalProps> = ({
             </div>
 
             {/* Subject & Project Selectors */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+            {defaultWorkspaceId ? <p style={{ margin: 0, color: 'var(--text-muted)' }}>Ghi chú được lưu trong nhóm hiện tại.</p> : <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
                   Môn học liên quan (Tùy chọn)
@@ -543,6 +546,7 @@ export const NoteModal: React.FC<NoteModalProps> = ({
                 <select
                   value={projectId}
                   onChange={(e) => setProjectId(e.target.value)}
+                  disabled={Boolean(defaultProjectId)}
                   className="snote-select"
                 >
                   <option value="">-- Không gắn dự án --</option>
@@ -553,7 +557,7 @@ export const NoteModal: React.FC<NoteModalProps> = ({
                   ))}
                 </select>
               </div>
-            </div>
+            </div>}
 
             {/* Note Type & Tags */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>

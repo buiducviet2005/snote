@@ -4,6 +4,7 @@ import { StudyDateTimePicker } from '../../../components/common/StudyDateTimePic
 import { api, ApiResponse } from '../../../services/api';
 import { useToast } from '../../../contexts/ToastContext';
 import { useAppFilter } from '../../../contexts/AppFilterContext';
+import { useAuth } from '../../../contexts/AuthContext';
 import { ScheduleEventType } from '@snote/shared';
 import {
   Calendar,
@@ -29,6 +30,9 @@ interface EventModalProps {
   onSuccess: () => void;
   defaultDate?: Date;
   eventToEdit?: any | null;
+  defaultProjectId?: string;
+  defaultSubjectId?: string;
+  defaultWorkspaceId?: string;
 }
 
 const toLocalDateTime = (value: Date) => {
@@ -41,7 +45,10 @@ export const EventModal: React.FC<EventModalProps> = ({
   onClose,
   onSuccess,
   defaultDate,
-  eventToEdit
+  eventToEdit,
+  defaultProjectId,
+  defaultSubjectId,
+  defaultWorkspaceId
 }) => {
   const { subjects, selectedSemesterId } = useAppFilter();
   const [projects, setProjects] = useState<any[]>([]);
@@ -57,6 +64,7 @@ export const EventModal: React.FC<EventModalProps> = ({
   const [repeatWeeks, setRepeatWeeks] = useState(15);
   const [loading, setLoading] = useState(false);
   const { showToast } = useToast();
+  const { user } = useAuth();
 
   useEffect(() => {
     // Fetch user projects for Group Meeting mode
@@ -69,6 +77,7 @@ export const EventModal: React.FC<EventModalProps> = ({
     if (eventToEdit) {
       setTitle(eventToEdit.title || '');
       setSubjectId(eventToEdit.subjectId || '');
+      setProjectId(eventToEdit.projectId || '');
       setEventType(eventToEdit.eventType || ScheduleEventType.CLASS);
       setStartTime(eventToEdit.startTime ? toLocalDateTime(new Date(eventToEdit.startTime)) : '');
       setEndTime(eventToEdit.endTime ? toLocalDateTime(new Date(eventToEdit.endTime)) : '');
@@ -86,13 +95,13 @@ export const EventModal: React.FC<EventModalProps> = ({
       setEndTime(toLocalDateTime(endD));
       setTitle('');
       setLocation('');
-      setSubjectId(subjects[0]?.id || '');
-      setProjectId('');
-      setEventType(ScheduleEventType.CLASS);
+      setSubjectId(defaultProjectId ? '' : (defaultSubjectId || ''));
+      setProjectId(defaultProjectId || '');
+      setEventType(defaultWorkspaceId ? ScheduleEventType.GROUP_MEETING : ScheduleEventType.CLASS);
       setIsRecurring(false);
       setRepeatWeeks(15);
     }
-  }, [defaultDate, subjects, isOpen, eventToEdit]);
+  }, [defaultDate, defaultProjectId, defaultSubjectId, isOpen, eventToEdit]);
 
   // Handle Academic Shift Presets
   const applyShiftPreset = (startH: number, startM: number, endH: number, endM: number) => {
@@ -160,8 +169,9 @@ export const EventModal: React.FC<EventModalProps> = ({
 
       if (eventToEdit) {
         await api.put(`/schedule/${eventToEdit.id}`, {
-          semesterId: selectedSemesterId || undefined,
+          semesterId: defaultWorkspaceId ? undefined : selectedSemesterId || undefined,
           subjectId: subjectId || undefined,
+          projectId: projectId || undefined,
           title: title.trim(),
           eventType,
           startTime: new Date(startTime).toISOString(),
@@ -172,8 +182,10 @@ export const EventModal: React.FC<EventModalProps> = ({
         showToast('Cập nhật sự kiện lịch trình thành công!', 'success');
       } else {
         await api.post('/schedule', {
-          semesterId: selectedSemesterId || undefined,
+          semesterId: defaultWorkspaceId ? undefined : selectedSemesterId || undefined,
           subjectId: subjectId || undefined,
+          projectId: projectId || undefined,
+          workspaceId: defaultWorkspaceId || undefined,
           title: title.trim(),
           eventType,
           startTime: new Date(startTime).toISOString(),
@@ -205,6 +217,17 @@ export const EventModal: React.FC<EventModalProps> = ({
     { type: ScheduleEventType.GROUP_MEETING, label: '👥 Họp Nhóm', icon: Users, color: '#a855f7' },
     { type: ScheduleEventType.PERSONAL, label: '👤 Việc Cá Nhân', icon: User, color: '#10b981' }
   ];
+
+  if (eventToEdit?.userId && eventToEdit.userId !== user?.id) {
+    return <Modal isOpen={isOpen} onClose={onClose} title="Sự kiện của nhóm" maxWidth="560px" icon={<Calendar size={22} />}>
+      <div style={{ display: 'grid', gap: '12px', padding: '8px 0', color: 'var(--text-primary)' }}>
+        <strong>{eventToEdit.title}</strong>
+        <span>{new Date(eventToEdit.startTime).toLocaleString('vi-VN')} – {new Date(eventToEdit.endTime).toLocaleString('vi-VN')}</span>
+        {eventToEdit.location && <span>{eventToEdit.location}</span>}
+        <p style={{ margin: 0, color: 'var(--text-muted)' }}>Chỉ người tạo có thể chỉnh sửa lịch này.</p>
+      </div>
+    </Modal>;
+  }
 
   return (
     <Modal
@@ -349,7 +372,7 @@ export const EventModal: React.FC<EventModalProps> = ({
         </div>
 
         {/* 4. Contextual Selectors */}
-        <div style={{ display: 'grid', gridTemplateColumns: eventType === ScheduleEventType.GROUP_MEETING ? '1fr 1fr' : '1fr', gap: '14px' }}>
+        {!defaultWorkspaceId && <div style={{ display: 'grid', gridTemplateColumns: eventType === ScheduleEventType.GROUP_MEETING ? '1fr 1fr' : '1fr', gap: '14px' }}>
           <div>
             <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
               Môn học liên quan
@@ -377,6 +400,7 @@ export const EventModal: React.FC<EventModalProps> = ({
               <select
                 value={projectId}
                 onChange={(e) => setProjectId(e.target.value)}
+                disabled={Boolean(defaultProjectId)}
                 className="snote-select"
                 style={{ fontSize: '13.5px', padding: '9px 12px' }}
               >
@@ -389,7 +413,7 @@ export const EventModal: React.FC<EventModalProps> = ({
               </select>
             </div>
           )}
-        </div>
+        </div>}
 
         {/* 5. Exam Specific Fields */}
         {eventType === ScheduleEventType.EXAM && (
