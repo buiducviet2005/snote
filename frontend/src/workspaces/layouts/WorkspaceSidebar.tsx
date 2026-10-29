@@ -64,7 +64,6 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
     { id: 'notes', label: 'Ghi Chú Học Tập', icon: FileText, path: '/notes' },
     { id: 'tasks', label: 'Công Việc & Bài Tập', icon: CheckSquare, path: '/tasks' },
     { id: 'schedule', label: 'Thời Khóa Biểu', icon: Calendar, path: '/schedule' },
-    { id: 'semesters', label: 'Kế Hoạch Học Kỳ', icon: Layers, path: '/semesters' },
     {
       id: 'classes',
       label: isTeacher ? 'Quản Lý Lớp Học' : 'Lớp Học Phần',

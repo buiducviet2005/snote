@@ -1,6 +1,6 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { BookOpen, FolderKanban, Plus, Users, ClipboardList, GraduationCap, Trash2, Eye } from 'lucide-react';
+import { BookOpen, FolderKanban, Plus, Users, ClipboardList, GraduationCap, Trash2, Eye, Filter } from 'lucide-react';
 import { api, ApiResponse } from '../../../services/api';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useToast } from '../../../contexts/ToastContext';
@@ -201,7 +201,36 @@ export const ClassesPage: React.FC = () => {
   const selectedGroup = detail?.groups.find((group) => group.projects.some((project) => project.id === selectedProject?.id));
   const canReport = Boolean(selectedGroup?.members.some((member) => member.userId === user?.id));
   const classQuery = classSearch.trim().toLocaleLowerCase('vi');
-  const filteredClasses = classes.filter((item) => `${item.name} ${item.code || ''} ${item.term || ''}`.toLocaleLowerCase('vi').includes(classQuery));
+  const [selectedYear, setSelectedYear] = useState<string>('ALL');
+
+  const availableYears = useMemo(() => {
+    const yearsSet = new Set<string>();
+    classes.forEach((c) => {
+      if (c.term?.trim()) {
+        const match = c.term.match(/\d{4}(-\d{4})?/);
+        if (match) {
+          yearsSet.add(match[0]);
+        } else {
+          yearsSet.add(c.term.trim());
+        }
+      }
+    });
+    return Array.from(yearsSet).sort().reverse();
+  }, [classes]);
+
+  const filteredClasses = useMemo(() => {
+    return classes.filter((item) => {
+      const matchesQuery = `${item.name} ${item.code || ''} ${item.term || ''}`
+        .toLocaleLowerCase('vi')
+        .includes(classQuery);
+      if (!matchesQuery) return false;
+
+      if (selectedYear !== 'ALL') {
+        return (item.term || '').includes(selectedYear);
+      }
+      return true;
+    });
+  }, [classes, classQuery, selectedYear]);
   const visibleReports = pendingOnly ? reports.filter((report) => report.reviewScore == null) : reports;
 
     const handleJoinClass = async (e: React.FormEvent) => {
@@ -344,7 +373,33 @@ export const ClassesPage: React.FC = () => {
     <div className="classes-layout">
       <aside className="classes-panel classes-list" aria-label="Danh sách lớp học">
         <h2>Lớp của tôi</h2>
-        {classes.length > 5 && <label className="classes-search">Tìm lớp<input className="snote-input" type="search" value={classSearch} onChange={(event) => setClassSearch(event.target.value)} placeholder="Tên, mã lớp, học kỳ" /></label>}
+        {classes.length > 3 && <label className="classes-search">Tìm lớp<input className="snote-input" type="search" value={classSearch} onChange={(event) => setClassSearch(event.target.value)} placeholder="Tên, mã lớp, học kỳ" /></label>}
+        {availableYears.length > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap', margin: '6px 0 10px 0' }}>
+            <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+              <Filter size={11} /> Năm học:
+            </span>
+            <button
+              type="button"
+              className={`btn btn-sm ${selectedYear === 'ALL' ? 'btn-primary' : 'btn-ghost'}`}
+              style={{ fontSize: '10.5px', padding: '1px 6px', borderRadius: '4px' }}
+              onClick={() => setSelectedYear('ALL')}
+            >
+              Tất cả
+            </button>
+            {availableYears.map((year) => (
+              <button
+                key={year}
+                type="button"
+                className={`btn btn-sm ${selectedYear === year ? 'btn-primary' : 'btn-ghost'}`}
+                style={{ fontSize: '10.5px', padding: '1px 6px', borderRadius: '4px' }}
+                onClick={() => setSelectedYear(year)}
+              >
+                {year}
+              </button>
+            ))}
+          </div>
+        )}
         {loading && <p>Đang tải lớp học...</p>}
         {classesError && <p role="alert">Không tải được danh sách lớp: {classesError} <button type="button" className="btn btn-secondary btn-sm" onClick={() => setClassesReloadKey((current) => current + 1)}>Thử lại</button></p>}
         {!loading && !classesError && classes.length === 0 && <p>Bạn chưa tham gia lớp nào. Giảng viên có thể tạo lớp, hoặc quản lý lớp sẽ thêm bạn bằng email.</p>}

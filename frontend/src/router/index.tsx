@@ -33,7 +33,7 @@ export const AppRouter: React.FC = () => {
           <Route path="/tasks" element={<TasksListPage />} />
           <Route path="/schedule" element={<ScheduleWeekPage />} />
           <Route path="/classes" element={<ClassesPage />} />
-          <Route path="/semesters" element={<SemesterOverviewPage />} />
+          <Route path="/semesters" element={<Navigate to="/classes" replace />} />
           <Route path="/projects" element={<ProjectsListPage />} />
           <Route path="/progress" element={<ProgressDashboardPage />} />
           <Route path="/settings" element={<SettingsPage />} />
