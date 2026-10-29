@@ -140,8 +140,13 @@ export class AuthService {
     let avatarUrl: string | null = null;
     let googleId = '';
 
-    // 1. Nếu có ID Token (credential từ Google Identity Services)
-    if (dto.credential) {
+    // 1. Nếu ở môi trường dev với token mô phỏng Google
+    if (process.env.NODE_ENV !== 'production' && dto.accessToken === 'dev-mock-google-token') {
+      email = (dto.devEmail || 'naverworke.address@gmail.com').toLowerCase().trim();
+      googleId = 'google_dev_' + Buffer.from(email).toString('hex').slice(0, 16);
+      fullName = email.split('@')[0];
+      avatarUrl = 'https://lh3.googleusercontent.com/a/default-user';
+    } else if (dto.credential) {
       if (!env.GOOGLE_CLIENT_ID) {
         throw new AuthError('Đăng nhập Google chưa được cấu hình trên máy chủ');
       }

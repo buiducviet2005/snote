@@ -93,7 +93,7 @@ export const RegisterPage: React.FC = () => {
             {role === UserRole.TEACHER ? 'Đăng Ký Tài Khoản Giảng Viên' : 'Đăng Ký Tài Khoản Sinh Viên'}
           </h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '13.5px', margin: 0 }}>
-            {role === UserRole.TEACHER ? 'Tạo không gian quản lý lớp học và giám sát đồ án sinh viên' : 'Tạo không gian Second Brain cá nhân hóa cho học kỳ mới'}
+            {role === UserRole.TEACHER ? 'Tạo không gian quản lý lớp học và giám sát đồ án sinh viên' : 'Tạo không gian quản lý học tập cá nhân hóa cho học kỳ mới'}
           </p>
         </div>
 

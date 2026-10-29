@@ -7,7 +7,6 @@ import { PublicShareViewPage } from '../features/shares/pages/PublicShareViewPag
 import { NotesListPage } from '../features/notes';
 import { TasksListPage } from '../features/tasks';
 import { ScheduleWeekPage } from '../features/schedule';
-import { SemesterOverviewPage } from '../features/semesters';
 import { ProjectsListPage } from '../features/projects';
 import { ProgressDashboardPage } from '../features/progress';
 import { SettingsPage } from '../features/settings';
@@ -28,8 +27,6 @@ export const AppRouter: React.FC = () => {
       <Route element={<ProtectedRoute />}>
         <Route element={<WorkspaceLayout />}>
           <Route index element={<Navigate to="/notes" replace />} />
-          <Route path="/ws" element={<Navigate to="/notes" replace />} />
-          <Route path="/workspace-preview" element={<Navigate to="/notes" replace />} />
           <Route path="/notes" element={<NotesListPage />} />
           <Route path="/workspaces" element={<WorkspacesPage />} />
           <Route path="/tasks" element={<TasksListPage />} />

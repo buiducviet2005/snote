@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { WorkspaceSummary } from './types';
+import { useLanguage } from '../../contexts/LanguageContext';
 import {
   Search,
   FileText,
@@ -10,9 +11,10 @@ import {
   BookOpen,
   FolderKanban,
   User,
-  ArrowRight,
+  ArrowRight,
   Command as CommandIcon,
-  X
+  X,
+  Globe
 } from 'lucide-react';
 
 export interface CommandItem {
@@ -46,6 +48,7 @@ export const WorkspaceCommandPalette: React.FC<WorkspaceCommandPaletteProps> = (
   onOpenCreateNote,
   onOpenCreateTask,
 }) => {
+  const { t, language, toggleLanguage } = useLanguage();
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -67,8 +70,8 @@ export const WorkspaceCommandPalette: React.FC<WorkspaceCommandPaletteProps> = (
       {
         id: 'action-note',
         category: 'ACTIONS',
-        title: 'Tạo ghi chú mới',
-        subtitle: `Trong không gian: ${currentWorkspace.name}`,
+        title: t('palette.create_note_title'),
+        subtitle: t('palette.create_note_sub', { workspace: currentWorkspace.name }),
         icon: <FileText size={16} />,
         shortcut: 'N',
         action: () => {
@@ -79,8 +82,8 @@ export const WorkspaceCommandPalette: React.FC<WorkspaceCommandPaletteProps> = (
       {
         id: 'action-task',
         category: 'ACTIONS',
-        title: 'Tạo bài tập / Nhiệm vụ mới',
-        subtitle: `Gán hạn chót và thành viên trong ${currentWorkspace.name}`,
+        title: t('palette.create_task_title'),
+        subtitle: t('palette.create_task_sub', { workspace: currentWorkspace.name }),
         icon: <CheckSquare size={16} />,
         shortcut: 'T',
         action: () => {
@@ -88,15 +91,25 @@ export const WorkspaceCommandPalette: React.FC<WorkspaceCommandPaletteProps> = (
           if (onOpenCreateTask) onOpenCreateTask();
         }
       },
-      
-      
+      {
+        id: 'action-toggle-lang',
+        category: 'ACTIONS',
+        title: language === 'vi' ? t('palette.switch_to_en') : t('palette.switch_to_vi'),
+        subtitle: t('palette.toggle_lang_sub'),
+        icon: <Globe size={16} />,
+        shortcut: 'L',
+        action: () => {
+          toggleLanguage();
+          onClose();
+        }
+      },
 
       // 2. Navigation within workspace
       {
         id: 'nav-overview',
         category: 'NAVIGATION',
-        title: 'Góc nhìn: Tổng quan bàn học',
-        subtitle: 'Bento tóm tắt việc gấp, tiến độ và ghi chú gần đây',
+        title: t('palette.nav_notes'),
+        subtitle: t('palette.nav_notes_sub'),
         icon: <ArrowRight size={16} />,
         action: () => {
           onClose();
@@ -106,8 +119,8 @@ export const WorkspaceCommandPalette: React.FC<WorkspaceCommandPaletteProps> = (
       {
         id: 'nav-notes',
         category: 'NAVIGATION',
-        title: 'Góc nhìn: Kho ghi chú & Bài giảng',
-        subtitle: 'Danh sách và nội dung ghi chép học tập',
+        title: t('palette.nav_notes'),
+        subtitle: t('palette.nav_notes_sub'),
         icon: <FileText size={16} />,
         action: () => {
           onClose();
@@ -117,60 +130,69 @@ export const WorkspaceCommandPalette: React.FC<WorkspaceCommandPaletteProps> = (
       {
         id: 'nav-tasks',
         category: 'NAVIGATION',
-        title: 'Góc nhìn: Bảng nhiệm vụ & Deadline',
-        subtitle: 'Theo dõi tiến độ bài tập và đồ án',
+        title: t('palette.nav_tasks'),
+        subtitle: t('palette.nav_tasks_sub'),
         icon: <CheckSquare size={16} />,
         action: () => {
           onClose();
           onSelectNav('tasks');
         }
+      },
+      {
+        id: 'nav-schedule',
+        category: 'NAVIGATION',
+        title: t('palette.nav_schedule'),
+        subtitle: t('palette.nav_schedule_sub'),
+        icon: <Clock size={16} />,
+        action: () => {
+          onClose();
+          onSelectNav('calendar');
+        }
+      },
+      {
+        id: 'nav-classes',
+        category: 'NAVIGATION',
+        title: t('palette.nav_classes'),
+        subtitle: t('palette.nav_classes_sub'),
+        icon: <BookOpen size={16} />,
+        action: () => {
+          onClose();
+          onSelectNav('classes');
+        }
+      },
+      {
+        id: 'nav-projects',
+        category: 'NAVIGATION',
+        title: t('palette.nav_projects'),
+        subtitle: t('palette.nav_projects_sub'),
+        icon: <FolderKanban size={16} />,
+        action: () => {
+          onClose();
+          onSelectNav('projects');
+        }
       }
     ];
-
-    if (currentWorkspace.type === 'PROJECT') {
-      list.push(
-        {
-          id: 'nav-kanban',
-          category: 'NAVIGATION',
-          title: 'Góc nhìn: Bảng Kanban đồ án',
-          subtitle: 'Phân loại Todo, In Progress, Done theo cột',
-          icon: <FolderKanban size={16} />,
-          action: () => {
-            onClose();
-            onSelectNav('kanban');
-          }
-        },
-        {
-          id: 'nav-gantt',
-          category: 'NAVIGATION',
-          title: 'Góc nhìn: Dòng thời gian Gantt',
-          subtitle: 'Lộ trình mốc nộp bài và thời gian thực hiện',
-          icon: <Clock size={16} />,
-          action: () => {
-            onClose();
-            onSelectNav('gantt');
-          }
-        }
-      );
-    }
 
     // 3. Switch to any workspace
     workspaces.forEach((ws) => {
       let icon = <FolderKanban size={16} />;
-      let subtitle = 'Đồ án & BTL';
+      let subtitle = t('workspaces.project');
       if (ws.type === 'PERSONAL') {
         icon = <User size={16} />;
-        subtitle = 'Không gian cá nhân riêng tư';
+        subtitle = t('workspaces.personal');
       } else if (ws.type === 'SUBJECT') {
         icon = <BookOpen size={16} />;
-        subtitle = `Môn học [${ws.code || 'MÃ'}]`;
+        subtitle = `${t('workspaces.subject')} [${ws.code || 'MÃ'}]`;
+      } else if (ws.type === 'GROUP') {
+        icon = <User size={16} />;
+        subtitle = t('workspaces.group');
       }
 
       list.push({
         id: `ws-${ws.id}`,
         category: 'WORKSPACES',
-        title: `Chuyển tới: ${ws.name}`,
-        subtitle: `${subtitle} • ${ws.role === 'OWNER' ? 'Chủ sở hữu' : 'Thành viên'}`,
+        title: `${t('workspaces.select_workspace')}: ${ws.name}`,
+        subtitle: `${subtitle} • ${ws.role === 'OWNER' ? t('projects.role_owner') : t('projects.role_member')}`,
         icon,
         action: () => {
           onClose();
@@ -187,7 +209,10 @@ export const WorkspaceCommandPalette: React.FC<WorkspaceCommandPaletteProps> = (
     onOpenCreateNote,
     onOpenCreateTask,
     onSelectNav,
-    onSelectWorkspace
+    onSelectWorkspace,
+    t,
+    language,
+    toggleLanguage
   ]);
 
   // Filter commands by search query
@@ -253,7 +278,7 @@ export const WorkspaceCommandPalette: React.FC<WorkspaceCommandPaletteProps> = (
             ref={inputRef}
             type="text"
             className="ws-cmd-input"
-            placeholder="Gõ lệnh hoặc tìm không gian, ghi chú, tác vụ... (Esc để thoát)"
+            placeholder={t('palette.placeholder')}
             value={query}
             onChange={(e) => {
               setQuery(e.target.value);
@@ -264,7 +289,7 @@ export const WorkspaceCommandPalette: React.FC<WorkspaceCommandPaletteProps> = (
             type="button"
             className="ws-cmd-close-btn"
             onClick={onClose}
-            title="Đóng hộp lệnh"
+            title={t('common.close')}
           >
             <X size={16} />
           </button>
@@ -274,7 +299,7 @@ export const WorkspaceCommandPalette: React.FC<WorkspaceCommandPaletteProps> = (
         <div className="ws-cmd-list" ref={listRef}>
           {filteredCommands.length === 0 ? (
             <div className="ws-cmd-empty">
-              <span>Không tìm thấy lệnh hoặc tài liệu phù hợp với &quot;{query}&quot;</span>
+              <span>{t('palette.no_results')}</span>
             </div>
           ) : (
             filteredCommands.map((cmd, idx) => {
@@ -307,13 +332,13 @@ export const WorkspaceCommandPalette: React.FC<WorkspaceCommandPaletteProps> = (
         <div className="ws-cmd-footer">
           <div className="ws-cmd-hints">
             <span>
-              <kbd>↑</kbd> <kbd>↓</kbd> Di chuyển
+              <kbd>↑</kbd> <kbd>↓</kbd> {language === 'vi' ? 'Di chuyển' : 'Navigate'}
             </span>
             <span>
-              <kbd>↵</kbd> Chọn
+              <kbd>↵</kbd> {language === 'vi' ? 'Chọn' : 'Select'}
             </span>
             <span>
-              <kbd>Esc</kbd> Đóng
+              <kbd>Esc</kbd> {language === 'vi' ? 'Đóng' : 'Close'}
             </span>
           </div>
           <div className="ws-cmd-tagline">

@@ -21,7 +21,7 @@ interface AuthContextType {
   isAdmin: boolean;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  loginWithGoogle: (data: { credential?: string; accessToken?: string }) => Promise<void>;
+  loginWithGoogle: (data: { credential?: string; accessToken?: string; devEmail?: string }) => Promise<void>;
   register: (fullName: string, email: string, password: string, timezone?: string, role?: UserRole) => Promise<void>;
   logout: () => Promise<void>;
   refreshProfile: () => Promise<void>;
@@ -60,7 +60,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await api.post('/auth/login', { email, password });
   };
 
-  const loginWithGoogle = async (payload: { credential?: string; accessToken?: string }) => {
+  const loginWithGoogle = async (payload: { credential?: string; accessToken?: string; devEmail?: string }) => {
     await api.post('/auth/google', payload);
   };
 

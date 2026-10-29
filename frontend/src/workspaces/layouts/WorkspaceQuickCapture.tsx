@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { PenTool, X, Copy, Check, Save, Trash2, Maximize2 } from 'lucide-react';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 interface WorkspaceQuickCaptureProps {
   isOpen: boolean;
@@ -12,6 +13,7 @@ export const WorkspaceQuickCapture: React.FC<WorkspaceQuickCaptureProps> = ({
   onClose,
   onSaveToPersonalNotes
 }) => {
+  const { t, language } = useLanguage();
   const [content, setContent] = useState<string>(() => {
     return localStorage.getItem('snote_quick_scratchpad') || '';
   });
@@ -52,7 +54,7 @@ export const WorkspaceQuickCapture: React.FC<WorkspaceQuickCaptureProps> = ({
   };
 
   const handleClear = () => {
-    if (window.confirm('Bạn có chắc muốn xóa sạch nội dung nháp này không?')) {
+    if (window.confirm(t('quick_capture.clear_confirm'))) {
       setContent('');
       localStorage.removeItem('snote_quick_scratchpad');
     }
@@ -66,13 +68,13 @@ export const WorkspaceQuickCapture: React.FC<WorkspaceQuickCaptureProps> = ({
   return (
     <>
       <div className="ws-drawer-backdrop" onClick={onClose} />
-      <aside className="ws-quick-drawer" aria-label="Bàn ghi nháp nhanh">
+      <aside className="ws-quick-drawer" aria-label={t('quick_capture.title')}>
         {/* Drawer Header */}
         <div className="ws-drawer-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <PenTool size={16} style={{ color: 'var(--accent)' }} />
             <span style={{ fontWeight: 700, fontSize: '13.5px' }}>
-              Bàn Ghi Nháp Siêu Tốc (Quick Capture)
+              {t('quick_capture.title')}
             </span>
           </div>
 
@@ -81,7 +83,7 @@ export const WorkspaceQuickCapture: React.FC<WorkspaceQuickCaptureProps> = ({
               type="button"
               className="icon-button"
               onClick={handleCopy}
-              title="Sao chép toàn bộ"
+              title={t('quick_capture.copy_tooltip')}
             >
               {isCopied ? <Check size={15} style={{ color: '#16a34a' }} /> : <Copy size={15} />}
             </button>
@@ -89,7 +91,7 @@ export const WorkspaceQuickCapture: React.FC<WorkspaceQuickCaptureProps> = ({
               type="button"
               className="icon-button"
               onClick={handleClear}
-              title="Xóa trắng nháp"
+              title={t('quick_capture.clear_tooltip')}
             >
               <Trash2 size={15} />
             </button>
@@ -97,7 +99,7 @@ export const WorkspaceQuickCapture: React.FC<WorkspaceQuickCaptureProps> = ({
               type="button"
               className="icon-button"
               onClick={onClose}
-              title="Đóng (Esc)"
+              title={t('quick_capture.close_tooltip')}
             >
               <X size={16} />
             </button>
@@ -109,7 +111,7 @@ export const WorkspaceQuickCapture: React.FC<WorkspaceQuickCaptureProps> = ({
           <textarea
             ref={textareaRef}
             className="ws-drawer-textarea"
-            placeholder="Ghi nhanh công thức toán học, đoạn trích bài giảng, hoặc ý tưởng đồ án... Dữ liệu tự động lưu trong máy."
+            placeholder={t('quick_capture.placeholder')}
             value={content}
             onChange={(e) => setContent(e.target.value)}
           />
@@ -118,9 +120,9 @@ export const WorkspaceQuickCapture: React.FC<WorkspaceQuickCaptureProps> = ({
         {/* Drawer Footer */}
         <div className="ws-drawer-footer">
           <div className="ws-drawer-stats">
-            <span>{wordCount} từ</span>
+            <span>{t('notes.word_count', { words: wordCount })}</span>
             <span>•</span>
-            <span>{charCount} ký tự</span>
+            <span>{t('notes.character_count', { chars: charCount })}</span>
           </div>
 
           <button
@@ -133,12 +135,12 @@ export const WorkspaceQuickCapture: React.FC<WorkspaceQuickCaptureProps> = ({
             {saveSuccess ? (
               <>
                 <Check size={13} />
-                <span>Đã lưu thành công!</span>
+                <span>{t('quick_capture.save_success')}</span>
               </>
             ) : (
               <>
                 <Save size={13} />
-                <span>Chuyển vào Ghi chú</span>
+                <span>{t('quick_capture.save_to_notes')}</span>
               </>
             )}
           </button>

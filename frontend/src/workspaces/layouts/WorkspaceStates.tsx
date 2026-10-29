@@ -1,19 +1,21 @@
 import React from 'react';
 import { ShieldAlert, Archive, Inbox, ArrowLeft, RefreshCw, Plus } from 'lucide-react';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 interface ForbiddenProps {
   onBackToPersonal?: () => void;
 }
 
 export const WorkspaceForbiddenState: React.FC<ForbiddenProps> = ({ onBackToPersonal }) => {
+  const { t } = useLanguage();
   return (
     <div className="ws-state-screen">
       <div className="ws-state-icon forbidden">
         <ShieldAlert size={28} />
       </div>
-      <h2 className="ws-state-title">Truy Cập Bị Từ Chối (403)</h2>
+      <h2 className="ws-state-title">{t('workspaces.forbidden_title')}</h2>
       <p className="ws-state-desc">
-        Tài khoản của bạn chưa phải là thành viên chính thức của không gian này, hoặc lời mời tham gia đã hết hạn.
+        {t('workspaces.forbidden_desc')}
       </p>
       {onBackToPersonal && (
         <button
@@ -23,7 +25,7 @@ export const WorkspaceForbiddenState: React.FC<ForbiddenProps> = ({ onBackToPers
           style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', fontWeight: 600 }}
         >
           <ArrowLeft size={16} />
-          <span>Quay về Không gian Cá nhân</span>
+          <span>{t('workspaces.back_to_personal')}</span>
         </button>
       )}
     </div>
@@ -36,12 +38,13 @@ interface ArchivedBannerProps {
 }
 
 export const WorkspaceArchivedBanner: React.FC<ArchivedBannerProps> = ({ isOwner, onReopen }) => {
+  const { t } = useLanguage();
   return (
     <div className="ws-archived-banner">
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
         <Archive size={16} />
         <span>
-          Không gian này đang ở chế độ <b>Lưu trữ (Archived)</b>. Nội dung chỉ có thể đọc, toàn bộ thao tác sửa và tạo mới đều tạm khóa.
+          {t('workspaces.archived_banner')}
         </span>
       </div>
       {isOwner && onReopen && (
@@ -62,7 +65,7 @@ export const WorkspaceArchivedBanner: React.FC<ArchivedBannerProps> = ({ isOwner
           }}
         >
           <RefreshCw size={12} />
-          <span>Mở lại không gian</span>
+          <span>{t('workspaces.reopen_workspace')}</span>
         </button>
       )}
     </div>
@@ -77,18 +80,21 @@ interface EmptyStateProps {
 }
 
 export const WorkspaceEmptyState: React.FC<EmptyStateProps> = ({
-  title = 'Chưa có dữ liệu trong không gian này',
-  description = 'Bắt đầu bằng cách tạo mục đầu tiên để quản lý học tập và kế hoạch hiệu quả.',
+  title,
+  description,
   actionLabel,
   onAction
 }) => {
+  const { t } = useLanguage();
+  const displayTitle = title || t('workspaces.empty_title');
+  const displayDesc = description || t('workspaces.empty_desc');
   return (
     <div className="ws-state-screen">
       <div className="ws-state-icon empty">
         <Inbox size={28} />
       </div>
-      <h3 className="ws-state-title" style={{ fontSize: '16px' }}>{title}</h3>
-      <p className="ws-state-desc">{description}</p>
+      <h3 className="ws-state-title" style={{ fontSize: '16px' }}>{displayTitle}</h3>
+      <p className="ws-state-desc">{displayDesc}</p>
       {actionLabel && onAction && (
         <button
           type="button"
@@ -105,6 +111,7 @@ export const WorkspaceEmptyState: React.FC<EmptyStateProps> = ({
 };
 
 export const WorkspaceLoadingState: React.FC = () => {
+  const { t } = useLanguage();
   return (
     <div className="ws-state-screen">
       <div
@@ -119,7 +126,7 @@ export const WorkspaceLoadingState: React.FC = () => {
         }}
       />
       <div style={{ fontSize: '13px', color: 'var(--text-muted, #64748b)', fontWeight: 500 }}>
-        Đang nạp không gian làm việc...
+        {t('common.loading')}
       </div>
     </div>
   );

@@ -29,8 +29,20 @@ export const loginSchema = z.object({
 export const googleAuthSchema = z
   .object({
     credential: z.string().optional(),
-    accessToken: z.string().optional()
+    accessToken: z.string().optional(),
+    devEmail: z.string().email().optional()
   })
   .refine((data) => data.credential || data.accessToken, {
     message: 'Vui lòng cung cấp mã xác thực từ Google'
   });
+
+export const updateProfileSchema = z.object({
+  fullName: z.string().min(2, 'Họ và tên phải có ít nhất 2 ký tự').max(100).optional(),
+  timezone: z.string().optional(),
+  avatarUrl: z.string().url('URL ảnh đại diện không hợp lệ').nullable().optional()
+});
+
+export const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, 'Vui lòng nhập mật khẩu hiện tại'),
+  newPassword: z.string().min(6, 'Mật khẩu mới phải chứa ít nhất 6 ký tự').max(100)
+});

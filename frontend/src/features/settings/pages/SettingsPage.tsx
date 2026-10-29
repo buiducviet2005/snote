@@ -3,6 +3,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { useTheme } from '../../../contexts/ThemeContext';
 import { useToast } from '../../../contexts/ToastContext';
 import { useAppFilter } from '../../../contexts/AppFilterContext';
+import { useLanguage } from '../../../contexts/LanguageContext';
 import { api, ApiResponse } from '../../../services/api';
 import {
   Settings,
@@ -28,7 +29,8 @@ import {
   Layers,
   BookOpen,
   RefreshCw,
-  AlertCircle
+  AlertCircle,
+  Globe
 } from 'lucide-react';
 
 export const SettingsPage: React.FC = () => {
@@ -36,6 +38,7 @@ export const SettingsPage: React.FC = () => {
   const { theme, setTheme } = useTheme();
   const { showToast } = useToast();
   const { semesters, subjects } = useAppFilter();
+  const { t, language, setLanguage } = useLanguage();
 
   // Profile Form State
   const [fullName, setFullName] = useState(user?.fullName || '');
@@ -73,7 +76,7 @@ export const SettingsPage: React.FC = () => {
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!fullName.trim()) {
-      showToast('Họ và tên không được để trống', 'error');
+      showToast(t('settings.fullname_empty'), 'error');
       return;
     }
 
@@ -83,9 +86,9 @@ export const SettingsPage: React.FC = () => {
         fullName: fullName.trim(),
         timezone: timezone.trim()
       });
-      showToast('Cập nhật thông tin cá nhân thành công!', 'success');
+      showToast(t('settings.profile_saved'), 'success');
     } catch (err: any) {
-      showToast(err.message || 'Lỗi khi cập nhật thông tin', 'error');
+      showToast(err.message || t('settings.profile_save_error'), 'error');
     } finally {
       setSavingProfile(false);
     }
@@ -94,17 +97,17 @@ export const SettingsPage: React.FC = () => {
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentPassword || !newPassword) {
-      showToast('Vui lòng điền đầy đủ mật khẩu cũ và mới', 'error');
+      showToast(t('settings.password_empty'), 'error');
       return;
     }
 
     if (newPassword.length < 6) {
-      showToast('Mật khẩu mới phải có tối thiểu 6 ký tự', 'error');
+      showToast(t('settings.password_short'), 'error');
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      showToast('Mật khẩu mới và xác nhận mật khẩu không khớp nhau', 'error');
+      showToast(t('settings.password_mismatch'), 'error');
       return;
     }
 
@@ -114,12 +117,12 @@ export const SettingsPage: React.FC = () => {
         currentPassword,
         newPassword
       });
-      showToast('Đổi mật khẩu bảo vệ tài khoản thành công!', 'success');
+      showToast(t('settings.password_changed'), 'success');
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
     } catch (err: any) {
-      showToast(err.message || 'Lỗi khi đổi mật khẩu', 'error');
+      showToast(err.message || t('settings.password_error'), 'error');
     } finally {
       setSavingPassword(false);
     }
@@ -135,9 +138,9 @@ export const SettingsPage: React.FC = () => {
 
       const queryStr = params.toString() ? `?${params.toString()}` : '';
       await api.download(`/backup/export${queryStr}`, `snote_backup_${user?.id || 'data'}_${Date.now()}.json`);
-      showToast('Đã tải xuống file sao lưu JSON thành công!', 'success');
+      showToast(t('settings.export_json_success'), 'success');
     } catch (err: any) {
-      showToast(err.message || 'Lỗi khi xuất dữ liệu sao lưu JSON', 'error');
+      showToast(err.message || t('settings.export_json_error'), 'error');
     } finally {
       setDownloadingJson(false);
     }
@@ -155,7 +158,7 @@ export const SettingsPage: React.FC = () => {
       const notes = res.data || [];
 
       if (notes.length === 0) {
-        showToast('Không có ghi chú nào phù hợp để xuất', 'info');
+        showToast(t('settings.export_md_empty'), 'info');
         return;
       }
 
@@ -180,9 +183,9 @@ export const SettingsPage: React.FC = () => {
         URL.revokeObjectURL(url);
       }
 
-      showToast(`Đã xuất thành công ${notes.length} ghi chú Markdown!`, 'success');
+      showToast(t('settings.export_md_success', { count: notes.length }), 'success');
     } catch (err: any) {
-      showToast(err.message || 'Lỗi khi xuất ghi chú Markdown', 'error');
+      showToast(err.message || t('settings.export_md_error'), 'error');
     } finally {
       setDownloadingMarkdown(false);
     }
@@ -192,7 +195,7 @@ export const SettingsPage: React.FC = () => {
   const handleRestore = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!restoreFile) {
-      showToast('Vui lòng chọn tệp .json sao lưu để khôi phục', 'error');
+      showToast(t('settings.choose_file_prompt'), 'error');
       return;
     }
 
@@ -209,11 +212,11 @@ export const SettingsPage: React.FC = () => {
       });
 
       setRestoreResult(res.data?.restoredCounts || {});
-      showToast('Khôi phục dữ liệu thành công!', 'success');
+      showToast(t('settings.restore_success'), 'success');
       setRestoreFile(null);
       if (fileInputRef.current) fileInputRef.current.value = '';
     } catch (err: any) {
-      showToast(err.message || 'Lỗi khi khôi phục dữ liệu từ tệp', 'error');
+      showToast(err.message || t('settings.restore_error'), 'error');
     } finally {
       setRestoring(false);
     }
@@ -225,12 +228,12 @@ export const SettingsPage: React.FC = () => {
         if (!navigator.clipboard?.writeText) throw new Error('Clipboard API unavailable');
         await navigator.clipboard.writeText(user.id);
       } catch {
-        showToast('Không thể sao chép Mã tài khoản sinh viên. Vui lòng thử lại.', 'error');
+        showToast(t('common.copy_failed'), 'error');
         return;
       }
 
       setCopiedId(true);
-      showToast('Đã sao chép Mã tài khoản sinh viên!', 'info');
+      showToast(t('common.copied'), 'info');
       setTimeout(() => setCopiedId(false), 2500);
     }
   };
@@ -241,14 +244,14 @@ export const SettingsPage: React.FC = () => {
       <div style={{ marginBottom: '24px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <h1 style={{ fontSize: '22px', fontWeight: 800, margin: 0, letterSpacing: '-0.02em' }}>
-            Cài Đặt Tài Khoản
+            {t('settings.title')}
           </h1>
           <span className={`badge ${isAdmin ? 'badge-rose' : 'badge-blue'}`} style={{ fontSize: '11px', fontWeight: 600 }}>
-            {isAdmin ? 'Quản trị viên' : (user as any)?.role === 'TEACHER' ? 'Giảng viên' : 'Sinh viên'}
+            {isAdmin ? t('nav.admin_role') : (user as any)?.role === 'TEACHER' ? t('classes.role_teacher') : t('classes.role_student')}
           </span>
         </div>
         <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: 'var(--text-secondary)' }}>
-          Quản lý thông tin cá nhân, bảo mật mật khẩu và sao lưu dữ liệu học tập
+          {t('settings.subtitle')}
         </p>
       </div>
 
@@ -265,7 +268,7 @@ export const SettingsPage: React.FC = () => {
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <User size={20} style={{ color: 'var(--accent-primary)' }} />
             <h2 style={{ fontSize: '17px', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
-              Thông Tin Hồ Sơ Cá Nhân
+              {t('settings.profile_section')}
             </h2>
           </div>
           <span className="badge badge-neutral">
@@ -278,7 +281,7 @@ export const SettingsPage: React.FC = () => {
             {/* Full Name */}
             <div>
               <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
-                Họ và tên sinh viên *
+                {t('settings.fullname_label')}
               </label>
               <input
                 type="text"
@@ -293,7 +296,7 @@ export const SettingsPage: React.FC = () => {
             {/* Email (Readonly) */}
             <div>
               <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
-                Email tài khoản (Không thể thay đổi)
+                {t('settings.email_label')}
               </label>
               <input
                 type="email"
@@ -307,7 +310,7 @@ export const SettingsPage: React.FC = () => {
             {/* Timezone */}
             <div>
               <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
-                Múi giờ hoạt động
+                {t('settings.timezone_label')}
               </label>
               <select
                 value={timezone}
@@ -324,7 +327,7 @@ export const SettingsPage: React.FC = () => {
             {/* User ID copy */}
             <div>
               <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
-                Mã tài khoản (User ID)
+                {t('settings.user_id_label')}
               </label>
               <div style={{ display: 'flex', gap: '8px' }}>
                 <input
@@ -338,7 +341,7 @@ export const SettingsPage: React.FC = () => {
                   type="button"
                   onClick={handleCopyId}
                   className="btn btn-secondary btn-icon"
-                  title="Sao chép User ID"
+                  title={t('settings.copy_user_id')}
                 >
                   {copiedId ? <Check size={14} style={{ color: 'var(--color-success)' }} /> : <Copy size={14} />}
                 </button>
@@ -354,10 +357,98 @@ export const SettingsPage: React.FC = () => {
               style={{ fontWeight: 600 }}
             >
               <Save size={15} />
-              <span>{savingProfile ? 'Đang lưu...' : 'Lưu Thay Đổi Hồ Sơ'}</span>
+              <span>{savingProfile ? t('common.saving') : t('settings.save_profile_btn')}</span>
             </button>
           </div>
         </form>
+      </div>
+
+      {/* Language Section */}
+      <div
+        className="snote-card animate-fade-in"
+        style={{
+          borderRadius: 'var(--radius-xl)',
+          padding: '24px',
+          marginBottom: '24px'
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+          <Globe size={20} style={{ color: 'var(--accent-primary)' }} />
+          <h2 style={{ fontSize: '17px', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
+            {t('settings.language_section')}
+          </h2>
+        </div>
+
+        <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            onClick={() => setLanguage('vi')}
+            className={`btn ${language === 'vi' ? 'btn-primary' : 'btn-secondary'}`}
+            style={{ padding: '12px 20px', borderRadius: 'var(--radius-lg)', flex: 1, minWidth: '180px', justifyContent: 'flex-start' }}
+          >
+            <span style={{ fontSize: '20px', marginRight: '8px' }}>🇻🇳</span>
+            <div style={{ textAlign: 'left' }}>
+              <div style={{ fontSize: '14px', fontWeight: 700 }}>{t('settings.lang_vi_title')}</div>
+              <div style={{ fontSize: '11px', opacity: 0.8 }}>{t('settings.lang_vi_desc')}</div>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setLanguage('en')}
+            className={`btn ${language === 'en' ? 'btn-primary' : 'btn-secondary'}`}
+            style={{ padding: '12px 20px', borderRadius: 'var(--radius-lg)', flex: 1, minWidth: '180px', justifyContent: 'flex-start' }}
+          >
+            <span style={{ fontSize: '20px', marginRight: '8px' }}>🇬🇧</span>
+            <div style={{ textAlign: 'left' }}>
+              <div style={{ fontSize: '14px', fontWeight: 700 }}>{t('settings.lang_en_title')}</div>
+              <div style={{ fontSize: '11px', opacity: 0.8 }}>{t('settings.lang_en_desc')}</div>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      {/* Appearance & Theme Section */}
+      <div
+        className="snote-card animate-fade-in"
+        style={{
+          borderRadius: 'var(--radius-xl)',
+          padding: '24px',
+          marginBottom: '24px'
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+          <Sun size={20} style={{ color: 'var(--color-warning)' }} />
+          <h2 style={{ fontSize: '17px', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
+            {t('settings.appearance_section')}
+          </h2>
+        </div>
+
+        <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap' }}>
+          <button
+            onClick={() => setTheme('dark')}
+            className={`btn ${theme === 'dark' ? 'btn-primary' : 'btn-secondary'}`}
+            style={{ padding: '12px 20px', borderRadius: 'var(--radius-lg)', flex: 1, minWidth: '180px', justifyContent: 'flex-start' }}
+          >
+            <Moon size={18} />
+            <div style={{ textAlign: 'left', marginLeft: '6px' }}>
+              <div style={{ fontSize: '14px', fontWeight: 700 }}>{t('settings.theme_dark_title')}</div>
+              <div style={{ fontSize: '11px', opacity: 0.8 }}>{t('settings.theme_dark_desc')}</div>
+            </div>
+          </button>
+
+          <button
+            onClick={() => setTheme('light')}
+            className={`btn ${theme === 'light' ? 'btn-primary' : 'btn-secondary'}`}
+            style={{ padding: '12px 20px', borderRadius: 'var(--radius-lg)', flex: 1, minWidth: '180px', justifyContent: 'flex-start' }}
+          >
+            <Sun size={18} />
+            <div style={{ textAlign: 'left', marginLeft: '6px' }}>
+              <div style={{ fontSize: '14px', fontWeight: 700 }}>{t('settings.theme_light_title')}</div>
+              <div style={{ fontSize: '11px', opacity: 0.8 }}>{t('settings.theme_light_desc')}</div>
+            </div>
+          </button>
+        </div>
       </div>
 
       {/* Change Password Section */}
@@ -372,7 +463,7 @@ export const SettingsPage: React.FC = () => {
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
           <KeyRound size={20} style={{ color: 'var(--color-warning)' }} />
           <h2 style={{ fontSize: '17px', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
-            Đổi Mật Khẩu Bảo Vệ Tài Khoản
+            {t('settings.password_section')}
           </h2>
         </div>
 
@@ -380,7 +471,7 @@ export const SettingsPage: React.FC = () => {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
             <div>
               <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
-                Mật khẩu hiện tại *
+                {t('settings.current_password')}
               </label>
               <input
                 type="password"
@@ -394,7 +485,7 @@ export const SettingsPage: React.FC = () => {
 
             <div>
               <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
-                Mật khẩu mới * (Tối thiểu 6 ký tự)
+                {t('settings.new_password')}
               </label>
               <input
                 type="password"
@@ -408,7 +499,7 @@ export const SettingsPage: React.FC = () => {
 
             <div>
               <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
-                Xác nhận mật khẩu mới *
+                {t('settings.confirm_password')}
               </label>
               <input
                 type="password"
@@ -429,53 +520,10 @@ export const SettingsPage: React.FC = () => {
               style={{ fontWeight: 600 }}
             >
               <Lock size={15} />
-              <span>{savingPassword ? 'Đang cập nhật...' : 'Cập Nhật Mật Khẩu'}</span>
+              <span>{savingPassword ? t('common.updating') : t('settings.save_password_btn')}</span>
             </button>
           </div>
         </form>
-      </div>
-
-      {/* Appearance & Theme Section */}
-      <div
-        className="snote-card animate-fade-in"
-        style={{
-          borderRadius: 'var(--radius-xl)',
-          padding: '24px',
-          marginBottom: '24px'
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-          <Sun size={20} style={{ color: 'var(--color-warning)' }} />
-          <h2 style={{ fontSize: '17px', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
-            Giao Diện & Chủ Đề Hiển Thị (Appearance)
-          </h2>
-        </div>
-
-        <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap' }}>
-          <button
-            onClick={() => setTheme('dark')}
-            className={`btn ${theme === 'dark' ? 'btn-primary' : 'btn-secondary'}`}
-            style={{ padding: '12px 20px', borderRadius: 'var(--radius-lg)', flex: 1, minWidth: '180px', justifyContent: 'flex-start' }}
-          >
-            <Moon size={18} />
-            <div style={{ textAlign: 'left', marginLeft: '6px' }}>
-              <div style={{ fontSize: '14px', fontWeight: 700 }}>Chủ đề Tối (Dark Slate)</div>
-              <div style={{ fontSize: '11px', opacity: 0.8 }}>Tối ưu dịu mắt khi học đêm</div>
-            </div>
-          </button>
-
-          <button
-            onClick={() => setTheme('light')}
-            className={`btn ${theme === 'light' ? 'btn-primary' : 'btn-secondary'}`}
-            style={{ padding: '12px 20px', borderRadius: 'var(--radius-lg)', flex: 1, minWidth: '180px', justifyContent: 'flex-start' }}
-          >
-            <Sun size={18} />
-            <div style={{ textAlign: 'left', marginLeft: '6px' }}>
-              <div style={{ fontSize: '14px', fontWeight: 700 }}>Chủ đề Sáng (Light Clean)</div>
-              <div style={{ fontSize: '11px', opacity: 0.8 }}>Rõ ràng trong môi trường nhiều sáng</div>
-            </div>
-          </button>
-        </div>
       </div>
 
       {/* Advanced Backup & Export Section */}
@@ -490,12 +538,12 @@ export const SettingsPage: React.FC = () => {
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
           <Database size={20} style={{ color: 'var(--color-info)' }} />
           <h2 style={{ fontSize: '17px', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
-            Sao Lưu & Xuất Dữ Liệu Học Tập Đa Cấp Độ
+            {t('settings.backup_section')}
           </h2>
         </div>
 
         <p style={{ margin: '0 0 16px 0', fontSize: '13.5px', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-          Tải về toàn bộ học kỳ, môn học, ghi chú bài giảng Markdown, danh sách công việc và lịch thi của bạn dưới dạng file <b>JSON chuẩn hóa</b> hoặc <b>tệp Markdown (.md)</b> độc lập.
+          {t('settings.backup_desc')}
         </p>
 
         {/* Granular Selection Filter */}
@@ -513,7 +561,7 @@ export const SettingsPage: React.FC = () => {
           }}
         >
           <div style={{ fontSize: '12.5px', fontWeight: 700, color: 'var(--text-primary)' }}>
-            Phạm vi sao lưu:
+            {t('settings.backup_scope')}
           </div>
 
           <select
@@ -525,7 +573,7 @@ export const SettingsPage: React.FC = () => {
             className="snote-select"
             style={{ fontSize: '12.5px', width: '180px' }}
           >
-            <option value="">Tất cả học kỳ</option>
+            <option value="">{t('settings.all_semesters')}</option>
             {semesters.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.name}
@@ -539,7 +587,7 @@ export const SettingsPage: React.FC = () => {
             className="snote-select"
             style={{ fontSize: '12.5px', width: '200px' }}
           >
-            <option value="">Tất cả môn học</option>
+            <option value="">{t('settings.all_subjects')}</option>
             {subjects
               .filter((s) => !exportSemesterId || s.semesterId === exportSemesterId)
               .map((s) => (
@@ -558,7 +606,7 @@ export const SettingsPage: React.FC = () => {
             style={{ padding: '10px 18px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}
           >
             <Download size={16} />
-            <span>{downloadingJson ? 'Đang đóng gói...' : 'Xuất File Sao Lưu (.JSON)'}</span>
+            <span>{downloadingJson ? t('common.loading') : t('settings.export_json_btn')}</span>
           </button>
 
           <button
@@ -568,12 +616,12 @@ export const SettingsPage: React.FC = () => {
             style={{ padding: '10px 18px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}
           >
             <FileText size={16} style={{ color: 'var(--accent-primary)' }} />
-            <span>{downloadingMarkdown ? 'Đang tạo...' : 'Xuất Ghi Chú (.MD)'}</span>
+            <span>{downloadingMarkdown ? t('common.loading') : t('settings.export_md_btn')}</span>
           </button>
 
           <span className="badge badge-green" style={{ padding: '6px 12px' }}>
             <ShieldCheck size={13} />
-            <span>Đính kèm SHA-256 Checksum</span>
+            <span>{t('settings.checksum_badge')}</span>
           </span>
         </div>
       </div>
@@ -590,12 +638,12 @@ export const SettingsPage: React.FC = () => {
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
           <RefreshCw size={20} style={{ color: 'var(--color-success)' }} />
           <h2 style={{ fontSize: '17px', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
-            Khôi Phục Dữ Liệu (Restore from JSON)
+            {t('settings.restore_section')}
           </h2>
         </div>
 
         <p style={{ margin: '0 0 16px 0', fontSize: '13.5px', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-          Nhập tệp sao lưu <code>.json</code> để khôi phục lại học kỳ, môn học, ghi chú và bài tập của bạn.
+          {t('settings.restore_desc')}
         </p>
 
         <form onSubmit={handleRestore} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
@@ -615,8 +663,8 @@ export const SettingsPage: React.FC = () => {
               className="snote-select"
               style={{ fontSize: '12.5px', width: '220px' }}
             >
-              <option value="MERGE">➕ Chế độ Gộp (Merge - Giữ dữ liệu cũ)</option>
-              <option value="REPLACE" disabled>⚠️ Chế độ Ghi đè (Replace - Khóa trong bản Pilot)</option>
+              <option value="MERGE">{t('settings.restore_mode_merge')}</option>
+              <option value="REPLACE" disabled>{t('settings.restore_mode_replace')}</option>
             </select>
 
             <button
@@ -626,7 +674,7 @@ export const SettingsPage: React.FC = () => {
               style={{ padding: '9px 20px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}
             >
               <Upload size={16} />
-              <span>{restoring ? 'Đang khôi phục...' : 'Bắt Đầu Khôi Phục'}</span>
+              <span>{restoring ? t('settings.restoring') : t('settings.start_restore_btn')}</span>
             </button>
           </div>
         </form>
@@ -646,15 +694,15 @@ export const SettingsPage: React.FC = () => {
           >
             <div style={{ fontWeight: 700, color: 'var(--color-success)', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
               <Check size={16} />
-              <span>Đã khôi phục thành công các mục sau:</span>
+              <span>{t('settings.restore_result_title')}</span>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '8px', marginTop: '8px' }}>
-              <div>• Học kỳ: <b>{restoreResult.semesters || 0}</b></div>
-              <div>• Môn học: <b>{restoreResult.subjects || 0}</b></div>
-              <div>• Ghi chú: <b>{restoreResult.notes || 0}</b></div>
-              <div>• Công việc: <b>{restoreResult.tasks || 0}</b></div>
-              <div>• Đồ án: <b>{restoreResult.projects || 0}</b></div>
-              <div>• Lịch học/thi: <b>{restoreResult.scheduleEvents || 0}</b></div>
+              <div>• {t('settings.restore_result_semesters', { count: restoreResult.semesters || 0 })}</div>
+              <div>• {t('settings.restore_result_subjects', { count: restoreResult.subjects || 0 })}</div>
+              <div>• {t('settings.restore_result_notes', { count: restoreResult.notes || 0 })}</div>
+              <div>• {t('settings.restore_result_tasks', { count: restoreResult.tasks || 0 })}</div>
+              <div>• {t('settings.restore_result_projects', { count: restoreResult.projects || 0 })}</div>
+              <div>• {t('settings.restore_result_events', { count: restoreResult.scheduleEvents || 0 })}</div>
             </div>
           </div>
         )}
@@ -671,10 +719,10 @@ export const SettingsPage: React.FC = () => {
       >
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '4px' }}>
           <GraduationCap size={16} style={{ color: 'var(--accent-primary)' }} />
-          <span>SNOTE Academic Flow</span>
+          <span>{t('settings.footer_tagline')}</span>
         </div>
         <p style={{ margin: 0 }}>
-          Kiến trúc Modular Monolith • Ràng buộc chống dữ liệu rác • Bảo mật Anti-IDOR & RBAC
+          {t('settings.footer_architecture')}
         </p>
       </div>
     </div>

@@ -3,6 +3,7 @@ import { useOutletContext, useSearchParams } from 'react-router-dom';
 import { Check, FolderKanban, GraduationCap, UserRound, UsersRound } from 'lucide-react';
 import { api } from '../../services/api';
 import { useToast } from '../../contexts/ToastContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 import type { WorkspaceInvitation, WorkspaceSummary } from '../layouts/types';
 import './workspacesPage.css';
 
@@ -15,12 +16,11 @@ type PageContext = {
   workspacesError: boolean;
 };
 
-const workspaceLabels = { PERSONAL: 'Cá nhân', SUBJECT: 'Môn học', PROJECT: 'Dự án', GROUP: 'Nhóm' } as const;
-
 export function WorkspacesPage() {
   const { workspaces, currentWorkspace, onSelectWorkspace, refreshWorkspaces, workspacesLoading, workspacesError } = useOutletContext<PageContext>();
   const [params, setParams] = useSearchParams();
   const { showToast } = useToast();
+  const { t, language } = useLanguage();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [saving, setSaving] = useState(false);
@@ -28,6 +28,13 @@ export function WorkspacesPage() {
   const [invitesLoading, setInvitesLoading] = useState(true);
   const [pendingInvitation, setPendingInvitation] = useState<string | null>(null);
   const [query, setQuery] = useState('');
+
+  const workspaceLabels = useMemo(() => ({
+    PERSONAL: t('workspaces.personal'),
+    SUBJECT: t('workspaces.subject'),
+    PROJECT: t('workspaces.project'),
+    GROUP: t('workspaces.group')
+  }), [t]);
 
   const loadInvitations = async () => {
     setInvitesLoading(true);
@@ -54,13 +61,13 @@ export function WorkspacesPage() {
     setSaving(true);
     try {
       await api.post('/workspaces', { type: 'PROJECT', name: name.trim(), project: { description: description.trim() || undefined, status: 'ACTIVE' } });
-      showToast('Đã tạo không gian dự án cá nhân', 'success');
+      showToast(t('workspaces.create_success'), 'success');
       setName('');
       setDescription('');
       setParams({}, { replace: true });
       await refreshWorkspaces();
     } catch (error: any) {
-      showToast(error?.response?.data?.message || 'Không thể tạo không gian', 'error');
+      showToast(error?.response?.data?.message || t('workspaces.create_error'), 'error');
     } finally {
       setSaving(false);
     }
@@ -70,10 +77,10 @@ export function WorkspacesPage() {
     setPendingInvitation(id);
     try {
       await api.post(`/workspaces/invitations/${id}/${accept ? 'accept' : 'decline'}`, {});
-      showToast(accept ? 'Đã tham gia không gian' : 'Đã từ chối lời mời', 'success');
+      showToast(accept ? t('workspaces.joined_success') : t('workspaces.declined_success'), 'success');
       await Promise.all([loadInvitations(), refreshWorkspaces()]);
     } catch (error: any) {
-      showToast(error?.response?.data?.message || 'Không thể xử lý lời mời', 'error');
+      showToast(error?.response?.data?.message || t('workspaces.invite_error'), 'error');
     } finally {
       setPendingInvitation(null);
     }
@@ -81,37 +88,69 @@ export function WorkspacesPage() {
 
   return <div className="workspaces-page">
     <header className="workspaces-page-header">
-      <div><p className="workspaces-eyebrow">KHÔNG GIAN LÀM VIỆC</p><h1>Không gian của bạn</h1><p>Chọn không gian để làm việc. Nhóm được lập trong lớp học; dự án cá nhân được tạo tại đây.</p></div>
+      <div>
+        <p className="workspaces-eyebrow">{t('workspaces.eyebrow')}</p>
+        <h1>{t('workspaces.your_workspaces')}</h1>
+        <p>{t('workspaces.desc')}</p>
+      </div>
     </header>
 
     {params.get('create') === '1' && <form className="workspaces-create-form" onSubmit={createWorkspace}>
-      <div className="workspaces-form-head"><h2>Dự án cá nhân mới</h2><button type="button" onClick={() => setParams({}, { replace: true })}>Đóng</button></div>
-      <label htmlFor="workspace-name">Tên không gian</label>
-      <input id="workspace-name" required maxLength={150} autoFocus value={name} onChange={(event) => setName(event.target.value)} placeholder="Ví dụ: Đồ án môn học" />
-      <label htmlFor="workspace-description">Mô tả (tùy chọn)</label>
+      <div className="workspaces-form-head">
+        <h2>{t('workspaces.create_personal_project')}</h2>
+        <button type="button" onClick={() => setParams({}, { replace: true })}>{t('common.close')}</button>
+      </div>
+      <label htmlFor="workspace-name">{t('workspaces.ws_name')}</label>
+      <input id="workspace-name" required maxLength={150} autoFocus value={name} onChange={(event) => setName(event.target.value)} placeholder={t('workspaces.ws_name_placeholder')} />
+      <label htmlFor="workspace-description">{t('workspaces.ws_desc')}</label>
       <textarea id="workspace-description" value={description} onChange={(event) => setDescription(event.target.value)} rows={2} />
-      <button type="submit" disabled={saving || !name.trim()}>{saving ? 'Đang tạo…' : 'Tạo không gian'}</button>
+      <button type="submit" disabled={saving || !name.trim()}>{saving ? t('workspaces.creating') : t('workspaces.create_workspace')}</button>
     </form>}
 
-    {invitations.length > 0 && <section className="workspaces-invitations"><h2>Lời mời ({invitations.length})</h2>
+    {invitations.length > 0 && <section className="workspaces-invitations">
+      <h2>{t('workspaces.invitations', { count: invitations.length })}</h2>
       {invitations.map((invitation) => <div className="workspaces-invitation" key={invitation.id}>
-        <div><strong>{invitation.workspace?.name}</strong><small>{invitation.invitedBy?.fullName ? `Từ ${invitation.invitedBy.fullName}` : 'Lời mời tham gia'}</small></div>
-        <div><button disabled={pendingInvitation === invitation.id} onClick={() => respondToInvitation(invitation.id, true)}>Chấp nhận</button><button disabled={pendingInvitation === invitation.id} onClick={() => respondToInvitation(invitation.id, false)}>Từ chối</button></div>
+        <div>
+          <strong>{invitation.workspace?.name}</strong>
+          <small>{invitation.invitedBy?.fullName ? t('workspaces.invitation_from', { name: invitation.invitedBy.fullName }) : t('workspaces.invitation_default')}</small>
+        </div>
+        <div>
+          <button disabled={pendingInvitation === invitation.id} onClick={() => respondToInvitation(invitation.id, true)}>{t('workspaces.accept')}</button>
+          <button disabled={pendingInvitation === invitation.id} onClick={() => respondToInvitation(invitation.id, false)}>{t('workspaces.decline')}</button>
+        </div>
       </div>)}
     </section>}
 
-    <section className="workspaces-directory" aria-label="Tất cả không gian">
-      <div className="workspaces-directory-head"><h2>Tất cả không gian <span>{workspaces.length}</span></h2><input type="search" aria-label="Tìm không gian" placeholder="Tìm không gian…" value={query} onChange={(event) => setQuery(event.target.value)} /></div>
-      {workspacesLoading ? <p className="workspaces-state">Đang tải không gian…</p> : workspacesError && workspaces.length === 0 ? <div className="workspaces-state">Không thể tải danh sách. <button onClick={refreshWorkspaces}>Thử lại</button></div> : filtered.length === 0 ? <p className="workspaces-state">Không tìm thấy không gian phù hợp.</p> :
+    <section className="workspaces-directory" aria-label={t('common.all')}>
+      <div className="workspaces-directory-head">
+        <h2>{t('common.all')} <span>{workspaces.length}</span></h2>
+        <input type="search" aria-label={t('workspaces.select_workspace')} placeholder={t('common.search')} value={query} onChange={(event) => setQuery(event.target.value)} />
+      </div>
+      {workspacesLoading ? <p className="workspaces-state">{t('workspaces.loading_ws')}</p> : workspacesError && workspaces.length === 0 ? <div className="workspaces-state">{t('workspaces.error_ws')} <button onClick={refreshWorkspaces}>{t('common.refresh')}</button></div> : filtered.length === 0 ? <p className="workspaces-state">{t('workspaces.empty_title')}</p> :
         <div className="workspaces-grid">{filtered.map((workspace) => {
           const Icon = workspace.type === 'PERSONAL' ? UserRound : workspace.type === 'SUBJECT' ? GraduationCap : workspace.type === 'GROUP' ? UsersRound : FolderKanban;
+          const roleLabel = workspace.role === 'OWNER' ? (language === 'vi' ? 'Sở hữu' : 'Owner') : workspace.role === 'MANAGER' ? (language === 'vi' ? 'Quản lý' : 'Manager') : (language === 'vi' ? 'Thành viên' : 'Member');
+          const archivedLabel = workspace.status === 'ARCHIVED' ? ` · ${language === 'vi' ? 'Đã lưu trữ' : 'Archived'}` : '';
           return <button type="button" key={workspace.id} className={`workspaces-card ${workspace.id === currentWorkspace.id ? 'selected' : ''}`} onClick={() => onSelectWorkspace(workspace)}>
-            <span className="workspaces-card-icon"><Icon size={20} /></span><span className="workspaces-card-main"><strong>{workspace.name}</strong><small>{workspace.className ? `${workspace.className} · ` : ''}{workspaceLabels[workspace.type]} · {workspace.role === 'OWNER' ? 'Sở hữu' : workspace.role === 'MANAGER' ? 'Quản lý' : 'Thành viên'}{workspace.status === 'ARCHIVED' ? ' · Đã lưu trữ' : ''}</small></span>
+            <span className="workspaces-card-icon"><Icon size={20} /></span>
+            <span className="workspaces-card-main">
+              <strong>{workspace.name}</strong>
+              <small>{workspace.className ? `${workspace.className} · ` : ''}{workspaceLabels[workspace.type]} · {roleLabel}{archivedLabel}</small>
+            </span>
             {workspace.id === currentWorkspace.id && <span className="workspaces-card-check"><Check size={16} /></span>}
           </button>;
         })}</div>}
     </section>
-    <section className="workspaces-class-note"><UsersRound size={18} /><p><strong>Lớp học và nhóm</strong><br />Giáo viên tạo lớp, sinh viên tham gia lớp và ban cán sự chia nhóm trong tab Lớp học.</p></section>
-    {invitesLoading && <span className="sr-only">Đang tải lời mời</span>}
+    <section className="workspaces-class-note">
+      <UsersRound size={18} />
+      <p>
+        <strong>{language === 'vi' ? 'Lớp học và nhóm' : 'Classes and Teams'}</strong>
+        <br />
+        {language === 'vi'
+          ? 'Giáo viên tạo lớp, sinh viên tham gia lớp và ban cán sự chia nhóm trong tab Lớp học.'
+          : 'Teachers create classes, students join via codes, and groups collaborate in the Classes tab.'}
+      </p>
+    </section>
+    {invitesLoading && <span className="sr-only">{t('common.loading')}</span>}
   </div>;
 }

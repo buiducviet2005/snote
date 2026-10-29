@@ -16,6 +16,7 @@ export interface LoginDto {
 export interface GoogleAuthDto {
   credential?: string;
   accessToken?: string;
+  devEmail?: string;
 }
 
 export interface UpdateProfileDto {

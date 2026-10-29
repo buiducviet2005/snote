@@ -41,13 +41,13 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
 
   const isTeacher = (currentUser as any)?.role === 'TEACHER';
   const navItems = [
-    { id: 'workspaces', label: 'Không gian', icon: Layers, path: '/workspaces' },
+    { id: 'workspaces', label: t('nav.workspaces'), icon: Layers, path: '/workspaces' },
     { id: 'notes', label: t('nav.notes'), icon: FileText, path: '/notes' },
     { id: 'tasks', label: t('nav.tasks'), icon: CheckSquare, path: '/tasks' },
     { id: 'schedule', label: t('nav.schedule'), icon: Calendar, path: '/schedule' },
     {
       id: 'classes',
-      label: isTeacher ? (language === 'vi' ? 'Quản Lý Lớp Học' : 'Manage Classes') : t('nav.classes'),
+      label: isTeacher ? t('nav.manage_classes') : t('nav.classes'),
       icon: GraduationCap,
       path: '/classes'
     }
@@ -79,15 +79,15 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
       {/* Mobile backdrop */}
       {isMobileOpen && <div className="ws-sidebar-backdrop" onClick={onCloseMobile} />}
 
-      <aside className={`ws-icon-rail ws-sidebar ${isMobileOpen ? 'open mobile-open' : ''}`} aria-label="Thanh điều hướng">
+      <aside className={`ws-icon-rail ws-sidebar ${isMobileOpen ? 'open mobile-open' : ''}`} aria-label={t('nav.command_palette')}>
         {/* Top: Minimal Brand Icon */}
         <div className="ws-rail-top ws-sidebar-header">
           <button
             type="button"
             className="ws-rail-brand-mark ws-logo-mark"
             onClick={() => handleNavClick('/notes')}
-            title="Về trang ghi chú"
-            aria-label="Về trang ghi chú"
+            title={t('nav.back_to_notes')}
+            aria-label={t('nav.back_to_notes')}
           >
             <span className="ws-brand-mono">S</span>
           </button>
@@ -128,8 +128,8 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
               type="button"
               className="ws-rail-btn ws-lang-toggle-btn"
               onClick={toggleLanguage}
-              title={language === 'vi' ? 'Chuyển sang tiếng Anh' : 'Switch to Vietnamese'}
-              aria-label={language === 'vi' ? 'Chuyển sang tiếng Anh' : 'Switch to Vietnamese'}
+              title={language === 'vi' ? 'Switch to English' : 'Chuyển sang Tiếng Việt'}
+              aria-label={language === 'vi' ? 'Switch to English' : 'Chuyển sang Tiếng Việt'}
             >
               <Globe size={17} strokeWidth={1.8} aria-hidden="true" />
               <span className="ws-rail-language-code" aria-hidden="true">{language.toUpperCase()}</span>
@@ -146,14 +146,14 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
                 type="button"
                 className="ws-rail-btn"
                 onClick={onToggleTheme}
-                title={theme === 'dark' ? 'Chuyển sang Giao diện Sáng' : 'Chuyển sang Giao diện Tối'}
-                aria-label="Đổi giao diện sáng/tối"
+                title={theme === 'dark' ? t('nav.theme_light') : t('nav.theme_dark')}
+                aria-label={t('nav.switch_theme')}
               >
                 {theme === 'dark' ? <Sun size={18} strokeWidth={1.8} /> : <Moon size={18} strokeWidth={1.8} />}
               </button>
               <div className="ws-rail-tooltip" role="tooltip">
                 <span className="ws-tooltip-text">
-                  {theme === 'dark' ? 'Giao diện Sáng' : 'Giao diện Tối'}
+                  {theme === 'dark' ? t('nav.light_mode') : t('nav.dark_mode')}
                 </span>
               </div>
             </div>
@@ -166,13 +166,13 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
                 type="button"
                 className={`ws-rail-btn ${currentPath.startsWith('/status') ? 'active' : ''}`}
                 onClick={() => handleNavClick('/status')}
-                title="Trạng thái hệ thống máy chủ"
-                aria-label="Trạng thái hệ thống"
+                title={t('nav.server_status')}
+                aria-label={t('nav.status')}
               >
                 <Shield size={18} strokeWidth={1.8} />
               </button>
               <div className="ws-rail-tooltip" role="tooltip">
-                <span className="ws-tooltip-text">Hệ Thống</span>
+                <span className="ws-tooltip-text">{t('nav.status')}</span>
               </div>
             </div>
           )}
@@ -184,7 +184,7 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
               className={`ws-rail-btn ${currentPath.startsWith('/settings') ? 'active' : ''}`}
               onClick={() => handleNavClick('/settings')}
               title={t('nav.settings')}
-              aria-label="Settings"
+              aria-label={t('nav.settings')}
             >
               <Settings size={18} strokeWidth={1.8} />
             </button>
@@ -209,7 +209,7 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
                 <div className="ws-tooltip-user-email">{currentUser?.email || ''}</div>
                 {isAdmin && (
                   <span style={{ fontSize: '9.5px', color: 'var(--ws-accent-blue)', marginTop: '2px', fontWeight: 600 }}>
-                    Quản trị viên
+                    {t('nav.admin_role')}
                   </span>
                 )}
               </div>

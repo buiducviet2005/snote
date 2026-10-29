@@ -19,6 +19,7 @@ export interface GoogleAuthDto {
   fullName?: string;
   avatarUrl?: string;
   googleId?: string;
+  devEmail?: string;
 }
 
 export interface UpdateProfileDto {

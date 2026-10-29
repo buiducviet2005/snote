@@ -2,12 +2,16 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
 import { GoogleSignInButton } from '../components/GoogleSignInButton';
-import { GraduationCap, Mail, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react';
+import { Modal } from '../../../components/common/Modal';
+import { GraduationCap, Mail, Lock, Eye, EyeOff, ArrowRight, HelpCircle, ShieldCheck } from 'lucide-react';
 
 export const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [isForgotModalOpen, setIsForgotModalOpen] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotSubmitted, setForgotSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
@@ -28,16 +32,9 @@ export const LoginPage: React.FC = () => {
     }
   };
 
-  const handleFillStudent = () => {
-    setEmail('sinhvien@snote.edu.vn');
-    setPassword('Student@123456');
-    setError(null);
-  };
-
-  const handleFillAdmin = () => {
-    setEmail('admin@snote.edu.vn');
-    setPassword('Admin@123456');
-    setError(null);
+  const handleForgotSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setForgotSubmitted(true);
   };
 
   return (
@@ -90,7 +87,7 @@ export const LoginPage: React.FC = () => {
             Đăng nhập <span style={{ background: 'linear-gradient(135deg, #6366f1, #a855f7)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>SNOTE</span>
           </h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '13.5px', margin: 0 }}>
-            Second Brain & Workspace học tập thông minh cho Sinh viên
+            Nền tảng Quản lý Học tập, Ghi chú & Đồ án cho Sinh viên
           </p>
         </div>
 
@@ -137,9 +134,30 @@ export const LoginPage: React.FC = () => {
 
           {/* Password Input */}
           <div>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
-              Mật khẩu
-            </label>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+              <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>
+                Mật khẩu
+              </label>
+              <button
+                type="button"
+                onClick={() => {
+                  setForgotEmail(email);
+                  setForgotSubmitted(false);
+                  setIsForgotModalOpen(true);
+                }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--accent-primary)',
+                  fontSize: '12.5px',
+                  cursor: 'pointer',
+                  padding: 0,
+                  fontWeight: 600
+                }}
+              >
+                Quên mật khẩu?
+              </button>
+            </div>
             <div style={{ position: 'relative' }}>
               <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', display: 'flex' }}>
                 <Lock size={16} />
@@ -210,6 +228,61 @@ export const LoginPage: React.FC = () => {
           </Link>
         </div>
       </div>
+
+      {/* Forgot Password Modal */}
+      <Modal
+        isOpen={isForgotModalOpen}
+        onClose={() => setIsForgotModalOpen(false)}
+        title="Khôi phục Mật khẩu Sinh viên"
+        maxWidth="500px"
+        icon={<HelpCircle size={20} />}
+      >
+        {!forgotSubmitted ? (
+          <form onSubmit={handleForgotSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <p style={{ margin: 0, fontSize: '13.5px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+              Nhập email tài khoản học tập của bạn. Hệ thống sẽ tiếp nhận yêu cầu đặt lại mật khẩu và gửi thông tin hướng dẫn về hộp thư của bạn.
+            </p>
+            <div>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
+                Email tài khoản
+              </label>
+              <input
+                type="email"
+                required
+                placeholder="sinhvien@snote.edu.vn"
+                value={forgotEmail}
+                onChange={(e) => setForgotEmail(e.target.value)}
+                className="snote-input"
+              />
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '10px' }}>
+              <button type="button" onClick={() => setIsForgotModalOpen(false)} className="btn btn-secondary">
+                Đóng
+              </button>
+              <button type="submit" className="btn btn-primary" style={{ fontWeight: 700 }}>
+                Gửi Yêu Cầu
+              </button>
+            </div>
+          </form>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', textAlign: 'center', padding: '10px 0' }}>
+            <div style={{ width: '48px', height: '48px', borderRadius: '50%', backgroundColor: 'rgba(16, 185, 129, 0.15)', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto' }}>
+              <ShieldCheck size={28} />
+            </div>
+            <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)' }}>
+              Đã ghi nhận yêu cầu khôi phục
+            </h4>
+            <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+              Nếu email <b>{forgotEmail}</b> tồn tại trên hệ thống SNOTE, bạn sẽ nhận được hướng dẫn cấp lại mật khẩu. Trong trường hợp cần hỗ trợ khẩn cấp, vui lòng liên hệ Ban Quản trị qua email <b>admin@snote.edu.vn</b>.
+            </p>
+            <div style={{ marginTop: '8px' }}>
+              <button type="button" onClick={() => setIsForgotModalOpen(false)} className="btn btn-primary" style={{ width: '100%', fontWeight: 700 }}>
+                Đã Hiểu
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 };
