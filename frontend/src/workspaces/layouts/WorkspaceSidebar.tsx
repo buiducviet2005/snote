@@ -65,7 +65,12 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
     { id: 'tasks', label: 'Công Việc & Bài Tập', icon: CheckSquare, path: '/tasks' },
     { id: 'schedule', label: 'Thời Khóa Biểu', icon: Calendar, path: '/schedule' },
     { id: 'semesters', label: 'Kế Hoạch Học Kỳ', icon: Layers, path: '/semesters' },
-    ...((isTeacher || isAdmin) ? [{ id: 'classes', label: 'Quản Lý Lớp Học', icon: GraduationCap, path: '/classes' }] : [])
+    {
+      id: 'classes',
+      label: isTeacher ? 'Quản Lý Lớp Học' : 'Lớp Học Phần',
+      icon: GraduationCap,
+      path: '/classes'
+    }
   ];
 
   const handleNavClick = (path: string) => {

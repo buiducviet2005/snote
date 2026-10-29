@@ -64,6 +64,7 @@ export class AuthService {
       email: dto.email,
       passwordHash,
       fullName: dto.fullName,
+      role: dto.role,
       timezone: dto.timezone
     });
 

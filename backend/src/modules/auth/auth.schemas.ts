@@ -13,6 +13,7 @@ export const registerSchema = z.object({
     .string({ error: 'Họ và tên là bắt buộc' })
     .min(2, 'Họ và tên phải có ít nhất 2 ký tự')
     .max(100, 'Họ và tên không được vượt quá 100 ký tự'),
+  role: z.enum(['STUDENT', 'TEACHER']).optional().default('STUDENT'),
   timezone: z.string().optional().default('Asia/Ho_Chi_Minh')
 });
 

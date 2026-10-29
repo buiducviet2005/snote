@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
 import { GoogleSignInButton } from '../components/GoogleSignInButton';
-import { GraduationCap, User, Mail, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react';
+import { UserRole } from '@snote/shared';
+import { GraduationCap, Users, User, Mail, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react';
 
 export const RegisterPage: React.FC = () => {
+  const [role, setRole] = useState<UserRole>(UserRole.STUDENT);
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -32,8 +34,8 @@ export const RegisterPage: React.FC = () => {
     setLoading(true);
 
     try {
-      await register(fullName.trim(), email.trim(), password);
-      navigate('/notes');
+      await register(fullName.trim(), email.trim(), password, undefined, role);
+      navigate(role === UserRole.TEACHER ? '/classes' : '/notes');
     } catch (err: any) {
       setError(err.message || 'Đăng ký tài khoản không thành công, vui lòng thử lại');
     } finally {
@@ -88,10 +90,10 @@ export const RegisterPage: React.FC = () => {
               letterSpacing: '-0.03em'
             }}
           >
-            Đăng Ký Tài Khoản Sinh Viên
+            {role === UserRole.TEACHER ? 'Đăng Ký Tài Khoản Giảng Viên' : 'Đăng Ký Tài Khoản Sinh Viên'}
           </h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '13.5px', margin: 0 }}>
-            Tạo không gian Second Brain cá nhân hóa cho học kỳ mới
+            {role === UserRole.TEACHER ? 'Tạo không gian quản lý lớp học và giám sát đồ án sinh viên' : 'Tạo không gian Second Brain cá nhân hóa cho học kỳ mới'}
           </p>
         </div>
 
@@ -115,6 +117,67 @@ export const RegisterPage: React.FC = () => {
         )}
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {/* Role Selection */}
+          <div>
+            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '8px' }}>
+              Vai trò sử dụng SNOTE <span style={{ color: 'var(--color-danger)' }}>*</span>
+            </label>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+              <button
+                type="button"
+                onClick={() => setRole(UserRole.STUDENT)}
+                style={{
+                  padding: '12px 10px',
+                  borderRadius: 'var(--radius-lg)',
+                  border: `2px solid ${role === UserRole.STUDENT ? 'var(--accent-primary)' : 'var(--border-color)'}`,
+                  backgroundColor: role === UserRole.STUDENT ? 'var(--accent-subtle)' : 'var(--bg-primary)',
+                  cursor: 'pointer',
+                  textAlign: 'center',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: '6px',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700, fontSize: '14px', color: role === UserRole.STUDENT ? 'var(--accent-primary)' : 'var(--text-primary)' }}>
+                  <GraduationCap size={18} />
+                  <span>Sinh viên</span>
+                </div>
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: 1.3 }}>
+                  Học tập, join lớp, nhận task và làm đồ án
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setRole(UserRole.TEACHER)}
+                style={{
+                  padding: '12px 10px',
+                  borderRadius: 'var(--radius-lg)',
+                  border: `2px solid ${role === UserRole.TEACHER ? 'var(--accent-primary)' : 'var(--border-color)'}`,
+                  backgroundColor: role === UserRole.TEACHER ? 'var(--accent-subtle)' : 'var(--bg-primary)',
+                  cursor: 'pointer',
+                  textAlign: 'center',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: '6px',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700, fontSize: '14px', color: role === UserRole.TEACHER ? 'var(--accent-primary)' : 'var(--text-primary)' }}>
+                  <Users size={18} />
+                  <span>Giảng viên</span>
+                </div>
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: 1.3 }}>
+                  Tạo lớp, chia nhóm, theo dõi năng suất
+                </span>
+              </button>
+            </div>
+          </div>
+
+          
           {/* Full Name */}
           <div>
             <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>

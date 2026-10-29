@@ -8,6 +8,7 @@ const controller = new ClassesController();
 router.use(authGuard);
 
 router.get('/', asyncBoundary(controller.list));
+router.post('/join', asyncBoundary(controller.joinClass));
 router.post('/', asyncBoundary(controller.create));
 router.post('/teachers', asyncBoundary(controller.grantTeacher));
 router.get('/:id/overview', asyncBoundary(controller.overview));

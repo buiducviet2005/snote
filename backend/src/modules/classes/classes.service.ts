@@ -39,6 +39,41 @@ export class ClassesService {
     return { ...access, project, isGroupMember, isLeader: project.studyGroup.leaderId === userId };
   }
 
+    async joinClass(userId: string, code: string) {
+    const courseClass = await prisma.courseClass.findFirst({
+      where: {
+        code: { equals: code.trim(), mode: 'insensitive' },
+        deletedAt: null
+      }
+    });
+    if (!courseClass) {
+      throw new NotFoundError(`Không tìm thấy lớp học với mã "${code}"`);
+    }
+    if (courseClass.teacherId === userId) {
+      throw new ValidationError('Giảng viên phụ trách không thể tham gia lớp học của chính mình');
+    }
+    const existing = await prisma.classMember.findUnique({
+      where: {
+        classId_userId: { classId: courseClass.id, userId }
+      }
+    });
+    if (existing) {
+      throw new ConflictError('Bạn đã là thành viên của lớp học này rồi');
+    }
+    return prisma.classMember.create({
+      data: {
+        classId: courseClass.id,
+        userId,
+        role: ClassMemberRole.STUDENT
+      },
+      include: {
+        courseClass: {
+          include: { teacher: { select: publicUser } }
+        }
+      }
+    });
+  }
+
   async list(userId: string) {
     return prisma.courseClass.findMany({
       where: {

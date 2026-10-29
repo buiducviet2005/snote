@@ -1,5 +1,5 @@
 import { prisma } from '../../shared/db/prismaClient';
-import { User, RefreshToken } from '@prisma/client';
+import { User, RefreshToken, UserRole } from '@prisma/client';
 import { AuthError, NotFoundError } from '../../shared/errors/appErrors';
 
 export class AuthRepository {
@@ -34,6 +34,7 @@ export class AuthRepository {
     email: string;
     passwordHash: string;
     fullName: string;
+    role?: UserRole;
     timezone?: string;
   }): Promise<User> {
     return prisma.user.create({
@@ -41,6 +42,7 @@ export class AuthRepository {
         email: data.email.toLowerCase().trim(),
         passwordHash: data.passwordHash,
         fullName: data.fullName,
+        role: data.role || 'STUDENT',
         timezone: data.timezone || 'Asia/Ho_Chi_Minh'
       }
     });

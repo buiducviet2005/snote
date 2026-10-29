@@ -4,6 +4,7 @@ export interface RegisterDto {
   email: string;
   password: string;
   fullName: string;
+  role?: UserRole;
   timezone?: string;
 }
 

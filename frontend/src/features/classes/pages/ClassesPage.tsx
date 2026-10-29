@@ -83,6 +83,7 @@ export const ClassesPage: React.FC = () => {
   const [reviewScore, setReviewScore] = useState(0);
   const [reviewComment, setReviewComment] = useState('');
   const [workspaceProjectId, setWorkspaceProjectId] = useState<string | null>(null);
+  const [joinCode, setJoinCode] = useState('');
 
   const loadClasses = useCallback(async () => {
     const result = await api.get<ApiResponse<ClassSummary[]>>('/classes');
@@ -203,6 +204,19 @@ export const ClassesPage: React.FC = () => {
   const filteredClasses = classes.filter((item) => `${item.name} ${item.code || ''} ${item.term || ''}`.toLocaleLowerCase('vi').includes(classQuery));
   const visibleReports = pendingOnly ? reports.filter((report) => report.reviewScore == null) : reports;
 
+    const handleJoinClass = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!joinCode.trim()) return;
+    const done = await operate(async () => {
+      const res = await api.post('/classes/join', { code: joinCode.trim() });
+      return res;
+    }, 'Đã tham gia lớp học thành công!');
+    if (done) {
+      setJoinCode('');
+      loadClasses();
+    }
+  };
+
   const createClass = async (event: React.FormEvent) => {
     event.preventDefault();
     let createdId = '';
@@ -277,6 +291,30 @@ export const ClassesPage: React.FC = () => {
         <p>Giảng viên theo dõi các nhóm; sinh viên vẫn có thể tạo dự án độc lập ở mục Dự án & BTL.</p>
       </div>
     </header>
+
+    {user?.role === UserRole.STUDENT && (
+      <details className="classes-panel" open>
+        <summary style={{ cursor: 'pointer', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <Plus size={16} /> Tham gia lớp học bằng Mã Lớp
+        </summary>
+        <form className="classes-form" onSubmit={handleJoinClass}>
+          <label style={{ flex: 2 }}>
+            Nhập mã lớp do Giảng viên cung cấp
+            <input
+              className="snote-input"
+              required
+              maxLength={50}
+              value={joinCode}
+              onChange={(e) => setJoinCode(e.target.value)}
+              placeholder="Ví dụ: CSDL-01..."
+            />
+          </label>
+          <button className="btn btn-primary" disabled={busy || !joinCode.trim()}>
+            Tham gia lớp
+          </button>
+        </form>
+      </details>
+    )}
 
     {(user?.role === UserRole.TEACHER || isAdmin) && <details className="classes-panel">
       <summary><Plus size={16} /> Tạo lớp học</summary>

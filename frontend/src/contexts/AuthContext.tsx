@@ -22,7 +22,7 @@ interface AuthContextType {
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   loginWithGoogle: (data: { credential?: string; accessToken?: string }) => Promise<void>;
-  register: (fullName: string, email: string, password: string, timezone?: string) => Promise<void>;
+  register: (fullName: string, email: string, password: string, timezone?: string, role?: UserRole) => Promise<void>;
   logout: () => Promise<void>;
   refreshProfile: () => Promise<void>;
   updateProfile: (data: { fullName?: string; timezone?: string; avatarUrl?: string | null }) => Promise<void>;
@@ -64,9 +64,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await api.post('/auth/google', payload);
   };
 
-  const register = async (fullName: string, email: string, password: string, timezone?: string) => {
+  const register = async (fullName: string, email: string, password: string, timezone?: string, role?: UserRole) => {
     await api.post('/auth/register', {
       fullName, email, password,
+      role: role || UserRole.STUDENT,
       timezone: timezone || Intl.DateTimeFormat().resolvedOptions().timeZone
     });
   };
