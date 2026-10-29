@@ -7,7 +7,7 @@ import { AuthError } from '../../shared/errors/appErrors';
 const REFRESH_COOKIE_NAME = 'snote_refresh_token';
 const REFRESH_COOKIE_OPTIONS = {
   httpOnly: true,
-  secure: env.NODE_ENV === 'production',
+  secure: env.CORS_ORIGIN.startsWith('https://'),
   sameSite: 'lax' as const,
   maxAge: 7 * 24 * 60 * 60 * 1000 // 7 ngày
 };

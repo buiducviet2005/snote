@@ -719,15 +719,15 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                   className="snote-select"
                   style={{ borderRadius: '10px' }}
                 >
-                  <option value={TaskPriority.MEDIUM}>Trung bình (Medium)</option>
-                  <option value={TaskPriority.HIGH}>Cao (High)</option>
-                  <option value={TaskPriority.URGENT}>Khẩn cấp (Urgent)</option>
-                  <option value={TaskPriority.LOW}>Thấp (Low)</option>
+                  <option value={TaskPriority.MEDIUM}>Trung bình</option>
+                  <option value={TaskPriority.HIGH}>Cao</option>
+                  <option value={TaskPriority.URGENT}>Khẩn cấp</option>
+                  <option value={TaskPriority.LOW}>Thấp</option>
                 </select>
               </div>
             </div>
 
-            {/* Số người nhận tối đa (Slot limit) Card */}
+            {/* Giới hạn số người nhận việc Card */}
             <div
               style={{
                 backgroundColor: 'var(--bg-secondary)',
@@ -823,14 +823,14 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
                     className="snote-input"
-                    style={{ borderRadius: '8px', fontSize: '12px', padding: '6px 8px' }}
+                    style={{ borderRadius: '8px', fontSize: '12px', padding: '6px 8px', minWidth: '95px' }}
                   />
                   <input
                     type="time"
                     value={startTime}
                     onChange={(e) => setStartTime(e.target.value)}
                     className="snote-input"
-                    style={{ borderRadius: '8px', fontSize: '12px', padding: '6px 8px' }}
+                    style={{ borderRadius: '8px', fontSize: '12px', padding: '6px 8px', minWidth: '95px' }}
                   />
                 </div>
               </div>
@@ -845,14 +845,14 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                     value={dueDateOnly}
                     onChange={(e) => setDueDateOnly(e.target.value)}
                     className="snote-input"
-                    style={{ borderRadius: '8px', fontSize: '12px', padding: '6px 8px' }}
+                    style={{ borderRadius: '8px', fontSize: '12px', padding: '6px 8px', minWidth: '95px' }}
                   />
                   <input
                     type="time"
                     value={dueTimeOnly}
                     onChange={(e) => setDueTimeOnly(e.target.value)}
                     className="snote-input"
-                    style={{ borderRadius: '8px', fontSize: '12px', padding: '6px 8px' }}
+                    style={{ borderRadius: '8px', fontSize: '12px', padding: '6px 8px', minWidth: '95px' }}
                   />
                 </div>
               </div>

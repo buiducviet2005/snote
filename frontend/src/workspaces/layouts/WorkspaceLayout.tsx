@@ -10,22 +10,14 @@ import { WorkspaceArchivedBanner } from './WorkspaceStates';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { useAppFilter } from '../../contexts/AppFilterContext';
-import { useLanguage } from '../../contexts/LanguageContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { api } from '../../services/api';
 import {
   Menu,
-  Search,
   Plus,
-  PenTool,
-  Maximize2,
-  Minimize2,
-  Moon,
-  Sun,
   FileText,
   CheckSquare,
-  ChevronDown,
-  Globe
+  ChevronDown
 } from 'lucide-react';
 
 interface WorkspaceLayoutProps {
@@ -52,7 +44,6 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
   const { user: authUser, logout: authLogout, isAdmin } = useAuth();
   const { showToast } = useToast();
   const { subjects, setSelectedSubjectId } = useAppFilter();
-  const { language, toggleLanguage } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -337,50 +328,6 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
             <button type="button" className="ws-new-item-btn ws-create-workspace-btn" onClick={() => navigate('/workspaces?create=1')} aria-label="Tạo không gian dự án cá nhân" title="Tạo không gian dự án cá nhân">
               <Plus size={14} /> <span>Tạo không gian</span>
             </button>
-            <button
-              type="button"
-              className="ws-quick-search-pill"
-              onClick={() => setIsCommandPaletteOpen(true)}
-              title="Tìm kiếm & Mở bảng lệnh (Ctrl + K)"
-            >
-              <Search size={13} />
-              <span>Tìm kiếm & Lệnh...</span>
-              <kbd>Ctrl K</kbd>
-            </button>
-
-            
-
-            {/* Language Toggle (VI / EN) */}
-            <button
-              type="button"
-              className="ws-tool-btn ws-lang-toggle-btn"
-              onClick={toggleLanguage}
-              title={language === 'vi' ? 'Chuyển sang Tiếng Anh (English)' : 'Switch to Vietnamese (Tiếng Việt)'}
-              style={{
-                fontSize: '11px',
-                fontWeight: 700,
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '4px',
-                padding: '0 8px',
-                fontFamily: 'var(--font-mono)'
-              }}
-            >
-              <Globe size={13} />
-              <span>{language.toUpperCase()}</span>
-            </button>
-
-            <button
-              type="button"
-              className={`ws-tool-btn ${isQuickCaptureOpen ? 'active' : ''}`}
-              onClick={() => setIsQuickCaptureOpen(!isQuickCaptureOpen)}
-              title="Bàn ghi nháp siêu tốc (Phím tắt: Q)"
-            >
-              <PenTool size={14} />
-            </button>
-
-            
-
             {workspaces.length > 0 && currentWorkspace.status === 'ACTIVE' && (
               <div className="ws-new-item-wrap">
                 <button

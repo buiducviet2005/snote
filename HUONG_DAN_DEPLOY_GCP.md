@@ -1,5 +1,5 @@
 # 📘 CẨM NANG HƯỚNG DẪN TRIỂN KHAI SNOTE LÊN GOOGLE CLOUD (GCP)
-### Phương án Khuyên dùng Số 1: GCP Compute Engine (VM) + Docker Compose + Nginx Reverse Proxy
+### Phương án GCP Compute Engine (VM) + Docker Compose + Nginx Reverse Proxy — có thể phát sinh chi phí
 
 Tài liệu này hướng dẫn chi tiết từng bước (từ lúc chưa có máy chủ đến khi website SNOTE chạy chính thức trên Internet) dành cho sinh viên, giảng viên và nhóm phát triển đồ án.
 
@@ -32,7 +32,7 @@ flowchart TD
             Postgres[("Container: snote_prod_postgres (:5432)<br>PostgreSQL 16 Alpine")]
         end
         
-        FrontendDist["Thư mục tĩnh: frontend/dist<br>(HTML5, CSS, React 19 Bundle)"]
+        FrontendDist["Thư mục tĩnh: /var/www/snote<br>(HTML5, CSS, React 19 Bundle)"]
         
         Nginx -->|Phục vụ File tĩnh trực tiếp| FrontendDist
         Nginx -->|Proxy /api/ & /health| Backend
@@ -42,7 +42,7 @@ flowchart TD
 
 ### Ưu điểm vượt trội của phương án này:
 - **Độc lập & Tự chủ 100%**: Không phụ thuộc vào các dịch vụ PaaS bị giới hạn sleep time (như Render free tier).
-- **Cực kỳ tiết kiệm**: Tận dụng gói **Free Trial \$300** của Google Cloud hoặc Free Tier (e2-micro/e2-medium).
+- **Chi phí phụ thuộc cấu hình**: Tài khoản mới đủ điều kiện có thể dùng tín dụng Free Trial trong thời hạn của Google. Cấu hình `e2-medium` tại Singapore bên dưới không thuộc Compute Engine Free Tier.
 - **Sao lưu & Di chuyển dễ dàng**: Toàn bộ database nằm trong Docker Volume, copy file backup `.sql` là chuyển server trong 3 phút.
 
 ---
@@ -51,10 +51,12 @@ flowchart TD
 
 | Hạng mục | Thông số đề xuất | Chi phí ước tính | Ghi chú |
 | :--- | :--- | :--- | :--- |
-| **GCP VM Machine Type** | `e2-medium` (2 vCPU, 4GB RAM) | ~\$24 / tháng *(Trừ vào \$300 Free Trial)* | Đủ phục vụ cùng lúc **1.000 – 3.000 sinh viên**. |
-| **Hệ điều hành (OS)** | Ubuntu 24.04 LTS (x86/64) | Miễn phí (0đ) | Bản Ubuntu ổn định nhất hiện tại. |
-| **Ổ đĩa (Boot Disk)** | 30 GB Balanced Persistent Disk | Miễn phí trong hạn mức Free Tier | Đủ lưu trữ hàng chục nghìn ghi chú & tài liệu. |
-| **Băng thông mạng** | Egress Internet | Miễn phí 100GB đầu tiên/tháng | Thừa cho nhu cầu web ứng dụng văn bản & đồ án. |
+| **GCP VM Machine Type** | `e2-medium` (2 vCPU, 4 GB RAM), Singapore | Tính phí theo thời gian chạy | Không thuộc Compute Engine Free Tier; xem giá hiện tại trong GCP Pricing Calculator trước khi tạo. |
+| **Hệ điều hành (OS)** | Ubuntu 24.04 LTS (x86/64) | Không tính phí bản quyền Ubuntu | VM vẫn tính phí. |
+| **Ổ đĩa (Boot Disk)** | 30 GB Balanced Persistent Disk | Tính phí theo dung lượng | Free Tier chỉ bao gồm tối đa 30 GB-tháng **standard** persistent disk. |
+| **Băng thông mạng** | Egress Internet | Tính phí theo lưu lượng vượt hạn mức áp dụng | Compute Engine Free Tier chỉ bao gồm 1 GB/tháng từ Bắc Mỹ tới các khu vực đủ điều kiện. |
+
+**Lưu ý:** Compute Engine Free Tier áp dụng cho một `e2-micro` tại `us-west1`, `us-central1` hoặc `us-east1`, với các giới hạn về đĩa và lưu lượng. Cấu hình `e2-medium` ở `asia-southeast1` trong hướng dẫn này **không miễn phí**. Google yêu cầu liên kết Cloud Billing ngay cả khi chỉ dùng Free Tier. Free Trial (nếu đủ điều kiện) là khoản tín dụng có thời hạn, không phải quyền sử dụng miễn phí lâu dài. Xem [điều kiện Free Tier và Free Trial](https://docs.cloud.google.com/free/docs/free-cloud-features) và [giá Compute Engine](https://cloud.google.com/products/compute/pricing).
 
 ---
 

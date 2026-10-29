@@ -9,6 +9,7 @@ lerna-debug.log*
 # Environment & Secrets (Never commit .env files)
 .env
 .env.local
+.env.selfhost
 .env.development.local
 .env.test.local
 .env.production.local
@@ -25,6 +26,7 @@ pgdata/
 # Logs & Temporary Files
 logs/
 *.log
+*.dump
 *.tmp
 *.temp
 .system_generated/

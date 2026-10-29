@@ -11,7 +11,8 @@ import {
   Sun,
   LogOut,
   Shield,
-  GraduationCap
+  GraduationCap,
+  Globe
 } from 'lucide-react';
 
 interface WorkspaceSidebarProps {
@@ -36,7 +37,7 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
   const navigate = useNavigate();
   const location = useLocation();
   const currentPath = location.pathname;
-  const { t, language } = useLanguage();
+  const { t, language, toggleLanguage } = useLanguage();
 
   const isTeacher = (currentUser as any)?.role === 'TEACHER';
   const navItems = [
@@ -122,6 +123,22 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
 
         {/* Rail Bottom Footer Controls (Theme, Admin, Settings, User - Pinned to bottom) */}
         <div className="ws-rail-bottom ws-rail-footer">
+          <div className="ws-rail-item-wrapper">
+            <button
+              type="button"
+              className="ws-rail-btn ws-lang-toggle-btn"
+              onClick={toggleLanguage}
+              title={language === 'vi' ? 'Chuyển sang tiếng Anh' : 'Switch to Vietnamese'}
+              aria-label={language === 'vi' ? 'Chuyển sang tiếng Anh' : 'Switch to Vietnamese'}
+            >
+              <Globe size={17} strokeWidth={1.8} aria-hidden="true" />
+              <span className="ws-rail-language-code" aria-hidden="true">{language.toUpperCase()}</span>
+            </button>
+            <div className="ws-rail-tooltip" role="tooltip">
+              <span className="ws-tooltip-text">{language === 'vi' ? 'Ngôn ngữ: Tiếng Việt' : 'Language: English'}</span>
+            </div>
+          </div>
+
           {/* Dark / Light Theme Toggle */}
           {onToggleTheme && (
             <div className="ws-rail-item-wrapper">

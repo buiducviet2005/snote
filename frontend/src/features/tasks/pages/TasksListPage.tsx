@@ -472,7 +472,7 @@ export const TasksListPage: React.FC = () => {
             </button>
           </div>
 
-          <span style={{ fontSize: '11.5px', color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+          <span style={{ fontSize: '11.5px', color: 'var(--text-secondary)', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
             <span>{filteredTasks.length} {language === 'vi' ? 'việc' : 'tasks'}</span>
             <span>•</span>
             <span style={{ color: 'var(--color-success)', fontWeight: 600 }}>{doneTasks.length} {language === 'vi' ? 'xong' : 'done'}</span>
@@ -581,7 +581,7 @@ export const TasksListPage: React.FC = () => {
                 fontSize: '10px',
                 fontFamily: 'var(--font-mono, monospace)',
                 backgroundColor: metricTab === 'ALL' ? 'rgba(0,0,0,0.18)' : 'var(--bg-secondary)',
-                color: metricTab === 'ALL' ? 'inherit' : 'var(--text-muted)'
+                color: metricTab === 'ALL' ? 'inherit' : 'var(--text-secondary)', fontWeight: 700
               }}
             >
               {metrics.total}
@@ -754,7 +754,7 @@ export const TasksListPage: React.FC = () => {
                 fontSize: '10px',
                 fontFamily: 'var(--font-mono, monospace)',
                 backgroundColor: 'var(--bg-secondary)',
-                color: 'var(--text-muted)'
+                color: 'var(--text-secondary)', fontWeight: 700
               }}
             >
               {metrics.archived}
@@ -774,9 +774,9 @@ export const TasksListPage: React.FC = () => {
               alignItems: 'center',
               gap: '6px',
               flexShrink: 0,
-              border: metricTab === 'UNASSIGNED' ? '1px solid #d97706' : '1px solid rgba(217, 119, 6, 0.3)',
-              backgroundColor: metricTab === 'UNASSIGNED' ? '#d97706' : 'rgba(217, 119, 6, 0.1)',
-              color: metricTab === 'UNASSIGNED' ? '#ffffff' : '#d97706',
+              border: metricTab === 'UNASSIGNED' ? '1px solid #f59e0b' : '1px solid rgba(245, 158, 11, 0.4)',
+              backgroundColor: metricTab === 'UNASSIGNED' ? '#f59e0b' : 'rgba(245, 158, 11, 0.15)',
+              color: metricTab === 'UNASSIGNED' ? '#ffffff' : '#f59e0b',
               transition: 'all 0.15s ease'
             }}
           >
@@ -787,7 +787,7 @@ export const TasksListPage: React.FC = () => {
 
         {/* Search & Filter Controls */}
         <div className="tasks-filter-controls" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-          <div style={{ position: 'relative', flex: 1, minWidth: '180px', maxWidth: '240px' }}>
+          <div style={{ position: 'relative', flex: '1 1 180px', minWidth: '160px', maxWidth: '260px' }}>
             <span
               style={{
                 position: 'absolute',
@@ -795,7 +795,7 @@ export const TasksListPage: React.FC = () => {
                 top: '50%',
                 transform: 'translateY(-50%)',
                 pointerEvents: 'none',
-                color: 'var(--text-muted)',
+                color: 'var(--text-secondary)', fontWeight: 700,
                 display: 'flex'
               }}
             >
@@ -830,7 +830,7 @@ export const TasksListPage: React.FC = () => {
                   background: 'transparent',
                   border: 'none',
                   cursor: 'pointer',
-                  color: 'var(--text-muted)',
+                  color: 'var(--text-secondary)', fontWeight: 700,
                   display: 'flex',
                   padding: 0
                 }}
@@ -927,7 +927,7 @@ export const TasksListPage: React.FC = () => {
 
       {/* 4. MAIN VIEW CANVAS */}
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '80px 0', color: 'var(--text-muted)' }}>
+        <div style={{ textAlign: 'center', padding: '80px 0', color: 'var(--text-secondary)', fontWeight: 700 }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', fontSize: '14px' }}>
             <Sparkles size={18} className="pulse-urgent" style={{ color: 'var(--accent-primary)' }} />
             <span>{t('common.loading')}</span>
@@ -1023,7 +1023,7 @@ export const TasksListPage: React.FC = () => {
                   }}
                 >
                   {col.items.length === 0 ? (
-                    <div style={{ textAlign: 'center', padding: '36px 0', color: 'var(--text-muted)', fontSize: '12px' }}>
+                    <div style={{ textAlign: 'center', padding: '36px 0', color: 'var(--text-secondary)', fontWeight: 700, fontSize: '12px' }}>
                       {language === 'vi' ? 'Không có công việc' : 'No tasks in this lane'}
                     </div>
                   ) : (

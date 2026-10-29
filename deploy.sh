@@ -5,7 +5,7 @@
 # Phương án 1: GCP Compute Engine (VM) + Docker Compose + Nginx Reverse Proxy
 # ==============================================================================
 
-set -e
+set -euo pipefail
 
 DOMAIN_OR_IP="${1:-}"
 
@@ -20,7 +20,8 @@ if [ "$EUID" -ne 0 ]; then
   exit 1
 fi
 
-CURRENT_DIR=$(pwd)
+CURRENT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+cd "$CURRENT_DIR"
 
 # 2. Cập nhật hệ điều hành & cài đặt gói cơ bản
 echo "[1/6] 🔄 Cập nhật hệ điều hành và cài đặt các công cụ cần thiết..."
@@ -40,7 +41,11 @@ fi
 # 4. Xác định IP Public hoặc Domain
 if [ -z "$DOMAIN_OR_IP" ]; then
     echo "🔍 Đang tự động phát hiện External IP của GCP VM..."
-    DETECTED_IP=$(curl -s -m 5 https://ifconfig.me || curl -s -m 5 https://api.ipify.org || echo "127.0.0.1")
+    DETECTED_IP=$(curl -fsS -m 5 https://ifconfig.me || curl -fsS -m 5 https://api.ipify.org || true)
+    if [ -z "$DETECTED_IP" ]; then
+        echo "❌ Không xác định được IP public. Hãy chạy: sudo bash deploy.sh <IP_hoặc_domain>"
+        exit 1
+    fi
     DOMAIN_OR_IP="$DETECTED_IP"
 fi
 
@@ -53,15 +58,7 @@ if [ ! -f ".env" ]; then
     RANDOM_JWT_SEC=$(openssl rand -hex 32)
     RANDOM_REF_SEC=$(openssl rand -hex 32)
     
-    PROTOCOL="http"
-    if [[ "$DOMAIN_OR_IP" =~ \. ]]; then
-        # Nếu có domain thực tế
-        if [[ ! "$DOMAIN_OR_IP" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            PROTOCOL="https"
-        fi
-    fi
-
-    cat <<EOF > .env
+    (umask 077; cat <<EOF > .env
 POSTGRES_USER=snote_prod_user
 POSTGRES_PASSWORD=${RANDOM_DB_PASS}
 POSTGRES_DB=snote_prod_db
@@ -71,11 +68,37 @@ JWT_EXPIRES_IN=15m
 JWT_REFRESH_SECRET=${RANDOM_REF_SEC}
 JWT_REFRESH_EXPIRES_IN=7d
 
-CORS_ORIGIN=${PROTOCOL}://${DOMAIN_OR_IP}
+CORS_ORIGIN=http://${DOMAIN_OR_IP}
 EOF
+    )
     echo " [+] Đã tự động tạo tệp .env với mật khẩu và JWT Secret bảo mật."
 else
     echo " [=] Tệp .env đã tồn tại, giữ nguyên cấu hình hiện tại."
+fi
+chmod 600 .env
+
+docker compose -f docker-compose.prod.yml config --quiet
+
+# Sao lưu dữ liệu trước khi backend chạy migration. Dừng deploy nếu backup lỗi.
+if docker volume inspect snote_prod_postgres_data >/dev/null 2>&1; then
+    echo "💾 Phát hiện CSDL hiện có; đang sao lưu trước khi cập nhật..."
+    docker compose -f docker-compose.prod.yml up -d postgres_db
+    for i in {1..30}; do
+        if docker compose -f docker-compose.prod.yml exec -T postgres_db sh -c 'pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB"' >/dev/null 2>&1; then
+            break
+        fi
+        if [ "$i" -eq 30 ]; then
+            echo "❌ PostgreSQL chưa sẵn sàng để sao lưu."
+            exit 1
+        fi
+        sleep 1
+    done
+    install -d -m 700 "$CURRENT_DIR/backups"
+    BACKUP_FILE="$CURRENT_DIR/backups/snote_$(date -u +%Y%m%dT%H%M%SZ).dump"
+    docker compose -f docker-compose.prod.yml exec -T postgres_db sh -c 'pg_dump -Fc -U "$POSTGRES_USER" "$POSTGRES_DB"' > "$BACKUP_FILE"
+    chmod 600 "$BACKUP_FILE"
+    test -s "$BACKUP_FILE"
+    echo " ✅ Đã lưu backup: $BACKUP_FILE"
 fi
 
 # 6. Build Frontend Production Bundle bằng Docker Node runner
@@ -84,25 +107,30 @@ docker run --rm \
   -v "${CURRENT_DIR}:/app" \
   -w /app/frontend \
   node:24-alpine \
-  sh -c "npm ci && npm run build"
+  sh -c "npm ci && VITE_API_BASE_URL=/api npm run build"
 
 # 7. Khởi chạy cụm dịch vụ CSDL & Backend qua Docker Compose
 echo "[5/6] 🚢 Khởi chạy PostgreSQL & Backend API qua Docker Compose..."
 docker compose -f docker-compose.prod.yml up -d --build
 
-# Chờ Backend khởi động và vượt qua Health Check
-echo "⏳ Đang đợi Backend hoàn tất Migrate Database và khởi động (tối đa 45s)..."
-for i in {1..45}; do
-    if curl -s http://127.0.0.1:4000/health | grep -q "ok"; then
-        echo " ✅ Backend API đã sẵn sàng và kết nối CSDL thành công!"
+# Chờ Backend hoàn tất migration và xác nhận kết nối CSDL.
+echo "⏳ Đang đợi Backend và CSDL sẵn sàng (tối đa 120s)..."
+BACKEND_READY=false
+for i in {1..120}; do
+    if curl -fsS http://127.0.0.1:4000/health/ready 2>/dev/null | grep -q '"database":"connected"'; then
+        BACKEND_READY=true
         break
     fi
     sleep 1
-    if [ "$i" -eq 45 ]; then
-        echo " ⚠️ Cảnh báo: Backend chưa phản hồi /health sau 45s. Kiểm tra log:"
-        docker compose -f docker-compose.prod.yml logs --tail=20 backend
-    fi
 done
+if [ "$BACKEND_READY" != true ]; then
+    echo "❌ Backend hoặc CSDL chưa sẵn sàng; dừng triển khai."
+    docker compose -f docker-compose.prod.yml logs --tail=40 backend
+    exit 1
+fi
+echo " ✅ Backend API và CSDL đã sẵn sàng!"
+install -d -m 755 /var/www/snote
+cp -a "$CURRENT_DIR/frontend/dist/." /var/www/snote/
 
 # 8. Cấu hình Nginx Reverse Proxy trên Host
 echo "[6/6] 🛡️ Thiết lập Nginx Reverse Proxy và Tường lửa UFW..."
@@ -110,7 +138,7 @@ cat <<EOF > /etc/nginx/sites-available/snote
 server {
     listen 80;
     server_name ${DOMAIN_OR_IP};
-    root ${CURRENT_DIR}/frontend/dist;
+    root /var/www/snote;
     index index.html;
 
     gzip on;
