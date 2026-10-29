@@ -84,14 +84,52 @@ export class ClassesService {
       prisma.project.findMany({
         where: projectWhere,
         select: {
-          id: true, name: true, status: true, dueDate: true, groupId: true,
-          studyGroup: { select: { name: true, leader: { select: publicUser } } },
+          id: true,
+          name: true,
+          status: true,
+          dueDate: true,
+          groupId: true,
+          studyGroup: {
+            select: {
+              id: true,
+              name: true,
+              leader: { select: publicUser },
+              members: {
+                select: {
+                  user: { select: publicUser }
+                }
+              }
+            }
+          },
+          tasks: {
+            where: { deletedAt: null },
+            select: {
+              id: true,
+              title: true,
+              status: true,
+              priority: true,
+              dueDate: true,
+              assignees: {
+                select: {
+                  user: { select: publicUser }
+                }
+              }
+            },
+            orderBy: [{ dueDate: 'asc' }, { createdAt: 'desc' }]
+          },
           _count: { select: { tasks: true, progressReports: true } },
           progressReports: {
-            orderBy: { createdAt: 'desc' }, take: 1,
+            orderBy: { createdAt: 'desc' },
+            take: 1,
             select: {
-              id: true, progressPercent: true, summary: true, blockers: true,
-              reviewScore: true, reviewComment: true, reviewedAt: true, createdAt: true
+              id: true,
+              progressPercent: true,
+              summary: true,
+              blockers: true,
+              reviewScore: true,
+              reviewComment: true,
+              reviewedAt: true,
+              createdAt: true
             }
           }
         },
@@ -104,11 +142,51 @@ export class ClassesService {
       })
     ]);
     const pendingByProject = new Map(pending.map((row) => [row.projectId, row._count._all]));
-    return projects.map(({ progressReports, ...project }) => ({
-      ...project,
-      latestReport: progressReports[0] || null,
-      pendingReviews: pendingByProject.get(project.id) || 0
-    }));
+    const now = new Date();
+    return projects.map(({ progressReports, tasks, ...project }) => {
+      const totalTasks = tasks.length;
+      const completedTasks = tasks.filter((t) => t.status === 'DONE').length;
+      const inProgressTasks = tasks.filter((t) => t.status === 'IN_PROGRESS').length;
+      const overdueTasks = tasks.filter((t) => t.status !== 'DONE' && t.dueDate && new Date(t.dueDate) < now).length;
+      const taskCompletionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+      const groupMembers = project.studyGroup?.members.map((m) => m.user) || [];
+      const leaderId = project.studyGroup?.leader?.id;
+
+      const memberProductivity = groupMembers.map((member) => {
+        const assigned = tasks.filter((t) => t.assignees.some((a) => a.user.id === member.id));
+        const assignedCount = assigned.length;
+        const doneCount = assigned.filter((t) => t.status === 'DONE').length;
+        const inProgressCount = assigned.filter((t) => t.status === 'IN_PROGRESS').length;
+        const overdueCount = assigned.filter((t) => t.status !== 'DONE' && t.dueDate && new Date(t.dueDate) < now).length;
+        const productivityPercent = assignedCount > 0 ? Math.round((doneCount / assignedCount) * 100) : 0;
+        return {
+          userId: member.id,
+          fullName: member.fullName,
+          email: member.email,
+          avatarUrl: member.avatarUrl,
+          isLeader: member.id === leaderId,
+          assignedCount,
+          doneCount,
+          inProgressCount,
+          overdueCount,
+          productivityPercent
+        };
+      });
+
+      return {
+        ...project,
+        tasks,
+        totalTasks,
+        completedTasks,
+        inProgressTasks,
+        overdueTasks,
+        taskCompletionRate,
+        memberProductivity,
+        latestReport: progressReports[0] || null,
+        pendingReviews: pendingByProject.get(project.id) || 0
+      };
+    });
   }
 
   async create(userId: string, data: { name: string; code?: string; term?: string; description?: string }) {

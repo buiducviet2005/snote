@@ -347,15 +347,15 @@ export const ClassesPage: React.FC = () => {
           </section>
 
           <nav className="classes-tabs" aria-label="Nội dung lớp học">
-            <button type="button" className={activeTab === 'overview' ? 'active' : ''} aria-current={activeTab === 'overview' ? 'page' : undefined} onClick={() => selectTab('overview')}>Tổng quan</button>
+            <button type="button" className={activeTab === 'overview' ? 'active' : ''} aria-current={activeTab === 'overview' ? 'page' : undefined} onClick={() => selectTab('overview')}>Tổng quan tiến độ & năng suất</button>
             <button type="button" className={activeTab === 'groups' ? 'active' : ''} aria-current={activeTab === 'groups' ? 'page' : undefined} onClick={() => selectTab('groups')}>Nhóm & dự án <span>{detail.groups.length}</span></button>
-            <button type="button" className={activeTab === 'students' ? 'active' : ''} aria-current={activeTab === 'students' ? 'page' : undefined} onClick={() => selectTab('students')}>Thành viên <span>{detail.members.length}</span></button>
+            <button type="button" className={activeTab === 'students' ? 'active' : ''} aria-current={activeTab === 'students' ? 'page' : undefined} onClick={() => selectTab('students')}>Sinh viên & Lớp trưởng <span>{detail.members.length}</span></button>
           </nav>
 
           {activeTab === 'overview' && (overviewError ? <section className="classes-panel" role="alert">Không tải được tiến độ: {overviewError} <button type="button" className="btn btn-secondary btn-sm" onClick={() => setReloadKey((current) => current + 1)}>Thử lại</button></section> : <ClassProgressOverview projects={overviewProjects} loading={overviewLoading} isManager={isManager} onOpenReports={openReports} onOpenWorkspace={setWorkspaceProjectId} />)}
 
           {activeTab === 'students' && <section className="classes-panel">
-            <div className="classes-section-head"><h2><Users size={18} /> Thành viên lớp ({detail.members.length})</h2></div>
+            <div className="classes-section-head"><h2><Users size={18} /> Danh sách sinh viên & Lớp trưởng ({detail.members.length})</h2></div>
             {isManager && <form className="classes-form" onSubmit={addMember}>
               <label>Thêm sinh viên bằng email<input className="snote-input" type="email" required value={memberEmail} onChange={(e) => setMemberEmail(e.target.value)} /></label>
               <button className="btn btn-primary" disabled={busy}>Thêm vào lớp</button>
@@ -364,8 +364,8 @@ export const ClassesPage: React.FC = () => {
               <span><strong>{member.user.fullName}</strong><small>{member.user.email}</small></span>
               <span className="classes-actions">
                 {isTeacher ? <select className="snote-select" aria-label={`Vai trò của ${member.user.fullName}`} value={member.role} disabled={busy} onChange={(e) => selectedId && operate(() => api.put(`/classes/${selectedId}/members/${member.userId}`, { role: e.target.value }), 'Đã cập nhật vai trò')}>
-                  <option value="STUDENT">Sinh viên</option><option value="CLASS_ADMIN">Quản trị viên lớp</option>
-                </select> : <small>{member.role === 'CLASS_ADMIN' ? 'Quản trị viên lớp' : 'Sinh viên'}</small>}
+                  <option value="STUDENT">Sinh viên</option><option value="CLASS_ADMIN">Lớp trưởng (Quản trị lớp)</option>
+                </select> : <span className={`badge ${member.role === 'CLASS_ADMIN' ? 'badge-blue' : 'badge-neutral'}`} style={{ fontSize: '11px' }}>{member.role === 'CLASS_ADMIN' ? 'Lớp trưởng' : 'Sinh viên'}</span>}
                 {isManager && member.userId !== user?.id && (isTeacher || member.role !== 'CLASS_ADMIN') && <button type="button" className="btn btn-ghost btn-icon" title={`Xóa ${member.user.fullName} khỏi lớp`} disabled={busy} onClick={() => selectedId && window.confirm(`Xóa ${member.user.fullName} khỏi lớp?`) && operate(() => api.delete(`/classes/${selectedId}/members/${member.userId}`), 'Đã xóa sinh viên khỏi lớp')}><Trash2 size={15} /></button>}
               </span>
             </div>)}</div>
