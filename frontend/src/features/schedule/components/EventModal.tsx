@@ -87,11 +87,16 @@ export const EventModal: React.FC<EventModalProps> = ({
       setIsRecurring(Boolean(eventToEdit.isRecurring));
     } else {
       const base = defaultDate ? new Date(defaultDate) : new Date();
-      // Default to 07:00 - 09:25 (Ca 1)
+      const hasSpecificTime = Boolean(defaultDate && (defaultDate.getHours() !== 0 || defaultDate.getMinutes() !== 0));
       const startD = new Date(base);
-      startD.setHours(7, 0, 0, 0);
       const endD = new Date(base);
-      endD.setHours(9, 25, 0, 0);
+      if (hasSpecificTime) {
+        endD.setHours(startD.getHours() + 1, startD.getMinutes(), 0, 0);
+      } else {
+        // Default to 07:00 - 09:25 (Ca 1)
+        startD.setHours(7, 0, 0, 0);
+        endD.setHours(9, 25, 0, 0);
+      }
 
       setStartTime(toLocalDateTime(startD));
       setEndTime(toLocalDateTime(endD));

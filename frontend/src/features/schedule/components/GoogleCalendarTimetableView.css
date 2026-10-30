@@ -1,0 +1,501 @@
+/* ==========================================================================
+   Google Calendar Timetable View - SNOTE Modern Editorial Edition
+   Simple, Lean, High-Legibility Academic Timetable
+   ========================================================================== */
+
+.gcal-timetable-container {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg, 12px);
+  overflow: hidden;
+  box-shadow: var(--card-shadow, 0 4px 12px -2px rgba(0, 0, 0, 0.45));
+  width: 100%;
+}
+
+/* --------------------------------------------------------------------------
+   1. TOPBAR CONTROLS (Google Calendar Layout)
+   -------------------------------------------------------------------------- */
+.gcal-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 18px;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border-color);
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.gcal-toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.gcal-today-btn {
+  padding: 6px 14px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: var(--type-small, 13px);
+  font-weight: 600;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.gcal-today-btn:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--border-hover);
+  color: var(--accent-primary);
+}
+
+.gcal-nav-arrows {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.gcal-arrow-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.gcal-arrow-btn:hover {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border-color: var(--border-color);
+}
+
+.gcal-title-date {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
+.gcal-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.gcal-filter-pill-group {
+  display: inline-flex;
+  align-items: center;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.gcal-filter-pill {
+  border: none;
+  background: transparent;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.gcal-filter-pill:hover {
+  color: var(--text-primary);
+}
+
+.gcal-filter-pill.active {
+  background: var(--bg-surface);
+  color: var(--accent-primary);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+/* --------------------------------------------------------------------------
+   2. STICKY DAY HEADERS (Google Calendar Style with Today Blue Circle)
+   -------------------------------------------------------------------------- */
+.gcal-header-row {
+  display: grid;
+  grid-template-columns: 60px repeat(7, 1fr);
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-surface);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  user-select: none;
+}
+
+.gcal-header-tz {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 8px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-muted);
+  border-right: 1px solid var(--border-color);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.gcal-header-col {
+  padding: 10px 4px 8px 4px;
+  text-align: center;
+  border-right: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.gcal-header-col:last-child {
+  border-right: none;
+}
+
+.gcal-header-col:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.gcal-day-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.gcal-header-col.is-today .gcal-day-label {
+  color: var(--accent-primary);
+}
+
+.gcal-day-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 auto;
+  transition: all 0.15s ease;
+}
+
+.gcal-header-col.is-today .gcal-day-number {
+  background: var(--accent-primary);
+  color: #ffffff;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+}
+
+/* --------------------------------------------------------------------------
+   3. ALL-DAY TRAY / DEADLINES SECTION
+   -------------------------------------------------------------------------- */
+.gcal-allday-row {
+  display: grid;
+  grid-template-columns: 60px repeat(7, 1fr);
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-tray, var(--bg-secondary));
+  min-height: 32px;
+}
+
+.gcal-allday-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-right: 1px solid var(--border-color);
+  text-transform: uppercase;
+  padding: 4px;
+}
+
+.gcal-allday-cell {
+  border-right: 1px solid var(--border-color);
+  padding: 4px 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.gcal-allday-cell:last-child {
+  border-right: none;
+}
+
+.gcal-allday-chip {
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  border-left: 3px solid var(--accent-primary);
+  background: rgba(59, 130, 246, 0.15);
+  color: var(--text-primary);
+  transition: transform 0.1s ease;
+}
+
+.gcal-allday-chip:hover {
+  transform: translateY(-1px);
+}
+
+/* --------------------------------------------------------------------------
+   4. SCROLLABLE TIMETABLE GRID
+   -------------------------------------------------------------------------- */
+.gcal-grid-scroll {
+  overflow-y: auto;
+  max-height: 720px;
+  position: relative;
+  background: var(--bg-surface);
+}
+
+.gcal-grid-body {
+  display: grid;
+  grid-template-columns: 60px repeat(7, 1fr);
+  position: relative;
+}
+
+/* Time Gutter Column */
+.gcal-time-gutter {
+  border-right: 1px solid var(--border-color);
+  user-select: none;
+}
+
+.gcal-time-slot-label {
+  height: 60px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding-top: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.04));
+  position: relative;
+}
+
+.gcal-shift-badge {
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--accent-primary);
+  background: rgba(59, 130, 246, 0.1);
+  padding: 1px 3px;
+  border-radius: 3px;
+  margin-top: 2px;
+}
+
+/* Day Column Lanes */
+.gcal-day-lane {
+  border-right: 1px solid var(--border-color);
+  position: relative;
+  height: 1020px; /* 17 hours (06:00 to 22:00) * 60px */
+}
+
+.gcal-day-lane:last-child {
+  border-right: none;
+}
+
+.gcal-day-lane.is-today-lane {
+  background: rgba(59, 130, 246, 0.02);
+}
+
+.gcal-hour-cell {
+  height: 60px;
+  border-bottom: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.04));
+  box-sizing: border-box;
+  cursor: pointer;
+  transition: background 0.1s ease;
+}
+
+.gcal-hour-cell:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+/* --------------------------------------------------------------------------
+   5. REALTIME RED INDICATOR (Signature Google Calendar)
+   -------------------------------------------------------------------------- */
+.gcal-current-time-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: #ea4335;
+  z-index: 5;
+  pointer-events: none;
+}
+
+.gcal-current-time-circle {
+  position: absolute;
+  left: -5px;
+  top: -4px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #ea4335;
+  box-shadow: 0 0 6px rgba(234, 67, 53, 0.6);
+}
+
+/* --------------------------------------------------------------------------
+   6. EVENT CARDS (Material / Clean Block Cards)
+   -------------------------------------------------------------------------- */
+.gcal-event-card {
+  position: absolute;
+  left: 3px;
+  right: 3px;
+  border-radius: 6px;
+  padding: 5px 8px;
+  overflow: hidden;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+  z-index: 2;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
+.gcal-event-card:hover {
+  transform: translateY(-1px);
+  z-index: 6;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45);
+}
+
+.gcal-event-title {
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 2px;
+}
+
+.gcal-event-time {
+  font-size: 10.5px;
+  font-weight: 600;
+  opacity: 0.9;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.gcal-event-location {
+  font-size: 10px;
+  opacity: 0.85;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 2px;
+}
+
+/* Academic Event Color Schemes */
+.gcal-event-card.type-class {
+  background: rgba(59, 130, 246, 0.18);
+  border-left: 3.5px solid #3b82f6;
+  border-top: 1px solid rgba(59, 130, 246, 0.3);
+  border-right: 1px solid rgba(59, 130, 246, 0.2);
+  border-bottom: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.gcal-event-card.type-exam {
+  background: rgba(245, 158, 11, 0.2);
+  border-left: 3.5px solid #f59e0b;
+  border-top: 1px solid rgba(245, 158, 11, 0.35);
+  border-right: 1px solid rgba(245, 158, 11, 0.2);
+  border-bottom: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.gcal-event-card.type-deadline {
+  background: rgba(239, 68, 68, 0.2);
+  border-left: 3.5px solid #ef4444;
+  border-top: 1px solid rgba(239, 68, 68, 0.35);
+  border-right: 1px solid rgba(239, 68, 68, 0.2);
+  border-bottom: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.gcal-event-card.type-meeting {
+  background: rgba(168, 85, 247, 0.2);
+  border-left: 3.5px solid #a855f7;
+  border-top: 1px solid rgba(168, 85, 247, 0.35);
+  border-right: 1px solid rgba(168, 85, 247, 0.2);
+  border-bottom: 1px solid rgba(168, 85, 247, 0.2);
+}
+
+.gcal-event-card.type-personal {
+  background: rgba(100, 116, 139, 0.2);
+  border-left: 3.5px solid #64748b;
+  border-top: 1px solid rgba(100, 116, 139, 0.3);
+  border-right: 1px solid rgba(100, 116, 139, 0.2);
+  border-bottom: 1px solid rgba(100, 116, 139, 0.2);
+}
+
+/* Light Mode Overrides */
+[data-theme='light'] .gcal-timetable-container,
+.theme-light .gcal-timetable-container {
+  background: #ffffff;
+  border-color: #e2e8f0;
+  box-shadow: 0 4px 16px -2px rgba(0, 0, 0, 0.06);
+}
+
+[data-theme='light'] .gcal-event-card.type-class,
+.theme-light .gcal-event-card.type-class {
+  background: #eff6ff;
+  border-left-color: #2563eb;
+  color: #1e40af;
+}
+
+[data-theme='light'] .gcal-event-card.type-exam,
+.theme-light .gcal-event-card.type-exam {
+  background: #fffbeb;
+  border-left-color: #d97706;
+  color: #92400e;
+}
+
+[data-theme='light'] .gcal-event-card.type-deadline,
+.theme-light .gcal-event-card.type-deadline {
+  background: #fef2f2;
+  border-left-color: #dc2626;
+  color: #991b1b;
+}
+
+[data-theme='light'] .gcal-event-card.type-meeting,
+.theme-light .gcal-event-card.type-meeting {
+  background: #faf5ff;
+  border-left-color: #9333ea;
+  color: #6b21a8;
+}
+
+/* Responsive Rules */
+@media (max-width: 860px) {
+  .gcal-header-row,
+  .gcal-allday-row,
+  .gcal-grid-body {
+    grid-template-columns: 46px repeat(7, minmax(110px, 1fr));
+  }
+  .gcal-grid-scroll {
+    overflow-x: auto;
+  }
+}

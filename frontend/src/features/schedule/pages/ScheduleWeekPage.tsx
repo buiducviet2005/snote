@@ -9,13 +9,15 @@ import { EventModal } from '../components/EventModal';
 import { TaskModal } from '../../tasks/components/TaskModal';
 import { GanttTimelineView, GanttItem } from '../components/GanttTimelineView';
 import { TasksHourlyView } from '../../tasks/components/TasksHourlyView';
-import { Plus, Sparkles, Clock, Calendar, TrendingUp } from 'lucide-react';
+import { GoogleCalendarTimetableView } from '../components/GoogleCalendarTimetableView';
+import { Plus, Sparkles, Clock, Calendar, CalendarDays, TrendingUp } from 'lucide-react';
 
 export const ScheduleWeekPage: React.FC = () => {
   const { currentWorkspace } = useOutletContext<{ currentWorkspace: WorkspaceSummary }>();
   const { selectedSubjectId, selectedSemesterId, subjects } = useAppFilter();
   const { t, language } = useLanguage();
-  const [scheduleViewMode, setScheduleViewMode] = useState<'HOURLY' | 'MONTHLY'>('HOURLY');
+  // Default to Google Calendar Timetable weekly view for lean, intuitive academic scheduling
+  const [scheduleViewMode, setScheduleViewMode] = useState<'TIMETABLE' | 'HOURLY' | 'MONTHLY'>('TIMETABLE');
   const [currentGanttDate, setCurrentGanttDate] = useState<Date>(() => new Date());
   const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -83,6 +85,12 @@ export const ScheduleWeekPage: React.FC = () => {
     setIsModalOpen(true);
   };
 
+  const handleSlotClick = (date: Date, hour: number) => {
+    setSelectedDateForNewEvent(date);
+    setEventToEdit(null);
+    setIsModalOpen(true);
+  };
+
   return (
     <div style={{ maxWidth: '1440px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '14px' }}>
       {/* Top Header: View Switcher & Actions */}
@@ -99,6 +107,26 @@ export const ScheduleWeekPage: React.FC = () => {
               gap: '2px'
             }}
           >
+            {/* 1. Google Calendar Weekly Timetable Mode */}
+            <button
+              onClick={() => setScheduleViewMode('TIMETABLE')}
+              className={`btn btn-sm ${scheduleViewMode === 'TIMETABLE' ? 'btn-primary' : 'btn-ghost'}`}
+              style={{
+                padding: '4px 12px',
+                borderRadius: '6px',
+                fontSize: 'var(--type-caption)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px',
+                backgroundColor: scheduleViewMode === 'TIMETABLE' ? 'var(--accent)' : 'transparent',
+                color: scheduleViewMode === 'TIMETABLE' ? '#ffffff' : 'var(--text-secondary)'
+              }}
+            >
+              <CalendarDays size={14} />
+              <span>{t('schedule.weekly_timetable')}</span>
+            </button>
+
+            {/* 2. Daily Hourly View */}
             <button
               onClick={() => setScheduleViewMode('HOURLY')}
               className={`btn btn-sm ${scheduleViewMode === 'HOURLY' ? 'btn-primary' : 'btn-ghost'}`}
@@ -117,6 +145,7 @@ export const ScheduleWeekPage: React.FC = () => {
               <span>{t('schedule.daily_hourly')}</span>
             </button>
 
+            {/* 3. Monthly Gantt View */}
             <button
               onClick={() => setScheduleViewMode('MONTHLY')}
               className={`btn btn-sm ${scheduleViewMode === 'MONTHLY' ? 'btn-primary' : 'btn-ghost'}`}
@@ -161,6 +190,19 @@ export const ScheduleWeekPage: React.FC = () => {
           <Sparkles className="animate-spin" size={24} style={{ margin: '0 auto 12px auto', color: 'var(--accent-primary)' }} />
           <div>{t('common.loading')}</div>
         </div>
+      ) : scheduleViewMode === 'TIMETABLE' ? (
+        <GoogleCalendarTimetableView
+          items={events}
+          currentDate={currentGanttDate}
+          onDateChange={(d) => setCurrentGanttDate(d)}
+          onItemClick={handleGanttItemClick}
+          onSlotClick={handleSlotClick}
+          onOpenCreate={() => {
+            setEventToEdit(null);
+            setSelectedDateForNewEvent(undefined);
+            setIsModalOpen(true);
+          }}
+        />
       ) : scheduleViewMode === 'HOURLY' ? (
         <TasksHourlyView
           tasks={events}
