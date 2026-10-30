@@ -191,9 +191,11 @@ export const NotesListPage: React.FC = () => {
 
   const handleUpdateNote = async (id: string, payload: { title?: string; content?: string }) => {
     try {
-      await api.put(`/notes/${id}`, payload);
-      // Quietly update notes list in background
-      setNotes((prev) => prev.map((n) => (n.id === id ? { ...n, ...payload } : n)));
+      const res = await api.put<ApiResponse<any>>(`/notes/${id}`, payload);
+      const updated = res.data || payload;
+      setNotes((prev) => prev.map((n) => (n.id === id ? { ...n, ...updated } : n)));
+      setSelectedNote((prev: any) => (prev?.id === id ? { ...prev, ...updated } : prev));
+      return updated;
     } catch (err: any) {
       console.error('Save error:', err);
       throw err;
@@ -247,7 +249,7 @@ export const NotesListPage: React.FC = () => {
         }}
         noteToEdit={noteToEdit}
         defaultProjectId={currentWorkspace.type === 'PROJECT' ? currentWorkspace.projectId : undefined}
-        defaultWorkspaceId={currentWorkspace.type === 'GROUP' ? currentWorkspace.id : undefined}
+        defaultWorkspaceId={currentWorkspace.id || undefined}
         defaultSubjectId={currentWorkspace.type === 'SUBJECT' ? currentWorkspace.subjectId : undefined}
         initialMode={modalMode}
         allNotes={notes}

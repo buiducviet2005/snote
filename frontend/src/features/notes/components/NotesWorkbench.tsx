@@ -6,6 +6,7 @@ import { NoteHistoryModal } from './NoteHistoryModal';
 import { extractOutline, extractWikiLinks, extractTags } from '../utils/smartNoteParser';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useLanguage } from '../../../contexts/LanguageContext';
+import { useToast } from '../../../contexts/ToastContext';
 import {
   BookOpen,
   Search,
@@ -56,6 +57,7 @@ export const NotesWorkbench: React.FC<NotesWorkbenchProps> = ({
 }) => {
   const { user } = useAuth();
   const { t, language, formatDate } = useLanguage();
+  const { showToast } = useToast();
 
   // Active note selection
   const [selectedNote, setSelectedNote] = useState<any | null>(null);
@@ -168,15 +170,16 @@ export const NotesWorkbench: React.FC<NotesWorkbenchProps> = ({
     return currentT !== lastSavedTitleRef.current || editContent !== lastSavedContentRef.current;
   }, [selectedNote, editTitle, editContent, language]);
 
-  // Completely Silent Save with Version Checkpointing
+  // Resilient Save with Version Checkpointing & Instant User Feedback
   const performSave = useCallback(
     async (
+      targetNoteId: string,
       newTitle: string,
       newContent: string,
       versionType: NoteVersionType = 'AUTO_SAVE',
       description?: string
     ) => {
-      if (!selectedNote || !canEditSelected) return;
+      if (!targetNoteId || !canEditSelected) return;
 
       const trimmedTitle = newTitle.trim() || (language === 'vi' ? 'Ghi chú không tên' : 'Untitled Note');
       const hasChanged = trimmedTitle !== lastSavedTitleRef.current || newContent !== lastSavedContentRef.current;
@@ -188,25 +191,25 @@ export const NotesWorkbench: React.FC<NotesWorkbenchProps> = ({
 
       try {
         setSyncStatus('SAVING');
-        await onUpdateNote(selectedNote.id, {
+        await onUpdateNote(targetNoteId, {
           title: trimmedTitle,
           content: newContent
         });
 
         lastSavedTitleRef.current = trimmedTitle;
         lastSavedContentRef.current = newContent;
-        draftStorage.remove(selectedNote.id);
+        draftStorage.remove(targetNoteId);
 
-        // Record snapshot in version history silently
+        // Record snapshot in version history
         const savedSnap = noteHistoryStorage.saveSnapshot(
-          selectedNote.id,
+          targetNoteId,
           trimmedTitle,
           newContent,
           versionType,
           description
         );
         if (savedSnap) {
-          const snaps = noteHistoryStorage.getSnapshots(selectedNote.id);
+          const snaps = noteHistoryStorage.getSnapshots(targetNoteId);
           setHistoryCount(snaps.length);
         }
 
@@ -217,63 +220,78 @@ export const NotesWorkbench: React.FC<NotesWorkbenchProps> = ({
         });
         setLastSavedTime(nowTime);
         setSyncStatus('SYNCED');
-      } catch {
+
+        if (versionType === 'MANUAL_SAVE' || versionType === 'RESTORE_POINT') {
+          showToast(language === 'vi' ? 'Đã lưu bài ghi thành công' : 'Note saved successfully', 'success');
+        }
+      } catch (err: any) {
         setSyncStatus('DRAFT');
+        if (versionType === 'MANUAL_SAVE' || versionType === 'RESTORE_POINT') {
+          showToast(err?.message || (language === 'vi' ? 'Lỗi khi lưu bài ghi' : 'Failed to save note'), 'error');
+        }
       }
     },
-    [selectedNote, canEditSelected, language, onUpdateNote]
+    [canEditSelected, language, onUpdateNote, showToast]
   );
 
-  // Trigger Autosave Debounce (Completely silent in background)
+  // Trigger Autosave Debounce
   const triggerAutosave = useCallback(
-    (newTitle: string, newContent: string) => {
+    (targetId: string, newTitle: string, newContent: string) => {
       setSyncStatus('DRAFT');
       if (!isAutoSave) return;
 
       if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
       saveTimeoutRef.current = setTimeout(() => {
-        performSave(newTitle, newContent, 'AUTO_SAVE');
+        performSave(targetId, newTitle, newContent, 'AUTO_SAVE');
       }, 1500);
     },
     [isAutoSave, performSave]
   );
 
-  // Global Ctrl + S / Cmd + S Keydown Listener (Silent, no toast popup)
+  // Global Ctrl + S / Cmd + S Keydown Listener
   useEffect(() => {
     const handleGlobalSaveKey = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
         e.preventDefault();
-        performSave(editTitleRef.current, editContentRef.current, 'MANUAL_SAVE', language === 'vi' ? 'Lưu thủ công (Ctrl+S)' : 'Manual save (Ctrl+S)');
+        if (selectedNote?.id) {
+          performSave(selectedNote.id, editTitleRef.current, editContentRef.current, 'MANUAL_SAVE', language === 'vi' ? 'Lưu thủ công (Ctrl+S)' : 'Manual save (Ctrl+S)');
+        }
       }
     };
 
     window.addEventListener('keydown', handleGlobalSaveKey);
     return () => window.removeEventListener('keydown', handleGlobalSaveKey);
-  }, [performSave, language]);
+  }, [performSave, selectedNote?.id, language]);
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     setEditTitle(val);
     editTitleRef.current = val;
-    triggerAutosave(val, editContentRef.current);
+    if (selectedNote?.id) {
+      triggerAutosave(selectedNote.id, val, editContentRef.current);
+    }
   };
 
   const handleContentChange = useCallback(
     (newMarkdown: string) => {
       setEditContent(newMarkdown);
       editContentRef.current = newMarkdown;
-      triggerAutosave(editTitleRef.current, newMarkdown);
+      if (selectedNote?.id) {
+        triggerAutosave(selectedNote.id, editTitleRef.current, newMarkdown);
+      }
     },
-    [triggerAutosave]
+    [selectedNote?.id, triggerAutosave]
   );
 
   // Restore Note from Version History
   const handleRestoreSnapshot = async (snapshot: NoteVersionSnapshot) => {
+    if (!selectedNote?.id) return;
     setEditTitle(snapshot.title);
     setEditContent(snapshot.content);
     editTitleRef.current = snapshot.title;
     editContentRef.current = snapshot.content;
     await performSave(
+      selectedNote.id,
       snapshot.title,
       snapshot.content,
       'RESTORE_POINT',
@@ -281,6 +299,29 @@ export const NotesWorkbench: React.FC<NotesWorkbenchProps> = ({
         ? `Khôi phục từ bản ${snapshot.formattedTime} (${snapshot.formattedDate})`
         : `Restored from ${snapshot.formattedTime} (${snapshot.formattedDate})`
     );
+  };
+
+  // Safe Note Switch with Flush Pending Changes
+  const handleSelectNoteWithFlush = async (note: any) => {
+    if (selectedNote?.id === note.id) return;
+
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+      saveTimeoutRef.current = null;
+    }
+
+    if (selectedNote?.id && isDirty && canEditSelected) {
+      await performSave(
+        selectedNote.id,
+        editTitleRef.current,
+        editContentRef.current,
+        'AUTO_SAVE',
+        language === 'vi' ? 'Tự động lưu trước khi chuyển bài' : 'Autosave before switching'
+      );
+    }
+
+    setSelectedNote(note);
+    onSelectNote(note);
   };
 
   // Convert selected text or current note to task
@@ -442,8 +483,7 @@ export const NotesWorkbench: React.FC<NotesWorkbenchProps> = ({
                     key={note.id}
                     className={`snote-wb-note-item ${isSelected ? 'active' : ''}`}
                     onClick={() => {
-                      setSelectedNote(note);
-                      onSelectNote(note);
+                      handleSelectNoteWithFlush(note);
                     }}
                   >
                     <div className="snote-wb-item-top">
@@ -521,7 +561,7 @@ export const NotesWorkbench: React.FC<NotesWorkbenchProps> = ({
                     <button
                       type="button"
                       className={`snote-wb-tool-btn ${isDirty ? 'is-dirty' : ''}`}
-                      onClick={() => performSave(editTitleRef.current, editContentRef.current, 'MANUAL_SAVE', language === 'vi' ? 'Lưu thủ công (Ctrl+S)' : 'Manual save (Ctrl+S)')}
+                      onClick={() => selectedNote?.id && performSave(selectedNote.id, editTitleRef.current, editContentRef.current, 'MANUAL_SAVE', language === 'vi' ? 'Lưu thủ công (Ctrl+S)' : 'Manual save (Ctrl+S)')}
                       title={language === 'vi' ? 'Lưu bài ghi (Ctrl + S)' : 'Save note (Ctrl + S)'}
                     >
                       <Save size={14} style={{ color: isDirty ? 'var(--ws-accent)' : undefined }} />
@@ -634,13 +674,13 @@ export const NotesWorkbench: React.FC<NotesWorkbenchProps> = ({
                   : (language === 'vi' ? 'Tự động lưu: TẮT (Bấm để bật)' : 'Auto-save: OFF (Click to turn on)')
               }
             >
-              <span className={`quiet-dot ${syncStatus.toLowerCase()} ${isAutoSave ? 'on' : 'off'}`} />
+              <span className={`quiet-dot ${syncStatus === 'SAVING' ? 'saving' : (syncStatus === 'DRAFT' || isDirty) ? 'draft' : 'synced'} ${isAutoSave ? 'on' : 'off'}`} />
               <span className="quiet-status-text">
                 {syncStatus === 'SAVING'
                   ? (language === 'vi' ? 'Đang lưu...' : 'Saving...')
-                  : isAutoSave
-                  ? (lastSavedTime ? (language === 'vi' ? `Đã lưu ${lastSavedTime}` : `Saved ${lastSavedTime}`) : (language === 'vi' ? 'Đã lưu' : 'Saved'))
-                  : (isDirty ? (language === 'vi' ? 'Chưa lưu (Ctrl+S)' : 'Unsaved (Ctrl+S)') : (language === 'vi' ? 'Đã lưu' : 'Saved'))}
+                  : (syncStatus === 'DRAFT' || isDirty)
+                  ? (language === 'vi' ? 'Chưa lưu (Ctrl+S)' : 'Unsaved (Ctrl+S)')
+                  : (lastSavedTime ? (language === 'vi' ? `Đã lưu ${lastSavedTime}` : `Saved ${lastSavedTime}`) : (language === 'vi' ? 'Đã lưu' : 'Saved'))}
               </span>
             </button>
           </div>

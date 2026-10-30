@@ -65,6 +65,7 @@ export const SnoteEditor: React.FC<SnoteEditorProps> = ({
       }),
       createSlashCommandExtension(onConvertToTask, t)
     ],
+    contentType: 'markdown',
     content: content || '',
     editable: !readOnly,
     onUpdate: ({ editor: ed }) => {
@@ -89,7 +90,7 @@ export const SnoteEditor: React.FC<SnoteEditorProps> = ({
       // Load content from draft if newer, otherwise from props
       const draft = noteId ? draftStorage.get(noteId) : null;
       const initialMarkdown = draft?.content !== undefined ? draft.content : content;
-      editor.commands.setContent(initialMarkdown || '');
+      (editor.commands as any).setContent(initialMarkdown || '', { contentType: 'markdown' });
       return;
     }
 
@@ -98,7 +99,7 @@ export const SnoteEditor: React.FC<SnoteEditorProps> = ({
     if (!editor.isFocused && !isInternalUpdateRef.current) {
       const currentMarkdown = (editor as any).getMarkdown?.() || '';
       if (content !== currentMarkdown) {
-        editor.commands.setContent(content || '');
+        (editor.commands as any).setContent(content || '', { contentType: 'markdown' });
       }
     }
   }, [content, noteId, editor]);
