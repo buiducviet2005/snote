@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Modal } from '../../../components/common/Modal';
-import { StudyDateTimePicker } from '../../../components/common/StudyDateTimePicker';
 import { api, ApiResponse } from '../../../services/api';
 import { useToast } from '../../../contexts/ToastContext';
 import { useAppFilter } from '../../../contexts/AppFilterContext';
@@ -17,13 +16,11 @@ import {
   Users,
   User,
   Trash2,
-  Sparkles,
   Repeat,
-  Link,
-  FileText,
-  Flame,
-  CheckCircle2
+  BookOpen,
+  FolderKanban
 } from 'lucide-react';
+import './EventModal.css';
 
 interface EventModalProps {
   isOpen: boolean;
@@ -36,10 +33,24 @@ interface EventModalProps {
   defaultWorkspaceId?: string;
 }
 
-const toLocalDateTime = (value: Date) => {
-  const pad = (part: number) => String(part).padStart(2, '0');
-  return `${value.getFullYear()}-${pad(value.getMonth() + 1)}-${pad(value.getDate())}T${pad(value.getHours())}:${pad(value.getMinutes())}`;
+const pad = (part: number) => String(part).padStart(2, '0');
+
+const toDateInputString = (d: Date) => {
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 };
+
+const toTimeInputString = (d: Date) => {
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+};
+
+// University Academic Shifts (Ca học)
+const ACADEMIC_SHIFTS = [
+  { id: 1, label: 'Ca 1', start: '07:00', end: '09:25' },
+  { id: 2, label: 'Ca 2', start: '09:35', end: '12:00' },
+  { id: 3, label: 'Ca 3', start: '12:30', end: '14:55' },
+  { id: 4, label: 'Ca 4', start: '15:05', end: '17:30' },
+  { id: 5, label: 'Ca 5', start: '18:00', end: '20:30' }
+];
 
 export const EventModal: React.FC<EventModalProps> = ({
   isOpen,
@@ -52,24 +63,26 @@ export const EventModal: React.FC<EventModalProps> = ({
   defaultWorkspaceId
 }) => {
   const { subjects, selectedSemesterId } = useAppFilter();
-  const [projects, setProjects] = useState<any[]>([]);
-  const [title, setTitle] = useState('');
-  const [subjectId, setSubjectId] = useState<string>('');
-  const [projectId, setProjectId] = useState<string>('');
-  const [eventType, setEventType] = useState<ScheduleEventType>(ScheduleEventType.CLASS);
-  const [startTime, setStartTime] = useState('');
-  const [endTime, setEndTime] = useState('');
-  const [location, setLocation] = useState('');
-  const [examFormat, setExamFormat] = useState<string>('MULTIPLE_CHOICE');
-  const [isRecurring, setIsRecurring] = useState(false);
-  const [repeatWeeks, setRepeatWeeks] = useState(15);
-  const [loading, setLoading] = useState(false);
   const { showToast } = useToast();
   const { user } = useAuth();
   const { t, formatDateTime } = useLanguage();
 
+  const [projects, setProjects] = useState<any[]>([]);
+  const [title, setTitle] = useState('');
+  const [eventType, setEventType] = useState<ScheduleEventType>(ScheduleEventType.CLASS);
+  const [eventDate, setEventDate] = useState(() => toDateInputString(new Date()));
+  const [startTimeStr, setStartTimeStr] = useState('07:00');
+  const [endTimeStr, setEndTimeStr] = useState('09:25');
+  const [isAllDay, setIsAllDay] = useState(false);
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [repeatWeeks, setRepeatWeeks] = useState(15);
+  const [location, setLocation] = useState('');
+  const [subjectId, setSubjectId] = useState('');
+  const [projectId, setProjectId] = useState('');
+  const [loading, setLoading] = useState(false);
+
   useEffect(() => {
-    // Fetch user projects for Group Meeting mode
+    // Fetch projects for meeting association
     api.get<ApiResponse<any[]>>('/projects')
       .then((res) => setProjects(res.data || []))
       .catch(() => {});
@@ -81,46 +94,60 @@ export const EventModal: React.FC<EventModalProps> = ({
       setSubjectId(eventToEdit.subjectId || '');
       setProjectId(eventToEdit.projectId || '');
       setEventType(eventToEdit.eventType || ScheduleEventType.CLASS);
-      setStartTime(eventToEdit.startTime ? toLocalDateTime(new Date(eventToEdit.startTime)) : '');
-      setEndTime(eventToEdit.endTime ? toLocalDateTime(new Date(eventToEdit.endTime)) : '');
       setLocation(eventToEdit.location || '');
       setIsRecurring(Boolean(eventToEdit.isRecurring));
-    } else {
-      const base = defaultDate ? new Date(defaultDate) : new Date();
-      const hasSpecificTime = Boolean(defaultDate && (defaultDate.getHours() !== 0 || defaultDate.getMinutes() !== 0));
-      const startD = new Date(base);
-      const endD = new Date(base);
-      if (hasSpecificTime) {
-        endD.setHours(startD.getHours() + 1, startD.getMinutes(), 0, 0);
-      } else {
-        // Default to 07:00 - 09:25 (Ca 1)
-        startD.setHours(7, 0, 0, 0);
-        endD.setHours(9, 25, 0, 0);
+
+      const s = new Date(eventToEdit.startTime);
+      const e = new Date(eventToEdit.endTime);
+
+      if (!isNaN(s.getTime())) {
+        setEventDate(toDateInputString(s));
+        setStartTimeStr(toTimeInputString(s));
+      }
+      if (!isNaN(e.getTime())) {
+        setEndTimeStr(toTimeInputString(e));
       }
 
-      setStartTime(toLocalDateTime(startD));
-      setEndTime(toLocalDateTime(endD));
+      const allDayCheck = s.getHours() === 0 && s.getMinutes() === 0 && e.getHours() === 23 && e.getMinutes() >= 50;
+      setIsAllDay(allDayCheck);
+    } else {
+      const base = defaultDate ? new Date(defaultDate) : new Date();
+      setEventDate(toDateInputString(base));
+
+      const hasSpecificTime = Boolean(defaultDate && (defaultDate.getHours() !== 0 || defaultDate.getMinutes() !== 0));
+      if (hasSpecificTime) {
+        setStartTimeStr(toTimeInputString(base));
+        const endD = new Date(base);
+        endD.setHours(base.getHours() + 1);
+        setEndTimeStr(toTimeInputString(endD));
+      } else {
+        // Default to Ca 1 (07:00 - 09:25)
+        setStartTimeStr('07:00');
+        setEndTimeStr('09:25');
+      }
+
       setTitle('');
       setLocation('');
       setSubjectId(defaultProjectId ? '' : (defaultSubjectId || ''));
       setProjectId(defaultProjectId || '');
       setEventType(defaultWorkspaceId ? ScheduleEventType.GROUP_MEETING : ScheduleEventType.CLASS);
+      setIsAllDay(false);
       setIsRecurring(false);
       setRepeatWeeks(15);
     }
-  }, [defaultDate, defaultProjectId, defaultSubjectId, isOpen, eventToEdit]);
+  }, [defaultDate, defaultProjectId, defaultSubjectId, isOpen, eventToEdit, defaultWorkspaceId]);
 
-  // Handle Academic Shift Presets
-  const applyShiftPreset = (startH: number, startM: number, endH: number, endM: number) => {
-    const base = startTime ? new Date(startTime) : defaultDate ? new Date(defaultDate) : new Date();
-    const s = new Date(base);
-    s.setHours(startH, startM, 0, 0);
-    const e = new Date(base);
-    e.setHours(endH, endM, 0, 0);
-
-    setStartTime(toLocalDateTime(s));
-    setEndTime(toLocalDateTime(e));
+  // Handle Academic Shift Click
+  const handleSelectShift = (shift: typeof ACADEMIC_SHIFTS[0]) => {
+    setStartTimeStr(shift.start);
+    setEndTimeStr(shift.end);
+    setIsAllDay(false);
   };
+
+  // Find if current times match any Ca
+  const activeShiftId = !isAllDay
+    ? ACADEMIC_SHIFTS.find((s) => s.start === startTimeStr && s.end === endTimeStr)?.id
+    : undefined;
 
   const handleSubjectChange = (subId: string) => {
     setSubjectId(subId);
@@ -158,20 +185,21 @@ export const EventModal: React.FC<EventModalProps> = ({
 
     setLoading(true);
     try {
-      let finalLocation = location.trim();
-      if (eventType === ScheduleEventType.EXAM && examFormat) {
-        const formatMap: Record<string, string> = {
-          MULTIPLE_CHOICE: t('schedule.exam_format_mc'),
-          ESSAY: t('schedule.exam_format_essay'),
-          ORAL: t('schedule.exam_format_oral'),
-          PROJECT_DEFENSE: t('schedule.exam_format_defense')
-        };
-        const formatLabel = formatMap[examFormat] || examFormat;
-        if (finalLocation) {
-          finalLocation = `${finalLocation} (${formatLabel})`;
-        } else {
-          finalLocation = t('schedule.format_label', { format: formatLabel });
+      let finalStartTime: string;
+      let finalEndTime: string;
+
+      if (isAllDay) {
+        finalStartTime = new Date(`${eventDate}T00:00:00`).toISOString();
+        finalEndTime = new Date(`${eventDate}T23:59:59.999`).toISOString();
+      } else {
+        const s = new Date(`${eventDate}T${startTimeStr}:00`);
+        let e = new Date(`${eventDate}T${endTimeStr}:00`);
+        if (e <= s) {
+          // If end time is before or equal to start, adjust to +1 hour
+          e = new Date(s.getTime() + 60 * 60 * 1000);
         }
+        finalStartTime = s.toISOString();
+        finalEndTime = e.toISOString();
       }
 
       if (eventToEdit) {
@@ -181,9 +209,9 @@ export const EventModal: React.FC<EventModalProps> = ({
           projectId: projectId || undefined,
           title: title.trim(),
           eventType,
-          startTime: new Date(startTime).toISOString(),
-          endTime: new Date(endTime).toISOString(),
-          location: finalLocation || undefined,
+          startTime: finalStartTime,
+          endTime: finalEndTime,
+          location: location.trim() || undefined,
           isRecurring
         });
         showToast(t('schedule.update_success'), 'success');
@@ -195,9 +223,9 @@ export const EventModal: React.FC<EventModalProps> = ({
           workspaceId: defaultWorkspaceId || undefined,
           title: title.trim(),
           eventType,
-          startTime: new Date(startTime).toISOString(),
-          endTime: new Date(endTime).toISOString(),
-          location: finalLocation || undefined,
+          startTime: finalStartTime,
+          endTime: finalEndTime,
+          location: location.trim() || undefined,
           isRecurring,
           repeatWeeks: isRecurring ? repeatWeeks : undefined
         });
@@ -226,191 +254,208 @@ export const EventModal: React.FC<EventModalProps> = ({
   ];
 
   if (eventToEdit?.userId && eventToEdit.userId !== user?.id) {
-    return <Modal isOpen={isOpen} onClose={onClose} title={t('schedule.group_event_title')} maxWidth="560px" icon={<Calendar size={22} />}>
-      <div style={{ display: 'grid', gap: '12px', padding: '8px 0', color: 'var(--text-primary)' }}>
-        <strong>{eventToEdit.title}</strong>
-        <span>{formatDateTime(eventToEdit.startTime)} – {formatDateTime(eventToEdit.endTime)}</span>
-        {eventToEdit.location && <span>{eventToEdit.location}</span>}
-        <p style={{ margin: 0, color: 'var(--text-muted)' }}>{t('schedule.group_event_readonly')}</p>
-      </div>
-    </Modal>;
+    return (
+      <Modal isOpen={isOpen} onClose={onClose} title={t('schedule.group_event_title')} maxWidth="500px" icon={<Calendar size={20} />}>
+        <div style={{ display: 'grid', gap: '12px', padding: '8px 0', color: 'var(--text-primary)' }}>
+          <strong>{eventToEdit.title}</strong>
+          <span>{formatDateTime(eventToEdit.startTime)} – {formatDateTime(eventToEdit.endTime)}</span>
+          {eventToEdit.location && <span>{eventToEdit.location}</span>}
+          <p style={{ margin: 0, color: 'var(--text-muted)' }}>{t('schedule.group_event_readonly')}</p>
+        </div>
+      </Modal>
+    );
   }
 
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={eventToEdit ? t('schedule.edit_event_title') : t('schedule.smart_schedule_title')}
-      maxWidth="720px"
-      icon={<Calendar size={22} />}
+      title={eventToEdit ? t('schedule.modal_title_edit') : t('schedule.modal_title_add')}
+      maxWidth="520px"
+      icon={<Calendar size={20} />}
+      allowExpand={false}
     >
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-        {/* 1. Mode Tabs Switcher */}
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(4, 1fr)',
-            gap: '6px',
-            backgroundColor: 'var(--bg-secondary)',
-            padding: '4px',
-            borderRadius: 'var(--radius-lg)',
-            border: '1px solid var(--border-color)'
-          }}
-        >
+      <form onSubmit={handleSubmit} className="gcal-event-modal-form">
+        {/* 1. Google Calendar Minimalist Title Input */}
+        <div className="gcal-modal-title-wrapper">
+          <input
+            type="text"
+            required
+            autoFocus
+            placeholder={t('schedule.title_placeholder')}
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className="gcal-modal-title-input"
+          />
+        </div>
+
+        {/* 2. Compact Event Type Pills */}
+        <div className="gcal-modal-type-group">
           {eventTypeTabs.map((tab) => {
             const isSelected = eventType === tab.type;
+            const Icon = tab.icon;
             return (
               <button
                 key={tab.type}
                 type="button"
                 onClick={() => setEventType(tab.type)}
-                className="btn btn-sm"
-                style={{
-                  fontSize: 'var(--type-small)',
-                  fontWeight: isSelected ? 700 : 500,
-                  backgroundColor: isSelected ? 'var(--accent-primary)' : 'transparent',
-                  color: isSelected ? '#ffffff' : 'var(--text-secondary)',
-                  border: 'none',
-                  borderRadius: '6px',
-                  padding: '7px 4px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '6px',
-                  transition: 'all 0.15s ease'
-                }}
+                className={`gcal-modal-type-pill ${isSelected ? 'active' : ''}`}
               >
-                <tab.icon size={14} strokeWidth={1.5} />
+                <Icon size={13} strokeWidth={2} />
                 <span>{tab.label}</span>
               </button>
             );
           })}
         </div>
 
-        {/* 2. Academic Shift Preset Slots (1-Click Fast Fill) */}
-        <div
-          style={{
-            backgroundColor: 'rgba(56, 189, 248, 0.05)',
-            border: '1px dashed rgba(56, 189, 248, 0.3)',
-            borderRadius: 'var(--radius-lg)',
-            padding: '10px 14px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '8px'
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 'var(--type-caption)', color: 'var(--text-secondary)' }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 600, color: 'var(--accent-primary)' }}>
-              <Clock size={13} />
-              <span>{t('schedule.quick_slots_label')}</span>
-            </span>
+        {/* 3. ROW: Custom Date & Time Selection (Google Calendar style) */}
+        <div className="gcal-form-row">
+          <div className="gcal-row-icon" title={t('schedule.daily_hourly')}>
+            <Clock size={18} />
           </div>
+          <div className="gcal-row-content">
+            <div className="gcal-time-controls-box">
+              <div className="gcal-datetime-inputs-line">
+                <input
+                  type="date"
+                  value={eventDate}
+                  onChange={(e) => setEventDate(e.target.value)}
+                  className="gcal-input-date"
+                  required
+                />
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-            <button
-              type="button"
-              onClick={() => applyShiftPreset(7, 0, 9, 25)}
-              className="btn btn-ghost btn-sm"
-              style={{ fontSize: 'var(--type-caption)', padding: '3px 9px', borderRadius: '6px', border: '1px solid var(--border-subtle)' }}
-              title={t('schedule.slot_1_3')}
-            >
-              Ca 1 (07:00 - 09:25)
-            </button>
-            <button
-              type="button"
-              onClick={() => applyShiftPreset(9, 35, 12, 0)}
-              className="btn btn-ghost btn-sm"
-              style={{ fontSize: 'var(--type-caption)', padding: '3px 9px', borderRadius: '6px', border: '1px solid var(--border-subtle)' }}
-              title={t('schedule.slot_4_6')}
-            >
-              Ca 2 (09:35 - 12:00)
-            </button>
-            <button
-              type="button"
-              onClick={() => applyShiftPreset(12, 30, 14, 55)}
-              className="btn btn-ghost btn-sm"
-              style={{ fontSize: 'var(--type-caption)', padding: '3px 9px', borderRadius: '6px', border: '1px solid var(--border-subtle)' }}
-              title={t('schedule.slot_7_9')}
-            >
-              Ca 3 (12:30 - 14:55)
-            </button>
-            <button
-              type="button"
-              onClick={() => applyShiftPreset(15, 5, 17, 30)}
-              className="btn btn-ghost btn-sm"
-              style={{ fontSize: 'var(--type-caption)', padding: '3px 9px', borderRadius: '6px', border: '1px solid var(--border-subtle)' }}
-              title={t('schedule.slot_10_12')}
-            >
-              Ca 4 (15:05 - 17:30)
-            </button>
-            <button
-              type="button"
-              onClick={() => applyShiftPreset(18, 0, 20, 30)}
-              className="btn btn-ghost btn-sm"
-              style={{ fontSize: 'var(--type-caption)', padding: '3px 9px', borderRadius: '6px', border: '1px solid var(--border-subtle)' }}
-              title={t('schedule.slot_13_15')}
-            >
-              Ca 5 (18:00 - 20:30)
-            </button>
+                {!isAllDay && (
+                  <div className="gcal-time-range-group">
+                    <input
+                      type="time"
+                      value={startTimeStr}
+                      onChange={(e) => setStartTimeStr(e.target.value)}
+                      className="gcal-input-time"
+                      required
+                    />
+                    <span className="gcal-time-separator">–</span>
+                    <input
+                      type="time"
+                      value={endTimeStr}
+                      onChange={(e) => setEndTimeStr(e.target.value)}
+                      className="gcal-input-time"
+                      required
+                    />
+                  </div>
+                )}
+
+                <label className="gcal-allday-label">
+                  <input
+                    type="checkbox"
+                    checked={isAllDay}
+                    onChange={(e) => setIsAllDay(e.target.checked)}
+                    className="gcal-allday-checkbox"
+                  />
+                  <span>{t('schedule.all_day_toggle')}</span>
+                </label>
+              </div>
+
+              {/* Compact Academic Shifts (Ca học) Chips */}
+              {!isAllDay && (
+                <div className="gcal-quick-shifts-row">
+                  {ACADEMIC_SHIFTS.map((shift) => (
+                    <button
+                      key={shift.id}
+                      type="button"
+                      onClick={() => handleSelectShift(shift)}
+                      className={`gcal-shift-pill ${activeShiftId === shift.id ? 'active' : ''}`}
+                      title={`${shift.label}: ${shift.start} - ${shift.end}`}
+                    >
+                      {shift.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* 3. Event Title */}
-        <div>
-          <label style={{ display: 'block', fontSize: 'var(--type-small)', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '6px' }}>
-            {t('schedule.event_title_input')}
-          </label>
-          <input
-            type="text"
-            required
-            placeholder={
-              eventType === ScheduleEventType.CLASS
-                ? t('schedule.placeholder_class')
-                : eventType === ScheduleEventType.EXAM
-                ? t('schedule.placeholder_exam')
-                : eventType === ScheduleEventType.GROUP_MEETING
-                ? t('schedule.placeholder_meeting')
-                : t('schedule.placeholder_personal')
-            }
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            className="snote-input"
-            style={{ fontSize: 'var(--type-body)', padding: '10px 14px' }}
-          />
+        {/* 4. ROW: Repeat / Recurrence (Google Calendar style) */}
+        {!eventToEdit && (
+          <div className="gcal-form-row">
+            <div className="gcal-row-icon" title={t('schedule.repeat_weekly_label')}>
+              <Repeat size={18} />
+            </div>
+            <div className="gcal-row-content">
+              <select
+                value={isRecurring ? repeatWeeks : 0}
+                onChange={(e) => {
+                  const val = Number(e.target.value);
+                  if (val === 0) {
+                    setIsRecurring(false);
+                  } else {
+                    setIsRecurring(true);
+                    setRepeatWeeks(val);
+                  }
+                }}
+                className="gcal-form-select"
+              >
+                <option value={0}>{t('schedule.repeat_none')}</option>
+                <option value={15}>{t('schedule.repeat_semester')}</option>
+                <option value={10}>{t('schedule.repeat_10_weeks')}</option>
+                <option value={5}>{t('schedule.repeat_5_weeks')}</option>
+                <option value={18}>{t('schedule.repeat_18_weeks')}</option>
+              </select>
+            </div>
+          </div>
+        )}
+
+        {/* 5. ROW: Location / Room */}
+        <div className="gcal-form-row">
+          <div className="gcal-row-icon" title={t('schedule.location_label')}>
+            <MapPin size={18} />
+          </div>
+          <div className="gcal-row-content">
+            <input
+              type="text"
+              placeholder={t('schedule.location_hint')}
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              className="gcal-form-input"
+            />
+          </div>
         </div>
 
-        {/* 4. Contextual Selectors */}
-        {!defaultWorkspaceId && <div style={{ display: 'grid', gridTemplateColumns: eventType === ScheduleEventType.GROUP_MEETING ? '1fr 1fr' : '1fr', gap: '14px' }}>
-          <div>
-            <label style={{ display: 'block', fontSize: 'var(--type-small)', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
-              {t('schedule.related_subject')}
-            </label>
-            <select
-              value={subjectId}
-              onChange={(e) => handleSubjectChange(e.target.value)}
-              className="snote-select"
-              style={{ fontSize: 'var(--type-small)', padding: '9px 12px' }}
-            >
-              <option value="">{t('schedule.no_subject_option')}</option>
-              {subjects.map((sub) => (
-                <option key={sub.id} value={sub.id}>
-                  {sub.code ? `[${sub.code}] ` : ''}{sub.name}
-                </option>
-              ))}
-            </select>
+        {/* 6. ROW: Related Subject (Contextual) */}
+        {!defaultWorkspaceId && (
+          <div className="gcal-form-row">
+            <div className="gcal-row-icon" title={t('schedule.related_subject')}>
+              <BookOpen size={18} />
+            </div>
+            <div className="gcal-row-content">
+              <select
+                value={subjectId}
+                onChange={(e) => handleSubjectChange(e.target.value)}
+                className="gcal-form-select"
+              >
+                <option value="">{t('schedule.no_subject_option')}</option>
+                {subjects.map((sub) => (
+                  <option key={sub.id} value={sub.id}>
+                    {sub.code ? `[${sub.code}] ` : ''}{sub.name}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
+        )}
 
-          {eventType === ScheduleEventType.GROUP_MEETING && (
-            <div>
-              <label style={{ display: 'block', fontSize: 'var(--type-small)', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
-                {t('schedule.related_project')}
-              </label>
+        {/* 7. ROW: Related Project (Group Meeting Mode) */}
+        {eventType === ScheduleEventType.GROUP_MEETING && (
+          <div className="gcal-form-row">
+            <div className="gcal-row-icon" title={t('schedule.related_project')}>
+              <FolderKanban size={18} />
+            </div>
+            <div className="gcal-row-content">
               <select
                 value={projectId}
                 onChange={(e) => setProjectId(e.target.value)}
                 disabled={Boolean(defaultProjectId)}
-                className="snote-select"
-                style={{ fontSize: 'var(--type-small)', padding: '9px 12px' }}
+                className="gcal-form-select"
               >
                 <option value="">{t('schedule.select_project_option')}</option>
                 {projects.map((p) => (
@@ -420,204 +465,38 @@ export const EventModal: React.FC<EventModalProps> = ({
                 ))}
               </select>
             </div>
-          )}
-        </div>}
-
-        {/* 5. Exam Specific Fields */}
-        {eventType === ScheduleEventType.EXAM && (
-          <div
-            style={{
-              backgroundColor: 'rgba(239, 68, 68, 0.05)',
-              border: '1px solid rgba(239, 68, 68, 0.25)',
-              borderRadius: 'var(--radius-lg)',
-              padding: '12px 14px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '10px'
-            }}
-          >
-            <div style={{ fontSize: 'var(--type-small)', fontWeight: 700, color: 'var(--color-danger)', display: 'flex', alignItems: 'center', gap: '5px' }}>
-              <Flame size={15} />
-              <span>{t('schedule.exam_info_header')}</span>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: 'var(--type-small)', color: 'var(--text-secondary)', marginBottom: '4px' }}>
-                  {t('schedule.exam_format_label')}
-                </label>
-                <select
-                  value={examFormat}
-                  onChange={(e) => setExamFormat(e.target.value)}
-                  className="snote-select"
-                  style={{ fontSize: 'var(--type-small)', padding: '7px 10px' }}
-                >
-                  <option value="MULTIPLE_CHOICE">{t('schedule.exam_mc_opt')}</option>
-                  <option value="ESSAY">{t('schedule.exam_essay_opt')}</option>
-                  <option value="ORAL">{t('schedule.exam_oral_opt')}</option>
-                  <option value="PROJECT_DEFENSE">{t('schedule.exam_defense_opt')}</option>
-                </select>
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: 'var(--type-small)', color: 'var(--text-secondary)', marginBottom: '4px' }}>
-                  {t('schedule.exam_room_label')}
-                </label>
-                <input
-                  type="text"
-                  placeholder={t('schedule.exam_room_placeholder')}
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                  className="snote-input"
-                  style={{ fontSize: 'var(--type-small)', padding: '7px 10px' }}
-                />
-              </div>
-            </div>
           </div>
         )}
 
-        {/* 6. Start Time & End Time */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
-          <StudyDateTimePicker
-            value={startTime}
-            onChange={setStartTime}
-            label={t('schedule.start_time_label')}
-            placeholder={t('schedule.start_time_placeholder')}
-            required
-            align="left"
-          />
-
-          <StudyDateTimePicker
-            value={endTime}
-            onChange={setEndTime}
-            label={t('schedule.end_time_label')}
-            placeholder={t('schedule.end_time_placeholder')}
-            required
-            align="right"
-          />
-        </div>
-
-        {/* 7. Location (if not already rendered in Exam mode) */}
-        {eventType !== ScheduleEventType.EXAM && (
-          <div>
-            <label style={{ display: 'block', fontSize: 'var(--type-small)', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
-              {eventType === ScheduleEventType.GROUP_MEETING ? t('schedule.meet_link_or_room') : t('schedule.location_or_room')}
-            </label>
-            <div style={{ position: 'relative' }}>
-              <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', display: 'flex' }}>
-                <MapPin size={16} />
-              </span>
-              <input
-                type="text"
-                placeholder={
-                  eventType === ScheduleEventType.GROUP_MEETING
-                    ? t('schedule.meet_link_placeholder')
-                    : t('schedule.location_placeholder')
-                }
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                className="snote-input"
-                style={{ paddingLeft: '38px', fontSize: 'var(--type-small)', padding: '9px 12px 9px 38px' }}
-              />
-            </div>
-          </div>
-        )}
-
-        {/* 8. Semester Recurring Generator (Only on Create mode) */}
-        {!eventToEdit && (
-          <div
-            style={{
-              backgroundColor: 'var(--bg-secondary)',
-              border: '1px solid var(--border-color)',
-              borderRadius: 'var(--radius-lg)',
-              padding: '12px 14px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '10px'
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <label
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  fontSize: 'var(--type-small)',
-                  fontWeight: 600,
-                  color: 'var(--text-primary)',
-                  cursor: 'pointer',
-                  margin: 0
-                }}
-              >
-                <input
-                  type="checkbox"
-                  checked={isRecurring}
-                  onChange={(e) => setIsRecurring(e.target.checked)}
-                  style={{ width: '16px', height: '16px', accentColor: 'var(--accent-primary)', cursor: 'pointer' }}
-                />
-                <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                  <Repeat size={14} style={{ color: 'var(--accent-primary)' }} />
-                  <span>{t('schedule.repeat_weekly_label')}</span>
-                </span>
-              </label>
-
-              {isRecurring && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: 'var(--type-small)' }}>
-                  <select
-                    value={repeatWeeks}
-                    onChange={(e) => setRepeatWeeks(Number(e.target.value))}
-                    className="snote-select"
-                    style={{ fontSize: 'var(--type-small)', padding: '3px 8px', height: '28px', width: '90px' }}
-                  >
-                    <option value={5}>{t('schedule.repeat_weeks_option', { count: 5 })}</option>
-                    <option value={10}>{t('schedule.repeat_weeks_option', { count: 10 })}</option>
-                    <option value={15}>{t('schedule.repeat_weeks_option', { count: 15 })}</option>
-                    <option value={18}>{t('schedule.repeat_weeks_option', { count: 18 })}</option>
-                  </select>
-                </div>
-              )}
-            </div>
-
-            {isRecurring && (
-              <div style={{ fontSize: 'var(--type-caption)', color: 'var(--text-muted)', lineHeight: 1.4 }}>
-                {t('schedule.repeat_tip', { count: repeatWeeks })}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* 9. Actions */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '6px' }}>
+        {/* 8. Footer Actions */}
+        <div className="gcal-modal-footer">
           {eventToEdit ? (
             <button
               type="button"
               onClick={handleDelete}
               disabled={loading}
-              className="btn btn-ghost btn-sm"
-              style={{ color: 'var(--color-danger)', gap: '4px', padding: '8px 12px' }}
+              className="gcal-modal-btn-delete"
             >
               <Trash2 size={15} />
               <span>{t('schedule.delete_event_btn')}</span>
             </button>
           ) : <div />}
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div className="gcal-modal-footer-right">
             <button
               type="button"
               onClick={onClose}
-              className="btn btn-secondary"
-              style={{ padding: '9px 18px' }}
+              className="gcal-modal-btn-cancel"
             >
               {t('common.cancel')}
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="btn btn-primary"
-              style={{ fontWeight: 700, padding: '9px 22px', gap: '6px' }}
+              className="gcal-modal-btn-save"
             >
-              <Save size={16} />
-              <span>{loading ? t('common.loading') : eventToEdit ? t('schedule.save_changes') : t('schedule.create_class_btn')}</span>
+              <Save size={15} />
+              <span>{loading ? t('common.loading') : t('schedule.save_btn')}</span>
             </button>
           </div>
         </div>

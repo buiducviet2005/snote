@@ -1,0 +1,324 @@
+/* ==========================================================================
+   Google Calendar Inspired Event Modal - SNOTE Lean Edition
+   Clean, Focused, High-Legibility
+   ========================================================================== */
+
+.gcal-event-modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  font-family: var(--font-sans);
+}
+
+/* 1. Large Minimalist Title Input */
+.gcal-modal-title-wrapper {
+  margin-bottom: 2px;
+}
+
+.gcal-modal-title-input {
+  width: 100%;
+  border: none;
+  border-bottom: 2px solid var(--border-color);
+  background: transparent;
+  padding: 8px 4px 10px 4px;
+  font-size: 19px;
+  font-weight: 600;
+  color: var(--text-primary);
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.2s ease;
+}
+
+.gcal-modal-title-input::placeholder {
+  color: var(--text-muted);
+  font-weight: 400;
+  font-size: 18px;
+}
+
+.gcal-modal-title-input:focus {
+  border-bottom-color: var(--accent-primary);
+}
+
+/* 2. Compact Event Type Pills */
+.gcal-modal-type-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+
+.gcal-modal-type-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.gcal-modal-type-pill:hover {
+  background: var(--bg-card-hover);
+  color: var(--text-primary);
+  border-color: var(--border-hover);
+}
+
+.gcal-modal-type-pill.active {
+  background: var(--accent-primary);
+  color: #ffffff;
+  border-color: var(--accent-primary);
+  box-shadow: 0 2px 6px rgba(59, 130, 246, 0.35);
+}
+
+/* 3. Google Calendar Signature Row Layout (Left Icon + Right Control) */
+.gcal-form-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+}
+
+.gcal-row-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 36px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.gcal-row-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+/* 4. Time & Date Controls */
+.gcal-time-controls-box {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md, 8px);
+  padding: 10px 12px;
+}
+
+.gcal-datetime-inputs-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.gcal-input-date {
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  outline: none;
+  cursor: pointer;
+}
+
+.gcal-input-date:focus {
+  border-color: var(--accent-primary);
+}
+
+.gcal-time-range-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.gcal-input-time {
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  outline: none;
+  cursor: pointer;
+}
+
+.gcal-input-time:focus {
+  border-color: var(--accent-primary);
+}
+
+.gcal-time-separator {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.gcal-allday-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  margin-left: auto;
+  user-select: none;
+}
+
+.gcal-allday-checkbox {
+  width: 15px;
+  height: 15px;
+  accent-color: var(--accent-primary);
+  cursor: pointer;
+}
+
+/* Academic Shifts Quick Chips */
+.gcal-quick-shifts-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding-top: 4px;
+  border-top: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.05));
+}
+
+.gcal-shift-pill {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid var(--border-color);
+  background: var(--bg-surface);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.gcal-shift-pill:hover {
+  background: var(--bg-card-hover);
+  color: var(--accent-primary);
+  border-color: var(--accent-primary);
+}
+
+.gcal-shift-pill.active {
+  background: rgba(59, 130, 246, 0.15);
+  color: var(--accent-primary);
+  border-color: var(--accent-primary);
+  font-weight: 700;
+}
+
+/* 5. Inputs & Selects across rows */
+.gcal-form-input,
+.gcal-form-select {
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.gcal-form-input:focus,
+.gcal-form-select:focus {
+  border-color: var(--accent-primary);
+  background: var(--bg-surface);
+}
+
+.gcal-form-input::placeholder {
+  color: var(--text-muted);
+}
+
+/* 6. Footer Actions */
+.gcal-modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border-color);
+}
+
+.gcal-modal-btn-delete {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 12px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--color-danger, #ef4444);
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.gcal-modal-btn-delete:hover {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.2);
+}
+
+.gcal-modal-footer-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.gcal-modal-btn-cancel {
+  padding: 7px 16px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.gcal-modal-btn-cancel:hover {
+  background: var(--bg-card-hover);
+}
+
+.gcal-modal-btn-save {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 20px;
+  border-radius: 6px;
+  border: 1px solid var(--accent-primary);
+  background: var(--accent-primary);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.gcal-modal-btn-save:hover {
+  opacity: 0.92;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+}
+
+.gcal-modal-btn-save:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
