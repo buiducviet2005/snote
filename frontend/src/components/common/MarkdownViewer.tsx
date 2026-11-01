@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+﻿import React, { useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { autoFormatPlainTextToMarkdown } from '../../features/notes/utils/smartNoteParser';
@@ -154,6 +154,10 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({
                   style={{
                     cursor: onToggleTodo ? 'pointer' : 'default',
                     userSelect: 'text',
+                    display: 'flex',
+                    flexDirection: 'row',
+                    alignItems: 'flex-start',
+                    gap: '8px',
                     ...((props.style as any) || {})
                   }}
                   title={onToggleTodo ? t('notes.toggle_todo_tooltip') : undefined}

@@ -65,7 +65,7 @@ export const EventModal: React.FC<EventModalProps> = ({
   const { subjects, selectedSemesterId } = useAppFilter();
   const { showToast } = useToast();
   const { user } = useAuth();
-  const { t, formatDateTime } = useLanguage();
+  const { t, formatDateTime, language } = useLanguage();
 
   const [projects, setProjects] = useState<any[]>([]);
   const [title, setTitle] = useState('');
@@ -149,6 +149,9 @@ export const EventModal: React.FC<EventModalProps> = ({
     ? ACADEMIC_SHIFTS.find((s) => s.start === startTimeStr && s.end === endTimeStr)?.id
     : undefined;
 
+  // Validation: End time must be strictly after start time
+  const isTimeRangeInvalid = !isAllDay && Boolean(startTimeStr && endTimeStr && endTimeStr <= startTimeStr);
+
   const handleSubjectChange = (subId: string) => {
     setSubjectId(subId);
     if (!title || title.startsWith(t('schedule.class_prefix')) || title.startsWith('Tiết học')) {
@@ -180,6 +183,14 @@ export const EventModal: React.FC<EventModalProps> = ({
     e.preventDefault();
     if (!title.trim()) {
       showToast(t('schedule.enter_title_warning'), 'warning');
+      return;
+    }
+
+    if (isTimeRangeInvalid) {
+      showToast(
+        language === 'vi' ? 'Giờ kết thúc phải diễn ra sau giờ bắt đầu' : 'End time must be after start time',
+        'warning'
+      );
       return;
     }
 
@@ -338,7 +349,7 @@ export const EventModal: React.FC<EventModalProps> = ({
                       type="time"
                       value={endTimeStr}
                       onChange={(e) => setEndTimeStr(e.target.value)}
-                      className="gcal-input-time"
+                      className={`gcal-input-time ${isTimeRangeInvalid ? 'is-invalid' : ''}`}
                       required
                     />
                   </div>
@@ -354,6 +365,13 @@ export const EventModal: React.FC<EventModalProps> = ({
                   <span>{t('schedule.all_day_toggle')}</span>
                 </label>
               </div>
+
+              {isTimeRangeInvalid && (
+                <div style={{ fontSize: '11px', color: '#ef4444', marginTop: '6px', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <span>⚠️</span>
+                  <span>{language === 'vi' ? 'Giờ kết thúc phải diễn ra sau giờ bắt đầu' : 'End time must be after start time'}</span>
+                </div>
+              )}
 
               {/* Compact Academic Shifts (Ca học) Chips */}
               {!isAllDay && (

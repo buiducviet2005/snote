@@ -7,6 +7,7 @@ export const createScheduleEventSchema = z.object({
   workspaceId: z.string().uuid('ID không gian không hợp lệ').optional(),
   title: z
     .string({ error: 'Tiêu đề sự kiện là bắt buộc' })
+    .trim()
     .min(1, 'Tiêu đề sự kiện không được để trống')
     .max(150, 'Tiêu đề sự kiện không quá 150 ký tự'),
   location: z.string().max(150, 'Địa điểm không quá 150 ký tự').optional(),
@@ -14,7 +15,8 @@ export const createScheduleEventSchema = z.object({
   startTime: z.string({ error: 'Thời gian bắt đầu là bắt buộc' }),
   endTime: z.string({ error: 'Thời gian kết thúc là bắt buộc' }),
   isRecurring: z.boolean().optional().default(false),
-  recurrenceRule: z.string().max(100).optional()
+  recurrenceRule: z.string().max(100).optional(),
+  repeatWeeks: z.number().int().min(1).max(20).optional()
 });
 
 export const updateScheduleEventSchema = createScheduleEventSchema.partial();

@@ -322,3 +322,10 @@
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+.gcal-input-time.is-invalid {
+  border-color: #ef4444 !important;
+  background-color: rgba(239, 68, 68, 0.08);
+}
+
+

@@ -1,4 +1,4 @@
-/* Hallmark · genre: editorial · macrostructure: Workbench · theme: Atelier · enrichment: tactile-study · nav: N3 Side-rail · footer: Ft1 Mast-headed */
+﻿/* Hallmark · genre: editorial · macrostructure: Workbench · theme: Atelier · enrichment: tactile-study · nav: N3 Side-rail · footer: Ft1 Mast-headed */
 /* SNOTE Academic Workspace Design System - Hallmark Study Edition */
 
 :root {
@@ -692,7 +692,7 @@ code, pre, kbd {
 /* Task / Checklist item styling */
 .markdown-body li.task-list-item,
 .markdown-body li:has(input[type="checkbox"]) {
-  list-style-type: none;
+  list-style-type: none !important;
   margin-left: -18px;
   margin-bottom: 5px;
   line-height: 1.55;
@@ -700,6 +700,19 @@ code, pre, kbd {
   border-radius: var(--radius-sm);
   padding: 2px 6px;
   transition: background-color var(--transition-fast);
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: flex-start !important;
+  gap: 8px !important;
+}
+
+.markdown-body li.task-list-item > p,
+.markdown-body li:has(input[type="checkbox"]) > p {
+  display: inline-flex !important;
+  align-items: flex-start !important;
+  gap: 8px !important;
+  margin: 0 !important;
+  flex: 1 1 auto !important;
 }
 
 .markdown-body li.task-list-item.is-interactive {

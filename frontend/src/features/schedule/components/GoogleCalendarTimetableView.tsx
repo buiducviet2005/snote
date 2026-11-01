@@ -378,24 +378,28 @@ export const GoogleCalendarTimetableView: React.FC<GoogleCalendarTimetableViewPr
               className={`gcal-filter-pill ${filter === 'CLASS' ? 'active' : ''}`}
               onClick={() => setFilter('CLASS')}
             >
+              <span className="gcal-legend-dot dot-class" />
               {t('schedule.filter_class')}
             </button>
             <button
               className={`gcal-filter-pill ${filter === 'EXAM' ? 'active' : ''}`}
               onClick={() => setFilter('EXAM')}
             >
+              <span className="gcal-legend-dot dot-exam" />
               {t('schedule.filter_exam')}
             </button>
             <button
               className={`gcal-filter-pill ${filter === 'DEADLINE' ? 'active' : ''}`}
               onClick={() => setFilter('DEADLINE')}
             >
+              <span className="gcal-legend-dot dot-deadline" />
               {t('schedule.filter_deadline')}
             </button>
             <button
               className={`gcal-filter-pill ${filter === 'MEETING' ? 'active' : ''}`}
               onClick={() => setFilter('MEETING')}
             >
+              <span className="gcal-legend-dot dot-meeting" />
               {t('schedule.filter_meeting')}
             </button>
           </div>

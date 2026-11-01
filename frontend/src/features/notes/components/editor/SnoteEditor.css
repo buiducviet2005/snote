@@ -1,4 +1,4 @@
-﻿/* ==========================================================================
+/* ==========================================================================
    SNOTE TIPTAP LIVE-INLINE WYSIWYM EDITOR
    ========================================================================== */
 
@@ -87,43 +87,71 @@
   margin: 0.25em 0;
 }
 
-/* Interactive Task List */
+/* ==========================================================================
+   INTERACTIVE TASK LIST (TODO LIST) - INLINE SIDE-BY-SIDE CHECKBOX
+   ========================================================================== */
 .snote-editor-content .tiptap ul[data-type="taskList"] {
-  list-style: none;
-  padding-left: 0;
-  margin: 0.6em 0;
+  list-style: none !important;
+  padding-left: 0 !important;
+  margin: 0.5em 0 !important;
 }
 
 .snote-editor-content .tiptap li[data-type="taskItem"] {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  margin: 0.35em 0;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: flex-start !important;
+  gap: 10px !important;
+  margin: 0.35em 0 !important;
+  list-style: none !important;
+  list-style-type: none !important;
+}
+
+.snote-editor-content .tiptap li[data-type="taskItem"]::marker {
+  display: none !important;
+  content: "" !important;
 }
 
 .snote-editor-content .tiptap li[data-type="taskItem"] > label {
-  user-select: none;
-  margin-top: 3px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
+  flex: 0 0 auto !important;
+  user-select: none !important;
+  margin: 4px 0 0 0 !important;
+  cursor: pointer !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  line-height: 1 !important;
 }
 
 .snote-editor-content .tiptap li[data-type="taskItem"] > label input[type="checkbox"] {
-  cursor: pointer;
-  width: 15px;
-  height: 15px;
-  accent-color: var(--ws-accent);
-  border-radius: 4px;
+  cursor: pointer !important;
+  width: 16px !important;
+  height: 16px !important;
+  accent-color: var(--ws-accent, #38bdf8) !important;
+  border-radius: 4px !important;
+  margin: 0 !important;
+  vertical-align: middle !important;
 }
 
-.snote-editor-content .tiptap li[data-type="taskItem"] > div {
-  flex: 1;
+.snote-editor-content .tiptap li[data-type="taskItem"] > div,
+.snote-editor-content .tiptap li[data-type="taskItem"] > p {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
 }
 
-.snote-editor-content .tiptap li[data-type="taskItem"][data-checked="true"] > div {
-  text-decoration: line-through;
-  color: var(--ws-text-muted);
+.snote-editor-content .tiptap li[data-type="taskItem"] > div > p {
+  margin: 0 !important;
+  padding: 0 !important;
+  line-height: 1.6 !important;
+  display: block !important;
+  min-height: 1.6em !important;
+}
+
+.snote-editor-content .tiptap li[data-type="taskItem"][data-checked="true"] > div,
+.snote-editor-content .tiptap li[data-type="taskItem"][data-checked="true"] > p {
+  text-decoration: line-through !important;
+  color: var(--ws-text-muted) !important;
 }
 
 /* Blockquote */

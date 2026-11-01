@@ -112,7 +112,23 @@
   color: var(--text-muted);
   cursor: pointer;
   transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
 }
+
+.gcal-legend-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  margin-right: 5px;
+  flex-shrink: 0;
+}
+
+.dot-class { background-color: #3b82f6; }
+.dot-exam { background-color: #f59e0b; }
+.dot-deadline { background-color: #ef4444; }
+.dot-meeting { background-color: #a855f7; }
 
 .gcal-filter-pill:hover {
   color: var(--text-primary);
